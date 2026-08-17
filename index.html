@@ -1093,7 +1093,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – SDF COLLISION FOR ROUNDED RECT
+        // PHYSICS – FIXED SDF COLLISION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1155,19 +1155,29 @@
                     p.x += p.vx * subDt * 60;
                     p.y += p.vy * subDt * 60;
 
-                    // ---- SDF COLLISION ----
+                    // ---- SDF COLLISION (CORRECT OVERLAP) ----
                     const d = sdfRoundedRect(p.x, p.y, size, r);
-                    // Only push if the ball is truly inside or very close to the wall
-                    if (d < p.radius) {
+                    // Overlap if the absolute distance from center to border is less than radius
+                    if (Math.abs(d) < p.radius) {
                         const normal = normalRoundedRect(p.x, p.y, size, r);
-                        const overlap = p.radius - d + 0.1;
-                        p.x += normal.nx * overlap;
-                        p.y += normal.ny * overlap;
+                        // Push the circle out of the wall
+                        const overlap = p.radius - Math.abs(d);
+                        // If d < 0 (inside), push outward (positive normal); else push inward
+                        if (d < 0) {
+                            p.x += normal.nx * overlap;
+                            p.y += normal.ny * overlap;
+                        } else {
+                            p.x -= normal.nx * overlap;
+                            p.y -= normal.ny * overlap;
+                        }
+                        // Reflect velocity
                         const vn = p.vx * normal.nx + p.vy * normal.ny;
-                        if (vn < 0) {
+                        // If moving into the wall, reflect
+                        if ((d < 0 && vn < 0) || (d >= 0 && vn > 0)) {
                             const restitution = 0.85;
                             p.vx -= (1 + restitution) * vn * normal.nx;
                             p.vy -= (1 + restitution) * vn * normal.ny;
+                            // Add a tiny damping to prevent jitter
                             p.vx *= 0.995;
                             p.vy *= 0.995;
                         }
@@ -1280,7 +1290,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – dark rim behind, red flash on gap, diamond animated
+        // RENDER – dark rim behind, red flash on gap
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize,
@@ -1295,11 +1305,10 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Dark rim (distinct from background) – a solid rounded rect behind
+            // Dark rim (distinct from background)
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 35;
-            // Use a noticeably darker gray that's different from the background
             ctx.fillStyle = '#1e1e22';
             drawRoundedRect(ctx, 0, 0, w, w, r);
             ctx.fill();
@@ -1773,7 +1782,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – SDF hitbox, dark rim, red flash, diamond animated');
+        console.log('◆ dllump – fixed SDF overlap, speed preserved, diamond animated');
     </script>
 </body>
 </html>
