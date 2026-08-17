@@ -77,12 +77,15 @@
             height: 26px;
             object-fit: contain;
             flex-shrink: 0;
-            animation: diamondGlow 2.8s ease-in-out infinite;
             display: block;
+            animation: spinDiamond 3s linear infinite, glowDiamond 2.8s ease-in-out infinite;
         }
-        @keyframes diamondGlow {
-            0%,
-            100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
+        @keyframes spinDiamond {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes glowDiamond {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
             50% { filter: drop-shadow(0 0 20px rgba(200, 168, 78, 0.7)) brightness(1.15); }
         }
         #balance {
@@ -1093,7 +1096,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – FIXED SDF COLLISION
+        // PHYSICS – STABLE SDF WITH ACCURATE OVERLAP RESOLUTION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1147,29 +1150,24 @@
             const size = state.arenaSize;
             const r = state.cornerRadius;
             const opening = state.opening;
-            const subSteps = 6;
+            const subSteps = 8; // more stable
             const subDt = dt / subSteps;
 
             for (let step = 0; step < subSteps; step++) {
                 alive.forEach(p => {
+                    // Move
                     p.x += p.vx * subDt * 60;
                     p.y += p.vy * subDt * 60;
 
-                    // ---- SDF COLLISION (CORRECT OVERLAP) ----
+                    // ---- SDF COLLISION ----
                     const d = sdfRoundedRect(p.x, p.y, size, r);
-                    // Overlap if the absolute distance from center to border is less than radius
                     if (Math.abs(d) < p.radius) {
                         const normal = normalRoundedRect(p.x, p.y, size, r);
-                        // Push the circle out of the wall
-                        const overlap = p.radius - Math.abs(d);
-                        // If d < 0 (inside), push outward (positive normal); else push inward
-                        if (d < 0) {
-                            p.x += normal.nx * overlap;
-                            p.y += normal.ny * overlap;
-                        } else {
-                            p.x -= normal.nx * overlap;
-                            p.y -= normal.ny * overlap;
-                        }
+                        // Determine push direction: if inside (d<0) push outward (normal), else inward (-normal)
+                        const push = (d < 0) ? 1 : -1;
+                        const overlap = p.radius - Math.abs(d) + 0.1; // small extra to ensure separation
+                        p.x += push * normal.nx * overlap;
+                        p.y += push * normal.ny * overlap;
                         // Reflect velocity
                         const vn = p.vx * normal.nx + p.vy * normal.ny;
                         // If moving into the wall, reflect
@@ -1177,7 +1175,6 @@
                             const restitution = 0.85;
                             p.vx -= (1 + restitution) * vn * normal.nx;
                             p.vy -= (1 + restitution) * vn * normal.ny;
-                            // Add a tiny damping to prevent jitter
                             p.vx *= 0.995;
                             p.vy *= 0.995;
                         }
@@ -1290,7 +1287,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – dark rim behind, red flash on gap
+        // RENDER – dark rim, red flash, diamond spins
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize,
@@ -1298,7 +1295,7 @@
             const r = state.cornerRadius || w * 0.15;
             ctx.clearRect(0, 0, w, w);
 
-            // background: very dark
+            // background
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, '#0a0a0a');
             grad.addColorStop(1, '#000000');
@@ -1314,7 +1311,7 @@
             ctx.fill();
             ctx.restore();
 
-            // Main arena surface (lighter gray)
+            // Main arena surface
             ctx.save();
             ctx.fillStyle = '#28282e';
             drawRoundedRect(ctx, 0, 0, w, w, r);
@@ -1413,13 +1410,12 @@
                 ctx.stroke();
             }
 
-            // ---- RED FLASH: change the segment color to red ----
+            // ---- RED FLASH ----
             if (flash) {
                 const side = opening.side;
                 const start = opening.start * w;
                 const end = opening.end * w;
                 ctx.save();
-                // Draw a thick red line on the gap segment
                 ctx.shadowColor = 'rgba(255, 50, 50, 0.9)';
                 ctx.shadowBlur = 50;
                 ctx.strokeStyle = '#ff3333';
@@ -1782,7 +1778,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – fixed SDF overlap, speed preserved, diamond animated');
+        console.log('◆ dllump – fixed SDF, diamond spins, stable collision');
     </script>
 </body>
 </html>
