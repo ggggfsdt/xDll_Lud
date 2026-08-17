@@ -494,38 +494,6 @@
             color: var(--gold);
             font-weight: 700;
         }
-        .inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-            width: 100%;
-        }
-        .inventory-item {
-            background: var(--surface2);
-            border-radius: 12px;
-            padding: 8px;
-            text-align: center;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .inventory-item.selected {
-            border-color: var(--gold);
-            box-shadow: 0 0 20px var(--gold-dim);
-        }
-        .inventory-item img {
-            width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: contain;
-            border-radius: 8px;
-            background: var(--surface3);
-        }
-        .inventory-item .name {
-            font-size: 11px;
-            color: var(--text2);
-            margin-top: 4px;
-        }
 
         #top-page {
             background: var(--bg);
@@ -738,10 +706,6 @@
                 width: 16px;
                 height: 16px;
             }
-            .inventory-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 6px;
-            }
         }
     </style>
 </head>
@@ -805,9 +769,6 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
-                    <div class="profile-divider"></div>
-                    <div style="width:100%; text-align:left; font-size:12px; font-weight:600; color:var(--text2); margin-bottom:4px;">Your NFTs (click to equip)</div>
-                    <div class="inventory-grid" id="inventory-grid"></div>
                 </div>
             </div>
 
@@ -842,18 +803,6 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // NFT DATABASE & INVENTORY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const NFT_DB = {
-            'dragon': { id: 'dragon', name: 'Dragon', image: 'https://i.pravatar.cc/150?img=1' },
-            'phoenix': { id: 'phoenix', name: 'Phoenix', image: 'https://i.pravatar.cc/150?img=2' },
-            'wolf': { id: 'wolf', name: 'Wolf', image: 'https://i.pravatar.cc/150?img=3' },
-            'ninja': { id: 'ninja', name: 'Ninja', image: 'https://i.pravatar.cc/150?img=4' },
-            'wizard': { id: 'wizard', name: 'Wizard', image: 'https://i.pravatar.cc/150?img=5' },
-            'knight': { id: 'knight', name: 'Knight', image: 'https://i.pravatar.cc/150?img=6' },
-        };
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // STATE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const state = {
@@ -880,8 +829,6 @@
             gameTime: 0,
             lastTime: 0,
             currentTab: 'pvp',
-            inventory: ['dragon', 'phoenix', 'wolf', 'ninja', 'wizard', 'knight'],
-            selectedNftId: 'dragon',
         };
 
         // DOM refs
@@ -918,7 +865,6 @@
             profile: document.getElementById('profile-page'),
             top: document.getElementById('top-page'),
         };
-        const inventoryGrid = document.getElementById('inventory-grid');
 
         const COLORS = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
@@ -952,7 +898,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SDF ROUNDED RECT
+        // ROUNDED RECT SDF (ACCURATE HITBOX)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function sdfRoundedRect(px, py, size, r) {
             const half = size / 2;
@@ -1032,12 +978,11 @@
                 overlap = state.players.some(p => Math.hypot(p.x - x, p.y - y) < p.radius + radius + 5);
                 attempts++;
             }
-            const nft = NFT_DB[state.selectedNftId] || NFT_DB['dragon'];
             const p = {
                 id,
                 bet,
                 name: name || 'player',
-                pfp: pfp || nft.image,
+                pfp: pfp || '',
                 color: getColor(state.players.length + 1),
                 radius: radius,
                 mass: radius * radius * 1.2,
@@ -1067,12 +1012,9 @@
             if (state.players.some(p => p.id.startsWith('bot_'))) return;
             if (state.players.length >= state.maxPlayers) return;
             const bet = Math.floor(Math.random() * 30) + 8;
-            // Pick a random NFT for the bot
-            const nftKeys = Object.keys(NFT_DB);
-            const randomNftId = nftKeys[Math.floor(Math.random() * nftKeys.length)];
-            const botNft = NFT_DB[randomNftId];
-            const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botNft.image);
-            bot.nftId = randomNftId;
+            // Use a default avatar for bots (could be a random icon)
+            const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
+            const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
             state.botSpawned = true;
             updateWaitingText();
             updateBetUI();
@@ -1195,7 +1137,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – STABLE SDF
+        // PHYSICS – STABLE SDF WITH ACCURATE OVERLAP RESOLUTION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1380,9 +1322,19 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER
+        // RENDER – with PFPs (avatar images) inside circles
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
+
+        function loadImage(src) {
+            if (!imageCache[src]) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = src;
+                imageCache[src] = img;
+            }
+            return imageCache[src];
+        }
 
         function render() {
             const w = state.arenaSize,
@@ -1539,7 +1491,7 @@
             }
             ctx.restore();
 
-            // ── PLAYERS ──
+            // ── PLAYERS with PFPs ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const radius = isAlive ? p.radius : p.radius * 0.5;
@@ -1556,25 +1508,31 @@
                 ctx.shadowBlur = 8;
                 ctx.stroke();
 
-                // ── PFP IMAGE ──
-                const imgSrc = p.pfp || NFT_DB['dragon'].image;
-                if (!imageCache[imgSrc]) {
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.src = imgSrc;
-                    img.onload = () => { imageCache[imgSrc] = img; };
-                    imageCache[imgSrc] = img; // placeholder to avoid reloading
-                }
-                const img = imageCache[imgSrc];
-                if (img && img.complete && img.naturalWidth > 0) {
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
-                    ctx.clip();
-                    ctx.drawImage(img, p.x - (radius - 3), p.y - (radius - 3), (radius - 3) * 2, (radius - 3) * 2);
-                    ctx.restore();
+                // ── PFP Image or fallback ──
+                const pfpSrc = p.pfp || '';
+                if (pfpSrc) {
+                    const img = loadImage(pfpSrc);
+                    if (img.complete && img.naturalWidth > 0) {
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
+                        ctx.clip();
+                        ctx.drawImage(img, p.x - (radius - 3), p.y - (radius - 3), (radius - 3) * 2, (radius - 3) * 2);
+                        ctx.restore();
+                    } else {
+                        // fallback: colored circle with initial
+                        ctx.fillStyle = p.color || '#a0a0b0';
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.font = `${radius * 0.5}px system-ui, sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
+                    }
                 } else {
-                    // Fallback: colored circle with initial
+                    // No PFP: colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
@@ -1586,7 +1544,7 @@
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                 }
 
-                // Bet amount
+                // Bet amount below
                 if (isAlive) {
                     ctx.shadowBlur = 0;
                     ctx.fillStyle = '#ddd';
@@ -1620,36 +1578,6 @@
             profileUsername.textContent = '@' + state.username;
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
-            renderInventory();
-        }
-
-        function renderInventory() {
-            if (!inventoryGrid) return;
-            inventoryGrid.innerHTML = '';
-            state.inventory.forEach(nftId => {
-                const nft = NFT_DB[nftId];
-                if (!nft) return;
-                const div = document.createElement('div');
-                div.className = 'inventory-item';
-                if (state.selectedNftId === nftId) div.classList.add('selected');
-                div.innerHTML = `
-                    <img src="${nft.image}" alt="${nft.name}" />
-                    <div class="name">${nft.name}</div>
-                `;
-                div.addEventListener('click', () => {
-                    state.selectedNftId = nftId;
-                    // Update user's PFP if they are in the game
-                    const user = state.players.find(p => p.id === state.userId);
-                    if (user) {
-                        user.pfp = NFT_DB[state.selectedNftId].image;
-                    }
-                    renderInventory();
-                    updateProfile();
-                    updateBetUI();
-                    haptic('light');
-                });
-                inventoryGrid.appendChild(div);
-            });
         }
 
         function updateStatsBar() {
@@ -1890,6 +1818,11 @@
                 state.username = u.username || u.first_name || 'player';
                 state.userId = u.id?.toString() || state.userId;
                 state.pfp = u.photo_url || '';
+                // Set user's PFP for the player object if already in game
+                const userPlayer = state.players.find(p => p.id === state.userId);
+                if (userPlayer) {
+                    userPlayer.pfp = state.pfp || '';
+                }
             } else {
                 state.username = 'test_user';
                 state.pfp = 'https://i.pravatar.cc/100?img=69';
@@ -1914,7 +1847,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – fixed physics, NFT PFPs, stable collisions');
+        console.log('◆ dllump – fixed physics, PFPs, no NFTs, stable collisions');
     </script>
 </body>
 </html>
