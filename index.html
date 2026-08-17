@@ -78,15 +78,16 @@
             object-fit: contain;
             flex-shrink: 0;
             display: block;
-            animation: spinDiamond 3s linear infinite, glowDiamond 2.8s ease-in-out infinite;
+            animation: pulseGlow 2.2s ease-in-out infinite;
         }
-        @keyframes spinDiamond {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        @keyframes glowDiamond {
-            0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
-            50% { filter: drop-shadow(0 0 20px rgba(200, 168, 78, 0.7)) brightness(1.15); }
+        @keyframes pulseGlow {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)) brightness(1);
+            }
+            50% {
+                filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2);
+            }
         }
         #balance {
             font-size: 17px;
@@ -664,7 +665,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- top bar -->
         <div id="topbar">
             <div id="balance-wrap">
                 <img id="diamond-icon" src="https://i.postimg.cc/gjf8MC89/Snimok-ekrana-2026-07-07-143049-Photoroom.png" alt="diamond" />
@@ -676,7 +676,6 @@
             </div>
         </div>
 
-        <!-- main -->
         <div id="main">
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
@@ -732,7 +731,6 @@
             </div>
         </div>
 
-        <!-- tabs -->
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path d="M6 8 L18 8 L16 20 L8 20 Z" /><path d="M10 8 L14 8" /><path d="M12 8 L12 3" /><path d="M8 3 L10 6" /><path d="M16 3 L14 6" /></svg></span>PvP</button>
@@ -822,7 +820,6 @@
             top: document.getElementById('top-page'),
         };
 
-        // Colors – vibrant for circles
         const COLORS = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
             '#D4A5A5', '#9B59B6', '#FF8C00', '#00B894', '#E17055',
@@ -990,9 +987,6 @@
             }
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // SPEED SCALING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function speedForRadius(radius) {
             const minR = 14,
                 maxR = 52;
@@ -1096,7 +1090,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – STABLE SDF WITH ACCURATE OVERLAP RESOLUTION
+        // PHYSICS – STABLE SDF WITH ROUNDED RECT HITBOX
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1150,28 +1144,25 @@
             const size = state.arenaSize;
             const r = state.cornerRadius;
             const opening = state.opening;
-            const subSteps = 8; // more stable
+            const subSteps = 8;
             const subDt = dt / subSteps;
 
             for (let step = 0; step < subSteps; step++) {
                 alive.forEach(p => {
-                    // Move
                     p.x += p.vx * subDt * 60;
                     p.y += p.vy * subDt * 60;
 
-                    // ---- SDF COLLISION ----
+                    // ── SDF COLLISION ──
                     const d = sdfRoundedRect(p.x, p.y, size, r);
-                    if (Math.abs(d) < p.radius) {
+                    if (d < p.radius) {
                         const normal = normalRoundedRect(p.x, p.y, size, r);
-                        // Determine push direction: if inside (d<0) push outward (normal), else inward (-normal)
-                        const push = (d < 0) ? 1 : -1;
-                        const overlap = p.radius - Math.abs(d) + 0.1; // small extra to ensure separation
-                        p.x += push * normal.nx * overlap;
-                        p.y += push * normal.ny * overlap;
-                        // Reflect velocity
+                        // Push the circle so it's exactly at distance = radius from the shape
+                        const push = p.radius - d;
+                        p.x += normal.nx * push;
+                        p.y += normal.ny * push;
+                        // Reflect velocity if moving into the wall
                         const vn = p.vx * normal.nx + p.vy * normal.ny;
-                        // If moving into the wall, reflect
-                        if ((d < 0 && vn < 0) || (d >= 0 && vn > 0)) {
+                        if (vn < 0) {
                             const restitution = 0.85;
                             p.vx -= (1 + restitution) * vn * normal.nx;
                             p.vy -= (1 + restitution) * vn * normal.ny;
@@ -1180,7 +1171,7 @@
                         }
                     }
 
-                    // ---- OPENING ELIMINATION ----
+                    // ── OPENING ELIMINATION ──
                     const dOut = sdfRoundedRect(p.x, p.y, size, r);
                     if (dOut > 2 && opening && opening.state === 'open') {
                         const side = opening.side;
@@ -1207,7 +1198,7 @@
                     }
                 });
 
-                // ---- CIRCLE COLLISIONS ----
+                // ── CIRCLE COLLISIONS ──
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1239,7 +1230,7 @@
                     }
                 }
 
-                // ---- SPEED CAP ----
+                // ── SPEED CAP ──
                 alive.forEach(p => {
                     const maxSp = speedForRadius(p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -1255,7 +1246,7 @@
                 });
             }
 
-            // ---- OPENING TIMER ----
+            // ── OPENING TIMER ──
             state.openingTimer -= dt;
             if (state.openingTimer <= 0) {
                 if (!state.opening) {
@@ -1287,7 +1278,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – dark rim, red flash, diamond spins
+        // RENDER – Rounded square with dark rim, PFPs in circles
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize,
@@ -1295,30 +1286,30 @@
             const r = state.cornerRadius || w * 0.15;
             ctx.clearRect(0, 0, w, w);
 
-            // background
+            // background gradient
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, '#0a0a0a');
             grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Dark rim (distinct from background)
+            // ── Dark rim (shadow / outline behind) ──
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 35;
-            ctx.fillStyle = '#1e1e22';
+            ctx.fillStyle = '#1a1a1e';
             drawRoundedRect(ctx, 0, 0, w, w, r);
             ctx.fill();
             ctx.restore();
 
-            // Main arena surface
+            // ── Main arena surface ──
             ctx.save();
             ctx.fillStyle = '#28282e';
             drawRoundedRect(ctx, 0, 0, w, w, r);
             ctx.fill();
             ctx.restore();
 
-            // Border
+            // ── Border ──
             const bw = 6;
             ctx.save();
             ctx.strokeStyle = 'rgba(160,160,176,0.3)';
@@ -1332,7 +1323,6 @@
                 const side = opening.side;
                 const start = opening.start * w;
                 const end = opening.end * w;
-                // Draw four sides with rounded corners, skipping gap
                 // Top
                 if (side !== 'top') {
                     ctx.beginPath();
@@ -1410,7 +1400,7 @@
                 ctx.stroke();
             }
 
-            // ---- RED FLASH ----
+            // ── RED FLASH ──
             if (flash) {
                 const side = opening.side;
                 const start = opening.start * w;
@@ -1445,13 +1435,15 @@
             }
             ctx.restore();
 
-            // ---- PLAYERS ----
+            // ── PLAYERS with PFPs ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const radius = isAlive ? p.radius : p.radius * 0.5;
                 const alpha = isAlive ? 1 : 0.2;
                 ctx.save();
                 ctx.globalAlpha = alpha;
+
+                // Circle outline
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
                 ctx.strokeStyle = p.color || '#a0a0b0';
@@ -1460,36 +1452,53 @@
                 ctx.shadowBlur = 8;
                 ctx.stroke();
 
+                // ── PFP inside circle ──
                 if (p.pfp && isAlive) {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.src = p.pfp;
                     if (img.complete && img.naturalWidth > 0) {
+                        ctx.save();
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, radius - 4, 0, Math.PI * 2);
+                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
                         ctx.clip();
-                        ctx.drawImage(img, p.x - (radius - 4), p.y - (radius - 4), (radius - 4) * 2, (radius - 4) * 2);
+                        ctx.drawImage(img, p.x - (radius - 3), p.y - (radius - 3), (radius - 3) * 2, (radius - 3) * 2);
+                        ctx.restore();
                     } else {
+                        // Fallback: colored circle with initial
                         ctx.fillStyle = p.color || '#a0a0b0';
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, radius - 4, 0, Math.PI * 2);
+                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
                         ctx.fill();
                         ctx.fillStyle = '#fff';
-                        ctx.font = `${radius*0.5}px system-ui`;
+                        ctx.font = `${radius * 0.5}px system-ui, sans-serif`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                     }
                 } else {
+                    // No PFP: colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, radius - 4, 0, Math.PI * 2);
+                    ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${radius*0.5}px system-ui`;
+                    ctx.font = `${radius * 0.5}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
+                }
+
+                // ── Bet amount below ──
+                if (isAlive) {
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#ddd';
+                    ctx.font = `bold ${Math.max(10, radius * 0.35)}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+                    ctx.shadowBlur = 6;
+                    ctx.fillText(p.bet, p.x, p.y + radius + 4);
                 }
                 ctx.restore();
             });
@@ -1528,7 +1537,7 @@
                 waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
             } else {
                 waitingText.innerHTML =
-                    `<span>● ${alive.length} player${alive.length>1?'s':''} ready</span><div class="sub">need ${Math.max(0,2-alive.length)} more to start</div>`;
+                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span><div class="sub">need ${Math.max(0, 2 - alive.length)} more to start</div>`;
             }
             if (alive.length >= 2 && state.gameState === 'idle') startCountdown();
             updateStatsBar();
@@ -1590,9 +1599,9 @@
                 else if (rank === 2) rClass += ' silver';
                 else if (rank === 3) rClass += ' bronze';
                 const tag = e.isUser ? ' (you)' : '';
-                html += `<div class="top-entry" style="${e.isUser?'border-color:var(--primary);':''}">
+                html += `<div class="top-entry" style="${e.isUser ? 'border-color:var(--primary);' : ''}">
                         <div class="${rClass}">#${rank}</div>
-                        <img class="t-pfp" src="${e.pfp||'https://i.pravatar.cc/100?img='+(i+30)}" alt="" />
+                        <img class="t-pfp" src="${e.pfp || 'https://i.pravatar.cc/100?img=' + (i + 30)}" alt="" />
                         <div class="t-name">${e.name}${tag}</div>
                         <div class="t-wins">● ${e.wins}</div>
                         <div class="t-score">${e.score}</div>
@@ -1778,7 +1787,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – fixed SDF, diamond spins, stable collision');
+        console.log('◆ dllump – fixed SDF hitbox, PFP circles, animated diamond glow');
     </script>
 </body>
 </html>
