@@ -14,16 +14,16 @@
             user-select: none;
         }
         :root {
-            --bg: #0a0a0a;
-            --surface: #141414;
-            --surface2: #1c1c1c;
-            --surface3: #262626;
+            --bg: #08080a;
+            --surface: #121214;
+            --surface2: #1a1a1e;
+            --surface3: #242428;
             --primary: #4CAF50;
             --primary-dim: rgba(76, 175, 80, 0.25);
             --primary-glow: rgba(76, 175, 80, 0.45);
             --text: #e8e8e8;
             --text2: #888;
-            --border: #2a2a2a;
+            --border: #2a2a2e;
             --gold: #c8a84e;
             --gold-dim: rgba(200, 168, 78, 0.2);
             --red: #d45a5a;
@@ -78,6 +78,7 @@
             object-fit: contain;
             flex-shrink: 0;
             animation: diamondGlow 2.8s ease-in-out infinite;
+            display: block;
         }
         @keyframes diamondGlow {
             0%,
@@ -764,7 +765,7 @@
             pfp: '',
             wins: 0,
             losses: 0,
-            gameState: 'idle', // idle | countdown | playing | finished
+            gameState: 'idle',
             players: [],
             maxPlayers: 8,
             pot: 0,
@@ -851,8 +852,47 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ROUNDED RECT HELPERS
+        // ROUNDED RECT SDF (ACCURATE HITBOX)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function sdfRoundedRect(px, py, size, r) {
+            const half = size / 2;
+            const cx = size / 2,
+                cy = size / 2;
+            const dx = Math.abs(px - cx);
+            const dy = Math.abs(py - cy);
+            const qx = dx - half + r;
+            const qy = dy - half + r;
+            if (qx < 0 && qy < 0) {
+                return -Math.min(Math.max(qx, qy), 0);
+            }
+            return Math.sqrt(Math.max(qx, 0) * Math.max(qx, 0) + Math.max(qy, 0) * Math.max(qy, 0)) - r;
+        }
+
+        function normalRoundedRect(px, py, size, r) {
+            const half = size / 2;
+            const cx = size / 2,
+                cy = size / 2;
+            const dx = px - cx,
+                dy = py - cy;
+            const adx = Math.abs(dx),
+                ady = Math.abs(dy);
+            const qx = adx - half + r;
+            const qy = ady - half + r;
+            if (qx < 0 && qy < 0) {
+                const distX = half - r - adx;
+                const distY = half - r - ady;
+                if (distX < distY) return { nx: Math.sign(dx), ny: 0 };
+                else return { nx: 0, ny: Math.sign(dy) };
+            }
+            const eps = 0.02;
+            const d0 = sdfRoundedRect(px, py, size, r);
+            const ddx = sdfRoundedRect(px + eps, py, size, r) - d0;
+            const ddy = sdfRoundedRect(px, py + eps, size, r) - d0;
+            const len = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (len < 0.0001) return { nx: 0, ny: -1 };
+            return { nx: ddx / len, ny: ddy / len };
+        }
+
         function drawRoundedRect(ctx, x, y, w, h, r) {
             ctx.beginPath();
             ctx.moveTo(x + r, y);
@@ -877,7 +917,7 @@
                 const ratio = p.bet / totalBet;
                 const r = 18 + ratio * 34;
                 p.radius = Math.min(Math.max(r, 14), 52);
-                p.mass = p.radius * p.radius * 1.2; // slightly more mass difference
+                p.mass = p.radius * p.radius * 1.2;
             });
         }
 
@@ -1053,7 +1093,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – fixed collision and opening
+        // PHYSICS – SDF COLLISION FOR ROUNDED RECT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1080,7 +1120,7 @@
             if (state.openingGrowTimer <= 0 && state.opening && state.opening.state === 'open') {
                 state.openingGrowTimer = 3.0;
                 let gap = state.opening.end - state.opening.start;
-                let newGap = Math.min(gap + 0.04, 0.65); // bigger max gap
+                let newGap = Math.min(gap + 0.04, 0.65);
                 let start = state.opening.start - (newGap - gap) / 2;
                 let end = state.opening.end + (newGap - gap) / 2;
                 if (start < 0) start = 0;
@@ -1104,120 +1144,55 @@
                 }
             }
 
-            const subSteps = 3;
-            const subDt = dt / subSteps;
-            const arenaSize = state.arenaSize;
-            const opening = state.opening;
+            const size = state.arenaSize;
             const r = state.cornerRadius;
+            const opening = state.opening;
+            const subSteps = 6;
+            const subDt = dt / subSteps;
 
             for (let step = 0; step < subSteps; step++) {
                 alive.forEach(p => {
                     p.x += p.vx * subDt * 60;
                     p.y += p.vy * subDt * 60;
 
-                    const margin = p.radius + 1;
-                    const leftWall = margin;
-                    const rightWall = arenaSize - margin;
-                    const topWall = margin;
-                    const bottomWall = arenaSize - margin;
-
-                    const side = opening ? opening.side : null;
-                    const start = opening ? opening.start * arenaSize : 0;
-                    const end = opening ? opening.end * arenaSize : 0;
-                    const gapLen = opening ? (opening.end - opening.start) * arenaSize : 0;
-
-                    const inGapZone = (side, pos) => {
-                        if (side === 'top' || side === 'bottom') {
-                            return (pos > start && pos < end);
-                        } else {
-                            return (pos > start && pos < end);
-                        }
-                    };
-
-                    const canFitThrough = (radius, gapLen) => {
-                        return radius * 2 < gapLen - 1;
-                    };
-
-                    // Left wall
-                    if (p.x < leftWall) {
-                        if (side === 'left' && opening && opening.state === 'open') {
-                            if (inGapZone('left', p.y) && p.vx < 0 && canFitThrough(p.radius, gapLen)) {
-                                // pass
-                            } else {
-                                p.x = leftWall;
-                                p.vx = -p.vx;
-                            }
-                        } else {
-                            p.x = leftWall;
-                            p.vx = -p.vx;
+                    // ---- SDF COLLISION ----
+                    const d = sdfRoundedRect(p.x, p.y, size, r);
+                    // Only push if the ball is truly inside or very close to the wall
+                    if (d < p.radius) {
+                        const normal = normalRoundedRect(p.x, p.y, size, r);
+                        const overlap = p.radius - d + 0.1;
+                        p.x += normal.nx * overlap;
+                        p.y += normal.ny * overlap;
+                        const vn = p.vx * normal.nx + p.vy * normal.ny;
+                        if (vn < 0) {
+                            const restitution = 0.85;
+                            p.vx -= (1 + restitution) * vn * normal.nx;
+                            p.vy -= (1 + restitution) * vn * normal.ny;
+                            p.vx *= 0.995;
+                            p.vy *= 0.995;
                         }
                     }
 
-                    // Right wall
-                    if (p.x > rightWall) {
-                        if (side === 'right' && opening && opening.state === 'open') {
-                            if (inGapZone('right', p.y) && p.vx > 0 && canFitThrough(p.radius, gapLen)) {
-                                // pass
-                            } else {
-                                p.x = rightWall;
-                                p.vx = -p.vx;
-                            }
+                    // ---- OPENING ELIMINATION ----
+                    const dOut = sdfRoundedRect(p.x, p.y, size, r);
+                    if (dOut > 2 && opening && opening.state === 'open') {
+                        const side = opening.side;
+                        const start = opening.start * size;
+                        const end = opening.end * size;
+                        let inGap = false;
+                        if (side === 'left' || side === 'right') {
+                            inGap = (p.y > start && p.y < end);
                         } else {
-                            p.x = rightWall;
-                            p.vx = -p.vx;
-                        }
-                    }
-
-                    // Top wall
-                    if (p.y < topWall) {
-                        if (side === 'top' && opening && opening.state === 'open') {
-                            if (inGapZone('top', p.x) && p.vy < 0 && canFitThrough(p.radius, gapLen)) {
-                                // pass
-                            } else {
-                                p.y = topWall;
-                                p.vy = -p.vy;
-                            }
-                        } else {
-                            p.y = topWall;
-                            p.vy = -p.vy;
-                        }
-                    }
-
-                    // Bottom wall
-                    if (p.y > bottomWall) {
-                        if (side === 'bottom' && opening && opening.state === 'open') {
-                            if (inGapZone('bottom', p.x) && p.vy > 0 && canFitThrough(p.radius, gapLen)) {
-                                // pass
-                            } else {
-                                p.y = bottomWall;
-                                p.vy = -p.vy;
-                            }
-                        } else {
-                            p.y = bottomWall;
-                            p.vy = -p.vy;
-                        }
-                    }
-
-                    // outside detection (passed through gap)
-                    const outside = p.x < -margin || p.x > arenaSize + margin || p.y < -margin || p.y > arenaSize + margin;
-                    if (outside && opening && opening.state === 'open') {
-                        const sideCheck = opening.side;
-                        const startCheck = opening.start * arenaSize;
-                        const endCheck = opening.end * arenaSize;
-                        let inGapCheck = false;
-                        if (sideCheck === 'left' || sideCheck === 'right') {
-                            inGapCheck = (p.y > startCheck && p.y < endCheck);
-                        } else {
-                            inGapCheck = (p.x > startCheck && p.x < endCheck);
+                            inGap = (p.x > start && p.x < end);
                         }
                         let movingOut = false;
-                        if (sideCheck === 'left' && p.vx < 0) movingOut = true;
-                        else if (sideCheck === 'right' && p.vx > 0) movingOut = true;
-                        else if (sideCheck === 'top' && p.vy < 0) movingOut = true;
-                        else if (sideCheck === 'bottom' && p.vy > 0) movingOut = true;
-                        const gapLenCheck = (opening.end - opening.start) * arenaSize;
-                        const canFitCheck = p.radius * 2 < gapLenCheck - 1;
-                        if (inGapCheck && movingOut && canFitCheck) {
+                        if (side === 'left' && p.vx < 0) movingOut = true;
+                        else if (side === 'right' && p.vx > 0) movingOut = true;
+                        else if (side === 'top' && p.vy < 0) movingOut = true;
+                        else if (side === 'bottom' && p.vy > 0) movingOut = true;
+                        const gapLen = (opening.end - opening.start) * size;
+                        const canFit = p.radius * 2 < gapLen - 1;
+                        if (inGap && movingOut && canFit) {
                             p.alive = false;
                             haptic('medium');
                             return;
@@ -1225,7 +1200,7 @@
                     }
                 });
 
-                // Circle collisions – fixed impulse (elastic with mass)
+                // ---- CIRCLE COLLISIONS ----
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1246,19 +1221,18 @@
                                 dvy = a.vy - b.vy;
                             const dvn = dvx * nx + dvy * ny;
                             if (dvn > 0) {
-                                // Use reduced restitution to avoid speed exchange
                                 const restitution = 0.85;
-                                const impulse = (1 + restitution) * dvn / (a.mass + b.mass);
-                                a.vx -= impulse * b.mass * nx;
-                                a.vy -= impulse * b.mass * ny;
-                                b.vx += impulse * a.mass * nx;
-                                b.vy += impulse * a.mass * ny;
+                                const impulse = (1 + restitution) * dvn / (1 / a.mass + 1 / b.mass);
+                                a.vx -= impulse / a.mass * nx;
+                                a.vy -= impulse / a.mass * ny;
+                                b.vx += impulse / b.mass * nx;
+                                b.vy += impulse / b.mass * ny;
                             }
                         }
                     }
                 }
 
-                // Apply speed cap
+                // ---- SPEED CAP ----
                 alive.forEach(p => {
                     const maxSp = speedForRadius(p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -1274,12 +1248,13 @@
                 });
             }
 
+            // ---- OPENING TIMER ----
             state.openingTimer -= dt;
             if (state.openingTimer <= 0) {
                 if (!state.opening) {
                     const sides = ['top', 'right', 'bottom', 'left'];
                     const side = sides[Math.floor(Math.random() * sides.length)];
-                    let gapSize = 0.12 + Math.random() * 0.45; // bigger max
+                    let gapSize = 0.12 + Math.random() * 0.45;
                     let start = Math.random() * (1 - gapSize);
                     let end = start + gapSize;
                     start = Math.max(0, Math.min(1 - gapSize, start));
@@ -1305,7 +1280,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – with darker background behind the arena
+        // RENDER – dark rim behind, red flash on gap, diamond animated
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize,
@@ -1313,30 +1288,31 @@
             const r = state.cornerRadius || w * 0.15;
             ctx.clearRect(0, 0, w, w);
 
-            // background: dark gradient
+            // background: very dark
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, '#0a0a0a');
             grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // darker square behind the main arena (shadow effect)
+            // Dark rim (distinct from background) – a solid rounded rect behind
             ctx.save();
-            ctx.shadowColor = 'rgba(0,0,0,0.8)';
-            ctx.shadowBlur = 30;
-            ctx.fillStyle = '#050505';
+            ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            ctx.shadowBlur = 35;
+            // Use a noticeably darker gray that's different from the background
+            ctx.fillStyle = '#1e1e22';
             drawRoundedRect(ctx, 0, 0, w, w, r);
             ctx.fill();
             ctx.restore();
 
-            // main arena surface (slightly lighter)
+            // Main arena surface (lighter gray)
             ctx.save();
-            ctx.fillStyle = '#121212';
+            ctx.fillStyle = '#28282e';
             drawRoundedRect(ctx, 0, 0, w, w, r);
             ctx.fill();
             ctx.restore();
 
-            // border
+            // Border
             const bw = 6;
             ctx.save();
             ctx.strokeStyle = 'rgba(160,160,176,0.3)';
@@ -1428,16 +1404,17 @@
                 ctx.stroke();
             }
 
-            // Flash effect
+            // ---- RED FLASH: change the segment color to red ----
             if (flash) {
                 const side = opening.side;
                 const start = opening.start * w;
                 const end = opening.end * w;
                 ctx.save();
+                // Draw a thick red line on the gap segment
                 ctx.shadowColor = 'rgba(255, 50, 50, 0.9)';
-                ctx.shadowBlur = 40;
-                ctx.strokeStyle = 'rgba(255, 50, 50, 0.9)';
-                ctx.lineWidth = bw + 6;
+                ctx.shadowBlur = 50;
+                ctx.strokeStyle = '#ff3333';
+                ctx.lineWidth = bw + 8;
                 if (side === 'top') {
                     ctx.beginPath();
                     ctx.moveTo(start, bw / 2);
@@ -1463,7 +1440,7 @@
             }
             ctx.restore();
 
-            // players
+            // ---- PLAYERS ----
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const radius = isAlive ? p.radius : p.radius * 0.5;
@@ -1796,7 +1773,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – fixed collisions, bigger openings, dark background, slide tabs');
+        console.log('◆ dllump – SDF hitbox, dark rim, red flash, diamond animated');
     </script>
 </body>
 </html>
