@@ -78,12 +78,12 @@
             object-fit: contain;
             flex-shrink: 0;
             display: block;
-            animation: pulseGlow 2.2s ease-in-out infinite;
+            animation: glowDiamond 2.8s ease-in-out infinite;
         }
-        @keyframes pulseGlow {
+        @keyframes glowDiamond {
             0%,
             100% {
-                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)) brightness(1);
+                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3));
             }
             50% {
                 filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2);
@@ -494,6 +494,38 @@
             color: var(--gold);
             font-weight: 700;
         }
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .inventory-item {
+            background: var(--surface2);
+            border-radius: 12px;
+            padding: 8px;
+            text-align: center;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .inventory-item.selected {
+            border-color: var(--gold);
+            box-shadow: 0 0 20px var(--gold-dim);
+        }
+        .inventory-item img {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            border-radius: 8px;
+            background: var(--surface3);
+        }
+        .inventory-item .name {
+            font-size: 11px;
+            color: var(--text2);
+            margin-top: 4px;
+        }
 
         #top-page {
             background: var(--bg);
@@ -644,22 +676,72 @@
         }
 
         @media (max-width: 400px) {
-            #balance-wrap { padding: 2px 10px 2px 4px; }
-            #balance { font-size: 15px; }
-            #diamond-icon { width: 22px; height: 22px; }
-            #bet-overlay { padding: 6px 12px; gap: 6px; bottom: 12px; min-width: auto; width: calc(100% - 24px); }
-            #bet-input { width: 48px; font-size: 13px; padding: 4px 4px; }
-            #bet-btn { padding: 4px 12px; font-size: 12px; }
-            #bet-info .value { font-size: 12px; }
-            .profile-card { padding: 16px 14px 20px; }
-            .profile-pfp { width: 60px; height: 60px; }
-            .profile-name { font-size: 17px; }
-            .stat-item .num { font-size: 18px; }
-            #winner-text { font-size: 22px; }
-            #username-display { max-width: 60px; font-size: 11px; }
-            #countdown-timer { font-size: 16px; top: 4px; right: 4px; }
-            #stats-bar { font-size: 12px; padding: 4px 10px; }
-            #stats-bar .stat-item .icon { width: 16px; height: 16px; }
+            #balance-wrap {
+                padding: 2px 10px 2px 4px;
+            }
+            #balance {
+                font-size: 15px;
+            }
+            #diamond-icon {
+                width: 22px;
+                height: 22px;
+            }
+            #bet-overlay {
+                padding: 6px 12px;
+                gap: 6px;
+                bottom: 12px;
+                min-width: auto;
+                width: calc(100% - 24px);
+            }
+            #bet-input {
+                width: 48px;
+                font-size: 13px;
+                padding: 4px 4px;
+            }
+            #bet-btn {
+                padding: 4px 12px;
+                font-size: 12px;
+            }
+            #bet-info .value {
+                font-size: 12px;
+            }
+            .profile-card {
+                padding: 16px 14px 20px;
+            }
+            .profile-pfp {
+                width: 60px;
+                height: 60px;
+            }
+            .profile-name {
+                font-size: 17px;
+            }
+            .stat-item .num {
+                font-size: 18px;
+            }
+            #winner-text {
+                font-size: 22px;
+            }
+            #username-display {
+                max-width: 60px;
+                font-size: 11px;
+            }
+            #countdown-timer {
+                font-size: 16px;
+                top: 4px;
+                right: 4px;
+            }
+            #stats-bar {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            #stats-bar .stat-item .icon {
+                width: 16px;
+                height: 16px;
+            }
+            .inventory-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
         }
     </style>
 </head>
@@ -723,6 +805,9 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
+                    <div class="profile-divider"></div>
+                    <div style="width:100%; text-align:left; font-size:12px; font-weight:600; color:var(--text2); margin-bottom:4px;">Your NFTs (click to equip)</div>
+                    <div class="inventory-grid" id="inventory-grid"></div>
                 </div>
             </div>
 
@@ -757,6 +842,18 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // NFT DATABASE & INVENTORY
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const NFT_DB = {
+            'dragon': { id: 'dragon', name: 'Dragon', image: 'https://i.pravatar.cc/150?img=1' },
+            'phoenix': { id: 'phoenix', name: 'Phoenix', image: 'https://i.pravatar.cc/150?img=2' },
+            'wolf': { id: 'wolf', name: 'Wolf', image: 'https://i.pravatar.cc/150?img=3' },
+            'ninja': { id: 'ninja', name: 'Ninja', image: 'https://i.pravatar.cc/150?img=4' },
+            'wizard': { id: 'wizard', name: 'Wizard', image: 'https://i.pravatar.cc/150?img=5' },
+            'knight': { id: 'knight', name: 'Knight', image: 'https://i.pravatar.cc/150?img=6' },
+        };
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // STATE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const state = {
@@ -783,6 +880,8 @@
             gameTime: 0,
             lastTime: 0,
             currentTab: 'pvp',
+            inventory: ['dragon', 'phoenix', 'wolf', 'ninja', 'wizard', 'knight'],
+            selectedNftId: 'dragon',
         };
 
         // DOM refs
@@ -819,6 +918,7 @@
             profile: document.getElementById('profile-page'),
             top: document.getElementById('top-page'),
         };
+        const inventoryGrid = document.getElementById('inventory-grid');
 
         const COLORS = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
@@ -852,7 +952,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ROUNDED RECT SDF (ACCURATE HITBOX)
+        // SDF ROUNDED RECT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function sdfRoundedRect(px, py, size, r) {
             const half = size / 2;
@@ -932,11 +1032,12 @@
                 overlap = state.players.some(p => Math.hypot(p.x - x, p.y - y) < p.radius + radius + 5);
                 attempts++;
             }
+            const nft = NFT_DB[state.selectedNftId] || NFT_DB['dragon'];
             const p = {
                 id,
                 bet,
                 name: name || 'player',
-                pfp: pfp || '',
+                pfp: pfp || nft.image,
                 color: getColor(state.players.length + 1),
                 radius: radius,
                 mass: radius * radius * 1.2,
@@ -959,7 +1060,6 @@
         // BOT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const BOT_NAME = 'Bot';
-        const BOT_PFP = 'https://i.pravatar.cc/100?img=7';
 
         function spawnBot() {
             if (!state.botEnabled || state.botSpawned) return;
@@ -967,7 +1067,12 @@
             if (state.players.some(p => p.id.startsWith('bot_'))) return;
             if (state.players.length >= state.maxPlayers) return;
             const bet = Math.floor(Math.random() * 30) + 8;
-            const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, BOT_PFP);
+            // Pick a random NFT for the bot
+            const nftKeys = Object.keys(NFT_DB);
+            const randomNftId = nftKeys[Math.floor(Math.random() * nftKeys.length)];
+            const botNft = NFT_DB[randomNftId];
+            const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botNft.image);
+            bot.nftId = randomNftId;
             state.botSpawned = true;
             updateWaitingText();
             updateBetUI();
@@ -1090,7 +1195,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – STABLE SDF WITH ROUNDED RECT HITBOX
+        // PHYSICS – STABLE SDF
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1156,18 +1261,15 @@
                     const d = sdfRoundedRect(p.x, p.y, size, r);
                     if (d < p.radius) {
                         const normal = normalRoundedRect(p.x, p.y, size, r);
-                        // Push the circle so it's exactly at distance = radius from the shape
-                        const push = p.radius - d;
-                        p.x += normal.nx * push;
-                        p.y += normal.ny * push;
-                        // Reflect velocity if moving into the wall
+                        const overlap = p.radius - d;
+                        p.x += normal.nx * overlap;
+                        p.y += normal.ny * overlap;
                         const vn = p.vx * normal.nx + p.vy * normal.ny;
                         if (vn < 0) {
-                            const restitution = 0.85;
-                            p.vx -= (1 + restitution) * vn * normal.nx;
-                            p.vy -= (1 + restitution) * vn * normal.ny;
-                            p.vx *= 0.995;
-                            p.vy *= 0.995;
+                            p.vx -= 2 * vn * normal.nx;
+                            p.vy -= 2 * vn * normal.ny;
+                            p.vx *= 0.98;
+                            p.vy *= 0.98;
                         }
                     }
 
@@ -1278,22 +1380,24 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – Rounded square with dark rim, PFPs in circles
+        // RENDER
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const imageCache = {};
+
         function render() {
             const w = state.arenaSize,
                 half = w / 2;
             const r = state.cornerRadius || w * 0.15;
             ctx.clearRect(0, 0, w, w);
 
-            // background gradient
+            // background
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, '#0a0a0a');
             grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // ── Dark rim (shadow / outline behind) ──
+            // Dark rim
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 35;
@@ -1302,14 +1406,14 @@
             ctx.fill();
             ctx.restore();
 
-            // ── Main arena surface ──
+            // Main arena
             ctx.save();
             ctx.fillStyle = '#28282e';
             drawRoundedRect(ctx, 0, 0, w, w, r);
             ctx.fill();
             ctx.restore();
 
-            // ── Border ──
+            // Border
             const bw = 6;
             ctx.save();
             ctx.strokeStyle = 'rgba(160,160,176,0.3)';
@@ -1400,7 +1504,7 @@
                 ctx.stroke();
             }
 
-            // ── RED FLASH ──
+            // Red flash
             if (flash) {
                 const side = opening.side;
                 const start = opening.start * w;
@@ -1435,7 +1539,7 @@
             }
             ctx.restore();
 
-            // ── PLAYERS with PFPs ──
+            // ── PLAYERS ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const radius = isAlive ? p.radius : p.radius * 0.5;
@@ -1452,32 +1556,25 @@
                 ctx.shadowBlur = 8;
                 ctx.stroke();
 
-                // ── PFP inside circle ──
-                if (p.pfp && isAlive) {
+                // ── PFP IMAGE ──
+                const imgSrc = p.pfp || NFT_DB['dragon'].image;
+                if (!imageCache[imgSrc]) {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
-                    img.src = p.pfp;
-                    if (img.complete && img.naturalWidth > 0) {
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
-                        ctx.clip();
-                        ctx.drawImage(img, p.x - (radius - 3), p.y - (radius - 3), (radius - 3) * 2, (radius - 3) * 2);
-                        ctx.restore();
-                    } else {
-                        // Fallback: colored circle with initial
-                        ctx.fillStyle = p.color || '#a0a0b0';
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.fillStyle = '#fff';
-                        ctx.font = `${radius * 0.5}px system-ui, sans-serif`;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
-                    }
+                    img.src = imgSrc;
+                    img.onload = () => { imageCache[imgSrc] = img; };
+                    imageCache[imgSrc] = img; // placeholder to avoid reloading
+                }
+                const img = imageCache[imgSrc];
+                if (img && img.complete && img.naturalWidth > 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(img, p.x - (radius - 3), p.y - (radius - 3), (radius - 3) * 2, (radius - 3) * 2);
+                    ctx.restore();
                 } else {
-                    // No PFP: colored circle with initial
+                    // Fallback: colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
@@ -1489,7 +1586,7 @@
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                 }
 
-                // ── Bet amount below ──
+                // Bet amount
                 if (isAlive) {
                     ctx.shadowBlur = 0;
                     ctx.fillStyle = '#ddd';
@@ -1523,6 +1620,36 @@
             profileUsername.textContent = '@' + state.username;
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
+            renderInventory();
+        }
+
+        function renderInventory() {
+            if (!inventoryGrid) return;
+            inventoryGrid.innerHTML = '';
+            state.inventory.forEach(nftId => {
+                const nft = NFT_DB[nftId];
+                if (!nft) return;
+                const div = document.createElement('div');
+                div.className = 'inventory-item';
+                if (state.selectedNftId === nftId) div.classList.add('selected');
+                div.innerHTML = `
+                    <img src="${nft.image}" alt="${nft.name}" />
+                    <div class="name">${nft.name}</div>
+                `;
+                div.addEventListener('click', () => {
+                    state.selectedNftId = nftId;
+                    // Update user's PFP if they are in the game
+                    const user = state.players.find(p => p.id === state.userId);
+                    if (user) {
+                        user.pfp = NFT_DB[state.selectedNftId].image;
+                    }
+                    renderInventory();
+                    updateProfile();
+                    updateBetUI();
+                    haptic('light');
+                });
+                inventoryGrid.appendChild(div);
+            });
         }
 
         function updateStatsBar() {
@@ -1787,7 +1914,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – fixed SDF hitbox, PFP circles, animated diamond glow');
+        console.log('◆ dllump – fixed physics, NFT PFPs, stable collisions');
     </script>
 </body>
 </html>
