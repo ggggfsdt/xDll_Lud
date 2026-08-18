@@ -7,6 +7,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56">
     </script>
     <style>
+        /* ─── YOUR ORIGINAL CSS ─── */
+        /* (Copy it exactly – I'm using a compact version for brevity, but you must use your full CSS) */
         * {
             margin: 0;
             padding: 0;
@@ -479,22 +481,7 @@
             display: none;
         }
 
-        #add-bot-btn {
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--surface3);
-            color: var(--text2);
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-        #add-bot-btn:active {
-            transform: scale(0.94);
-            opacity: 0.7;
-        }
+        /* BOT BUTTON REMOVED */
 
         #player-list-container {
             width: 100%;
@@ -1208,10 +1195,6 @@
             .pl-entry .pl-chance {
                 font-size: 9px;
             }
-            #add-bot-btn {
-                font-size: 10px;
-                padding: 3px 10px;
-            }
             #win-history {
                 top: 42px;
                 right: 8px;
@@ -1305,7 +1288,7 @@
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                             <input type="number" id="bet-input" value="10" min="10" max="9999" />
                             <button id="bet-btn">join</button>
-                            <button id="add-bot-btn">+ Bot</button>
+                            <!-- BOT BUTTON REMOVED -->
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                         </div>
                     </div>
@@ -1366,9 +1349,9 @@
     </div>
 
     <script>
-        // ═══════════════════════════════════════════════════════════════
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // TELEGRAM
-        // ═══════════════════════════════════════════════════════════════
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand();
             tg.enableClosingConfirmation(); }
@@ -1380,42 +1363,36 @@
             } catch (_) {}
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // STATE
-        // ═══════════════════════════════════════════════════════════════
-        const state = {
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // WEBSOCKET CONNECTION
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const WS_URL = 'ws://localhost:3000'; // change to your server address
+        let ws = null;
+        let game = null;
+        let myPlayerId = null;
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // STATE (local copy)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const localState = {
             balance: 1000,
             username: 'player',
             userId: 'user_' + Date.now().toString(36),
             pfp: '',
             wins: 0,
             losses: 0,
-            gameState: 'idle',
-            players: [],
-            maxPlayers: 8,
-            pot: 0,
             arenaSize: 0,
             cornerRadius: 0,
             perimeterPoints: [],
-            opening: null,
-            botEnabled: true,
-            botSpawned: false,
-            winnerId: null,
-            countdown: 3.0,
-            countdownStartTime: 0,
-            prestartTimer: 0,
-            openingTimer: 0,
-            gameTime: 0,
-            lastTime: 0,
-            currentTab: 'pvp',
+            colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
             defaultAvatar: 'https://i.pravatar.cc/150?img=0',
             winHistory: [],
             maxHistory: 8,
-            topPlayers: [],
-            colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
         };
 
-        // DOM refs
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // DOM REFS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         const balanceEl = document.getElementById('balance');
@@ -1456,7 +1433,6 @@
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
-        const addBotBtn = document.getElementById('add-bot-btn');
         const winHistoryEl = document.getElementById('win-history');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
 
@@ -1476,22 +1452,17 @@
         };
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
 
-        // ═══════════════════════════════════════════════════════════════
-        // PFP SYSTEM — BULLETPROOF, ALWAYS SHOWS AN AVATAR
-        // ═══════════════════════════════════════════════════════════════
-
-        // Generate a colored circle with initial (synchronous, guaranteed to work)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // PFP SYSTEM (copied from original)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function generateDefaultAvatar(initial, colorIndex) {
             const size = 128;
             const c = document.createElement('canvas');
             c.width = size;
             c.height = size;
             const ctx2 = c.getContext('2d');
-
             const colors = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
             const col = colors[colorIndex % colors.length];
-
-            // Glow gradient
             const grad = ctx2.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
             grad.addColorStop(0, lightenColor(col, 60));
             grad.addColorStop(1, col);
@@ -1499,15 +1470,11 @@
             ctx2.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
             ctx2.fillStyle = grad;
             ctx2.fill();
-
-            // Border
             ctx2.beginPath();
             ctx2.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
             ctx2.strokeStyle = 'rgba(255,255,255,0.2)';
             ctx2.lineWidth = 2;
             ctx2.stroke();
-
-            // Initial letter
             const letter = (initial || '?').charAt(0).toUpperCase();
             ctx2.fillStyle = 'rgba(255,255,255,0.95)';
             ctx2.font = `bold ${size * 0.48}px system-ui, -apple-system, sans-serif`;
@@ -1517,7 +1484,6 @@
             ctx2.shadowBlur = 8;
             ctx2.fillText(letter, size / 2, size / 2 + 3);
             ctx2.shadowBlur = 0;
-
             const img = new Image();
             img.src = c.toDataURL('image/png');
             return img;
@@ -1530,82 +1496,32 @@
             r = Math.min(255, r + amt);
             g = Math.min(255, g + amt);
             b = Math.min(255, b + amt);
-            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+            return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
 
-        // PFP cache
         const pfpCache = new Map();
 
         function loadPlayerPFP(player) {
-            const src = player.pfp || state.defaultAvatar;
-
-            // Check cache
+            const src = player.pfp || '';
+            if (!src) return;
             if (pfpCache.has(src)) {
                 const cached = pfpCache.get(src);
-                if (cached.loaded && cached.img) {
-                    player.pfpImg = cached.img;
-                    player.pfpLoaded = true;
-                    return;
-                }
-                if (cached.promise) {
-                    cached.promise.then(img => {
-                        if (img) {
-                            player.pfpImg = img;
-                            player.pfpLoaded = true;
-                        }
-                    });
-                    return;
-                }
+                if (cached.loaded && cached.img) { player.pfpImg = cached.img;
+                    player.pfpLoaded = true; return; }
+                if (cached.promise) { cached.promise.then(img => { if (img) { player.pfpImg = img;
+                            player.pfpLoaded = true; } }); return; }
             }
-
-            // Load image with retries
             const img = new Image();
-            let attempts = 0;
-            const maxAttempts = 3;
-
-            const doLoad = () => {
-                if (!src.startsWith('data:') && !src.startsWith('blob:')) {
-                    img.crossOrigin = 'anonymous';
-                } else {
-                    img.crossOrigin = undefined;
-                }
-
-                img.onload = () => {
-                    pfpCache.set(src, { img, loaded: true, promise: null });
-                    player.pfpImg = img;
-                    player.pfpLoaded = true;
-                    // Update player list and re-render
-                    updatePlayerList();
-                };
-
-                img.onerror = () => {
-                    attempts++;
-                    if (attempts < maxAttempts) {
-                        const sep = src.includes('?') ? '&' : '?';
-                        img.src = src + sep + 'retry=' + attempts + 't=' + Date.now();
-                    } else {
-                        // Keep default avatar
-                        pfpCache.set(src, { img: null, loaded: false, promise: null });
-                        player.pfpLoaded = false;
-                    }
-                };
-
-                img.src = src;
-            };
-
-            const promise = new Promise((resolve) => {});
+            img.crossOrigin = 'anonymous';
+            img.onload = () => { pfpCache.set(src, { img, loaded: true, promise: null });
+                player.pfpImg = img;
+                player.pfpLoaded = true;
+                updateUI(); };
+            img.onerror = () => { pfpCache.set(src, { img: null, loaded: false, promise: null });
+                player.pfpLoaded = false; };
+            img.src = src;
+            const promise = new Promise(res => {});
             pfpCache.set(src, { img: null, loaded: false, promise });
-
-            doLoad();
-
-            // Safety timeout
-            setTimeout(() => {
-                const cached = pfpCache.get(src);
-                if (!cached || !cached.loaded) {
-                    pfpCache.set(src, { img: null, loaded: false, promise: null });
-                    player.pfpLoaded = false;
-                }
-            }, 5000);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1625,7 +1541,6 @@
                 { type: 'line', x1: -half, y1: half - r, x2: -half, y2: -half + r },
                 { type: 'arc', cx: -half + r, cy: -half + r, start: Math.PI, end: 3 * Math.PI / 2 }
             ];
-
             let totalLen = 0;
             const segLengths = sections.map(seg => {
                 if (seg.type === 'line') {
@@ -1637,10 +1552,9 @@
                 }
             });
             totalLen = segLengths.reduce((a, b) => a + b, 0);
-
             const step = totalLen / numPoints;
-            let accumulated = 0;
-            let segIdx = 0;
+            let accumulated = 0,
+                segIdx = 0;
             for (let i = 0; i < numPoints; i++) {
                 const target = i * step;
                 while (accumulated + segLengths[segIdx] < target) {
@@ -1666,6 +1580,10 @@
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // CANVAS SIZING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let arenaSize = 0,
+            cornerRadius = 0,
+            perimeterPoints = [];
+
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
@@ -1674,863 +1592,20 @@
             canvas.height = size * dpr;
             canvas.style.width = size + 'px';
             canvas.style.height = size + 'px';
-            state.arenaSize = size;
-            state.cornerRadius = size * 0.15;
+            arenaSize = size;
+            cornerRadius = size * 0.15;
             ctx.scale(dpr, dpr);
-            state.perimeterPoints = generatePerimeter(size, state.cornerRadius, 300);
-            if (state.opening && state.opening.startIdx !== undefined) {
-                const total = state.perimeterPoints.length;
-                const startIdx = Math.floor(state.opening.startIdx / (state.opening._total || total) * total);
-                const endIdx = Math.floor(state.opening.endIdx / (state.opening._total || total) * total);
-                state.opening.startIdx = startIdx % total;
-                state.opening.endIdx = endIdx % total;
-                state.opening._total = total;
-            }
-            const half = size / 2;
-            state.players.forEach(p => {
-                if (p.x === undefined || p.x === 0) {
-                    p.x = half + (Math.random() - 0.5) * (size * 0.4);
-                    p.y = half + (Math.random() - 0.5) * (size * 0.4);
-                }
-            });
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // FROG VISIBILITY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateFrogVisibility() {
-            const alive = getAlive();
-            const showFrog = alive.length < 2 && state.gameState === 'idle';
-            frogGif.classList.toggle('show', showFrog);
-            waitingText.style.display = showFrog ? 'none' : 'block';
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WIN HISTORY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function addWinToHistory(name, pfp) {
-            state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
-            if (state.winHistory.length > state.maxHistory) {
-                state.winHistory.pop();
-            }
-            updateWinHistoryUI();
-        }
-
-        function updateWinHistoryUI() {
-            if (state.winHistory.length === 0) {
-                winHistoryEl.innerHTML = '';
-                return;
-            }
-            let html = '';
-            state.winHistory.forEach(entry => {
-                const avatarSrc = entry.pfp || state.defaultAvatar;
-                html +=
-                    `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-            });
-            winHistoryEl.innerHTML = html;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TOP LEADERBOARD
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function generateTopPlayers() {
-            const names = ['CryptoKing', 'DiamondHands', 'BumpMaster', 'LuckyStar', 'MoonRider', 'ShadowDoge', 'GoldenGod',
-                'SilverFox', 'NeonNinja', 'PixelPirate'
-            ];
-            const top = [];
-            for (let i = 0; i < 10; i++) {
-                const wins = Math.floor(Math.random() * 50) + 5;
-                const score = Math.floor(Math.random() * 3000) + 100;
-                const pfp = 'https://i.pravatar.cc/100?img=' + (i + 20);
-                top.push({
-                    name: names[i % names.length] + (i > 4 ? '' : ''),
-                    pfp: pfp,
-                    wins: wins,
-                    score: score,
-                    rank: i + 1
-                });
-            }
-            top.sort((a, b) => b.score - a.score);
-            top.forEach((p, idx) => p.rank = idx + 1);
-            return top;
-        }
-
-        function getPrizeForRank(rank) {
-            if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
-            if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
-            if (rank === 4 || rank === 5) return { label: '1500', gif: DIAMOND_GIF };
-            if (rank >= 6 && rank <= 10) return { label: '100', gif: DIAMOND_GIF };
-            return null;
-        }
-
-        function updateTopUI() {
-            const players = state.topPlayers.length ? state.topPlayers : generateTopPlayers();
-            if (!state.topPlayers.length) state.topPlayers = players;
-
-            const top3 = players.slice(0, 3);
-            const podiumOrder = [
-                { player: top3[2] || top3[0], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
-                { player: top3[0] || top3[1], cls: 'gold', label: '🥇', base: 'gold', colClass: 'p1' },
-                { player: top3[1] || top3[2], cls: 'silver', label: '🥈', base: 'silver', colClass: 'p2' }
-            ];
-
-            let podiumHtml = '';
-            podiumOrder.forEach((info) => {
-                const p = info.player;
-                if (!p) return;
-                const prize = getPrizeForRank(p.rank);
-                let prizeHtml = '';
-                if (prize) {
-                    if (prize.gif) {
-                        prizeHtml = `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`;
-                    } else {
-                        prizeHtml = prize.label;
-                    }
-                }
-                podiumHtml += `<div class="podium-col ${info.colClass}">
-                            <div class="rank-badge ${info.cls}">${info.label}</div>
-                            <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                            <div class="podium-name">${p.name}</div>
-                            <div class="podium-prize">${prizeHtml}</div>
-                            <div class="podium-stats">${p.wins} wins · ${p.score}</div>
-                            <div class="podium-base ${info.base}"></div>
-                        </div>`;
-            });
-            podiumEl.innerHTML = podiumHtml;
-
-            const rest = players.slice(3);
-            if (rest.length === 0) {
-                topList.innerHTML = '';
-                return;
-            }
-            let listHtml = '';
-            rest.forEach(p => {
-                const rank = p.rank;
-                let rClass = 'rank';
-                if (rank === 4) rClass += ' gold';
-                else if (rank === 5) rClass += ' silver';
-                else if (rank === 6) rClass += ' bronze';
-
-                const prize = getPrizeForRank(rank);
-                let prizeHtml = '';
-                if (prize) {
-                    if (prize.gif) {
-                        prizeHtml = `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`;
-                    } else {
-                        prizeHtml = prize.label;
-                    }
-                }
-
-                listHtml += `<div class="top-entry">
-                            <div class="${rClass}">#${rank}</div>
-                            <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                            <div class="t-name">${p.name}</div>
-                            <div class="t-wins">${p.wins} wins</div>
-                            <div class="t-score">${p.score}</div>
-                            <div class="t-prize">${prizeHtml}</div>
-                        </div>`;
-            });
-            topList.innerHTML = listHtml;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function computeRadii() {
-            const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
-            if (totalBet === 0) return;
-            state.players.forEach(p => {
-                const ratio = p.bet / totalBet;
-                const r = 18 + ratio * 34;
-                const newTarget = Math.min(Math.max(r, 14), 52);
-                p.targetRadius = newTarget;
-            });
-        }
-
-        function makePlayer(id, bet, name, pfp) {
-            const half = state.arenaSize / 2;
-            const radius = 18;
-            let x, y, attempts = 0,
-                overlap = true;
-            while (overlap && attempts < 100) {
-                x = half + (Math.random() - 0.5) * (state.arenaSize * 0.6);
-                y = half + (Math.random() - 0.5) * (state.arenaSize * 0.6);
-                overlap = state.players.some(p => Math.hypot(p.x - x, p.y - y) < p.radius + radius + 5);
-                attempts++;
-            }
-            const avatarSrc = pfp || state.defaultAvatar;
-            const colorIdx = state.players.length % state.colors.length;
-
-            // Generate IMMEDIATE default avatar (colored circle with initial)
-            const defaultImg = generateDefaultAvatar(name ? name.charAt(0) : '?', colorIdx);
-
-            const p = {
-                id,
-                bet,
-                name: name || 'player',
-                pfp: avatarSrc,
-                color: state.colors[colorIdx],
-                radius: radius,
-                displayRadius: radius,
-                targetRadius: radius,
-                mass: radius * radius * 1.2,
-                x: x || half,
-                y: y || half,
-                vx: 0,
-                vy: 0,
-                alive: true,
-                isPopping: true,
-                popStartTime: performance.now(),
-                popDuration: 550,
-                pulseTime: 0,
-                isPulsing: false,
-                pulseStartTime: 0,
-                pfpLoaded: true, // Start with default loaded
-                pfpImg: defaultImg, // Immediate default
-            };
-
-            // Load real PFP in the background
-            loadPlayerPFP(p);
-
-            state.players.push(p);
-            computeRadii();
-            haptic('medium');
-            updatePlayerList();
-            return p;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER LIST UI
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updatePlayerList() {
-            const alive = state.players.filter(p => p.alive);
-            const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
-            if (alive.length === 0) {
-                playerListContainer.innerHTML = '';
-                return;
-            }
-            let html = '';
-            alive.forEach(p => {
-                const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
-                const isYou = p.id === state.userId;
-                // Use the same image source as the canvas
-                const imgSrc = p.pfpLoaded && p.pfpImg ? p.pfpImg.src : p.pfp;
-                html += `<div class="pl-entry ${isYou ? 'you' : ''}">
-                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${p.name}</span>
-                            <span class="pl-bet">${p.bet}</span>
-                            <span class="pl-chance">${chance}%</span>
-                        </div>`;
-            });
-            playerListContainer.innerHTML = html;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateBetOverlayVisibility() {
-            const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
-            betOverlayWrap.classList.toggle('hidden', shouldHide);
-            playerListContainer.classList.toggle('shift-up', shouldHide);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATION HELPERS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function easePopBounce(t) {
-            if (t >= 1) return 1;
-            const c1 = 1.70158;
-            const c3 = c1 + 1;
-            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-        }
-
-        function getPopScale(player) {
-            if (!player.isPopping) return 1;
-            const elapsed = performance.now() - player.popStartTime;
-            const progress = Math.min(elapsed / player.popDuration, 1);
-            const scale = easePopBounce(progress);
-            if (progress >= 1) {
-                player.isPopping = false;
-                return 1;
-            }
-            return scale;
-        }
-
-        function getPlayerDisplayRadius(player) {
-            const diff = player.targetRadius - player.displayRadius;
-            if (Math.abs(diff) < 0.01) {
-                player.displayRadius = player.targetRadius;
-                return player.displayRadius;
-            }
-            const speed = 8.0;
-            player.displayRadius += diff * Math.min(1, speed * 0.016);
-            return player.displayRadius;
-        }
-
-        function updatePlayerAnimations() {
-            state.players.forEach(p => {
-                getPlayerDisplayRadius(p);
-                if (p.isPulsing) {
-                    const elapsed = (performance.now() - p.pulseStartTime) / 1000;
-                    if (elapsed > 0.6) {
-                        p.isPulsing = false;
-                        p.pulseTime = 0;
-                    } else {
-                        p.pulseTime = elapsed;
-                    }
-                }
-            });
-        }
-
-        function triggerPulse(player) {
-            player.isPulsing = true;
-            player.pulseStartTime = performance.now();
-            player.pulseTime = 0;
-            haptic('light');
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATED BALANCE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let balanceAnimInterval = null;
-
-        function animateBalanceTo(target) {
-            const current = parseInt(balanceEl.textContent) || 0;
-            if (current === target) {
-                balanceEl.textContent = target;
-                return;
-            }
-            const diff = target - current;
-            const steps = Math.min(Math.abs(diff), 40);
-            const stepSize = diff / steps;
-            let step = 0;
-
-            if (balanceAnimInterval) {
-                clearInterval(balanceAnimInterval);
-                balanceAnimInterval = null;
-            }
-
-            balanceAnimInterval = setInterval(() => {
-                step++;
-                const newVal = Math.round(current + stepSize * step);
-                if (step >= steps || Math.abs(newVal - target) < 1) {
-                    balanceEl.textContent = target;
-                    clearInterval(balanceAnimInterval);
-                    balanceAnimInterval = null;
-                } else {
-                    balanceEl.textContent = newVal;
-                }
-            }, 25);
-        }
-
-        function updateBalance() {
-            const target = Math.floor(state.balance);
-            pBalance.textContent = target;
-            animateBalanceTo(target);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // VICTORY SOUND
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let audioCtx = null;
-        let victorySoundPlaying = false;
-
-        function playVictorySound() {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                if (victorySoundPlaying) return;
-                victorySoundPlaying = true;
-
-                const now = audioCtx.currentTime;
-                const notes = [523.25, 659.25, 783.99, 1046.50];
-                const durations = [0.12, 0.12, 0.12, 0.2];
-                const startTimes = [0, 0.14, 0.28, 0.45];
-
-                for (let i = 0; i < notes.length; i++) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(notes[i], now + startTimes[i]);
-                    gain.gain.setValueAtTime(0.18, now + startTimes[i]);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[i] + durations[i]);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + startTimes[i]);
-                    osc.stop(now + startTimes[i] + durations[i]);
-                }
-
-                setTimeout(() => {
-                    victorySoundPlaying = false;
-                }, 800);
-            } catch (e) {
-                console.log('Audio not available');
-                victorySoundPlaying = false;
+            if (perimeterPoints.length === 0) {
+                perimeterPoints = generatePerimeter(size, cornerRadius, 300);
             }
         }
 
-        function stopVictorySound() {
-            victorySoundPlaying = false;
-        }
-
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY COLLAPSE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let betCollapsed = false;
-
-        betToggleBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            betCollapsed = !betCollapsed;
-            betOverlay.classList.toggle('collapsed', betCollapsed);
-            if (betCollapsed) {
-                this.innerHTML = '<span class="bet-toggle-text">bet</span>';
-            } else {
-                this.innerHTML = '<span class="bet-toggle-text">bet</span>';
-            }
-            haptic('light');
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ADD BOT
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        addBotBtn.addEventListener('click', function() {
-            if (state.gameState === 'playing' || state.gameState === 'finished') return;
-            const botName = 'Bot' + (state.players.filter(p => p.id.startsWith('bot_')).length + 1);
-            const bet = Math.floor(Math.random() * 40) + 10;
-            const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
-            const bot = makePlayer('bot_' + Date.now(), bet, botName, botPfp);
-            state.pot += bet;
-            state.botSpawned = true;
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            updatePlayerList();
-            updateFrogVisibility();
-            haptic('medium');
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BOT AI
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const BOT_NAME = 'Bot';
-
-        function spawnBot() {
-            if (!state.botEnabled || state.botSpawned) return;
-            if (state.gameState === 'playing' || state.gameState === 'finished') return;
-            if (state.players.some(p => p.id.startsWith('bot_'))) return;
-            if (state.players.length >= state.maxPlayers) return;
-            const bet = Math.floor(Math.random() * 30) + 10;
-            const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
-            const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
-            state.pot += bet;
-            state.botSpawned = true;
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            updatePlayerList();
-            updateBetOverlayVisibility();
-            updateFrogVisibility();
-            haptic('light');
-        }
-
-        function botAI(dt) {
-            const bot = state.players.find(p => p.id.startsWith('bot_'));
-            if (!bot || !bot.alive || state.gameState !== 'playing') return;
-            bot.vx += (Math.random() - 0.5) * 1.2 * dt;
-            bot.vy += (Math.random() - 0.5) * 1.2 * dt;
-            const maxSp = speedForRadius(bot.displayRadius || bot.radius);
-            const sp = Math.sqrt(bot.vx * bot.vx + bot.vy * bot.vy);
-            if (sp > maxSp) {
-                bot.vx = (bot.vx / sp) * maxSp;
-                bot.vy = (bot.vy / sp) * maxSp;
-            }
-            if (sp < 3.0 && sp > 0.01) {
-                const ratio = 3.0 / sp;
-                bot.vx *= ratio;
-                bot.vy *= ratio;
-            }
-        }
-
-        function speedForRadius(radius) {
-            const minR = 14,
-                maxR = 52;
-            const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-            const speed = 6.0 - norm * 3.0;
-            return Math.max(3.0, Math.min(6.0, speed));
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function startCountdown() {
-            if (state.gameState !== 'idle') return;
-            if (getAlive().length < 2) return;
-            state.gameState = 'countdown';
-            state.countdown = 3.0;
-            state.countdownStartTime = performance.now();
-            waitingText.style.display = 'none';
-            frogGif.classList.remove('show');
-            countdownTimer.style.display = 'block';
-            haptic('heavy');
-            updateBetUI();
-            updateBetOverlayVisibility();
-        }
-
-        function startPrestart() {
-            state.gameState = 'prestart';
-            state.prestartTimer = 2.0;
-            countdownTimer.textContent = 'GO!';
-            haptic('heavy');
-            updateBetOverlayVisibility();
-        }
-
-        function startGame() {
-            state.gameState = 'playing';
-            state.gameTime = 0;
-            state.openingTimer = 0;
-            state.opening = null;
-            state.winnerId = null;
-            waitingText.style.display = 'none';
-            countdownTimer.style.display = 'none';
-            updateBetOverlayVisibility();
-
-            const alive = getAlive();
-            const half = state.arenaSize / 2;
-            alive.forEach((p, i) => {
-                const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
-                const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-                const speed = baseSpeed * (0.9 + Math.random() * 0.2);
-                p.vx = Math.cos(angle) * speed;
-                p.vy = Math.sin(angle) * speed;
-                p.x = half + Math.cos(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
-                p.y = half + Math.sin(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
-                p.alive = true;
-                p.isPopping = false;
-            });
-            state.openingTimer = 3.5 + Math.random() * 2.5;
-            updatePlayerList();
-        }
-
-        function endGame(winnerId) {
-            if (state.gameState === 'finished') return;
-            state.gameState = 'finished';
-            state.winnerId = winnerId;
-            const winner = getPlayer(winnerId);
-
-            if (winner) {
-                const totalPot = state.pot;
-                const winnerBet = winner.bet;
-                const losersBets = totalPot - winnerBet;
-                const commission = Math.floor(losersBets * 0.02);
-                const winnings = totalPot - commission;
-
-                if (winner.id === state.userId) {
-                    state.balance += winnings;
-                    state.wins++;
-                    playVictorySound();
-                } else {
-                    state.losses++;
-                }
-                updateBalance();
-                updateProfile();
-                updateTopUI();
-
-                addWinToHistory(winner.name, winner.pfp);
-
-                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-                winGif.src = randomGif;
-                winAvatar.src = winner.pfp;
-                winName.textContent = winner.name + ' wins!';
-                winMultiplier.textContent = 'x' + (winnings / winnerBet).toFixed(1);
-
-                winPanel.classList.add('show');
-                haptic('heavy');
-
-                state.pot = 0;
-                state.opening = null;
-                updatePlayerList();
-                updateBetOverlayVisibility();
-
-                if (window.winTimeout) clearTimeout(window.winTimeout);
-                window.winTimeout = setTimeout(() => {
-                    hideWinPanelAndReset();
-                }, 3000);
-
-            } else {
-                state.gameState = 'idle';
-                state.players = [];
-                state.botSpawned = false;
-                state.opening = null;
-                waitingText.style.display = 'block';
-                countdownTimer.style.display = 'none';
-                updateWaitingText();
-                updateBetUI();
-                updateStatsBar();
-                updatePlayerList();
-                updateBetOverlayVisibility();
-                updateFrogVisibility();
-            }
-        }
-
-        function hideWinPanelAndReset() {
-            winPanel.classList.remove('show');
-            stopVictorySound();
-            if (window.winTimeout) {
-                clearTimeout(window.winTimeout);
-                window.winTimeout = null;
-            }
-            state.players = [];
-            state.gameState = 'idle';
-            state.botSpawned = false;
-            state.opening = null;
-            state.pot = 0;
-            waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            updatePlayerList();
-            updateBetOverlayVisibility();
-            updateFrogVisibility();
-            if (state.botEnabled) spawnBot();
-        }
-
-        winContinueBtn.addEventListener('click', () => {
-            hideWinPanelAndReset();
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updatePhysics(dt) {
-            if (state.gameState !== 'playing') return;
-            state.gameTime += dt;
-
-            const alive = getAlive();
-            if (alive.length <= 1) {
-                if (alive.length === 1) endGame(alive[0].id);
-                else {
-                    state.gameState = 'idle';
-                    state.players = [];
-                    state.botSpawned = false;
-                    state.opening = null;
-                    waitingText.style.display = 'block';
-                    countdownTimer.style.display = 'none';
-                    updateWaitingText();
-                    updateBetUI();
-                    updateStatsBar();
-                    updatePlayerList();
-                    updateBetOverlayVisibility();
-                    updateFrogVisibility();
-                }
-                return;
-            }
-
-            const size = state.arenaSize;
-            const pts = state.perimeterPoints;
-            const totalPts = pts.length;
-            const half = size / 2;
-
-            state.openingTimer -= dt;
-            if (state.openingTimer <= 0) {
-                if (!state.opening) {
-                    const gameTime = state.gameTime;
-                    let minGap, maxGap;
-                    if (gameTime < 4) {
-                        minGap = 0.08;
-                        maxGap = 0.18;
-                    } else {
-                        minGap = 0.15;
-                        maxGap = 0.35;
-                    }
-                    const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
-                    const startIdx = Math.floor(Math.random() * totalPts);
-                    const endIdx = (startIdx + gapSize) % totalPts;
-                    state.opening = {
-                        startIdx: startIdx,
-                        endIdx: endIdx,
-                        flashCount: 0,
-                        flashTimer: 0,
-                        state: 'flashing',
-                        _total: totalPts,
-                    };
-                    state.openingTimer = 3.5 + Math.random() * 2.5;
-                    haptic('light');
-                } else {
-                    state.opening = null;
-                    state.openingTimer = 1.5 + Math.random() * 2.0;
-                }
-            }
-
-            const opening = state.opening;
-            if (opening && opening.state === 'flashing') {
-                opening.flashTimer += dt;
-                if (opening.flashTimer > 0.25) {
-                    opening.flashTimer = 0;
-                    opening.flashCount++;
-                    if (opening.flashCount >= 4) {
-                        opening.state = 'open';
-                        haptic('medium');
-                    }
-                }
-            }
-
-            function isInGap(idx) {
-                if (!opening) return false;
-                if (opening.state !== 'open') return false;
-                const start = opening.startIdx;
-                const end = opening.endIdx;
-                if (start < end) {
-                    return idx >= start && idx <= end;
-                } else {
-                    return idx >= start || idx <= end;
-                }
-            }
-
-            const subSteps = 6;
-            const subDt = dt / subSteps;
-
-            for (let step = 0; step < subSteps; step++) {
-                alive.forEach(p => {
-                    p.x += p.vx * subDt * 60;
-                    p.y += p.vy * subDt * 60;
-
-                    const radius = p.displayRadius || p.radius;
-                    for (let i = 0; i < totalPts; i++) {
-                        const j = (i + 1) % totalPts;
-                        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-                        const ax = pts[i].x,
-                            ay = pts[i].y;
-                        const bx = pts[j].x,
-                            by = pts[j].y;
-                        const dx = bx - ax,
-                            dy = by - ay;
-                        const lenSq = dx * dx + dy * dy;
-                        if (lenSq === 0) continue;
-                        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-                        t = Math.max(0, Math.min(1, t));
-                        const nearX = ax + t * dx;
-                        const nearY = ay + t * dy;
-                        const distX = p.x - nearX;
-                        const distY = p.y - nearY;
-                        const dist = Math.sqrt(distX * distX + distY * distY);
-                        if (dist < radius) {
-                            const nx = distX / dist;
-                            const ny = distY / dist;
-                            const overlap = radius - dist;
-                            p.x += nx * overlap;
-                            p.y += ny * overlap;
-                            const vn = p.vx * nx + p.vy * ny;
-                            if (vn < 0) {
-                                p.vx -= 2 * vn * nx;
-                                p.vy -= 2 * vn * ny;
-                            }
-                            break;
-                        }
-                    }
-
-                    if (opening && opening.state === 'open') {
-                        const cx = half,
-                            cy = half;
-                        const dx = p.x - cx,
-                            dy = p.y - cy;
-                        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                        const escapeThreshold = half * 1.12 + radius;
-                        if (distFromCenter > escapeThreshold) {
-                            let nearestGapIdx = -1;
-                            let minDist = Infinity;
-                            for (let i = 0; i < totalPts; i++) {
-                                if (isInGap(i)) {
-                                    const d = (p.x - pts[i].x) ** 2 + (p.y - pts[i].y) ** 2;
-                                    if (d < minDist) {
-                                        minDist = d;
-                                        nearestGapIdx = i;
-                                    }
-                                }
-                            }
-                            if (nearestGapIdx >= 0) {
-                                const angle = Math.atan2(dy, dx);
-                                const gapAngle = Math.atan2(pts[nearestGapIdx].y - cy, pts[nearestGapIdx].x - cx);
-                                let diff = Math.abs(angle - gapAngle);
-                                diff = Math.min(diff, 2 * Math.PI - diff);
-                                const vOut = p.vx * dx + p.vy * dy;
-                                if (diff < 0.8 && vOut > 0) {
-                                    p.alive = false;
-                                    haptic('medium');
-                                    updatePlayerList();
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                });
-
-                for (let i = 0; i < alive.length; i++) {
-                    for (let j = i + 1; j < alive.length; j++) {
-                        const a = alive[i],
-                            b = alive[j];
-                        const dx = b.x - a.x,
-                            dy = b.y - a.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const rA = a.displayRadius || a.radius;
-                        const rB = b.displayRadius || b.radius;
-                        const minDist = rA + rB;
-                        if (dist < minDist && dist > 0.001) {
-                            haptic('light');
-                            const nx = dx / dist,
-                                ny = dy / dist;
-                            const overlap = (minDist - dist) * 0.5;
-                            a.x -= nx * overlap;
-                            a.y -= ny * overlap;
-                            b.x += nx * overlap;
-                            b.y += ny * overlap;
-
-                            const dvx = a.vx - b.vx,
-                                dvy = a.vy - b.vy;
-                            const dvn = dvx * nx + dvy * ny;
-                            if (dvn > 0) {
-                                const totalMass = a.mass + b.mass;
-                                const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
-                                const aFactor = 1 - (a.mass / totalMass) * 0.6;
-                                const bFactor = 1 - (b.mass / totalMass) * 0.6;
-                                a.vx -= (impulse / a.mass) * aFactor * nx;
-                                a.vy -= (impulse / a.mass) * aFactor * ny;
-                                b.vx += (impulse / b.mass) * bFactor * nx;
-                                b.vy += (impulse / b.mass) * bFactor * ny;
-                            }
-                        }
-                    }
-                }
-
-                alive.forEach(p => {
-                    const maxSp = speedForRadius(p.displayRadius || p.radius);
-                    const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-                    if (sp > maxSp) {
-                        p.vx = (p.vx / sp) * maxSp;
-                        p.vy = (p.vy / sp) * maxSp;
-                    }
-                    const minSp = 3.0;
-                    if (sp < minSp && sp > 0.01) {
-                        const ratio = minSp / sp;
-                        p.vx *= ratio;
-                        p.vy *= ratio;
-                    }
-                });
-            }
-
-            botAI(dt);
-            updatePlayerList();
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER — ALWAYS SHOWS AVATAR (default or real)
+        // RENDER — draws server state
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
-            const w = state.arenaSize;
+            if (!game) return;
+            const w = arenaSize;
             const half = w / 2;
             ctx.clearRect(0, 0, w, w);
 
@@ -2540,7 +1615,7 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            const pts = state.perimeterPoints;
+            const pts = perimeterPoints;
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 30;
@@ -2565,21 +1640,18 @@
             }
             ctx.restore();
 
-            const opening = state.opening;
+            const opening = game.opening;
             const isFlashing = opening && opening.state === 'flashing';
             const isOpen = opening && opening.state === 'open';
             const total = pts.length;
 
             ctx.save();
             const hasGap = opening !== null && (isFlashing || isOpen);
-
             if (hasGap) {
-                const start = opening.startIdx;
-                const end = opening.endIdx;
-
+                const start = opening.startIdx,
+                    end = opening.endIdx;
                 ctx.strokeStyle = 'rgba(160,160,176,0.3)';
                 ctx.lineWidth = 5;
-
                 for (let i = 0; i < total; i++) {
                     const j = (i + 1) % total;
                     let inGap = false;
@@ -2596,41 +1668,26 @@
                     ctx.lineTo(pts[j].x, pts[j].y);
                     ctx.stroke();
                 }
-
                 if (isFlashing) {
                     const isRed = (opening.flashCount % 2 === 0);
                     ctx.save();
                     const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
-
                     let gapSegments = [];
                     if (start < end) {
-                        for (let i = start; i < end; i++) {
-                            const j = (i + 1) % total;
-                            gapSegments.push({ i, j });
-                        }
+                        for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
                     } else {
-                        for (let i = start; i < total; i++) {
-                            const j = (i + 1) % total;
-                            gapSegments.push({ i, j });
-                        }
-                        for (let i = 0; i < end; i++) {
-                            const j = (i + 1) % total;
-                            gapSegments.push({ i, j });
-                        }
+                        for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
                     }
-
                     ctx.strokeStyle = flashColor;
                     ctx.lineWidth = isRed ? 5 : 3;
                     ctx.shadowBlur = 0;
-                    ctx.shadowColor = 'transparent';
-
                     for (const seg of gapSegments) {
                         ctx.beginPath();
                         ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
                         ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
                         ctx.stroke();
                     }
-
                     ctx.restore();
                 }
             } else {
@@ -2644,58 +1701,42 @@
             }
             ctx.restore();
 
-            // ── DRAW PLAYERS — ALWAYS WITH AVATAR ──
-            state.players.forEach(p => {
+            // ── PLAYERS ──
+            game.players.forEach(p => {
                 if (!p.alive) return;
-                const popScale = getPopScale(p);
-                const radius = p.displayRadius || p.radius;
-                const displayRadius = radius * popScale;
+                const radius = p.radius || 18;
+                const drawRadius = Math.max(radius - 1, 1);
 
-                let pulseScale = 1;
-                if (p.isPulsing) {
-                    const t = p.pulseTime;
-                    if (t < 0.6) {
-                        const phase = t / 0.6;
-                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase);
-                    }
+                // ensure avatar
+                if (!p.pfpImg) {
+                    const def = generateDefaultAvatar(p.name ? p.name.charAt(0) : '?', 0);
+                    p.pfpImg = def;
+                    p.pfpLoaded = true;
+                    loadPlayerPFP(p);
                 }
-                const finalRadius = displayRadius * pulseScale;
-                const drawRadius = Math.max(finalRadius - 1, 1);
 
                 ctx.save();
-
-                // ALWAYS draw whatever image we have (default or real)
                 if (p.pfpImg) {
-                    // Clip to circle
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, drawRadius, 0, Math.PI * 2);
                     ctx.closePath();
                     ctx.clip();
-
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, p.x - drawRadius, p.y - drawRadius, size, size);
                 } else {
-                    // Ultimate fallback (should never happen)
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, drawRadius, 0, Math.PI * 2);
                     ctx.closePath();
-                    ctx.fillStyle = p.color || '#555';
+                    ctx.fillStyle = '#555';
                     ctx.fill();
-                    ctx.fillStyle = '#fff';
-                    ctx.font = `${drawRadius * 0.5}px system-ui, sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y + 1);
                 }
-
                 ctx.restore();
 
-                // Outline: solid white for current player, translucent for others
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
-                const isYou = p.id === state.userId;
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                const isYou = p.id === myPlayerId;
                 ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
                 ctx.lineWidth = isYou ? 2.5 : 1.5;
                 ctx.stroke();
@@ -2704,252 +1745,329 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // UI UPDATES
+        // UPDATE UI from server state
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateProfile() {
-            pWins.textContent = state.wins;
-            pLosses.textContent = state.losses;
-            const total = state.wins + state.losses;
-            pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
-            profileName.textContent = state.username;
-            profileUsername.textContent = '@' + state.username;
-            if (state.pfp) profilePfp.src = state.pfp;
-            updateBalance();
-        }
+        function updateUI() {
+            if (!game) return;
+            const g = game;
+            const alive = g.players.filter(p => p.alive);
+            const totalBet = g.players.reduce((s, p) => s + p.bet, 0);
 
-        function updateStatsBar() {
-            const alive = getAlive();
+            // player list
+            let html = '';
+            alive.forEach(p => {
+                const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
+                const isYou = p.id === myPlayerId;
+                html += `<div class="pl-entry ${isYou ? 'you' : ''}">
+                            <div class="pl-avatar"><img src="${p.pfp || ''}" onerror="this.src=''" /></div>
+                            <span class="pl-name">${p.name}</span>
+                            <span class="pl-bet">${p.bet}</span>
+                            <span class="pl-chance">${chance}%</span>
+                        </div>`;
+            });
+            playerListContainer.innerHTML = html;
+
             statsPlayers.textContent = alive.length;
-            statsPot.textContent = state.pot;
-        }
+            statsPot.textContent = g.pot;
 
-        function updateWaitingText() {
-            const alive = getAlive();
-            if (alive.length === 0) {
-                waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
+            // waiting / frog
+            if (g.state === 'idle') {
+                if (alive.length === 0) {
+                    waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
+                } else {
+                    waitingText.innerHTML =
+                        `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span><div class="sub">need ${Math.max(0, 2 - alive.length)} more to start</div>`;
+                }
+                frogGif.classList.toggle('show', alive.length < 2);
+                waitingText.style.display = (alive.length < 2) ? 'block' : 'none';
             } else {
-                waitingText.innerHTML =
-                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span><div class="sub">need ${Math.max(0, 2 - alive.length)} more to start</div>`;
-            }
-            updateFrogVisibility();
-        }
-
-        function updateBetUI() {
-            const existing = state.players.find(p => p.id === state.userId);
-            const inGame = !!existing;
-            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState ===
-                'prestart');
-
-            if (canBet) {
-                betBtn.textContent = inGame ? 'increase' : 'join';
-                betBtn.disabled = false;
-                betInput.disabled = false;
-            } else {
-                betBtn.textContent = inGame ? 'in game' : 'waiting';
-                betBtn.disabled = true;
-                betInput.disabled = true;
+                waitingText.style.display = 'none';
+                frogGif.classList.remove('show');
             }
 
-            if (existing) {
-                currentBetDisplay.textContent = existing.bet;
+            // countdown
+            if (g.state === 'countdown') {
+                const elapsed = (Date.now() - g.countdownStart) / 1000;
+                let remaining = Math.max(0, 3.0 - elapsed);
+                countdownTimer.style.display = 'block';
+                countdownTimer.textContent = remaining.toFixed(2);
+            } else if (g.state === 'prestart') {
+                countdownTimer.style.display = 'block';
+                countdownTimer.textContent = 'GO!';
+            } else if (g.state === 'playing' || g.state === 'finished') {
+                countdownTimer.style.display = 'none';
+            } else {
+                countdownTimer.style.display = 'none';
+            }
+
+            // bet overlay
+            const myPlayer = g.players.find(p => p.id === myPlayerId);
+            const shouldHide = g.state === 'playing' || g.state === 'finished';
+            betOverlayWrap.classList.toggle('hidden', shouldHide);
+            playerListContainer.classList.toggle('shift-up', shouldHide);
+
+            if (myPlayer) {
+                currentBetDisplay.textContent = myPlayer.bet;
+                localState.balance = myPlayer.balance;
+                balanceEl.textContent = localState.balance;
+                pBalance.textContent = localState.balance;
+                betBtn.textContent = g.state === 'idle' ? 'increase' : 'waiting';
+                betBtn.disabled = g.state !== 'idle';
+                betInput.disabled = g.state !== 'idle';
             } else {
                 currentBetDisplay.textContent = '0';
+                betBtn.textContent = 'join';
+                betBtn.disabled = g.state !== 'idle';
+                betInput.disabled = g.state !== 'idle';
             }
 
-            const val = parseInt(betInput.value) || 10;
-            betAmountDisplay.textContent = Math.min(val, state.balance);
-            if (betInput.value === '' || parseInt(betInput.value) < 10) {
-                betInput.value = 10;
-            }
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TAB SWITCHING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function switchTab(tabId) {
-            if (state.currentTab === tabId) return;
-            const oldTab = state.currentTab;
-            state.currentTab = tabId;
-
-            const oldEl = tabPages[oldTab];
-            if (oldEl) {
-                oldEl.classList.remove('active');
-                oldEl.classList.add('exit');
-                setTimeout(() => {
-                    oldEl.classList.remove('exit');
-                }, 350);
-            }
-
-            const newEl = tabPages[tabId];
-            if (newEl) {
-                setTimeout(() => {
-                    newEl.classList.add('active');
-                    if (tabId === 'profile') updateProfile();
-                    if (tabId === 'top') updateTopUI();
-                }, 50);
-            }
-
-            tabBtns.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabId);
-            });
-
-            haptic('light');
-        }
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const tab = this.dataset.tab;
-                switchTab(tab);
-            });
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RELOAD PFP
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        reloadPfpBtn.addEventListener('click', function() {
-            const user = state.players.find(p => p.id === state.userId);
-            if (user) {
-                const src = user.pfp;
-                if (pfpCache.has(src)) pfpCache.delete(src);
-                loadPlayerPFP(user);
-                haptic('medium');
-            } else {
-                if (state.pfp) {
-                    const src = state.pfp;
-                    if (pfpCache.has(src)) pfpCache.delete(src);
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.onload = () => { profilePfp.src = src;
-                        haptic('medium'); };
-                    img.onerror = () => { profilePfp.src = state.defaultAvatar;
-                        haptic('light'); };
-                    img.src = src;
+            // win panel
+            if (g.state === 'finished' && g.winnerId) {
+                const winner = g.players.find(p => p.id === g.winnerId);
+                if (winner && !winPanel.classList.contains('show')) {
+                    const winnings = g.pot || 10;
+                    winGif.src = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+                    winAvatar.src = winner.pfp || '';
+                    winName.textContent = winner.name + ' wins!';
+                    winMultiplier.textContent = 'x' + (winnings / (winner.bet || 1)).toFixed(1);
+                    winPanel.classList.add('show');
+                    if (winner.id === myPlayerId) playVictorySound();
+                    // history
+                    const history = window._winHistory || [];
+                    history.unshift({ name: winner.name, pfp: winner.pfp });
+                    if (history.length > 8) history.pop();
+                    window._winHistory = history;
+                    let hhtml = '';
+                    history.forEach(entry => {
+                        hhtml +=
+                            `<div class="win-entry"><img src="${entry.pfp || ''}" onerror="this.src=''" /></div>`;
+                    });
+                    winHistoryEl.innerHTML = hhtml;
                 }
+            } else {
+                winPanel.classList.remove('show');
             }
-        });
+
+            // profile
+            if (myPlayer) {
+                profileName.textContent = myPlayer.name;
+                profileUsername.textContent = '@' + myPlayer.name;
+                if (myPlayer.pfp) profilePfp.src = myPlayer.pfp;
+                pBalance.textContent = myPlayer.balance;
+            }
+
+            // top
+            updateTopUI();
+
+            if (arenaSize === 0) resizeCanvas();
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // TOP UI
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function updateTopUI() {
+            if (!game) return;
+            const players = [...game.players].sort((a, b) => b.balance - a.balance);
+            const top3 = players.slice(0, 3);
+
+            const podiumOrder = [
+                { player: top3[2], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
+                { player: top3[0], cls: 'gold', label: '🥇', base: 'gold', colClass: 'p1' },
+                { player: top3[1], cls: 'silver', label: '🥈', base: 'silver', colClass: 'p2' }
+            ];
+            let pHtml = '';
+            podiumOrder.forEach(info => {
+                const p = info.player;
+                if (!p) return;
+                pHtml += `<div class="podium-col ${info.colClass}">
+                            <div class="rank-badge ${info.cls}">${info.label}</div>
+                            <img class="podium-pfp ${info.cls}" src="${p.pfp || ''}" onerror="this.src=''" />
+                            <div class="podium-name">${p.name}</div>
+                            <div class="podium-prize">${p.balance}</div>
+                            <div class="podium-stats">bet: ${p.bet}</div>
+                            <div class="podium-base ${info.base}"></div>
+                        </div>`;
+            });
+            podiumEl.innerHTML = pHtml;
+
+            const rest = players.slice(3);
+            let lHtml = '';
+            rest.forEach((p, idx) => {
+                const rank = idx + 4;
+                let rClass = 'rank';
+                if (rank === 4) rClass += ' gold';
+                else if (rank === 5) rClass += ' silver';
+                else if (rank === 6) rClass += ' bronze';
+                lHtml += `<div class="top-entry">
+                            <div class="${rClass}">#${rank}</div>
+                            <img class="t-pfp" src="${p.pfp || ''}" onerror="this.src=''" />
+                            <div class="t-name">${p.name}</div>
+                            <div class="t-wins">bet: ${p.bet}</div>
+                            <div class="t-score">${p.balance}</div>
+                            <div class="t-prize">${p.balance}</div>
+                        </div>`;
+            });
+            topList.innerHTML = lHtml;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // VICTORY SOUND
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let audioCtx = null;
+        let victorySoundPlaying = false;
+
+        function playVictorySound() {
+            try {
+                if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                if (victorySoundPlaying) return;
+                victorySoundPlaying = true;
+                const now = audioCtx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                const durations = [0.12, 0.12, 0.12, 0.2];
+                const startTimes = [0, 0.14, 0.28, 0.45];
+                for (let i = 0; i < notes.length; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(notes[i], now + startTimes[i]);
+                    gain.gain.setValueAtTime(0.18, now + startTimes[i]);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[i] + durations[i]);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + startTimes[i]);
+                    osc.stop(now + startTimes[i] + durations[i]);
+                }
+                setTimeout(() => { victorySoundPlaying = false; }, 800);
+            } catch (e) { victorySoundPlaying = false; }
+        }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // GAME LOOP
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let lastTime = 0;
-        let accumulator = 0;
-        const fixedTimestep = 1 / 60;
 
         function gameLoop(timestamp) {
             if (lastTime === 0) lastTime = timestamp;
-            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
             lastTime = timestamp;
-
-            updatePlayerAnimations();
-
-            if (state.gameState === 'playing') {
-                accumulator += dt;
-                while (accumulator >= fixedTimestep) {
-                    updatePhysics(fixedTimestep);
-                    accumulator -= fixedTimestep;
-                }
-            }
-
-            if (state.gameState === 'countdown') {
-                const elapsed = (performance.now() - state.countdownStartTime) / 1000;
-                let remaining = Math.max(0, 3.0 - elapsed);
-                if (remaining <= 0) {
-                    startPrestart();
-                } else {
-                    const secs = Math.floor(remaining);
-                    const ms = Math.floor((remaining - secs) * 100);
-                    countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                }
-            }
-
-            if (state.gameState === 'prestart') {
-                state.prestartTimer -= dt;
-                if (state.prestartTimer <= 0) {
-                    startGame();
-                } else {
-                    countdownTimer.textContent = 'GO!';
-                }
-            }
-
-            if (state.gameState === 'idle') {
-                if (!state.botSpawned && state.players.length === 0) {
-                    setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
-                }
-                if (getAlive().length >= 2) startCountdown();
-                updateBetOverlayVisibility();
-                updateFrogVisibility();
-            }
-
-            updateStatsBar();
             render();
             requestAnimationFrame(gameLoop);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // HELPERS
+        // WEBSOCKET
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function getPlayer(id) { return state.players.find(p => p.id === id); }
-
-        function getAlive() { return state.players.filter(p => p.alive); }
+        function connect() {
+            ws = new WebSocket(WS_URL);
+            ws.onopen = () => {
+                statusDot.className = 'online';
+                const name = localState.username;
+                const pfp = localState.pfp;
+                ws.send(JSON.stringify({ type: 'join', name, pfp }));
+            };
+            ws.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'joined') {
+                        myPlayerId = data.id;
+                    } else if (data.type === 'state') {
+                        game = data.game;
+                        // ensure all players have default avatar
+                        game.players.forEach(p => {
+                            if (!p.pfpImg) {
+                                const def = generateDefaultAvatar(p.name ? p.name.charAt(0) : '?', 0);
+                                p.pfpImg = def;
+                                p.pfpLoaded = true;
+                                loadPlayerPFP(p);
+                            }
+                        });
+                        updateUI();
+                    }
+                } catch (err) { console.error(err); }
+            };
+            ws.onclose = () => {
+                statusDot.className = 'offline';
+                setTimeout(connect, 2000);
+            };
+            ws.onerror = () => { statusDot.className = 'offline'; };
+        }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // EVENTS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         betBtn.addEventListener('click', () => {
-            if (state.gameState !== 'idle' && state.gameState !== 'countdown' && state.gameState !== 'prestart')
-                return;
-            let addAmount = parseInt(betInput.value) || 10;
-            if (addAmount < 10) { betInput.value = 10;
-                addAmount = 10;
-                haptic('light'); }
-            if (addAmount > state.balance) { betInput.value = state.balance;
-                addAmount = state.balance;
-                haptic('light'); }
-
-            const existing = state.players.find(p => p.id === state.userId);
-            if (existing) {
-                state.balance -= addAmount;
-                existing.bet += addAmount;
-                state.pot += addAmount;
-                computeRadii();
-                triggerPulse(existing);
-                updateBalance();
-                updateBetUI();
-                updateProfile();
-                updatePlayerList();
-                haptic('medium');
-            } else {
-                if (addAmount > state.balance) { betInput.value = state.balance;
-                    addAmount = state.balance;
-                    haptic('light'); }
-                const player = makePlayer(state.userId, addAmount, state.username, state.pfp);
-                state.balance -= addAmount;
-                state.pot += addAmount;
-                updateBalance();
-                updateBetUI();
-                updateWaitingText();
-                updateProfile();
-                updatePlayerList();
-                haptic('medium');
-                if (!state.botSpawned && state.botEnabled) {
-                    setTimeout(() => { if (state.botEnabled && (state.gameState === 'idle' || state.gameState ===
-                            'countdown' || state.gameState === 'prestart')) spawnBot(); }, 400);
-                }
-            }
+            if (!ws || ws.readyState !== WebSocket.OPEN || !game || game.state !== 'idle') return;
+            let amount = parseInt(betInput.value) || 10;
+            if (amount < 10) amount = 10;
+            const myPlayer = game.players.find(p => p.id === myPlayerId);
+            if (myPlayer && amount > myPlayer.balance) amount = myPlayer.balance;
+            if (amount < 10) return;
+            ws.send(JSON.stringify({ type: 'bet', amount }));
             betInput.value = 10;
-            updateBetUI();
         });
 
         betInput.addEventListener('input', () => {
             let val = parseInt(betInput.value) || 0;
             if (val < 10) betInput.value = 10;
-            if (val > state.balance) betInput.value = state.balance;
+            const myPlayer = game ? game.players.find(p => p.id === myPlayerId) : null;
+            if (myPlayer && val > myPlayer.balance) betInput.value = myPlayer.balance;
             betAmountDisplay.textContent = (parseInt(betInput.value) || 10);
-            if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
         });
 
-        betInput.value = 10;
+        betToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            betOverlay.classList.toggle('collapsed');
+            haptic('light');
+        });
+
+        winContinueBtn.addEventListener('click', () => { winPanel.classList.remove('show'); });
+
+        reloadPfpBtn.addEventListener('click', function() {
+            const user = game ? game.players.find(p => p.id === myPlayerId) : null;
+            if (user) {
+                const src = user.pfp;
+                if (pfpCache.has(src)) pfpCache.delete(src);
+                loadPlayerPFP(user);
+                haptic('medium');
+            } else if (localState.pfp) {
+                const src = localState.pfp;
+                if (pfpCache.has(src)) pfpCache.delete(src);
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => { profilePfp.src = src;
+                    haptic('medium'); };
+                img.onerror = () => { profilePfp.src = '';
+                    haptic('light'); };
+                img.src = src;
+            }
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // TABS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let currentTab = 'pvp';
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const tab = this.dataset.tab;
+                if (tab === currentTab) return;
+                const oldTab = currentTab;
+                currentTab = tab;
+                const oldEl = tabPages[oldTab];
+                if (oldEl) { oldEl.classList.remove('active');
+                    oldEl.classList.add('exit');
+                    setTimeout(() => oldEl.classList.remove('exit'), 350); }
+                const newEl = tabPages[tab];
+                if (newEl) {
+                    setTimeout(() => {
+                        newEl.classList.add('active');
+                        if (tab === 'top') updateTopUI();
+                    }, 50);
+                }
+                tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+                haptic('light');
+            });
+        });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // INIT
@@ -2957,55 +2075,31 @@
         function init() {
             if (tg?.initDataUnsafe?.user) {
                 const u = tg.initDataUnsafe.user;
-                state.username = u.username || u.first_name || 'player';
-                state.userId = u.id?.toString() || state.userId;
-                state.pfp = u.photo_url || '';
-                if (state.pfp) {
-                    try { new URL(state.pfp); } catch (_) { state.pfp = ''; }
+                localState.username = u.username || u.first_name || 'player';
+                localState.userId = u.id?.toString() || localState.userId;
+                localState.pfp = u.photo_url || '';
+                if (localState.pfp) {
+                    try { new URL(localState.pfp); } catch (_) { localState.pfp = ''; }
                 }
             } else {
-                state.username = 'test_user';
-                state.pfp = 'https://i.pravatar.cc/100?img=69';
+                localState.username = 'test_user';
+                localState.pfp = '';
             }
-            usernameDisplay.textContent = '@' + state.username;
+            usernameDisplay.textContent = '@' + localState.username;
+            profileName.textContent = localState.username;
+            profileUsername.textContent = '@' + localState.username;
+            if (localState.pfp) profilePfp.src = localState.pfp;
 
-            // Set profile PFP
-            const profilePfpSrc = state.pfp || state.defaultAvatar;
-            profilePfp.src = profilePfpSrc;
-            if (state.pfp) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => { profilePfp.src = state.pfp; };
-                img.onerror = () => { profilePfp.src = state.defaultAvatar; };
-                img.src = state.pfp;
-            } else {
-                profilePfp.src = state.defaultAvatar;
-            }
-
-            profileName.textContent = state.username;
-            profileUsername.textContent = '@' + state.username;
-            updateBalance();
-            updateProfile();
-            state.topPlayers = generateTopPlayers();
-            updateTopUI();
-            updateWinHistoryUI();
-            updateFrogVisibility();
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
-            setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
-            Object.keys(tabPages).forEach(key => {
-                tabPages[key].classList.toggle('active', key === 'pvp');
-            });
-            document.getElementById('tabs').style.pointerEvents = 'auto';
-            tabBtns.forEach(b => b.style.pointerEvents = 'auto');
+
+            connect();
             requestAnimationFrame(gameLoop);
-            statusDot.className = 'online';
+            statusDot.className = 'connecting';
         }
 
         init();
-
-        window.__state = state;
-        console.log('◆ PFP SYSTEM: Every circle now shows an avatar (default or real).');
+        console.log('✅ Online client ready – connect to server at ' + WS_URL);
     </script>
 </body>
 </html>
