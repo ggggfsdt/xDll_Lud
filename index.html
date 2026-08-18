@@ -162,12 +162,13 @@
         #pvp-page {
             background: var(--bg);
         }
+
         #arena-wrap {
             flex: 1;
             position: relative;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
             padding: 10px 10px 0 10px;
             min-height: 0;
             overflow: visible;
@@ -182,9 +183,82 @@
             touch-action: none;
             display: block;
             box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 0 50px rgba(76, 175, 80, 0.05);
+            flex-shrink: 0;
         }
 
-        /* Timer - top-right corner, no background */
+        /* Player list - column below arena */
+        #player-list-container {
+            width: 100%;
+            max-height: 110px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 6px 4px 4px 4px;
+            margin-top: 2px;
+            scrollbar-width: thin;
+        }
+        #player-list-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        #player-list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .pl-entry {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border-radius: 20px;
+            padding: 2px 10px 2px 4px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            color: #ccc;
+            opacity: 0.85;
+            width: auto;
+            min-width: 140px;
+            max-width: 200px;
+            justify-content: center;
+        }
+        .pl-entry.you {
+            border-color: var(--primary);
+            opacity: 1;
+        }
+        .pl-entry .pl-avatar {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        .pl-entry .pl-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .pl-entry .pl-name {
+            font-weight: 600;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 12px;
+        }
+        .pl-entry .pl-bet {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .pl-entry .pl-chance {
+            color: var(--text2);
+            font-size: 10px;
+            margin-left: 2px;
+        }
+
+        /* Timer - top-right corner */
         #countdown-timer {
             position: absolute;
             top: 8px;
@@ -203,77 +277,6 @@
             backdrop-filter: none;
             padding: 0;
             line-height: 1;
-        }
-
-        /* Player list overlay - bottom-left inside arena */
-        #player-list {
-            position: absolute;
-            bottom: 80px;
-            left: 10px;
-            z-index: 4;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-height: 60%;
-            overflow-y: auto;
-            padding-right: 4px;
-            scrollbar-width: none;
-        }
-        #player-list::-webkit-scrollbar {
-            display: none;
-        }
-        .player-entry {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(8px);
-            border-radius: 20px;
-            padding: 3px 10px 3px 4px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 11px;
-            color: #ccc;
-            pointer-events: none;
-            opacity: 0.8;
-            transition: 0.2s;
-            max-width: 160px;
-            white-space: nowrap;
-        }
-        .player-entry .pl-avatar {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--surface3);
-            flex-shrink: 0;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .player-entry .pl-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .player-entry .pl-name {
-            flex: 1;
-            font-weight: 600;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 60px;
-        }
-        .player-entry .pl-bet {
-            color: var(--gold);
-            font-weight: 700;
-        }
-        .player-entry .pl-chance {
-            color: var(--text2);
-            font-size: 10px;
-            margin-left: 2px;
-        }
-        .player-entry.you {
-            border-color: var(--primary);
-            opacity: 1;
         }
 
         #stats-bar {
@@ -332,11 +335,25 @@
             margin-top: 2px;
         }
 
-        #bet-overlay {
+        /* Bet overlay with collapsible */
+        #bet-overlay-wrap {
             position: absolute;
-            bottom: 16px;
+            bottom: 12px;
             left: 50%;
             transform: translateX(-50%);
+            z-index: 5;
+            width: 92%;
+            max-width: 360px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        #bet-overlay-wrap.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
+        }
+        #bet-overlay {
             background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: 14px;
@@ -345,18 +362,91 @@
             align-items: center;
             gap: 10px;
             backdrop-filter: blur(16px);
-            z-index: 5;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-            transition: 0.3s;
             flex-wrap: wrap;
             justify-content: center;
-            min-width: 280px;
+            transition: 0.3s;
+            position: relative;
         }
-        #bet-overlay.hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateX(-50%) translateY(16px);
+        #bet-overlay.collapsed {
+            padding: 6px 12px;
+            gap: 4px;
+            cursor: pointer;
         }
+        #bet-overlay.collapsed>*:not(.bet-toggle) {
+            display: none;
+        }
+        #bet-overlay.collapsed .bet-toggle {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            color: var(--text2);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            gap: 6px;
+            align-items: center;
+        }
+        .bet-toggle {
+            display: none;
+            cursor: pointer;
+            user-select: none;
+            background: none;
+            border: none;
+            color: var(--text2);
+            font-size: 16px;
+            padding: 2px 8px;
+            transition: 0.2s;
+            font-family: monospace;
+        }
+        .bet-toggle:active {
+            opacity: 0.6;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle {
+            display: flex;
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-size: 16px;
+            color: var(--text2);
+            opacity: 0.6;
+            padding: 2px;
+            transform: rotate(0deg);
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle:hover {
+            opacity: 1;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle::before {
+            content: '>';
+            display: inline-block;
+            transform: rotate(90deg);
+        }
+        #bet-overlay.collapsed .bet-toggle {
+            display: flex;
+            font-size: 14px;
+            gap: 6px;
+            color: var(--text2);
+        }
+        #bet-overlay.collapsed .bet-toggle span {
+            font-size: 11px;
+            opacity: 0.5;
+        }
+        #bet-overlay.collapsed .bet-toggle::before {
+            content: '>';
+            display: inline-block;
+            transform: rotate(-90deg);
+            margin-right: 4px;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle {
+            display: flex;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle-text {
+            display: none;
+        }
+        #bet-overlay.collapsed .bet-toggle-text {
+            display: inline;
+        }
+
         #bet-info {
             font-size: 12px;
             color: var(--text2);
@@ -429,6 +519,12 @@
         #current-bet-display span {
             color: var(--gold);
             font-weight: 700;
+        }
+        #bet-overlay.collapsed #current-bet-display,
+        #bet-overlay.collapsed #bet-info,
+        #bet-overlay.collapsed #bet-input,
+        #bet-overlay.collapsed #bet-btn {
+            display: none;
         }
 
         #profile-page {
@@ -785,12 +881,12 @@
                 width: 22px;
                 height: 22px;
             }
+            #bet-overlay-wrap {
+                width: 96%;
+            }
             #bet-overlay {
-                padding: 6px 12px;
+                padding: 8px 12px;
                 gap: 6px;
-                bottom: 12px;
-                min-width: auto;
-                width: calc(100% - 24px);
             }
             #bet-input {
                 width: 48px;
@@ -852,21 +948,30 @@
                 width: 50px;
                 height: 50px;
             }
-            #player-list {
-                bottom: 70px;
-                left: 6px;
+            #player-list-container {
+                max-height: 80px;
+                padding: 4px 2px;
+                gap: 2px;
             }
-            .player-entry {
+            .pl-entry {
                 font-size: 10px;
-                padding: 2px 8px 2px 3px;
-                max-width: 130px;
+                padding: 1px 6px 1px 3px;
+                min-width: 100px;
+                max-width: 150px;
             }
-            .player-entry .pl-name {
+            .pl-entry .pl-avatar {
+                width: 14px;
+                height: 14px;
+            }
+            .pl-entry .pl-name {
                 max-width: 40px;
+                font-size: 10px;
             }
-            .player-entry .pl-avatar {
-                width: 16px;
-                height: 16px;
+            .pl-entry .pl-bet {
+                font-size: 10px;
+            }
+            .pl-entry .pl-chance {
+                font-size: 9px;
             }
         }
     </style>
@@ -891,8 +996,8 @@
                     <div id="countdown-timer">3.00</div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
-                    <!-- Player List -->
-                    <div id="player-list"></div>
+                    <!-- Player list - column below arena -->
+                    <div id="player-list-container"></div>
 
                     <!-- WIN PANEL -->
                     <div id="win-panel">
@@ -905,13 +1010,18 @@
                         <button id="win-continue-btn">Continue</button>
                     </div>
 
-                    <div id="bet-overlay">
-                        <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
-                        <input type="number" id="bet-input" value="10" min="10" max="9999" />
-                        <button id="bet-btn">join</button>
-                        <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                    <!-- Bet overlay with collapsible -->
+                    <div id="bet-overlay-wrap">
+                        <div id="bet-overlay">
+                            <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
+                            <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
+                            <input type="number" id="bet-input" value="10" min="10" max="9999" />
+                            <button id="bet-btn">join</button>
+                            <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                        </div>
                     </div>
                 </div>
+
                 <div id="stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
                     <div class="stat-item"><img src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
@@ -1003,7 +1113,9 @@
         const usernameDisplay = document.getElementById('username-display');
         const statusDot = document.getElementById('status-dot');
         const waitingText = document.getElementById('waiting-text');
+        const betOverlayWrap = document.getElementById('bet-overlay-wrap');
         const betOverlay = document.getElementById('bet-overlay');
+        const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
@@ -1032,7 +1144,7 @@
         const winName = document.getElementById('win-name');
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
-        const playerListEl = document.getElementById('player-list');
+        const playerListContainer = document.getElementById('player-list-container');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -1142,7 +1254,6 @@
         // ROBUST IMAGE LOADER (with fallback)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
-        const loadingPromises = {};
 
         function loadImageWithFallback(src, maxRetries = 2) {
             return new Promise((resolve) => {
@@ -1153,10 +1264,8 @@
                         resolve(img);
                         return;
                     } else {
-                        // wait for it to load
                         img.onload = () => resolve(img);
                         img.onerror = () => {
-                            // fallback
                             const fallback = new Image();
                             fallback.crossOrigin = 'anonymous';
                             fallback.onload = () => {
@@ -1169,7 +1278,6 @@
                         return;
                     }
                 }
-                // start loading
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 let attempts = 0;
@@ -1181,10 +1289,8 @@
                     img.onerror = () => {
                         attempts++;
                         if (attempts < maxRetries) {
-                            // retry with cache buster
                             img.src = src + '?retry=' + attempts;
                         } else {
-                            // fallback to default
                             const fallback = new Image();
                             fallback.crossOrigin = 'anonymous';
                             fallback.onload = () => {
@@ -1252,7 +1358,6 @@
                 pfpLoaded: false,
                 pfpImg: null,
             };
-            // Load avatar asynchronously
             loadImageWithFallback(avatarSrc).then(img => {
                 if (img) {
                     p.pfpLoaded = true;
@@ -1261,10 +1366,7 @@
                     p.pfpLoaded = false;
                     p.pfpImg = null;
                 }
-                // Force a re-render if game is active
-                if (state.gameState === 'playing' || state.gameState === 'idle') {
-                    // We'll re-render on next frame anyway
-                }
+                updatePlayerList();
             });
             state.players.push(p);
             computeRadii();
@@ -1274,23 +1376,35 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER LIST UI
+        // PLAYER LIST UI (column below arena)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePlayerList() {
             const alive = state.players.filter(p => p.alive);
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
+            if (alive.length === 0) {
+                playerListContainer.innerHTML = '';
+                return;
+            }
             let html = '';
             alive.forEach(p => {
                 const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
                 const isYou = p.id === state.userId;
-                html += `<div class="player-entry ${isYou ? 'you' : ''}">
+                html += `<div class="pl-entry ${isYou ? 'you' : ''}">
                             <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
                             <span class="pl-name">${p.name}</span>
                             <span class="pl-bet">${p.bet}</span>
                             <span class="pl-chance">${chance}%</span>
                         </div>`;
             });
-            playerListEl.innerHTML = html;
+            playerListContainer.innerHTML = html;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // BET OVERLAY AUTO SHOW/HIDE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function updateBetOverlayVisibility() {
+            const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
+            betOverlayWrap.classList.toggle('hidden', shouldHide);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1349,19 +1463,30 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATED BALANCE
+        // ANIMATED BALANCE (fixed for all-in)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let balanceAnimInterval = null;
 
         function animateBalanceTo(target) {
-            const current = parseInt(balanceEl.textContent) || state.balance;
-            if (current === target) return;
+            const current = parseInt(balanceEl.textContent) || 0;
+            if (current === target) {
+                balanceEl.textContent = target;
+                return;
+            }
             const diff = target - current;
-            const steps = Math.min(Math.abs(diff), 30);
+            const steps = Math.min(Math.abs(diff), 40);
             const stepSize = diff / steps;
             let step = 0;
 
-            if (balanceAnimInterval) clearInterval(balanceAnimInterval);
+            if (balanceAnimInterval) {
+                clearInterval(balanceAnimInterval);
+                balanceAnimInterval = null;
+            }
+
+            // Set initial value immediately to prevent "0" flicker
+            if (step === 0 && current !== target) {
+                // We'll animate from current to target
+            }
 
             balanceAnimInterval = setInterval(() => {
                 step++;
@@ -1373,7 +1498,7 @@
                 } else {
                     balanceEl.textContent = newVal;
                 }
-            }, 30);
+            }, 25);
         }
 
         function updateBalance() {
@@ -1381,6 +1506,74 @@
             pBalance.textContent = target;
             animateBalanceTo(target);
         }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // VICTORY SOUND (Web Audio)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let audioCtx = null;
+        let victorySoundPlaying = false;
+
+        function playVictorySound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                if (victorySoundPlaying) return;
+                victorySoundPlaying = true;
+
+                const now = audioCtx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                const durations = [0.12, 0.12, 0.12, 0.2];
+                const startTimes = [0, 0.14, 0.28, 0.45];
+
+                for (let i = 0; i < notes.length; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(notes[i], now + startTimes[i]);
+                    gain.gain.setValueAtTime(0.18, now + startTimes[i]);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[i] + durations[i]);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + startTimes[i]);
+                    osc.stop(now + startTimes[i] + durations[i]);
+                }
+
+                // Add a second layer for richness
+                setTimeout(() => {
+                    victorySoundPlaying = false;
+                }, 800);
+            } catch (e) {
+                console.log('Audio not available');
+                victorySoundPlaying = false;
+            }
+        }
+
+        function stopVictorySound() {
+            // We don't need to stop, it fades naturally
+            victorySoundPlaying = false;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // BET OVERLAY COLLAPSE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let betCollapsed = false;
+
+        betToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            betCollapsed = !betCollapsed;
+            betOverlay.classList.toggle('collapsed', betCollapsed);
+            // Update toggle text
+            if (betCollapsed) {
+                this.innerHTML = '<span class="bet-toggle-text">bet</span>';
+            } else {
+                this.innerHTML = '<span class="bet-toggle-text">bet</span>';
+            }
+            haptic('light');
+        });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // BOT
@@ -1401,6 +1594,7 @@
             updateBetUI();
             updateStatsBar();
             updatePlayerList();
+            updateBetOverlayVisibility();
             haptic('light');
         }
 
@@ -1443,6 +1637,7 @@
             countdownTimer.style.display = 'block';
             haptic('heavy');
             updateBetUI();
+            updateBetOverlayVisibility();
         }
 
         function startPrestart() {
@@ -1450,6 +1645,7 @@
             state.prestartTimer = 2.0;
             countdownTimer.textContent = 'GO!';
             haptic('heavy');
+            updateBetOverlayVisibility();
         }
 
         function startGame() {
@@ -1458,9 +1654,9 @@
             state.openingTimer = 0;
             state.opening = null;
             state.winnerId = null;
-            betOverlay.classList.add('hidden');
             waitingText.style.display = 'none';
             countdownTimer.style.display = 'none';
+            updateBetOverlayVisibility();
 
             const alive = getAlive();
             const half = state.arenaSize / 2;
@@ -1495,6 +1691,8 @@
                 if (winner.id === state.userId) {
                     state.balance += winnings;
                     state.wins++;
+                    // Play victory sound for user win
+                    playVictorySound();
                 } else {
                     state.losses++;
                 }
@@ -1514,6 +1712,7 @@
                 state.pot = 0;
                 state.opening = null;
                 updatePlayerList();
+                updateBetOverlayVisibility();
 
                 if (window.winTimeout) clearTimeout(window.winTimeout);
                 window.winTimeout = setTimeout(() => {
@@ -1525,18 +1724,19 @@
                 state.players = [];
                 state.botSpawned = false;
                 state.opening = null;
-                betOverlay.classList.remove('hidden');
                 waitingText.style.display = 'block';
                 countdownTimer.style.display = 'none';
                 updateWaitingText();
                 updateBetUI();
                 updateStatsBar();
                 updatePlayerList();
+                updateBetOverlayVisibility();
             }
         }
 
         function hideWinPanelAndReset() {
             winPanel.classList.remove('show');
+            stopVictorySound();
             if (window.winTimeout) {
                 clearTimeout(window.winTimeout);
                 window.winTimeout = null;
@@ -1546,13 +1746,13 @@
             state.botSpawned = false;
             state.opening = null;
             state.pot = 0;
-            betOverlay.classList.remove('hidden');
             waitingText.style.display = 'block';
             countdownTimer.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
             updatePlayerList();
+            updateBetOverlayVisibility();
             if (state.botEnabled) spawnBot();
         }
 
@@ -1575,13 +1775,13 @@
                     state.players = [];
                     state.botSpawned = false;
                     state.opening = null;
-                    betOverlay.classList.remove('hidden');
                     waitingText.style.display = 'block';
                     countdownTimer.style.display = 'none';
                     updateWaitingText();
                     updateBetUI();
                     updateStatsBar();
                     updatePlayerList();
+                    updateBetOverlayVisibility();
                 }
                 return;
             }
@@ -1725,7 +1925,6 @@
                     }
                 });
 
-                // Circle collisions with haptic
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1776,7 +1975,7 @@
             }
 
             botAI(dt);
-            updatePlayerList(); // update chances live
+            updatePlayerList();
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1899,7 +2098,6 @@
 
             ctx.restore();
 
-            // ── PLAYERS ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const popScale = getPopScale(p);
@@ -1929,7 +2127,6 @@
                     ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                     ctx.restore();
                 } else {
-                    // Fallback: colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -2149,6 +2346,7 @@
                     setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
                 }
                 if (getAlive().length >= 2) startCountdown();
+                updateBetOverlayVisibility();
             }
 
             updateStatsBar();
@@ -2239,7 +2437,6 @@
             usernameDisplay.textContent = '@' + state.username;
             if (state.pfp) {
                 profilePfp.src = state.pfp;
-                // Preload into cache
                 loadImageWithFallback(state.pfp);
             } else {
                 profilePfp.src = state.defaultAvatar;
@@ -2263,7 +2460,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – perfect: PFPs fixed, player list, timer top-right, prestart, haptic on bumps');
+        console.log('◆ dllump – perfect: column player list, chevron toggle, auto hide bet, win sound, all-in fixed');
     </script>
 </body>
 </html>
