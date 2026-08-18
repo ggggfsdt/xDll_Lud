@@ -500,13 +500,19 @@
             padding: 2px 4px 2px 4px;
             flex-shrink: 0;
             scrollbar-width: thin;
-            transition: margin-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
             margin-top: 0;
             background: var(--surface);
             border-bottom: 1px solid var(--border);
         }
         #player-list-container.shift-up {
-            margin-top: -60px;
+            max-height: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            margin-top: 0 !important;
         }
         #player-list-container::-webkit-scrollbar {
             width: 3px;
@@ -1175,9 +1181,6 @@
                 padding: 2px 2px;
                 gap: 2px;
             }
-            #player-list-container.shift-up {
-                margin-top: -40px;
-            }
             .pl-entry {
                 font-size: 10px;
                 padding: 1px 6px 1px 3px;
@@ -1475,6 +1478,7 @@
         // ROBUST PFP LOADER (with fallback & caching)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const pfpCache = new Map();
+        let defaultAvatarImg = null;
 
         function loadPFP(src, maxRetries = 2) {
             return new Promise((resolve) => {
@@ -1527,20 +1531,9 @@
                             // Fallback to default avatar
                             if (src !== state.defaultAvatar) {
                                 // Try loading the default avatar
-                                const fallbackImg = new Image();
-                                fallbackImg.crossOrigin = 'anonymous';
-                                fallbackImg.onload = () => {
-                                    pfpCache.set(state.defaultAvatar, { img: fallbackImg, loaded: true,
-                                        promise: null });
-                                    resolve(fallbackImg);
-                                };
-                                fallbackImg.onerror = () => {
-                                    // Ultimate fallback: null (will be handled by render)
-                                    pfpCache.set(state.defaultAvatar, { img: null, loaded: false,
-                                    promise: null });
-                                    resolve(null);
-                                };
-                                fallbackImg.src = state.defaultAvatar;
+                                loadPFP(state.defaultAvatar).then(defImg => {
+                                    resolve(defImg);
+                                });
                             } else {
                                 pfpCache.set(src, { img: null, loaded: false, promise: null });
                                 resolve(null);
@@ -1553,10 +1546,6 @@
 
                 // Store the promise in cache
                 const promise = new Promise((res) => {
-                    const checkDone = () => {
-                        // This is called when the image loads or fails
-                        // The actual resolve happens in onload/onerror
-                    };
                     // We'll resolve from onload/onerror
                 });
 
@@ -1571,49 +1560,29 @@
                     if (!resolved) {
                         resolved = true;
                         if (src !== state.defaultAvatar) {
-                            // Try default avatar
-                            const fallbackImg = new Image();
-                            fallbackImg.crossOrigin = 'anonymous';
-                            fallbackImg.onload = () => {
-                                pfpCache.set(state.defaultAvatar, { img: fallbackImg, loaded: true,
-                                    promise: null });
-                                resolve(fallbackImg);
-                            };
-                            fallbackImg.onerror = () => {
-                                pfpCache.set(state.defaultAvatar, { img: null, loaded: false,
-                                promise: null });
-                                resolve(null);
-                            };
-                            fallbackImg.src = state.defaultAvatar;
+                            loadPFP(state.defaultAvatar).then(defImg => resolve(defImg));
                         } else {
                             resolve(null);
                         }
                     }
                 }, 8000);
 
-                // Cleanup timeout if resolved early
+                // Patch resolve to clear timeout
                 const origResolve = resolve;
                 const wrappedResolve = (val) => {
                     clearTimeout(timeoutId);
                     origResolve(val);
                 };
-                // Override resolve by wrapping in the promise chain
-                // We'll use the original resolve from the outer promise
-                // Instead, patch the resolve in the onload/onerror handlers
-                const patchResolve = (val) => {
-                    clearTimeout(timeoutId);
-                    resolve(val);
-                };
-                // Store patched resolve for use in onload/onerror
-                img._resolve = patchResolve;
-                // Override the onload/onerror to use patched resolve
+                // Override resolve in onload/onerror by using a wrapper
+                // We'll just directly call wrappedResolve in the handlers
+                img._resolve = wrappedResolve;
                 const origOnload = img.onload;
                 const origOnerror = img.onerror;
                 img.onload = () => {
                     if (resolved) return;
                     resolved = true;
                     pfpCache.set(src, { img, loaded: true, promise: null });
-                    patchResolve(img);
+                    wrappedResolve(img);
                 };
                 img.onerror = () => {
                     attempts++;
@@ -1625,23 +1594,10 @@
                     if (resolved) return;
                     resolved = true;
                     if (src !== state.defaultAvatar) {
-                        // Try default avatar
-                        const fallbackImg = new Image();
-                        fallbackImg.crossOrigin = 'anonymous';
-                        fallbackImg.onload = () => {
-                            pfpCache.set(state.defaultAvatar, { img: fallbackImg, loaded: true,
-                                promise: null });
-                            patchResolve(fallbackImg);
-                        };
-                        fallbackImg.onerror = () => {
-                            pfpCache.set(state.defaultAvatar, { img: null, loaded: false,
-                            promise: null });
-                            patchResolve(null);
-                        };
-                        fallbackImg.src = state.defaultAvatar;
+                        loadPFP(state.defaultAvatar).then(defImg => wrappedResolve(defImg));
                     } else {
                         pfpCache.set(src, { img: null, loaded: false, promise: null });
-                        patchResolve(null);
+                        wrappedResolve(null);
                     }
                 };
                 // Re-trigger load with the new handlers
@@ -1929,7 +1885,6 @@
                 pulseStartTime: 0,
                 pfpLoaded: false,
                 pfpImg: null,
-                pfpLoadFailed: false,
             };
 
             // Load PFP asynchronously
@@ -1937,22 +1892,9 @@
                 if (img && img.naturalWidth > 0) {
                     p.pfpLoaded = true;
                     p.pfpImg = img;
-                    p.pfpLoadFailed = false;
                 } else {
                     p.pfpLoaded = false;
                     p.pfpImg = null;
-                    p.pfpLoadFailed = true;
-                    // Try default avatar as last resort
-                    if (avatarSrc !== state.defaultAvatar) {
-                        loadPFP(state.defaultAvatar).then(defImg => {
-                            if (defImg && defImg.naturalWidth > 0) {
-                                p.pfpLoaded = true;
-                                p.pfpImg = defImg;
-                                p.pfpLoadFailed = false;
-                                updatePlayerList();
-                            }
-                        });
-                    }
                 }
                 updatePlayerList();
             });
@@ -2590,7 +2532,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – with PFP circles
+        // RENDER – with PFP circles only (no color/letter fallback)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -2707,7 +2649,7 @@
             }
             ctx.restore();
 
-            // ── DRAW PLAYERS WITH PFP ──
+            // ── DRAW PLAYERS WITH PFP (no color/letter fallback) ──
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
@@ -2730,29 +2672,34 @@
                 ctx.shadowColor = 'rgba(0,0,0,0.6)';
                 ctx.shadowBlur = 12;
 
-                // Draw PFP as a circle
+                // Always try to draw the PFP image
+                // If the player's PFP isn't loaded yet, use defaultAvatarImg (should be preloaded)
+                let imgToDraw = null;
                 if (p.pfpLoaded && p.pfpImg && p.pfpImg.naturalWidth > 0) {
+                    imgToDraw = p.pfpImg;
+                } else if (defaultAvatarImg && defaultAvatarImg.naturalWidth > 0) {
+                    imgToDraw = defaultAvatarImg;
+                }
+
+                if (imgToDraw) {
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 1, 1), 0, Math.PI * 2);
                     ctx.clip();
-
                     const drawSize = Math.max(finalRadius - 1, 1) * 2;
-                    ctx.drawImage(p.pfpImg, p.x - (finalRadius - 1), p.y - (finalRadius - 1), drawSize, drawSize);
+                    ctx.drawImage(imgToDraw, p.x - (finalRadius - 1), p.y - (finalRadius - 1), drawSize, drawSize);
                 } else {
-                    // Fallback: colored circle with initial letter
+                    // Ultimate fallback: a simple dark circle (should rarely happen)
                     ctx.shadowBlur = 0;
-                    ctx.fillStyle = p.color || '#a0a0b0';
+                    ctx.fillStyle = '#444';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 1, 1), 0, Math.PI * 2);
                     ctx.fill();
-
-                    ctx.fillStyle = '#fff';
-                    const fontSize = Math.max(finalRadius * 0.45, 8);
-                    ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
+                    // Draw a small "?" or initial
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = `${Math.max(finalRadius * 0.4, 10)}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.shadowBlur = 0;
-                    ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y + 1);
+                    ctx.fillText('?', p.x, p.y + 1);
                 }
 
                 // Outline
@@ -3005,12 +2952,16 @@
         // INIT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function init() {
+            // Pre-load default avatar globally
+            loadPFP(state.defaultAvatar).then(img => {
+                defaultAvatarImg = img;
+            });
+
             if (tg?.initDataUnsafe?.user) {
                 const u = tg.initDataUnsafe.user;
                 state.username = u.username || u.first_name || 'player';
                 state.userId = u.id?.toString() || state.userId;
                 state.pfp = u.photo_url || '';
-                // Validate PFP URL
                 if (state.pfp) {
                     try { new URL(state.pfp); } catch (_) { state.pfp = ''; }
                 }
@@ -3023,7 +2974,6 @@
             // Set profile PFP
             const profilePfpSrc = state.pfp || state.defaultAvatar;
             profilePfp.src = profilePfpSrc;
-            // Pre-load user PFP
             if (state.pfp) {
                 loadPFP(state.pfp).then(img => {
                     if (img && img.naturalWidth > 0) {
@@ -3058,7 +3008,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – PFP loader fixed, circles show avatars');
+        console.log('◆ dllump – PFP circles only, player list fully collapsible');
     </script>
 </body>
 </html>
