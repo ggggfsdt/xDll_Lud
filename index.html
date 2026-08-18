@@ -257,54 +257,6 @@
             margin-top: 2px;
         }
 
-        #winner-overlay {
-            position: absolute;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.85);
-            backdrop-filter: blur(8px);
-            z-index: 7;
-            border-radius: var(--radius);
-            flex-direction: column;
-            gap: 6px;
-            padding: 20px;
-        }
-        #winner-overlay.show {
-            display: flex;
-        }
-        #winner-text {
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--gold);
-            text-shadow: 0 0 40px var(--gold-dim);
-            text-align: center;
-        }
-        #winner-sub {
-            font-size: 15px;
-            color: var(--text2);
-            margin-top: 2px;
-        }
-        #winner-close-btn {
-            margin-top: 14px;
-            padding: 10px 36px;
-            border-radius: 30px;
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            font-weight: 700;
-            font-size: 15px;
-            cursor: pointer;
-            box-shadow: 0 0 30px var(--primary-glow);
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-        }
-        #winner-close-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
-
         #bet-overlay {
             position: absolute;
             bottom: 16px;
@@ -639,6 +591,106 @@
             font-size: 14px;
         }
 
+        /* --- NEW WIN PANEL --- */
+        #win-panel-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(6px);
+            z-index: 19;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            border-radius: var(--radius);
+        }
+        #win-panel-backdrop.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #win-panel {
+            position: absolute;
+            bottom: -100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 380px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 20px 20px 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.95);
+            z-index: 20;
+            transition: bottom 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        #win-panel.show {
+            bottom: 50%;
+            transform: translateX(-50%) translateY(50%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #win-gif-container {
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+        }
+        #win-gif-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #win-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            width: 100%;
+        }
+        #win-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gold);
+            text-align: center;
+        }
+        #win-multiplier {
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+        }
+        #win-continue-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 30px var(--primary-glow);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+
         @media (max-width:400px) {
             #balance-wrap {
                 padding: 2px 10px 2px 4px;
@@ -682,9 +734,6 @@
             .stat-item .num {
                 font-size: 18px;
             }
-            #winner-text {
-                font-size: 22px;
-            }
             #username-display {
                 max-width: 60px;
                 font-size: 11px;
@@ -701,6 +750,16 @@
             #stats-bar .stat-item .icon {
                 width: 16px;
                 height: 16px;
+            }
+            #win-panel {
+                width: 96%;
+                padding: 16px;
+            }
+            #win-name {
+                font-size: 17px;
+            }
+            #win-multiplier {
+                font-size: 24px;
             }
         }
     </style>
@@ -724,11 +783,18 @@
                     <canvas id="game-canvas"></canvas>
                     <div id="countdown-timer">3.00</div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
-                    <div id="winner-overlay">
-                        <div id="winner-text">winner</div>
-                        <div id="winner-sub">+0</div>
-                        <button id="winner-close-btn">play again</button>
+
+                    <!-- NEW WIN PANEL -->
+                    <div id="win-panel-backdrop"></div>
+                    <div id="win-panel">
+                        <div id="win-gif-container"><img id="win-gif" src="" alt="win animation" /></div>
+                        <div id="win-details">
+                            <div id="win-name">Winner</div>
+                            <div id="win-multiplier">x2.5</div>
+                        </div>
+                        <button id="win-continue-btn">Continue</button>
                     </div>
+
                     <div id="bet-overlay">
                         <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                         <input type="number" id="bet-input" value="10" min="10" max="9999" />
@@ -799,7 +865,7 @@
             pfp: '',
             wins: 0,
             losses: 0,
-            gameState: 'idle', // idle, countdown, playing, finished
+            gameState: 'idle',
             players: [],
             maxPlayers: 8,
             pot: 0,
@@ -825,10 +891,6 @@
         const usernameDisplay = document.getElementById('username-display');
         const statusDot = document.getElementById('status-dot');
         const waitingText = document.getElementById('waiting-text');
-        const winnerOverlay = document.getElementById('winner-overlay');
-        const winnerText = document.getElementById('winner-text');
-        const winnerSub = document.getElementById('winner-sub');
-        const winnerCloseBtn = document.getElementById('winner-close-btn');
         const betOverlay = document.getElementById('bet-overlay');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
@@ -852,6 +914,21 @@
             profile: document.getElementById('profile-page'),
             top: document.getElementById('top-page'),
         };
+        const winPanel = document.getElementById('win-panel');
+        const winBackdrop = document.getElementById('win-panel-backdrop');
+        const winGif = document.getElementById('win-gif');
+        const winName = document.getElementById('win-name');
+        const winMultiplier = document.getElementById('win-multiplier');
+        const winContinueBtn = document.getElementById('win-continue-btn');
+
+        const WIN_GIFS = [
+            'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
+            'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
+            'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
+            'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
+            'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
+        ];
 
         const COLORS = [
             '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD',
@@ -949,7 +1026,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY (no particles)
+        // PLAYER FACTORY
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1063,7 +1140,7 @@
             if (state.gameState === 'playing' || state.gameState === 'finished') return;
             if (state.players.some(p => p.id.startsWith('bot_'))) return;
             if (state.players.length >= state.maxPlayers) return;
-            const bet = Math.floor(Math.random() * 30) + 10; // min 10
+            const bet = Math.floor(Math.random() * 30) + 10;
             const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
             const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
             state.botSpawned = true;
@@ -1083,7 +1160,6 @@
                 bot.vx = (bot.vx / sp) * maxSp;
                 bot.vy = (bot.vy / sp) * maxSp;
             }
-            // Ensure minimum speed
             if (sp < 3.0 && sp > 0.01) {
                 const ratio = 3.0 / sp;
                 bot.vx *= ratio;
@@ -1091,18 +1167,16 @@
             }
         }
 
-        // ── Constant speed range: 4.0 to 6.0, independent of radius ──
         function speedForRadius(radius) {
-            // Keep speed between 4.0 and 6.0, slight variation based on radius (bigger = slower)
             const minR = 14,
                 maxR = 52;
             const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-            const speed = 6.0 - norm * 2.0; // 6.0 to 4.0
+            const speed = 6.0 - norm * 2.0;
             return speed;
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC (no prestart)
+        // GAME LOGIC
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function startCountdown() {
             if (state.gameState !== 'idle') return;
@@ -1122,7 +1196,6 @@
             state.openingTimer = 0;
             state.opening = null;
             state.winnerId = null;
-            winnerOverlay.classList.remove('show');
             betOverlay.classList.add('hidden');
             waitingText.style.display = 'none';
             countdownTimer.style.display = 'none';
@@ -1132,7 +1205,7 @@
             alive.forEach((p, i) => {
                 const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
                 const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-                const speed = baseSpeed * (0.9 + Math.random() * 0.2); // consistent speed
+                const speed = baseSpeed * (0.9 + Math.random() * 0.2);
                 p.vx = Math.cos(angle) * speed;
                 p.vy = Math.sin(angle) * speed;
                 p.x = half + Math.cos(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
@@ -1148,8 +1221,10 @@
             state.gameState = 'finished';
             state.winnerId = winnerId;
             const winner = getPlayer(winnerId);
+
             if (winner) {
                 const winnings = Math.floor(state.pot * 0.95);
+                const multiplier = (winnings / winner.bet).toFixed(1);
                 if (winner.id === state.userId) {
                     state.balance += winnings;
                     state.wins++;
@@ -1158,28 +1233,29 @@
                 }
                 updateBalance();
                 updateProfile();
-                winnerText.textContent = winner.name + ' wins!';
-                winnerSub.textContent = '+' + winnings;
-                winnerOverlay.classList.add('show');
-                haptic('heavy');
                 updateTopList();
+
+                // Show win panel
+                winName.textContent = winner.name + ' wins!';
+                winMultiplier.textContent = 'x' + multiplier;
+                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+                winGif.src = randomGif;
+
+                winPanel.classList.add('show');
+                winBackdrop.classList.add('show');
+                haptic('heavy');
+
                 state.pot = 0;
                 state.opening = null;
-                setTimeout(() => {
-                    state.players = [];
-                    state.gameState = 'idle';
-                    state.botSpawned = false;
-                    winnerOverlay.classList.remove('show');
-                    betOverlay.classList.remove('hidden');
-                    waitingText.style.display = 'block';
-                    countdownTimer.style.display = 'none';
-                    updateWaitingText();
-                    updateBetUI();
-                    updateProfile();
-                    updateStatsBar();
-                    setTimeout(() => { if (state.botEnabled) spawnBot(); }, 600);
-                }, 3000);
+
+                // Auto close and reset after 2 seconds
+                if (window.winTimeout) clearTimeout(window.winTimeout);
+                window.winTimeout = setTimeout(() => {
+                    hideWinPanelAndReset();
+                }, 2000);
+
             } else {
+                // Fallback reset
                 state.gameState = 'idle';
                 state.players = [];
                 state.botSpawned = false;
@@ -1193,8 +1269,34 @@
             }
         }
 
+        function hideWinPanelAndReset() {
+            winPanel.classList.remove('show');
+            winBackdrop.classList.remove('show');
+            if (window.winTimeout) {
+                clearTimeout(window.winTimeout);
+                window.winTimeout = null;
+            }
+            // Reset game state
+            state.players = [];
+            state.gameState = 'idle';
+            state.botSpawned = false;
+            state.opening = null;
+            state.pot = 0;
+            betOverlay.classList.remove('hidden');
+            waitingText.style.display = 'block';
+            countdownTimer.style.display = 'none';
+            updateWaitingText();
+            updateBetUI();
+            updateStatsBar();
+            if (state.botEnabled) spawnBot();
+        }
+
+        winContinueBtn.addEventListener('click', () => {
+            hideWinPanelAndReset();
+        });
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS with perfect restitution and minimum speed
+        // PHYSICS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1223,7 +1325,6 @@
             const totalPts = pts.length;
             const half = size / 2;
 
-            // Opening management
             state.openingTimer -= dt;
             if (state.openingTimer <= 0) {
                 if (!state.opening) {
@@ -1289,7 +1390,6 @@
                     p.y += p.vy * subDt * 60;
 
                     const radius = p.displayRadius || p.radius;
-                    // Wall collision (segment)
                     for (let i = 0; i < totalPts; i++) {
                         const j = (i + 1) % totalPts;
                         if (isInGap(i) && isInGap(j)) continue;
@@ -1316,7 +1416,6 @@
                             p.y += ny * overlap;
                             const vn = p.vx * nx + p.vy * ny;
                             if (vn < 0) {
-                                // Perfect restitution
                                 p.vx -= 2 * vn * nx;
                                 p.vy -= 2 * vn * ny;
                             }
@@ -1324,17 +1423,14 @@
                         }
                     }
 
-                    // ── Elimination through gap ──
                     if (opening && opening.state === 'open') {
-                        // Check if circle is outside the arena perimeter
                         const cx = half,
                             cy = half;
                         const dx = p.x - cx,
                             dy = p.y - cy;
                         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                        const arenaRadius = half * 0.98; // slightly inside to avoid false positives
+                        const arenaRadius = half * 0.98;
                         if (distFromCenter > arenaRadius + radius) {
-                            // Check alignment with gap
                             let closestGapIdx = -1;
                             let minDist = Infinity;
                             for (let i = 0; i < totalPts; i++) {
@@ -1347,12 +1443,10 @@
                                 }
                             }
                             if (closestGapIdx >= 0) {
-                                // Check if the direction of movement is outward and aligned with gap
                                 const angle = Math.atan2(dy, dx);
                                 const gapAngle = Math.atan2(pts[closestGapIdx].y - cy, pts[closestGapIdx].x - cx);
                                 const angleDiff = Math.abs(angle - gapAngle);
                                 const normalizedDiff = Math.min(angleDiff, 2 * Math.PI - angleDiff);
-                                // Check outward velocity component
                                 const vOut = p.vx * dx + p.vy * dy;
                                 if (normalizedDiff < 0.6 && vOut > 0) {
                                     p.alive = false;
@@ -1364,7 +1458,6 @@
                     }
                 });
 
-                // Circle collisions with perfect restitution
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1397,7 +1490,6 @@
                     }
                 }
 
-                // Speed cap and minimum speed enforcement
                 alive.forEach(p => {
                     const maxSp = speedForRadius(p.displayRadius || p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -1405,7 +1497,6 @@
                         p.vx = (p.vx / sp) * maxSp;
                         p.vy = (p.vy / sp) * maxSp;
                     }
-                    // Enforce minimum speed (prevent slowing down)
                     const minSp = 3.0;
                     if (sp < minSp && sp > 0.01) {
                         const ratio = minSp / sp;
@@ -1438,14 +1529,12 @@
             const half = w / 2;
             ctx.clearRect(0, 0, w, w);
 
-            // Background
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, '#0a0a0a');
             grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Arena shadow
             const pts = state.perimeterPoints;
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
@@ -1460,7 +1549,6 @@
             }
             ctx.restore();
 
-            // Main arena
             ctx.save();
             ctx.fillStyle = '#28282e';
             if (pts.length > 0) {
@@ -1472,21 +1560,18 @@
             }
             ctx.restore();
 
-            // ── BORDER DRAWING with no shadow on flash ──
             const opening = state.opening;
             const isFlashing = opening && opening.state === 'flashing';
             const isOpen = opening && opening.state === 'open';
             const total = pts.length;
 
             ctx.save();
-
             const hasGap = opening !== null && (isFlashing || isOpen);
 
             if (hasGap) {
                 const start = opening.startIdx;
                 const end = opening.endIdx;
 
-                // Draw border excluding gap
                 ctx.strokeStyle = 'rgba(160,160,176,0.3)';
                 ctx.lineWidth = 5;
 
@@ -1507,7 +1592,6 @@
                     ctx.stroke();
                 }
 
-                // ── FLASH EFFECT (no shadow, thin line) ──
                 if (isFlashing) {
                     const isRed = (opening.flashCount % 2 === 0);
                     ctx.save();
@@ -1533,7 +1617,6 @@
 
                     ctx.strokeStyle = flashColor;
                     ctx.lineWidth = isRed ? 5 : 3;
-                    // No shadow
                     ctx.shadowBlur = 0;
                     ctx.shadowColor = 'transparent';
 
@@ -1546,9 +1629,7 @@
 
                     ctx.restore();
                 }
-                // When open: no highlight
             } else {
-                // Full border
                 ctx.strokeStyle = 'rgba(160,160,176,0.3)';
                 ctx.lineWidth = 5;
                 ctx.beginPath();
@@ -1560,7 +1641,7 @@
 
             ctx.restore();
 
-            // ── PLAYERS (PFP instead of color, no bet numbers) ──
+            // ── PLAYERS with PFPs ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const popScale = getPopScale(p);
@@ -1580,14 +1661,7 @@
 
                 ctx.save();
                 ctx.globalAlpha = alpha;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 2;
-                ctx.shadowBlur = 0;
-                ctx.stroke();
 
-                // Draw PFP if available, otherwise fallback to color + initial
                 const pfpSrc = p.pfp || '';
                 if (pfpSrc) {
                     const img = loadImage(pfpSrc);
@@ -1600,7 +1674,7 @@
                         ctx.drawImage(img, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                         ctx.restore();
                     } else {
-                        // Fallback if image not loaded
+                        // Fallback color
                         ctx.fillStyle = p.color || '#a0a0b0';
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -1612,7 +1686,6 @@
                         ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                     }
                 } else {
-                    // No PFP, use colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -1623,6 +1696,13 @@
                     ctx.textBaseline = 'middle';
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                 }
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 0;
+                ctx.stroke();
 
                 ctx.restore();
             });
@@ -1793,7 +1873,7 @@
                 const elapsed = (performance.now() - state.countdownStartTime) / 1000;
                 let remaining = Math.max(0, 3.0 - elapsed);
                 if (remaining <= 0) {
-                    startGame(); // directly start, no prestart
+                    startGame();
                 } else {
                     const secs = Math.floor(remaining);
                     const ms = Math.floor((remaining - secs) * 100);
@@ -1875,29 +1955,6 @@
 
         betInput.value = 10;
 
-        winnerCloseBtn.addEventListener('click', () => {
-            state.gameState = 'idle';
-            state.players = [];
-            state.botSpawned = false;
-            state.opening = null;
-            winnerOverlay.classList.remove('show');
-            betOverlay.classList.remove('hidden');
-            waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            haptic('light');
-            setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 600);
-        });
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const tab = btn.dataset.tab;
-                switchTab(tab);
-            });
-        });
-
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // INIT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1934,7 +1991,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – all fixes: no glow, stable speed, no prestart, instant elimination, PFPs');
+        console.log('◆ dllump – fully polished win panel, PFPs, stable speed');
     </script>
 </body>
 </html>
