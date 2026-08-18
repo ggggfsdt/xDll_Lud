@@ -645,6 +645,21 @@
             display: block;
             border-radius: 8px;
         }
+        #win-avatar-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--gold);
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        #win-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
         #win-details {
             display: flex;
             flex-direction: column;
@@ -759,6 +774,10 @@
                 width: 65%;
                 max-width: 160px;
             }
+            #win-avatar-container {
+                width: 50px;
+                height: 50px;
+            }
         }
     </style>
 </head>
@@ -785,6 +804,7 @@
                     <!-- WIN PANEL -->
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
+                        <div id="win-avatar-container"><img id="win-avatar" src="" alt="winner" /></div>
                         <div id="win-details">
                             <div id="win-name">Winner</div>
                             <div id="win-multiplier">x2.5</div>
@@ -879,8 +899,8 @@
             gameTime: 0,
             lastTime: 0,
             currentTab: 'pvp',
-            userPfpImg: null, // preloaded user image
-            defaultAvatar: 'https://i.pravatar.cc/150?img=0', // fallback
+            userPfpImg: null,
+            defaultAvatar: 'https://i.pravatar.cc/150?img=0',
         };
 
         // DOM refs
@@ -915,6 +935,7 @@
         };
         const winPanel = document.getElementById('win-panel');
         const winGif = document.getElementById('win-gif');
+        const winAvatar = document.getElementById('win-avatar');
         const winName = document.getElementById('win-name');
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
@@ -1024,7 +1045,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY with avatar loading (no colored letters)
+        // PLAYER FACTORY with avatar loading
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1038,10 +1059,7 @@
         }
 
         function loadAvatarForPlayer(player) {
-            if (!player.pfp) {
-                // assign default avatar
-                player.pfp = state.defaultAvatar;
-            }
+            const src = player.pfp || state.defaultAvatar;
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
@@ -1050,15 +1068,15 @@
             };
             img.onerror = () => {
                 // fallback to default avatar
-                const fallbackImg = new Image();
-                fallbackImg.crossOrigin = 'anonymous';
-                fallbackImg.onload = () => {
+                const fallback = new Image();
+                fallback.crossOrigin = 'anonymous';
+                fallback.onload = () => {
                     player.pfpLoaded = true;
-                    player.pfpImg = fallbackImg;
+                    player.pfpImg = fallback;
                 };
-                fallbackImg.src = state.defaultAvatar;
+                fallback.src = state.defaultAvatar;
             };
-            img.src = player.pfp;
+            img.src = src;
         }
 
         function makePlayer(id, bet, name, pfp) {
@@ -1096,7 +1114,7 @@
                 pfpLoaded: false,
                 pfpImg: null,
             };
-            // For the user, use preloaded image if available
+            // If this is the user, use preloaded image if available
             if (id === state.userId && state.userPfpImg) {
                 p.pfpLoaded = true;
                 p.pfpImg = state.userPfpImg;
@@ -1175,9 +1193,11 @@
             const bet = Math.floor(Math.random() * 30) + 10;
             const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
             const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
+            state.pot += bet; // add bot's bet to pot
             state.botSpawned = true;
             updateWaitingText();
             updateBetUI();
+            updateStatsBar();
             haptic('light');
         }
 
@@ -1274,7 +1294,9 @@
 
                 // Show win panel - pick a random GIF and keep it (don't change)
                 const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-                winGif.src = randomGif; // no cache buster to prevent flicker, but we set it once
+                winGif.src = randomGif;
+                // Set winner avatar
+                winAvatar.src = winner.pfp;
                 winName.textContent = winner.name + ' wins!';
                 winMultiplier.textContent = 'x' + (winnings / winnerBet).toFixed(1);
 
@@ -1668,7 +1690,7 @@
 
             ctx.restore();
 
-            // ── PLAYERS (always draw avatar, never colored circle) ──
+            // ── PLAYERS (always draw avatar) ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const popScale = getPopScale(p);
@@ -1689,7 +1711,6 @@
                 ctx.save();
                 ctx.globalAlpha = alpha;
 
-                // Always draw the avatar image; if not loaded, use a placeholder
                 if (p.pfpLoaded && p.pfpImg) {
                     ctx.save();
                     ctx.beginPath();
@@ -1699,8 +1720,7 @@
                     ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                     ctx.restore();
                 } else {
-                    // Fallback: draw a gray circle with a question mark or initial,
-                    // but we try to load the avatar, so this should rarely happen.
+                    // Fallback: draw a gray circle with a question mark
                     ctx.fillStyle = '#444';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -2048,7 +2068,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – FINAL: avatars only, win money correct, GIFs fixed');
+        console.log('◆ dllump – FINAL: avatars on circles + win screen, correct pot, GIFs fixed');
     </script>
 </body>
 </html>
