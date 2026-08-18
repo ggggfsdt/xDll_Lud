@@ -183,24 +183,25 @@
             box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 0 50px rgba(76, 175, 80, 0.05);
         }
 
+        /* TIMER - bottom-left corner, no background */
         #countdown-timer {
             position: absolute;
-            bottom: 60px;
-            left: 16px;
+            bottom: 10px;
+            left: 12px;
             font-size: 22px;
             font-weight: 700;
             color: #fff;
-            text-shadow: 0 0 30px rgba(76, 175, 80, 0.6), 0 0 60px rgba(0, 0, 0, 0.9);
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
             z-index: 3;
             pointer-events: none;
             display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 4px 14px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(4px);
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            padding: 0;
+            line-height: 1;
         }
 
         #stats-bar {
@@ -750,9 +751,8 @@
             }
             #countdown-timer {
                 font-size: 18px;
-                bottom: 50px;
-                left: 12px;
-                padding: 3px 10px;
+                bottom: 8px;
+                left: 8px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -2049,7 +2049,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – PFP fixed with cache, timer bottom-left, buttons removed');
+        console.log('◆ dllump – timer at bottom-left, no background, PFP cache fixed');
     </script>
 </body>
 </html>
