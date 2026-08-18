@@ -161,14 +161,19 @@
 
         #pvp-page {
             background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
         }
 
+        /* arena-wrap: flex-1 so it takes remaining space, centers canvas */
         #arena-wrap {
             flex: 1;
             position: relative;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            justify-content: center;
             padding: 10px 10px 0 10px;
             min-height: 0;
             overflow: visible;
@@ -186,83 +191,11 @@
             flex-shrink: 0;
         }
 
-        /* Player list - column below arena */
-        #player-list-container {
-            width: 100%;
-            max-height: 110px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            padding: 6px 4px 4px 4px;
-            margin-top: 2px;
-            scrollbar-width: thin;
-        }
-        #player-list-container::-webkit-scrollbar {
-            width: 3px;
-        }
-        #player-list-container::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 10px;
-        }
-        .pl-entry {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--surface2);
-            border-radius: 20px;
-            padding: 2px 10px 2px 4px;
-            border: 1px solid var(--border);
-            font-size: 12px;
-            color: #ccc;
-            opacity: 0.85;
-            width: auto;
-            min-width: 140px;
-            max-width: 200px;
-            justify-content: center;
-        }
-        .pl-entry.you {
-            border-color: var(--primary);
-            opacity: 1;
-        }
-        .pl-entry .pl-avatar {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: var(--surface3);
-        }
-        .pl-entry .pl-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .pl-entry .pl-name {
-            font-weight: 600;
-            max-width: 60px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 12px;
-        }
-        .pl-entry .pl-bet {
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 12px;
-        }
-        .pl-entry .pl-chance {
-            color: var(--text2);
-            font-size: 10px;
-            margin-left: 2px;
-        }
-
         /* Timer - top-right corner */
         #countdown-timer {
             position: absolute;
-            top: 8px;
-            right: 12px;
+            top: 12px;
+            right: 16px;
             font-size: 22px;
             font-weight: 700;
             color: #fff;
@@ -279,39 +212,7 @@
             line-height: 1;
         }
 
-        #stats-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 14px 10px 14px;
-            flex-shrink: 0;
-            color: var(--text2);
-            font-size: 14px;
-            font-weight: 600;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            margin-top: 0;
-        }
-        #stats-bar .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        #stats-bar .stat-item .icon {
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
-        }
-        #stats-bar .stat-item .value {
-            color: #fff;
-            font-weight: 700;
-        }
-        #stats-bar .stat-item .label {
-            color: var(--text2);
-            font-size: 12px;
-            margin-right: 2px;
-        }
-
+        /* Waiting text centered on canvas */
         #waiting-text {
             position: absolute;
             top: 50%;
@@ -335,7 +236,7 @@
             margin-top: 2px;
         }
 
-        /* Bet overlay with collapsible */
+        /* Bet overlay - positioned absolute over canvas */
         #bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -413,9 +314,6 @@
             padding: 2px;
             transform: rotate(0deg);
         }
-        #bet-overlay:not(.collapsed) .bet-toggle:hover {
-            opacity: 1;
-        }
         #bet-overlay:not(.collapsed) .bet-toggle::before {
             content: '>';
             display: inline-block;
@@ -436,9 +334,6 @@
             display: inline-block;
             transform: rotate(-90deg);
             margin-right: 4px;
-        }
-        #bet-overlay:not(.collapsed) .bet-toggle {
-            display: flex;
         }
         #bet-overlay:not(.collapsed) .bet-toggle-text {
             display: none;
@@ -525,6 +420,130 @@
         #bet-overlay.collapsed #bet-input,
         #bet-overlay.collapsed #bet-btn {
             display: none;
+        }
+
+        /* Add bot button (temporary) */
+        #add-bot-btn {
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text2);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        #add-bot-btn:active {
+            transform: scale(0.94);
+            opacity: 0.7;
+        }
+
+        /* Player list - scrollable below canvas */
+        #player-list-container {
+            width: 100%;
+            max-height: 100px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 4px 4px 2px 4px;
+            flex-shrink: 0;
+            scrollbar-width: thin;
+        }
+        #player-list-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        #player-list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .pl-entry {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border-radius: 20px;
+            padding: 2px 10px 2px 4px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            color: #ccc;
+            opacity: 0.85;
+            width: auto;
+            min-width: 140px;
+            max-width: 200px;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .pl-entry.you {
+            border-color: var(--primary);
+            opacity: 1;
+        }
+        .pl-entry .pl-avatar {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        .pl-entry .pl-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .pl-entry .pl-name {
+            font-weight: 600;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 12px;
+        }
+        .pl-entry .pl-bet {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .pl-entry .pl-chance {
+            color: var(--text2);
+            font-size: 10px;
+            margin-left: 2px;
+        }
+
+        #stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 14px 10px 14px;
+            flex-shrink: 0;
+            color: var(--text2);
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            margin-top: 0;
+        }
+        #stats-bar .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #stats-bar .stat-item .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        #stats-bar .stat-item .value {
+            color: #fff;
+            font-weight: 700;
+        }
+        #stats-bar .stat-item .label {
+            color: var(--text2);
+            font-size: 12px;
+            margin-right: 2px;
         }
 
         #profile-page {
@@ -919,8 +938,8 @@
             }
             #countdown-timer {
                 font-size: 18px;
-                top: 6px;
-                right: 8px;
+                top: 8px;
+                right: 12px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -950,7 +969,7 @@
             }
             #player-list-container {
                 max-height: 80px;
-                padding: 4px 2px;
+                padding: 3px 2px;
                 gap: 2px;
             }
             .pl-entry {
@@ -973,6 +992,10 @@
             .pl-entry .pl-chance {
                 font-size: 9px;
             }
+            #add-bot-btn {
+                font-size: 10px;
+                padding: 3px 10px;
+            }
         }
     </style>
 </head>
@@ -991,13 +1014,11 @@
 
         <div id="main">
             <div id="pvp-page" class="tab-page active">
+                <!-- arena-wrap: flex-1 + center canvas -->
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <div id="countdown-timer">3.00</div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
-
-                    <!-- Player list - column below arena -->
-                    <div id="player-list-container"></div>
 
                     <!-- WIN PANEL -->
                     <div id="win-panel">
@@ -1010,18 +1031,23 @@
                         <button id="win-continue-btn">Continue</button>
                     </div>
 
-                    <!-- Bet overlay with collapsible -->
+                    <!-- Bet overlay with collapsible and Add Bot button -->
                     <div id="bet-overlay-wrap">
                         <div id="bet-overlay">
                             <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                             <input type="number" id="bet-input" value="10" min="10" max="9999" />
                             <button id="bet-btn">join</button>
+                            <button id="add-bot-btn">+ Bot</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                         </div>
                     </div>
                 </div>
 
+                <!-- Player list - below canvas -->
+                <div id="player-list-container"></div>
+
+                <!-- Stats bar -->
                 <div id="stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
                     <div class="stat-item"><img src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
@@ -1051,10 +1077,12 @@
         </div>
 
         <div id="tabs">
+            <!-- PvP icon: original arena/battle icon -->
             <button class="tab-btn active" data-tab="pvp">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path d="M6 8 L18 8 L16 20 L8 20 Z" /><path d="M10 8 L14 8" /><path d="M12 8 L12 3" /><path d="M8 3 L10 6" /><path d="M16 3 L14 6" /></svg></span>PvP</button>
             <button class="tab-btn" data-tab="profile">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5" /><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20" /></svg></span>Profile</button>
+            <!-- Top icon: star / medal facing down -->
             <button class="tab-btn" data-tab="top">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path d="M12 3 L14.5 8.5 L20.5 9.5 L16 13.5 L17 19.5 L12 16.5 L7 19.5 L8 13.5 L3.5 9.5 L9.5 8.5 L12 3 Z" /></svg></span>Top</button>
         </div>
@@ -1145,6 +1173,7 @@
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
+        const addBotBtn = document.getElementById('add-bot-btn');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -1376,7 +1405,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER LIST UI (column below arena)
+        // PLAYER LIST UI (scrollable below canvas)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePlayerList() {
             const alive = state.players.filter(p => p.alive);
@@ -1483,11 +1512,6 @@
                 balanceAnimInterval = null;
             }
 
-            // Set initial value immediately to prevent "0" flicker
-            if (step === 0 && current !== target) {
-                // We'll animate from current to target
-            }
-
             balanceAnimInterval = setInterval(() => {
                 step++;
                 const newVal = Math.round(current + stepSize * step);
@@ -1508,7 +1532,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // VICTORY SOUND (Web Audio)
+        // VICTORY SOUND (placeholder - Telegram doesn't provide profile music)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let audioCtx = null;
         let victorySoundPlaying = false;
@@ -1525,7 +1549,7 @@
                 victorySoundPlaying = true;
 
                 const now = audioCtx.currentTime;
-                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                const notes = [523.25, 659.25, 783.99, 1046.50];
                 const durations = [0.12, 0.12, 0.12, 0.2];
                 const startTimes = [0, 0.14, 0.28, 0.45];
 
@@ -1542,7 +1566,6 @@
                     osc.stop(now + startTimes[i] + durations[i]);
                 }
 
-                // Add a second layer for richness
                 setTimeout(() => {
                     victorySoundPlaying = false;
                 }, 800);
@@ -1553,7 +1576,6 @@
         }
 
         function stopVictorySound() {
-            // We don't need to stop, it fades naturally
             victorySoundPlaying = false;
         }
 
@@ -1576,7 +1598,25 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BOT
+        // ADD BOT (temporary)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        addBotBtn.addEventListener('click', function() {
+            if (state.gameState === 'playing' || state.gameState === 'finished') return;
+            const botName = 'Bot' + (state.players.filter(p => p.id.startsWith('bot_')).length + 1);
+            const bet = Math.floor(Math.random() * 40) + 10;
+            const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
+            const bot = makePlayer('bot_' + Date.now(), bet, botName, botPfp);
+            state.pot += bet;
+            state.botSpawned = true;
+            updateWaitingText();
+            updateBetUI();
+            updateStatsBar();
+            updatePlayerList();
+            haptic('medium');
+        });
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // BOT (auto spawn)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const BOT_NAME = 'Bot';
 
@@ -1625,7 +1665,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC (with prestart)
+        // GAME LOGIC (original opening timing: 3.5-6s open, 1.5-3.5s close)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function startCountdown() {
             if (state.gameState !== 'idle') return;
@@ -1691,7 +1731,6 @@
                 if (winner.id === state.userId) {
                     state.balance += winnings;
                     state.wins++;
-                    // Play victory sound for user win
                     playVictorySound();
                 } else {
                     state.losses++;
@@ -1761,7 +1800,7 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS (with haptic on bump)
+        // PHYSICS (with knockback resistance based on mass)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1814,10 +1853,12 @@
                         state: 'flashing',
                         _total: totalPts,
                     };
+                    // Original timing: 3.5 + random 2.5 = 3.5-6 seconds
                     state.openingTimer = 3.5 + Math.random() * 2.5;
                     haptic('light');
                 } else {
                     state.opening = null;
+                    // Original closing timing: 1.5 + random 2.0 = 1.5-3.5 seconds
                     state.openingTimer = 1.5 + Math.random() * 2.0;
                 }
             }
@@ -1889,13 +1930,14 @@
                         }
                     }
 
+                    // ── ELIMINATION (escape threshold slightly closer) ──
                     if (opening && opening.state === 'open') {
                         const cx = half,
                             cy = half;
                         const dx = p.x - cx,
                             dy = p.y - cy;
                         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                        const escapeThreshold = half * 1.2 + radius;
+                        const escapeThreshold = half * 1.12 + radius;
                         if (distFromCenter > escapeThreshold) {
                             let nearestGapIdx = -1;
                             let minDist = Infinity;
@@ -1925,6 +1967,7 @@
                     }
                 });
 
+                // ── CIRCLE COLLISIONS with knockback resistance ──
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1944,15 +1987,20 @@
                             a.y -= ny * overlap;
                             b.x += nx * overlap;
                             b.y += ny * overlap;
+
                             const dvx = a.vx - b.vx,
                                 dvy = a.vy - b.vy;
                             const dvn = dvx * nx + dvy * ny;
                             if (dvn > 0) {
+                                const totalMass = a.mass + b.mass;
                                 const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
-                                a.vx -= impulse / a.mass * nx;
-                                a.vy -= impulse / a.mass * ny;
-                                b.vx += impulse / b.mass * nx;
-                                b.vy += impulse / b.mass * ny;
+                                // Resistance factor: bigger mass => less change
+                                const aFactor = 1 - (a.mass / totalMass) * 0.5;
+                                const bFactor = 1 - (b.mass / totalMass) * 0.5;
+                                a.vx -= (impulse / a.mass) * aFactor * nx;
+                                a.vy -= (impulse / a.mass) * aFactor * ny;
+                                b.vx += (impulse / b.mass) * bFactor * nx;
+                                b.vy += (impulse / b.mass) * bFactor * ny;
                             }
                         }
                     }
@@ -2460,7 +2508,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – perfect: column player list, chevron toggle, auto hide bet, win sound, all-in fixed');
+        console.log('◆ dllump – layout restored: canvas centered, stats + player list at bottom, original icons, original opening timing');
     </script>
 </body>
 </html>
