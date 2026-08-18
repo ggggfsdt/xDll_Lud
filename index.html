@@ -879,6 +879,7 @@
             gameTime: 0,
             lastTime: 0,
             currentTab: 'pvp',
+            userPfpImg: null, // preloaded user image
         };
 
         // DOM refs
@@ -1022,7 +1023,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY (with improved PFP loading)
+        // PLAYER FACTORY (with PFP loading)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1067,13 +1068,15 @@
                 pulseTime: 0,
                 isPulsing: false,
                 pulseStartTime: 0,
-                // For PFP loading
                 pfpLoaded: false,
                 pfpImg: null,
             };
-            state.players.push(p);
-            // Load PFP if provided
-            if (pfp) {
+            // If this is the user, use preloaded image if available
+            if (id === state.userId && state.userPfpImg) {
+                p.pfpLoaded = true;
+                p.pfpImg = state.userPfpImg;
+            } else if (pfp) {
+                // Load image for other players (bots)
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = () => {
@@ -1086,6 +1089,7 @@
                 };
                 img.src = pfp;
             }
+            state.players.push(p);
             computeRadii();
             haptic('medium');
             return p;
@@ -1236,18 +1240,16 @@
             const winner = getPlayer(winnerId);
 
             if (winner) {
-                // Calculate winnings correctly: winner gets their bet back + (losers' bets minus commission)
+                // Calculate winnings: winner gets all pot minus small commission (2% from losers only)
                 const totalPot = state.pot;
                 const winnerBet = winner.bet;
                 const losersBets = totalPot - winnerBet;
-                // Commission only from losers: 2%
                 const commission = Math.floor(losersBets * 0.02);
-                const netWin = losersBets - commission;
-                const totalWinnings = winnerBet + netWin;
-                const multiplier = (totalWinnings / winnerBet).toFixed(1);
+                const winnings = totalPot - commission; // winner gets entire pot minus commission
+                const multiplier = (winnings / winnerBet).toFixed(1);
 
                 if (winner.id === state.userId) {
-                    state.balance += netWin; // winner already has their bet deducted, we add net win
+                    state.balance += winnings; // add all winnings (includes their bet back + net profit)
                     state.wins++;
                 } else {
                     state.losses++;
@@ -1256,9 +1258,9 @@
                 updateProfile();
                 updateTopList();
 
-                // Show win panel - random GIF with cache buster
+                // Show win panel - pick a random GIF and keep it (don't change)
                 const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-                winGif.src = randomGif + '?t=' + Date.now();
+                winGif.src = randomGif; // no cache buster to prevent flicker, but we set it once
                 winName.textContent = winner.name + ' wins!';
                 winMultiplier.textContent = 'x' + multiplier;
 
@@ -1533,7 +1535,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER (with PFP using loaded images)
+        // RENDER (with PFP)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -1979,8 +1981,27 @@
                 state.pfp = 'https://i.pravatar.cc/100?img=69';
             }
             usernameDisplay.textContent = '@' + state.username;
-            if (state.pfp) profilePfp.src = state.pfp;
-            else profilePfp.src = 'https://i.pravatar.cc/100?img=69';
+            if (state.pfp) {
+                profilePfp.src = state.pfp;
+                // Preload user PFP for canvas
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    state.userPfpImg = img;
+                    // Update existing user player if already created
+                    const userPlayer = state.players.find(p => p.id === state.userId);
+                    if (userPlayer) {
+                        userPlayer.pfpLoaded = true;
+                        userPlayer.pfpImg = img;
+                    }
+                };
+                img.onerror = () => {
+                    state.userPfpImg = null;
+                };
+                img.src = state.pfp;
+            } else {
+                profilePfp.src = 'https://i.pravatar.cc/100?img=69';
+            }
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
             updateBalance();
@@ -2000,7 +2021,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – FINAL: PFPs fixed, win money fixed, GIFs bigger and visible');
+        console.log('◆ dllump – FINAL: GIFs fixed, win money correct, PFPs on circles');
     </script>
 </body>
 </html>
