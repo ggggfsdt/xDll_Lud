@@ -899,7 +899,6 @@
             gameTime: 0,
             lastTime: 0,
             currentTab: 'pvp',
-            userPfpImg: null,
             defaultAvatar: 'https://i.pravatar.cc/150?img=0',
         };
 
@@ -1045,7 +1044,22 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY with avatar loading
+        // IMAGE CACHE (global for PFPs)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const imageCache = {};
+
+        function loadImage(src) {
+            if (!imageCache[src]) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.src = src;
+                imageCache[src] = img;
+            }
+            return imageCache[src];
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // PLAYER FACTORY (no per-player loading, uses cache)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1056,27 +1070,6 @@
                 const newTarget = Math.min(Math.max(r, 14), 52);
                 p.targetRadius = newTarget;
             });
-        }
-
-        function loadAvatarForPlayer(player) {
-            const src = player.pfp || state.defaultAvatar;
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                player.pfpLoaded = true;
-                player.pfpImg = img;
-            };
-            img.onerror = () => {
-                // fallback to default avatar
-                const fallback = new Image();
-                fallback.crossOrigin = 'anonymous';
-                fallback.onload = () => {
-                    player.pfpLoaded = true;
-                    player.pfpImg = fallback;
-                };
-                fallback.src = state.defaultAvatar;
-            };
-            img.src = src;
         }
 
         function makePlayer(id, bet, name, pfp) {
@@ -1090,11 +1083,13 @@
                 overlap = state.players.some(p => Math.hypot(p.x - x, p.y - y) < p.radius + radius + 5);
                 attempts++;
             }
+            // If pfp is empty, use default avatar
+            const avatarSrc = pfp || state.defaultAvatar;
             const p = {
                 id,
                 bet,
                 name: name || 'player',
-                pfp: pfp || state.defaultAvatar,
+                pfp: avatarSrc,
                 color: getColor(state.players.length + 1),
                 radius: radius,
                 displayRadius: radius,
@@ -1111,17 +1106,9 @@
                 pulseTime: 0,
                 isPulsing: false,
                 pulseStartTime: 0,
-                pfpLoaded: false,
-                pfpImg: null,
             };
-            // If this is the user, use preloaded image if available
-            if (id === state.userId && state.userPfpImg) {
-                p.pfpLoaded = true;
-                p.pfpImg = state.userPfpImg;
-                p.pfp = state.pfp || state.defaultAvatar;
-            } else {
-                loadAvatarForPlayer(p);
-            }
+            // Pre-load image into cache (async)
+            loadImage(avatarSrc);
             state.players.push(p);
             computeRadii();
             haptic('medium');
@@ -1193,7 +1180,7 @@
             const bet = Math.floor(Math.random() * 30) + 10;
             const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
             const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
-            state.pot += bet; // add bot's bet to pot
+            state.pot += bet;
             state.botSpawned = true;
             updateWaitingText();
             updateBetUI();
@@ -1275,15 +1262,14 @@
             const winner = getPlayer(winnerId);
 
             if (winner) {
-                // Calculate winnings: winner gets all pot minus small commission (2% from losers only)
                 const totalPot = state.pot;
                 const winnerBet = winner.bet;
                 const losersBets = totalPot - winnerBet;
                 const commission = Math.floor(losersBets * 0.02);
-                const winnings = totalPot - commission; // winner gets entire pot minus commission
+                const winnings = totalPot - commission;
 
                 if (winner.id === state.userId) {
-                    state.balance += winnings; // add all winnings (includes their bet back + net profit)
+                    state.balance += winnings;
                     state.wins++;
                 } else {
                     state.losses++;
@@ -1292,7 +1278,6 @@
                 updateProfile();
                 updateTopList();
 
-                // Show win panel - pick a random GIF and keep it (don't change)
                 const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
                 winGif.src = randomGif;
                 // Set winner avatar
@@ -1306,14 +1291,12 @@
                 state.pot = 0;
                 state.opening = null;
 
-                // Auto close after 3 seconds
                 if (window.winTimeout) clearTimeout(window.winTimeout);
                 window.winTimeout = setTimeout(() => {
                     hideWinPanelAndReset();
                 }, 3000);
 
             } else {
-                // Fallback reset
                 state.gameState = 'idle';
                 state.players = [];
                 state.botSpawned = false;
@@ -1333,7 +1316,6 @@
                 clearTimeout(window.winTimeout);
                 window.winTimeout = null;
             }
-            // Reset game state
             state.players = [];
             state.gameState = 'idle';
             state.botSpawned = false;
@@ -1447,7 +1429,6 @@
                     p.y += p.vy * subDt * 60;
 
                     const radius = p.displayRadius || p.radius;
-                    // Wall collision
                     for (let i = 0; i < totalPts; i++) {
                         const j = (i + 1) % totalPts;
                         if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
@@ -1481,7 +1462,6 @@
                         }
                     }
 
-                    // ── ELIMINATION ──
                     if (opening && opening.state === 'open') {
                         const cx = half,
                             cy = half;
@@ -1517,7 +1497,6 @@
                     }
                 });
 
-                // Circle collisions
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1550,7 +1529,6 @@
                     }
                 }
 
-                // Speed management
                 alive.forEach(p => {
                     const maxSp = speedForRadius(p.displayRadius || p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -1571,7 +1549,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER (always draw avatar, never colored circle)
+        // RENDER (using image cache)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -1690,7 +1668,7 @@
 
             ctx.restore();
 
-            // ── PLAYERS (always draw avatar) ──
+            // ── PLAYERS (draw avatar from cache) ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const popScale = getPopScale(p);
@@ -1711,17 +1689,19 @@
                 ctx.save();
                 ctx.globalAlpha = alpha;
 
-                if (p.pfpLoaded && p.pfpImg) {
+                const img = loadImage(p.pfp);
+                if (img.complete && img.naturalWidth > 0) {
+                    // Draw avatar
                     ctx.save();
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
                     ctx.clip();
                     const drawSize = Math.max(finalRadius - 2, 2) * 2;
-                    ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
+                    ctx.drawImage(img, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                     ctx.restore();
                 } else {
-                    // Fallback: draw a gray circle with a question mark
-                    ctx.fillStyle = '#444';
+                    // Fallback: colored circle with initial (use color)
+                    ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
                     ctx.fill();
@@ -1729,7 +1709,7 @@
                     ctx.font = `${Math.max(finalRadius * 0.5, 6)}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText('?', p.x, p.y);
+                    ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                 }
 
                 // Outline
@@ -2019,33 +1999,8 @@
             usernameDisplay.textContent = '@' + state.username;
             if (state.pfp) {
                 profilePfp.src = state.pfp;
-                // Preload user PFP for canvas
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    state.userPfpImg = img;
-                    // Update existing user player if already created
-                    const userPlayer = state.players.find(p => p.id === state.userId);
-                    if (userPlayer) {
-                        userPlayer.pfpLoaded = true;
-                        userPlayer.pfpImg = img;
-                    }
-                };
-                img.onerror = () => {
-                    // Use default avatar
-                    const fallback = new Image();
-                    fallback.crossOrigin = 'anonymous';
-                    fallback.onload = () => {
-                        state.userPfpImg = fallback;
-                        const userPlayer = state.players.find(p => p.id === state.userId);
-                        if (userPlayer) {
-                            userPlayer.pfpLoaded = true;
-                            userPlayer.pfpImg = fallback;
-                        }
-                    };
-                    fallback.src = state.defaultAvatar;
-                };
-                img.src = state.pfp;
+                // Preload user PFP into cache
+                loadImage(state.pfp);
             } else {
                 profilePfp.src = state.defaultAvatar;
             }
@@ -2068,7 +2023,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – FINAL: avatars on circles + win screen, correct pot, GIFs fixed');
+        console.log('◆ dllump – avatar cache fixed, PFPs on circles now work');
     </script>
 </body>
 </html>
