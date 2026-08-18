@@ -59,7 +59,7 @@
         #bet-info .label { font-size:9px; text-transform:uppercase; opacity:0.5; letter-spacing:0.6px; }
         #bet-info .value { font-weight:700; color:var(--gold); font-size:14px; }
         #bet-input { width:60px; padding:6px 8px; border-radius:10px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:15px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
-        #bet-input:focus { border-color:var(--primary); box-shadow:0 0 24px var(--primary-dim); }
+        #bet-input:focus { border-color:var(--primary); box-shadow:0 0 24px var(--primary-glow); }
         #bet-btn { padding:6px 18px; border-radius:12px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:0.2s; box-shadow:0 0 24px var(--primary-glow); letter-spacing:0.2px; white-space:nowrap; }
         #bet-btn:active { transform:scale(0.94); opacity:0.8; }
         #bet-btn:disabled { opacity:0.4; transform:none; pointer-events:none; }
@@ -225,7 +225,10 @@
             pot: 0,
             arenaSize: 0,
             cornerRadius: 0,
-            opening: null,
+            perimeterPoints: [], // array of {x, y} defining the border
+            openingStartIdx: -1,
+            openingEndIdx: -1,
+            opening: null, // { startIdx, endIdx }
             botEnabled: true,
             botSpawned: false,
             winnerId: null,
@@ -282,7 +285,69 @@
         function getColor(i) { return COLORS[i % COLORS.length]; }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // CANVAS SIZING
+        // PERIMETER GENERATION (Rounded rectangle with segments)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function generatePerimeter(size, cornerRadius, numPoints = 200) {
+            const half = size / 2;
+            const r = Math.min(cornerRadius, half);
+            const points = [];
+            // We'll trace the perimeter clockwise starting from top-left corner
+            // Define 8 sections: top straight, top-right arc, right straight, bottom-right arc,
+            // bottom straight, bottom-left arc, left straight, top-left arc.
+            const sections = [
+                { type: 'line', x1: -half + r, y1: -half, x2: half - r, y2: -half },
+                { type: 'arc', cx: half - r, cy: -half + r, start: -Math.PI / 2, end: 0 },
+                { type: 'line', x1: half, y1: -half + r, x2: half, y2: half - r },
+                { type: 'arc', cx: half - r, cy: half - r, start: 0, end: Math.PI / 2 },
+                { type: 'line', x1: half - r, y1: half, x2: -half + r, y2: half },
+                { type: 'arc', cx: -half + r, cy: half - r, start: Math.PI / 2, end: Math.PI },
+                { type: 'line', x1: -half, y1: half - r, x2: -half, y2: -half + r },
+                { type: 'arc', cx: -half + r, cy: -half + r, start: Math.PI, end: 3 * Math.PI / 2 }
+            ];
+
+            // Compute total length
+            let totalLen = 0;
+            const segLengths = sections.map(seg => {
+                if (seg.type === 'line') {
+                    const dx = seg.x2 - seg.x1,
+                        dy = seg.y2 - seg.y1;
+                    return Math.sqrt(dx * dx + dy * dy);
+                } else {
+                    return r * (seg.end - seg.start);
+                }
+            });
+            totalLen = segLengths.reduce((a, b) => a + b, 0);
+
+            // Sample points evenly along perimeter
+            const step = totalLen / numPoints;
+            let accumulated = 0;
+            let segIdx = 0;
+            let localT = 0;
+            for (let i = 0; i < numPoints; i++) {
+                const target = i * step;
+                // Find which segment and local position
+                while (accumulated + segLengths[segIdx] < target) {
+                    accumulated += segLengths[segIdx];
+                    segIdx = (segIdx + 1) % sections.length;
+                }
+                localT = (target - accumulated) / segLengths[segIdx];
+                const seg = sections[segIdx];
+                let px, py;
+                if (seg.type === 'line') {
+                    px = seg.x1 + localT * (seg.x2 - seg.x1);
+                    py = seg.y1 + localT * (seg.y2 - seg.y1);
+                } else {
+                    const angle = seg.start + localT * (seg.end - seg.start);
+                    px = seg.cx + r * Math.cos(angle);
+                    py = seg.cy + r * Math.sin(angle);
+                }
+                points.push({ x: px + half, y: py + half });
+            }
+            return points;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // CANVAS SIZING & PERIMETER UPDATE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -295,62 +360,24 @@
             state.arenaSize = size;
             state.cornerRadius = size * 0.15;
             ctx.scale(dpr, dpr);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ROUNDED RECT SDF (ACCURATE HITBOX)
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function sdfRoundedRect(px, py, size, r) {
-            const half = size / 2;
-            const cx = size / 2,
-                cy = size / 2;
-            const dx = Math.abs(px - cx);
-            const dy = Math.abs(py - cy);
-            const qx = dx - half + r;
-            const qy = dy - half + r;
-            if (qx < 0 && qy < 0) {
-                return -Math.min(Math.max(qx, qy), 0);
+            // Generate perimeter
+            state.perimeterPoints = generatePerimeter(size, state.cornerRadius, 200);
+            // If there's an opening, map the indices
+            if (state.opening) {
+                const total = state.perimeterPoints.length;
+                const startIdx = Math.floor(state.opening.start * total);
+                const endIdx = Math.floor(state.opening.end * total);
+                state.opening.startIdx = startIdx;
+                state.opening.endIdx = endIdx;
             }
-            return Math.sqrt(Math.max(qx, 0) * Math.max(qx, 0) + Math.max(qy, 0) * Math.max(qy, 0)) - r;
-        }
-
-        function normalRoundedRect(px, py, size, r) {
+            // Reposition players if needed
             const half = size / 2;
-            const cx = size / 2,
-                cy = size / 2;
-            const dx = px - cx,
-                dy = py - cy;
-            const adx = Math.abs(dx),
-                ady = Math.abs(dy);
-            const qx = adx - half + r;
-            const qy = ady - half + r;
-            if (qx < 0 && qy < 0) {
-                const distX = half - r - adx;
-                const distY = half - r - ady;
-                if (distX < distY) return { nx: Math.sign(dx), ny: 0 };
-                else return { nx: 0, ny: Math.sign(dy) };
-            }
-            const eps = 0.02;
-            const d0 = sdfRoundedRect(px, py, size, r);
-            const ddx = sdfRoundedRect(px + eps, py, size, r) - d0;
-            const ddy = sdfRoundedRect(px, py + eps, size, r) - d0;
-            const len = Math.sqrt(ddx * ddx + ddy * ddy);
-            if (len < 0.0001) return { nx: 0, ny: -1 };
-            return { nx: ddx / len, ny: ddy / len };
-        }
-
-        function drawRoundedRect(ctx, x, y, w, h, r) {
-            ctx.beginPath();
-            ctx.moveTo(x + r, y);
-            ctx.lineTo(x + w - r, y);
-            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-            ctx.lineTo(x + w, y + h - r);
-            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-            ctx.lineTo(x + r, y + h);
-            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-            ctx.lineTo(x, y + r);
-            ctx.quadraticCurveTo(x, y, x + r, y);
-            ctx.closePath();
+            state.players.forEach(p => {
+                if (p.x === undefined || p.x === 0) {
+                    p.x = half + (Math.random() - 0.5) * (size * 0.4);
+                    p.y = half + (Math.random() - 0.5) * (size * 0.4);
+                }
+            });
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -536,7 +563,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – STABLE SDF
+        // PHYSICS – SEGMENT-BASED COLLISION WITH OPENING GAP
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -558,39 +585,46 @@
                 return;
             }
 
-            state.gameTime += dt;
-            state.openingGrowTimer -= dt;
-            if (state.openingGrowTimer <= 0 && state.opening && state.opening.state === 'open') {
-                state.openingGrowTimer = 3.0;
-                let gap = state.opening.end - state.opening.start;
-                let newGap = Math.min(gap + 0.04, 0.65);
-                let start = state.opening.start - (newGap - gap) / 2;
-                let end = state.opening.end + (newGap - gap) / 2;
-                if (start < 0) start = 0;
-                if (end > 1) end = 1;
-                state.opening.start = start;
-                state.opening.end = end;
-                state.opening.gapSize = (end - start) * state.arenaSize;
-            }
+            const size = state.arenaSize;
+            const pts = state.perimeterPoints;
+            const totalPts = pts.length;
 
-            if (state.opening && state.opening.state === 'flashing') {
-                state.opening.flashTimer += dt;
-                if (state.opening.flashTimer > 0.3) {
-                    state.opening.flashTimer = 0;
-                    state.opening.flashPulses--;
-                    if (state.opening.flashPulses <= 0) {
-                        state.opening.state = 'open';
-                        state.opening.flashPulses = 0;
-                        state.opening.flashTimer = 0;
-                        state.opening.gapSize = (state.opening.end - state.opening.start) * state.arenaSize;
-                    }
+            // Opening management
+            state.openingTimer -= dt;
+            if (state.openingTimer <= 0) {
+                if (!state.opening) {
+                    // Create opening: choose a random start index, gap size in terms of points
+                    const gapSize = Math.floor(0.1 * totalPts + Math.random() * 0.3 * totalPts); // 10-40% of perimeter
+                    const startIdx = Math.floor(Math.random() * totalPts);
+                    const endIdx = (startIdx + gapSize) % totalPts;
+                    state.opening = {
+                        startIdx: startIdx,
+                        endIdx: endIdx,
+                        start: startIdx / totalPts,
+                        end: endIdx / totalPts,
+                    };
+                    state.openingTimer = 3.0 + Math.random() * 3.0;
+                    haptic('light');
+                } else {
+                    state.opening = null;
+                    state.openingTimer = 0.8 + Math.random() * 2.2;
                 }
             }
 
-            const size = state.arenaSize;
-            const r = state.cornerRadius;
             const opening = state.opening;
-            const subSteps = 8;
+            // Helper to check if a point index is in the gap
+            function isInGap(idx) {
+                if (!opening) return false;
+                const start = opening.startIdx;
+                const end = opening.endIdx;
+                if (start < end) {
+                    return idx >= start && idx <= end;
+                } else {
+                    return idx >= start || idx <= end;
+                }
+            }
+
+            const subSteps = 5;
             const subDt = dt / subSteps;
 
             for (let step = 0; step < subSteps; step++) {
@@ -598,50 +632,98 @@
                     p.x += p.vx * subDt * 60;
                     p.y += p.vy * subDt * 60;
 
-                    // ── SDF COLLISION ──
-                    const d = sdfRoundedRect(p.x, p.y, size, r);
-                    if (d < p.radius) {
-                        const normal = normalRoundedRect(p.x, p.y, size, r);
-                        const overlap = p.radius - d;
-                        p.x += normal.nx * overlap;
-                        p.y += normal.ny * overlap;
-                        const vn = p.vx * normal.nx + p.vy * normal.ny;
-                        if (vn < 0) {
-                            p.vx -= 2 * vn * normal.nx;
-                            p.vy -= 2 * vn * normal.ny;
-                            p.vx *= 0.98;
-                            p.vy *= 0.98;
+                    // Collision detection against each segment of the perimeter
+                    let collided = false;
+                    for (let i = 0; i < totalPts; i++) {
+                        const j = (i + 1) % totalPts;
+                        // Skip segments that are in the gap
+                        if (isInGap(i) && isInGap(j)) continue;
+                        // Segment from pts[i] to pts[j]
+                        const ax = pts[i].x,
+                            ay = pts[i].y;
+                        const bx = pts[j].x,
+                            by = pts[j].y;
+                        // Compute distance from ball center to segment
+                        const dx = bx - ax,
+                            dy = by - ay;
+                        const lenSq = dx * dx + dy * dy;
+                        if (lenSq === 0) continue;
+                        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
+                        t = Math.max(0, Math.min(1, t));
+                        const nearX = ax + t * dx;
+                        const nearY = ay + t * dy;
+                        const distX = p.x - nearX;
+                        const distY = p.y - nearY;
+                        const dist = Math.sqrt(distX * distX + distY * distY);
+                        if (dist < p.radius) {
+                            // Compute normal (from segment to ball center)
+                            const nx = distX / dist;
+                            const ny = distY / dist;
+                            // Push ball out
+                            const overlap = p.radius - dist;
+                            p.x += nx * overlap;
+                            p.y += ny * overlap;
+                            // Reflect velocity if moving into the segment
+                            const vn = p.vx * nx + p.vy * ny;
+                            if (vn < 0) {
+                                const restitution = 0.85;
+                                p.vx -= (1 + restitution) * vn * nx;
+                                p.vy -= (1 + restitution) * vn * ny;
+                                // Small damping to avoid jitter
+                                p.vx *= 0.995;
+                                p.vy *= 0.995;
+                            }
+                            collided = true;
+                            break; // only resolve one collision per step
                         }
                     }
 
-                    // ── OPENING ELIMINATION ──
-                    const dOut = sdfRoundedRect(p.x, p.y, size, r);
-                    if (dOut > 2 && opening && opening.state === 'open') {
-                        const side = opening.side;
-                        const start = opening.start * size;
-                        const end = opening.end * size;
-                        let inGap = false;
-                        if (side === 'left' || side === 'right') {
-                            inGap = (p.y > start && p.y < end);
-                        } else {
-                            inGap = (p.x > start && p.x < end);
+                    // Check if ball has escaped through the opening gap
+                    if (!collided && opening) {
+                        // Check if ball center is outside the perimeter
+                        // We can test by seeing if ball is beyond the bounding box and near the gap
+                        // For simplicity, we'll check if ball is outside the arena bounding box
+                        const margin = p.radius;
+                        const left = margin,
+                            right = size - margin;
+                        const top = margin,
+                            bottom = size - margin;
+                        let outside = false;
+                        if (p.x < left || p.x > right || p.y < top || p.y > bottom) {
+                            outside = true;
                         }
-                        let movingOut = false;
-                        if (side === 'left' && p.vx < 0) movingOut = true;
-                        else if (side === 'right' && p.vx > 0) movingOut = true;
-                        else if (side === 'top' && p.vy < 0) movingOut = true;
-                        else if (side === 'bottom' && p.vy > 0) movingOut = true;
-                        const gapLen = (opening.end - opening.start) * size;
-                        const canFit = p.radius * 2 < gapLen - 1;
-                        if (inGap && movingOut && canFit) {
-                            p.alive = false;
-                            haptic('medium');
-                            return;
+                        if (outside) {
+                            // Check if it's near the gap: find the closest point on perimeter
+                            let minDist = Infinity;
+                            let closestIdx = 0;
+                            for (let i = 0; i < totalPts; i++) {
+                                const dx = p.x - pts[i].x;
+                                const dy = p.y - pts[i].y;
+                                const d = dx * dx + dy * dy;
+                                if (d < minDist) {
+                                    minDist = d;
+                                    closestIdx = i;
+                                }
+                            }
+                            // If the closest point is in the gap, eliminate the ball
+                            if (isInGap(closestIdx)) {
+                                // Also check if velocity is outward (moving away from center)
+                                const cx = size / 2,
+                                    cy = size / 2;
+                                const dirX = p.x - cx,
+                                    dirY = p.y - cy;
+                                const vOut = p.vx * dirX + p.vy * dirY;
+                                if (vOut > 0) {
+                                    p.alive = false;
+                                    haptic('medium');
+                                    return;
+                                }
+                            }
                         }
                     }
                 });
 
-                // ── CIRCLE COLLISIONS ──
+                // Circle collisions (mass-based)
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -673,7 +755,7 @@
                     }
                 }
 
-                // ── SPEED CAP ──
+                // Speed cap
                 alive.forEach(p => {
                     const maxSp = speedForRadius(p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -689,39 +771,11 @@
                 });
             }
 
-            // ── OPENING TIMER ──
-            state.openingTimer -= dt;
-            if (state.openingTimer <= 0) {
-                if (!state.opening) {
-                    const sides = ['top', 'right', 'bottom', 'left'];
-                    const side = sides[Math.floor(Math.random() * sides.length)];
-                    let gapSize = 0.12 + Math.random() * 0.45;
-                    let start = Math.random() * (1 - gapSize);
-                    let end = start + gapSize;
-                    start = Math.max(0, Math.min(1 - gapSize, start));
-                    end = start + gapSize;
-                    state.opening = {
-                        side: side,
-                        start: start,
-                        end: end,
-                        state: 'flashing',
-                        flashPulses: 4,
-                        flashTimer: 0,
-                        gapSize: (end - start) * state.arenaSize,
-                    };
-                    state.openingTimer = 3.0 + Math.random() * 3.0;
-                    haptic('light');
-                } else {
-                    state.opening = null;
-                    state.openingTimer = 0.8 + Math.random() * 2.2;
-                }
-            }
-
             botAI(dt);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – with PFPs in circles
+        // RENDER – ROUNDED SQUARE WITH PERIMETER SEGMENTS AND GAP
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
 
@@ -736,157 +790,82 @@
         }
 
         function render() {
-            const w = state.arenaSize,
-                half = w / 2;
-            const r = state.cornerRadius || w * 0.15;
+            const w = state.arenaSize;
+            const half = w / 2;
             ctx.clearRect(0, 0, w, w);
 
-            // background
+            // Background
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, '#0a0a0a');
             grad.addColorStop(1, '#000000');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Dark rim
+            // Arena shadow (dark rim)
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
-            ctx.shadowBlur = 35;
+            ctx.shadowBlur = 30;
             ctx.fillStyle = '#1a1a1e';
-            drawRoundedRect(ctx, 0, 0, w, w, r);
-            ctx.fill();
+            // Draw the rounded rect as a filled shape
+            const pts = state.perimeterPoints;
+            if (pts.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
             ctx.restore();
 
-            // Main arena
+            // Main arena surface (lighter)
             ctx.save();
             ctx.fillStyle = '#28282e';
-            drawRoundedRect(ctx, 0, 0, w, w, r);
-            ctx.fill();
+            if (pts.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
             ctx.restore();
 
-            // Border
-            const bw = 6;
-            ctx.save();
-            ctx.strokeStyle = 'rgba(160,160,176,0.3)';
-            ctx.lineWidth = bw;
-
+            // Draw border segments, skipping the gap
             const opening = state.opening;
-            const hasGap = opening && (opening.state === 'flashing' || opening.state === 'open');
-            const flash = opening && opening.state === 'flashing' && (opening.flashPulses % 2 === 1);
+            const isFlashing = opening && state.openingTimer > 2.5;
+            ctx.save();
+            ctx.strokeStyle = isFlashing ? '#ff3333' : 'rgba(160,160,176,0.3)';
+            ctx.lineWidth = isFlashing ? 8 : 6;
+            ctx.shadowColor = isFlashing ? 'rgba(255,50,50,0.8)' : 'none';
+            ctx.shadowBlur = isFlashing ? 30 : 0;
 
-            if (hasGap) {
-                const side = opening.side;
-                const start = opening.start * w;
-                const end = opening.end * w;
-                // Top
-                if (side !== 'top') {
+            if (pts.length > 1) {
+                const total = pts.length;
+                for (let i = 0; i < total; i++) {
+                    const j = (i + 1) % total;
+                    // Skip segments that are in the gap
+                    if (opening) {
+                        const start = opening.startIdx;
+                        const end = opening.endIdx;
+                        let inGap = false;
+                        if (start < end) {
+                            if (i >= start && i < end) inGap = true;
+                            // Also skip if j is in gap
+                            if (j >= start && j < end) inGap = true;
+                        } else {
+                            if (i >= start || i < end) inGap = true;
+                            if (j >= start || j < end) inGap = true;
+                        }
+                        if (inGap) continue;
+                    }
                     ctx.beginPath();
-                    ctx.moveTo(r, 0);
-                    ctx.lineTo(w - r, 0);
-                    ctx.quadraticCurveTo(w, 0, w, r);
-                    ctx.stroke();
-                } else {
-                    ctx.beginPath();
-                    ctx.moveTo(r, 0);
-                    ctx.lineTo(start, 0);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(end, 0);
-                    ctx.lineTo(w - r, 0);
-                    ctx.quadraticCurveTo(w, 0, w, r);
-                    ctx.stroke();
-                }
-                // Right
-                if (side !== 'right') {
-                    ctx.beginPath();
-                    ctx.moveTo(w, r);
-                    ctx.lineTo(w, w - r);
-                    ctx.quadraticCurveTo(w, w, w - r, w);
-                    ctx.stroke();
-                } else {
-                    ctx.beginPath();
-                    ctx.moveTo(w, r);
-                    ctx.lineTo(w, start);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(w, end);
-                    ctx.lineTo(w, w - r);
-                    ctx.quadraticCurveTo(w, w, w - r, w);
+                    ctx.moveTo(pts[i].x, pts[i].y);
+                    ctx.lineTo(pts[j].x, pts[j].y);
                     ctx.stroke();
                 }
-                // Bottom
-                if (side !== 'bottom') {
-                    ctx.beginPath();
-                    ctx.moveTo(w - r, w);
-                    ctx.lineTo(r, w);
-                    ctx.quadraticCurveTo(0, w, 0, w - r);
-                    ctx.stroke();
-                } else {
-                    ctx.beginPath();
-                    ctx.moveTo(w - r, w);
-                    ctx.lineTo(end, w);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(start, w);
-                    ctx.lineTo(r, w);
-                    ctx.quadraticCurveTo(0, w, 0, w - r);
-                    ctx.stroke();
-                }
-                // Left
-                if (side !== 'left') {
-                    ctx.beginPath();
-                    ctx.moveTo(0, w - r);
-                    ctx.lineTo(0, r);
-                    ctx.quadraticCurveTo(0, 0, r, 0);
-                    ctx.stroke();
-                } else {
-                    ctx.beginPath();
-                    ctx.moveTo(0, w - r);
-                    ctx.lineTo(0, end);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(0, start);
-                    ctx.lineTo(0, r);
-                    ctx.quadraticCurveTo(0, 0, r, 0);
-                    ctx.stroke();
-                }
-            } else {
-                drawRoundedRect(ctx, 0, 0, w, w, r);
-                ctx.stroke();
-            }
-
-            // Red flash
-            if (flash) {
-                const side = opening.side;
-                const start = opening.start * w;
-                const end = opening.end * w;
-                ctx.save();
-                ctx.shadowColor = 'rgba(255, 50, 50, 0.9)';
-                ctx.shadowBlur = 50;
-                ctx.strokeStyle = '#ff3333';
-                ctx.lineWidth = bw + 8;
-                if (side === 'top') {
-                    ctx.beginPath();
-                    ctx.moveTo(start, bw / 2);
-                    ctx.lineTo(end, bw / 2);
-                    ctx.stroke();
-                } else if (side === 'bottom') {
-                    ctx.beginPath();
-                    ctx.moveTo(start, w - bw / 2);
-                    ctx.lineTo(end, w - bw / 2);
-                    ctx.stroke();
-                } else if (side === 'left') {
-                    ctx.beginPath();
-                    ctx.moveTo(bw / 2, start);
-                    ctx.lineTo(bw / 2, end);
-                    ctx.stroke();
-                } else if (side === 'right') {
-                    ctx.beginPath();
-                    ctx.moveTo(w - bw / 2, start);
-                    ctx.lineTo(w - bw / 2, end);
-                    ctx.stroke();
-                }
-                ctx.restore();
             }
             ctx.restore();
 
@@ -907,12 +886,10 @@
                 ctx.shadowBlur = 8;
                 ctx.stroke();
 
-                // ── PFP Image ──
+                // PFP Image
                 const pfpSrc = p.pfp || '';
-                const hasPfp = pfpSrc && pfpSrc.length > 0;
-                if (hasPfp) {
+                if (pfpSrc) {
                     const img = loadImage(pfpSrc);
-                    // Check if image is loaded
                     if (img.complete && img.naturalWidth > 0) {
                         ctx.save();
                         ctx.beginPath();
@@ -931,8 +908,6 @@
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
-                        // Try to load the image for next frame
-                        img.onload = () => {};
                     }
                 } else {
                     // No PFP: colored circle with initial
@@ -1221,9 +1196,7 @@
                 state.username = u.username || u.first_name || 'player';
                 state.userId = u.id?.toString() || state.userId;
                 state.pfp = u.photo_url || '';
-                // Try to use the user's photo URL as PFP
                 if (state.pfp) {
-                    // Ensure it's a valid URL
                     try { new URL(state.pfp); } catch (_) { state.pfp = ''; }
                 }
             } else {
@@ -1250,7 +1223,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – stable physics, PFPs in circles, no NFTs');
+        console.log('◆ dllump – segment-based rounded square, proper gap, balls slide out to lose');
     </script>
 </body>
 </html>
