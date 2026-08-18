@@ -880,6 +880,7 @@
             lastTime: 0,
             currentTab: 'pvp',
             userPfpImg: null, // preloaded user image
+            defaultAvatar: 'https://i.pravatar.cc/150?img=0', // fallback
         };
 
         // DOM refs
@@ -1023,7 +1024,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY (with PFP loading)
+        // PLAYER FACTORY with avatar loading (no colored letters)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1034,6 +1035,30 @@
                 const newTarget = Math.min(Math.max(r, 14), 52);
                 p.targetRadius = newTarget;
             });
+        }
+
+        function loadAvatarForPlayer(player) {
+            if (!player.pfp) {
+                // assign default avatar
+                player.pfp = state.defaultAvatar;
+            }
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                player.pfpLoaded = true;
+                player.pfpImg = img;
+            };
+            img.onerror = () => {
+                // fallback to default avatar
+                const fallbackImg = new Image();
+                fallbackImg.crossOrigin = 'anonymous';
+                fallbackImg.onload = () => {
+                    player.pfpLoaded = true;
+                    player.pfpImg = fallbackImg;
+                };
+                fallbackImg.src = state.defaultAvatar;
+            };
+            img.src = player.pfp;
         }
 
         function makePlayer(id, bet, name, pfp) {
@@ -1051,7 +1076,7 @@
                 id,
                 bet,
                 name: name || 'player',
-                pfp: pfp || '',
+                pfp: pfp || state.defaultAvatar,
                 color: getColor(state.players.length + 1),
                 radius: radius,
                 displayRadius: radius,
@@ -1071,23 +1096,13 @@
                 pfpLoaded: false,
                 pfpImg: null,
             };
-            // If this is the user, use preloaded image if available
+            // For the user, use preloaded image if available
             if (id === state.userId && state.userPfpImg) {
                 p.pfpLoaded = true;
                 p.pfpImg = state.userPfpImg;
-            } else if (pfp) {
-                // Load image for other players (bots)
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    p.pfpLoaded = true;
-                    p.pfpImg = img;
-                };
-                img.onerror = () => {
-                    p.pfpLoaded = false;
-                    p.pfpImg = null;
-                };
-                img.src = pfp;
+                p.pfp = state.pfp || state.defaultAvatar;
+            } else {
+                loadAvatarForPlayer(p);
             }
             state.players.push(p);
             computeRadii();
@@ -1246,7 +1261,6 @@
                 const losersBets = totalPot - winnerBet;
                 const commission = Math.floor(losersBets * 0.02);
                 const winnings = totalPot - commission; // winner gets entire pot minus commission
-                const multiplier = (winnings / winnerBet).toFixed(1);
 
                 if (winner.id === state.userId) {
                     state.balance += winnings; // add all winnings (includes their bet back + net profit)
@@ -1262,7 +1276,7 @@
                 const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
                 winGif.src = randomGif; // no cache buster to prevent flicker, but we set it once
                 winName.textContent = winner.name + ' wins!';
-                winMultiplier.textContent = 'x' + multiplier;
+                winMultiplier.textContent = 'x' + (winnings / winnerBet).toFixed(1);
 
                 winPanel.classList.add('show');
                 haptic('heavy');
@@ -1535,7 +1549,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER (with PFP)
+        // RENDER (always draw avatar, never colored circle)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -1654,7 +1668,7 @@
 
             ctx.restore();
 
-            // ── PLAYERS with PFPs ──
+            // ── PLAYERS (always draw avatar, never colored circle) ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
                 const popScale = getPopScale(p);
@@ -1675,7 +1689,7 @@
                 ctx.save();
                 ctx.globalAlpha = alpha;
 
-                // Draw PFP if loaded, else fallback color
+                // Always draw the avatar image; if not loaded, use a placeholder
                 if (p.pfpLoaded && p.pfpImg) {
                     ctx.save();
                     ctx.beginPath();
@@ -1685,8 +1699,9 @@
                     ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                     ctx.restore();
                 } else {
-                    // Fallback color + initial
-                    ctx.fillStyle = p.color || '#a0a0b0';
+                    // Fallback: draw a gray circle with a question mark or initial,
+                    // but we try to load the avatar, so this should rarely happen.
+                    ctx.fillStyle = '#444';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
                     ctx.fill();
@@ -1694,9 +1709,10 @@
                     ctx.font = `${Math.max(finalRadius * 0.5, 6)}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
+                    ctx.fillText('?', p.x, p.y);
                 }
 
+                // Outline
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = 'rgba(255,255,255,0.2)';
@@ -1996,11 +2012,22 @@
                     }
                 };
                 img.onerror = () => {
-                    state.userPfpImg = null;
+                    // Use default avatar
+                    const fallback = new Image();
+                    fallback.crossOrigin = 'anonymous';
+                    fallback.onload = () => {
+                        state.userPfpImg = fallback;
+                        const userPlayer = state.players.find(p => p.id === state.userId);
+                        if (userPlayer) {
+                            userPlayer.pfpLoaded = true;
+                            userPlayer.pfpImg = fallback;
+                        }
+                    };
+                    fallback.src = state.defaultAvatar;
                 };
                 img.src = state.pfp;
             } else {
-                profilePfp.src = 'https://i.pravatar.cc/100?img=69';
+                profilePfp.src = state.defaultAvatar;
             }
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
@@ -2021,7 +2048,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – FINAL: GIFs fixed, win money correct, PFPs on circles');
+        console.log('◆ dllump – FINAL: avatars only, win money correct, GIFs fixed');
     </script>
 </body>
 </html>
