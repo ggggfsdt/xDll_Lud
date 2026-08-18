@@ -519,7 +519,8 @@
             border-top: 1px solid var(--border);
             padding-bottom: var(--safe-bottom);
             padding-top: 2px;
-            z-index: 10;
+            z-index: 30;
+            /* ensure above all arena elements */;
             position: relative;
         }
         .tab-btn {
@@ -591,59 +592,42 @@
             font-size: 14px;
         }
 
-        /* --- NEW WIN PANEL --- */
-        #win-panel-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(6px);
-            z-index: 19;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-            border-radius: var(--radius);
-        }
-        #win-panel-backdrop.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        /* --- WIN PANEL (no backdrop, slide up, top stops at center) --- */
         #win-panel {
             position: absolute;
-            bottom: -100%;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            width: 92%;
-            max-width: 380px;
-            background: var(--surface);
+            transform: translateX(-50%) translateY(100%);
+            width: 88%;
+            max-width: 360px;
+            background: var(--surface2);
             border-radius: var(--radius);
-            padding: 20px 20px 24px;
+            padding: 16px 18px 20px;
             border: 1px solid var(--border);
-            box-shadow: 0 16px 80px rgba(0, 0, 0, 0.95);
+            box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.7);
             z-index: 20;
-            transition: bottom 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
             opacity: 0;
             pointer-events: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
         #win-panel.show {
-            bottom: 50%;
-            transform: translateX(-50%) translateY(50%);
+            transform: translateX(-50%) translateY(0%);
             opacity: 1;
             pointer-events: auto;
         }
         #win-gif-container {
-            width: 100%;
+            width: 60%;
+            max-width: 160px;
+            aspect-ratio: 16/9;
             border-radius: 10px;
             overflow: hidden;
             background: #000;
-            aspect-ratio: 16/9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             border: 1px solid var(--border);
+            flex-shrink: 0;
         }
         #win-gif-container img {
             width: 100%;
@@ -655,36 +639,36 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
+            gap: 0px;
             width: 100%;
         }
         #win-name {
-            font-size: 20px;
+            font-size: 19px;
             font-weight: 700;
             color: var(--gold);
             text-align: center;
         }
         #win-multiplier {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 800;
             color: #fff;
             text-align: center;
         }
         #win-continue-btn {
-            padding: 10px 0;
+            padding: 8px 0;
             border-radius: 30px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
-            box-shadow: 0 0 30px var(--primary-glow);
+            box-shadow: 0 0 20px var(--primary-glow);
             transition: 0.2s;
             letter-spacing: 0.3px;
             width: 100%;
             text-align: center;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         #win-continue-btn:active {
             transform: scale(0.94);
@@ -752,14 +736,18 @@
                 height: 16px;
             }
             #win-panel {
-                width: 96%;
-                padding: 16px;
+                width: 94%;
+                padding: 14px;
             }
             #win-name {
-                font-size: 17px;
+                font-size: 16px;
             }
             #win-multiplier {
-                font-size: 24px;
+                font-size: 20px;
+            }
+            #win-gif-container {
+                width: 50%;
+                max-width: 120px;
             }
         }
     </style>
@@ -784,8 +772,7 @@
                     <div id="countdown-timer">3.00</div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
-                    <!-- NEW WIN PANEL -->
-                    <div id="win-panel-backdrop"></div>
+                    <!-- WIN PANEL (no backdrop) -->
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="win animation" /></div>
                         <div id="win-details">
@@ -915,7 +902,6 @@
             top: document.getElementById('top-page'),
         };
         const winPanel = document.getElementById('win-panel');
-        const winBackdrop = document.getElementById('win-panel-backdrop');
         const winGif = document.getElementById('win-gif');
         const winName = document.getElementById('win-name');
         const winMultiplier = document.getElementById('win-multiplier');
@@ -1026,7 +1012,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY
+        // PLAYER FACTORY (with PFP support)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1238,21 +1224,21 @@
                 // Show win panel
                 winName.textContent = winner.name + ' wins!';
                 winMultiplier.textContent = 'x' + multiplier;
-                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+                // Random GIF with cache buster to ensure change
+                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)] + '?t=' + Date.now();
                 winGif.src = randomGif;
 
                 winPanel.classList.add('show');
-                winBackdrop.classList.add('show');
                 haptic('heavy');
 
                 state.pot = 0;
                 state.opening = null;
 
-                // Auto close and reset after 2 seconds
+                // Auto close after 3 seconds
                 if (window.winTimeout) clearTimeout(window.winTimeout);
                 window.winTimeout = setTimeout(() => {
                     hideWinPanelAndReset();
-                }, 2000);
+                }, 3000);
 
             } else {
                 // Fallback reset
@@ -1271,7 +1257,6 @@
 
         function hideWinPanelAndReset() {
             winPanel.classList.remove('show');
-            winBackdrop.classList.remove('show');
             if (window.winTimeout) {
                 clearTimeout(window.winTimeout);
                 window.winTimeout = null;
@@ -1296,7 +1281,7 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS
+        // PHYSICS (fixed elimination: must be far outside)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1390,9 +1375,11 @@
                     p.y += p.vy * subDt * 60;
 
                     const radius = p.displayRadius || p.radius;
+                    // Wall collision (full perimeter, including gap when closed)
                     for (let i = 0; i < totalPts; i++) {
                         const j = (i + 1) % totalPts;
-                        if (isInGap(i) && isInGap(j)) continue;
+                        // Only skip collision if opening is open and both points are in gap
+                        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
                         const ax = pts[i].x,
                             ay = pts[i].y;
                         const bx = pts[j].x,
@@ -1423,32 +1410,36 @@
                         }
                     }
 
+                    // ── ELIMINATION: only when opening is open and circle is far outside ──
                     if (opening && opening.state === 'open') {
                         const cx = half,
                             cy = half;
                         const dx = p.x - cx,
                             dy = p.y - cy;
                         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                        const arenaRadius = half * 0.98;
-                        if (distFromCenter > arenaRadius + radius) {
-                            let closestGapIdx = -1;
+                        // Escape threshold: much larger than arena radius
+                        const escapeThreshold = half * 1.2 + radius;
+                        if (distFromCenter > escapeThreshold) {
+                            // Check if the escape direction aligns with the gap
+                            let nearestGapIdx = -1;
                             let minDist = Infinity;
                             for (let i = 0; i < totalPts; i++) {
                                 if (isInGap(i)) {
                                     const d = (p.x - pts[i].x) ** 2 + (p.y - pts[i].y) ** 2;
                                     if (d < minDist) {
                                         minDist = d;
-                                        closestGapIdx = i;
+                                        nearestGapIdx = i;
                                     }
                                 }
                             }
-                            if (closestGapIdx >= 0) {
+                            if (nearestGapIdx >= 0) {
                                 const angle = Math.atan2(dy, dx);
-                                const gapAngle = Math.atan2(pts[closestGapIdx].y - cy, pts[closestGapIdx].x - cx);
-                                const angleDiff = Math.abs(angle - gapAngle);
-                                const normalizedDiff = Math.min(angleDiff, 2 * Math.PI - angleDiff);
+                                const gapAngle = Math.atan2(pts[nearestGapIdx].y - cy, pts[nearestGapIdx].x - cx);
+                                let diff = Math.abs(angle - gapAngle);
+                                diff = Math.min(diff, 2 * Math.PI - diff);
+                                // Outward velocity component
                                 const vOut = p.vx * dx + p.vy * dy;
-                                if (normalizedDiff < 0.6 && vOut > 0) {
+                                if (diff < 0.8 && vOut > 0) {
                                     p.alive = false;
                                     haptic('medium');
                                     return;
@@ -1458,6 +1449,7 @@
                     }
                 });
 
+                // Circle collisions
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1490,6 +1482,7 @@
                     }
                 }
 
+                // Speed management
                 alive.forEach(p => {
                     const maxSp = speedForRadius(p.displayRadius || p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -1510,7 +1503,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER
+        // RENDER (with PFP)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
 
@@ -1686,6 +1679,7 @@
                         ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                     }
                 } else {
+                    // No PFP, use color + initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -1803,9 +1797,10 @@
                 else if (rank === 2) rClass += ' silver';
                 else if (rank === 3) rClass += ' bronze';
                 const tag = e.isUser ? ' (you)' : '';
+                const pfpSrc = e.pfp || 'https://i.pravatar.cc/32?img=' + (i + 30);
                 html += `<div class="top-entry" style="${e.isUser ? 'border-color:var(--primary);' : ''}">
                         <div class="${rClass}">#${rank}</div>
-                        <img class="t-pfp" src="${e.pfp || 'https://i.pravatar.cc/100?img=' + (i + 30)}" alt="" />
+                        <img class="t-pfp" src="${pfpSrc}" alt="" />
                         <div class="t-name">${e.name}${tag}</div>
                         <div class="t-wins">● ${e.wins}</div>
                         <div class="t-score">${e.score}</div>
@@ -1991,7 +1986,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – fully polished win panel, PFPs, stable speed');
+        console.log('◆ dllump – final: clean win panel, PFPs restored, fixed elimination, tabs work');
     </script>
 </body>
 </html>
