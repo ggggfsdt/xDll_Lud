@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>dllump · bump arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56">
-    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <style>
         * {
             margin: 0;
@@ -93,7 +92,6 @@
             color: #fff;
             letter-spacing: 0.2px;
             font-variant-numeric: tabular-nums;
-            transition: none;
             display: inline-block;
             min-width: 40px;
         }
@@ -205,6 +203,77 @@
             backdrop-filter: none;
             padding: 0;
             line-height: 1;
+        }
+
+        /* Player list overlay - bottom-left inside arena */
+        #player-list {
+            position: absolute;
+            bottom: 80px;
+            left: 10px;
+            z-index: 4;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 60%;
+            overflow-y: auto;
+            padding-right: 4px;
+            scrollbar-width: none;
+        }
+        #player-list::-webkit-scrollbar {
+            display: none;
+        }
+        .player-entry {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 3px 10px 3px 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 11px;
+            color: #ccc;
+            pointer-events: none;
+            opacity: 0.8;
+            transition: 0.2s;
+            max-width: 160px;
+            white-space: nowrap;
+        }
+        .player-entry .pl-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--surface3);
+            flex-shrink: 0;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .player-entry .pl-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .player-entry .pl-name {
+            flex: 1;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60px;
+        }
+        .player-entry .pl-bet {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        .player-entry .pl-chance {
+            color: var(--text2);
+            font-size: 10px;
+            margin-left: 2px;
+        }
+        .player-entry.you {
+            border-color: var(--primary);
+            opacity: 1;
         }
 
         #stats-bar {
@@ -783,6 +852,22 @@
                 width: 50px;
                 height: 50px;
             }
+            #player-list {
+                bottom: 70px;
+                left: 6px;
+            }
+            .player-entry {
+                font-size: 10px;
+                padding: 2px 8px 2px 3px;
+                max-width: 130px;
+            }
+            .player-entry .pl-name {
+                max-width: 40px;
+            }
+            .player-entry .pl-avatar {
+                width: 16px;
+                height: 16px;
+            }
         }
     </style>
 </head>
@@ -805,6 +890,9 @@
                     <canvas id="game-canvas"></canvas>
                     <div id="countdown-timer">3.00</div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
+
+                    <!-- Player List -->
+                    <div id="player-list"></div>
 
                     <!-- WIN PANEL -->
                     <div id="win-panel">
@@ -900,7 +988,7 @@
             winnerId: null,
             countdown: 3.0,
             countdownStartTime: 0,
-            prestartTimer: 0, // 2 seconds "GO!"
+            prestartTimer: 0,
             openingTimer: 0,
             gameTime: 0,
             lastTime: 0,
@@ -944,6 +1032,7 @@
         const winName = document.getElementById('win-name');
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
+        const playerListEl = document.getElementById('player-list');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -1050,53 +1139,67 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // IMAGE CACHE (with fallback)
+        // ROBUST IMAGE LOADER (with fallback)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
+        const loadingPromises = {};
 
-        function getCachedImage(src, callback) {
-            if (!src) src = state.defaultAvatar;
-            if (imageCache[src]) {
-                const img = imageCache[src];
-                if (img.complete && img.naturalWidth > 0) {
-                    callback(img);
-                    return img;
-                } else {
-                    img.onload = () => callback(img);
-                    img.onerror = () => {
-                        // fallback to default
-                        const fallback = new Image();
-                        fallback.crossOrigin = 'anonymous';
-                        fallback.onload = () => {
-                            imageCache[src] = fallback;
-                            callback(fallback);
+        function loadImageWithFallback(src, maxRetries = 2) {
+            return new Promise((resolve) => {
+                if (!src) src = state.defaultAvatar;
+                if (imageCache[src]) {
+                    const img = imageCache[src];
+                    if (img.complete && img.naturalWidth > 0) {
+                        resolve(img);
+                        return;
+                    } else {
+                        // wait for it to load
+                        img.onload = () => resolve(img);
+                        img.onerror = () => {
+                            // fallback
+                            const fallback = new Image();
+                            fallback.crossOrigin = 'anonymous';
+                            fallback.onload = () => {
+                                imageCache[src] = fallback;
+                                resolve(fallback);
+                            };
+                            fallback.onerror = () => resolve(null);
+                            fallback.src = state.defaultAvatar;
                         };
-                        fallback.onerror = () => callback(null);
-                        fallback.src = state.defaultAvatar;
-                    };
-                    return img;
+                        return;
+                    }
                 }
-            }
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                imageCache[src] = img;
-                callback(img);
-            };
-            img.onerror = () => {
-                // fallback to default
-                const fallback = new Image();
-                fallback.crossOrigin = 'anonymous';
-                fallback.onload = () => {
-                    imageCache[src] = fallback;
-                    callback(fallback);
+                // start loading
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                let attempts = 0;
+                const load = () => {
+                    img.onload = () => {
+                        imageCache[src] = img;
+                        resolve(img);
+                    };
+                    img.onerror = () => {
+                        attempts++;
+                        if (attempts < maxRetries) {
+                            // retry with cache buster
+                            img.src = src + '?retry=' + attempts;
+                        } else {
+                            // fallback to default
+                            const fallback = new Image();
+                            fallback.crossOrigin = 'anonymous';
+                            fallback.onload = () => {
+                                imageCache[src] = fallback;
+                                resolve(fallback);
+                            };
+                            fallback.onerror = () => resolve(null);
+                            fallback.src = state.defaultAvatar;
+                        }
+                    };
+                    img.src = src;
                 };
-                fallback.onerror = () => callback(null);
-                fallback.src = state.defaultAvatar;
-            };
-            img.src = src;
-            imageCache[src] = img;
-            return img;
+                load();
+                imageCache[src] = img;
+            });
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1149,8 +1252,8 @@
                 pfpLoaded: false,
                 pfpImg: null,
             };
-            // Load image asynchronously
-            getCachedImage(avatarSrc, (img) => {
+            // Load avatar asynchronously
+            loadImageWithFallback(avatarSrc).then(img => {
                 if (img) {
                     p.pfpLoaded = true;
                     p.pfpImg = img;
@@ -1158,13 +1261,41 @@
                     p.pfpLoaded = false;
                     p.pfpImg = null;
                 }
+                // Force a re-render if game is active
+                if (state.gameState === 'playing' || state.gameState === 'idle') {
+                    // We'll re-render on next frame anyway
+                }
             });
             state.players.push(p);
             computeRadii();
             haptic('medium');
+            updatePlayerList();
             return p;
         }
 
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // PLAYER LIST UI
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function updatePlayerList() {
+            const alive = state.players.filter(p => p.alive);
+            const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
+            let html = '';
+            alive.forEach(p => {
+                const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
+                const isYou = p.id === state.userId;
+                html += `<div class="player-entry ${isYou ? 'you' : ''}">
+                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
+                            <span class="pl-name">${p.name}</span>
+                            <span class="pl-bet">${p.bet}</span>
+                            <span class="pl-chance">${chance}%</span>
+                        </div>`;
+            });
+            playerListEl.innerHTML = html;
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ANIMATION HELPERS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function easePopBounce(t) {
             if (t >= 1) return 1;
             const c1 = 1.70158;
@@ -1226,7 +1357,7 @@
             const current = parseInt(balanceEl.textContent) || state.balance;
             if (current === target) return;
             const diff = target - current;
-            const steps = Math.min(Math.abs(diff), 30); // max 30 steps
+            const steps = Math.min(Math.abs(diff), 30);
             const stepSize = diff / steps;
             let step = 0;
 
@@ -1245,7 +1376,6 @@
             }, 30);
         }
 
-        // Override updateBalance to use animation
         function updateBalance() {
             const target = Math.floor(state.balance);
             pBalance.textContent = target;
@@ -1270,6 +1400,7 @@
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
+            updatePlayerList();
             haptic('light');
         }
 
@@ -1345,6 +1476,7 @@
                 p.isPopping = false;
             });
             state.openingTimer = 3.0 + Math.random() * 1.5;
+            updatePlayerList();
         }
 
         function endGame(winnerId) {
@@ -1381,6 +1513,7 @@
 
                 state.pot = 0;
                 state.opening = null;
+                updatePlayerList();
 
                 if (window.winTimeout) clearTimeout(window.winTimeout);
                 window.winTimeout = setTimeout(() => {
@@ -1398,6 +1531,7 @@
                 updateWaitingText();
                 updateBetUI();
                 updateStatsBar();
+                updatePlayerList();
             }
         }
 
@@ -1418,6 +1552,7 @@
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
+            updatePlayerList();
             if (state.botEnabled) spawnBot();
         }
 
@@ -1446,6 +1581,7 @@
                     updateWaitingText();
                     updateBetUI();
                     updateStatsBar();
+                    updatePlayerList();
                 }
                 return;
             }
@@ -1581,6 +1717,7 @@
                                 if (diff < 0.8 && vOut > 0) {
                                     p.alive = false;
                                     haptic('medium');
+                                    updatePlayerList();
                                     return;
                                 }
                             }
@@ -1588,7 +1725,7 @@
                     }
                 });
 
-                // Circle collisions with haptic feedback
+                // Circle collisions with haptic
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1600,7 +1737,6 @@
                         const rB = b.displayRadius || b.radius;
                         const minDist = rA + rB;
                         if (dist < minDist && dist > 0.001) {
-                            // Trigger haptic on collision
                             haptic('light');
                             const nx = dx / dist,
                                 ny = dy / dist;
@@ -1640,6 +1776,7 @@
             }
 
             botAI(dt);
+            updatePlayerList(); // update chances live
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2049,6 +2186,7 @@
                 updateBalance();
                 updateBetUI();
                 updateProfile();
+                updatePlayerList();
                 haptic('medium');
             } else {
                 if (addAmount > state.balance) { betInput.value = state.balance;
@@ -2061,6 +2199,7 @@
                 updateBetUI();
                 updateWaitingText();
                 updateProfile();
+                updatePlayerList();
                 haptic('medium');
                 if (!state.botSpawned && state.botEnabled) {
                     setTimeout(() => { if (state.botEnabled && (state.gameState === 'idle' || state.gameState ===
@@ -2101,7 +2240,7 @@
             if (state.pfp) {
                 profilePfp.src = state.pfp;
                 // Preload into cache
-                getCachedImage(state.pfp, () => {});
+                loadImageWithFallback(state.pfp);
             } else {
                 profilePfp.src = state.defaultAvatar;
             }
@@ -2124,7 +2263,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – timer top-right, PFP fix, bump vibrations, balance animation, prestart restored');
+        console.log('◆ dllump – perfect: PFPs fixed, player list, timer top-right, prestart, haptic on bumps');
     </script>
 </body>
 </html>
