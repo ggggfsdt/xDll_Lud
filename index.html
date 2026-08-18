@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>dllump · bump arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?56">
+    </script>
     <style>
         * {
             margin: 0;
@@ -165,6 +166,7 @@
             flex-direction: column;
             flex: 1;
             height: 100%;
+            overflow: hidden;
         }
 
         #arena-wrap {
@@ -176,6 +178,7 @@
             padding: 10px 10px 0 10px;
             min-height: 0;
             overflow: visible;
+            flex-shrink: 0;
         }
         #game-canvas {
             width: 100%;
@@ -190,7 +193,6 @@
             flex-shrink: 0;
         }
 
-        /* Frog GIF - centered on canvas, shown when <2 players */
         #frog-gif {
             position: absolute;
             top: 50%;
@@ -211,7 +213,7 @@
 
         #countdown-timer {
             position: absolute;
-            top: 100px;
+            top: 16px;
             right: 16px;
             font-size: 22px;
             font-weight: 700;
@@ -231,7 +233,7 @@
 
         #win-history {
             position: absolute;
-            top: 130px;
+            top: 52px;
             right: 12px;
             z-index: 4;
             display: flex;
@@ -487,7 +489,6 @@
             opacity: 0.7;
         }
 
-        /* Player list - fixed height, scrollable, transitions for smooth slide */
         #player-list-container {
             width: 100%;
             max-height: 100px;
@@ -496,16 +497,16 @@
             flex-direction: column;
             align-items: center;
             gap: 2px;
-            padding: 0px 4px 2px 4px;
+            padding: 2px 4px 2px 4px;
             flex-shrink: 0;
             scrollbar-width: thin;
-            /* default margin, will be animated */
-            margin-top: -8px;
             transition: margin-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            margin-top: 0;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
         }
-        /* when bet overlay hidden, slide up */
         #player-list-container.shift-up {
-            margin-top: -40px;
+            margin-top: -60px;
         }
         #player-list-container::-webkit-scrollbar {
             width: 3px;
@@ -1140,7 +1141,7 @@
             }
             #countdown-timer {
                 font-size: 18px;
-                top: 85px;
+                top: 12px;
                 right: 12px;
             }
             #stats-bar {
@@ -1171,12 +1172,11 @@
             }
             #player-list-container {
                 max-height: 80px;
-                padding: 0 2px 2px 2px;
+                padding: 2px 2px;
                 gap: 2px;
-                margin-top: -8px;
             }
             #player-list-container.shift-up {
-                margin-top: -35px;
+                margin-top: -40px;
             }
             .pl-entry {
                 font-size: 10px;
@@ -1203,7 +1203,7 @@
                 padding: 3px 10px;
             }
             #win-history {
-                top: 108px;
+                top: 42px;
                 right: 8px;
                 gap: 3px;
             }
@@ -1274,7 +1274,6 @@
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
-                    <!-- Frog GIF -->
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
                     <div id="countdown-timer">3.00</div>
                     <div id="win-history"></div>
@@ -1336,22 +1335,22 @@
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="4" y1="20" x2="20" y2="4" />
-                    <line x1="20" y1="20" x2="4" y2="4" />
-                    <line x1="3" y1="3" x2="7" y2="7" />
-                    <line x1="17" y1="17" x2="21" y2="21" />
-                    <path d="M6 18 L9 15" />
-                    <path d="M18 6 L15 9" />
-                    <circle cx="12" cy="12" r="2" fill="currentColor" />
-                </svg></span>PvP</button>
+                        <line x1="4" y1="20" x2="20" y2="4" />
+                        <line x1="20" y1="20" x2="4" y2="4" />
+                        <line x1="3" y1="3" x2="7" y2="7" />
+                        <line x1="17" y1="17" x2="21" y2="21" />
+                        <path d="M6 18 L9 15" />
+                        <path d="M18 6 L15 9" />
+                        <circle cx="12" cy="12" r="2" fill="currentColor" />
+                    </svg></span>PvP</button>
             <button class="tab-btn" data-tab="profile">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5" /><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20" /></svg></span>Profile</button>
             <button class="tab-btn" data-tab="top">
                 <span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z" />
-                    <circle cx="12" cy="9" r="6" />
-                    <circle cx="12" cy="9" r="3" fill="currentColor" />
-                </svg></span>Top</button>
+                        <path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z" />
+                        <circle cx="12" cy="9" r="6" />
+                        <circle cx="12" cy="9" r="3" fill="currentColor" />
+                    </svg></span>Top</button>
         </div>
     </div>
 
@@ -1473,6 +1472,190 @@
         function getColor(i) { return COLORS[i % COLORS.length]; }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ROBUST PFP LOADER (with fallback & caching)
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const pfpCache = new Map();
+
+        function loadPFP(src, maxRetries = 2) {
+            return new Promise((resolve) => {
+                // Normalize empty/undefined src
+                if (!src || src === '') src = state.defaultAvatar;
+
+                // Check cache
+                if (pfpCache.has(src)) {
+                    const cached = pfpCache.get(src);
+                    if (cached.loaded) {
+                        resolve(cached.img);
+                        return;
+                    }
+                    // If still loading, wait
+                    if (cached.promise) {
+                        cached.promise.then(resolve);
+                        return;
+                    }
+                }
+
+                // Create a new image load promise
+                const img = new Image();
+                let attempts = 0;
+                let resolved = false;
+
+                const tryLoad = () => {
+                    // Use crossOrigin only for external URLs (not data: or blob:)
+                    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+                        img.crossOrigin = 'anonymous';
+                    } else {
+                        img.crossOrigin = undefined;
+                    }
+
+                    img.onload = () => {
+                        if (resolved) return;
+                        resolved = true;
+                        pfpCache.set(src, { img, loaded: true, promise: null });
+                        resolve(img);
+                    };
+
+                    img.onerror = () => {
+                        attempts++;
+                        if (attempts < maxRetries) {
+                            // Try with a cache-buster
+                            const separator = src.includes('?') ? '&' : '?';
+                            img.src = src + separator + 'retry=' + attempts + '&t=' + Date.now();
+                        } else {
+                            if (resolved) return;
+                            resolved = true;
+                            // Fallback to default avatar
+                            if (src !== state.defaultAvatar) {
+                                // Try loading the default avatar
+                                const fallbackImg = new Image();
+                                fallbackImg.crossOrigin = 'anonymous';
+                                fallbackImg.onload = () => {
+                                    pfpCache.set(state.defaultAvatar, { img: fallbackImg, loaded: true,
+                                        promise: null });
+                                    resolve(fallbackImg);
+                                };
+                                fallbackImg.onerror = () => {
+                                    // Ultimate fallback: null (will be handled by render)
+                                    pfpCache.set(state.defaultAvatar, { img: null, loaded: false,
+                                    promise: null });
+                                    resolve(null);
+                                };
+                                fallbackImg.src = state.defaultAvatar;
+                            } else {
+                                pfpCache.set(src, { img: null, loaded: false, promise: null });
+                                resolve(null);
+                            }
+                        }
+                    };
+
+                    img.src = src;
+                };
+
+                // Store the promise in cache
+                const promise = new Promise((res) => {
+                    const checkDone = () => {
+                        // This is called when the image loads or fails
+                        // The actual resolve happens in onload/onerror
+                    };
+                    // We'll resolve from onload/onerror
+                });
+
+                const cacheEntry = { img: null, loaded: false, promise: promise };
+                pfpCache.set(src, cacheEntry);
+
+                // Start loading
+                tryLoad();
+
+                // Timeout fallback: if it takes too long (>8s), use default
+                const timeoutId = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        if (src !== state.defaultAvatar) {
+                            // Try default avatar
+                            const fallbackImg = new Image();
+                            fallbackImg.crossOrigin = 'anonymous';
+                            fallbackImg.onload = () => {
+                                pfpCache.set(state.defaultAvatar, { img: fallbackImg, loaded: true,
+                                    promise: null });
+                                resolve(fallbackImg);
+                            };
+                            fallbackImg.onerror = () => {
+                                pfpCache.set(state.defaultAvatar, { img: null, loaded: false,
+                                promise: null });
+                                resolve(null);
+                            };
+                            fallbackImg.src = state.defaultAvatar;
+                        } else {
+                            resolve(null);
+                        }
+                    }
+                }, 8000);
+
+                // Cleanup timeout if resolved early
+                const origResolve = resolve;
+                const wrappedResolve = (val) => {
+                    clearTimeout(timeoutId);
+                    origResolve(val);
+                };
+                // Override resolve by wrapping in the promise chain
+                // We'll use the original resolve from the outer promise
+                // Instead, patch the resolve in the onload/onerror handlers
+                const patchResolve = (val) => {
+                    clearTimeout(timeoutId);
+                    resolve(val);
+                };
+                // Store patched resolve for use in onload/onerror
+                img._resolve = patchResolve;
+                // Override the onload/onerror to use patched resolve
+                const origOnload = img.onload;
+                const origOnerror = img.onerror;
+                img.onload = () => {
+                    if (resolved) return;
+                    resolved = true;
+                    pfpCache.set(src, { img, loaded: true, promise: null });
+                    patchResolve(img);
+                };
+                img.onerror = () => {
+                    attempts++;
+                    if (attempts < maxRetries) {
+                        const separator = src.includes('?') ? '&' : '?';
+                        img.src = src + separator + 'retry=' + attempts + '&t=' + Date.now();
+                        return;
+                    }
+                    if (resolved) return;
+                    resolved = true;
+                    if (src !== state.defaultAvatar) {
+                        // Try default avatar
+                        const fallbackImg = new Image();
+                        fallbackImg.crossOrigin = 'anonymous';
+                        fallbackImg.onload = () => {
+                            pfpCache.set(state.defaultAvatar, { img: fallbackImg, loaded: true,
+                                promise: null });
+                            patchResolve(fallbackImg);
+                        };
+                        fallbackImg.onerror = () => {
+                            pfpCache.set(state.defaultAvatar, { img: null, loaded: false,
+                            promise: null });
+                            patchResolve(null);
+                        };
+                        fallbackImg.src = state.defaultAvatar;
+                    } else {
+                        pfpCache.set(src, { img: null, loaded: false, promise: null });
+                        patchResolve(null);
+                    }
+                };
+                // Re-trigger load with the new handlers
+                // The image is already loading, we need to re-set src
+                const currentSrc = img.src;
+                if (currentSrc && currentSrc !== 'about:blank') {
+                    // Reload with new handlers
+                    img.src = '';
+                    setTimeout(() => { img.src = currentSrc; }, 10);
+                }
+            });
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // PERIMETER GENERATION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function generatePerimeter(size, cornerRadius, numPoints = 300) {
@@ -1570,65 +1753,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ROBUST IMAGE LOADER (with fallback)
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const imageCache = {};
-
-        function loadImageWithFallback(src, maxRetries = 2) {
-            return new Promise((resolve) => {
-                if (!src) src = state.defaultAvatar;
-                if (imageCache[src]) {
-                    const img = imageCache[src];
-                    if (img.complete && img.naturalWidth > 0) {
-                        resolve(img);
-                        return;
-                    } else {
-                        img.onload = () => resolve(img);
-                        img.onerror = () => {
-                            const fallback = new Image();
-                            fallback.crossOrigin = 'anonymous';
-                            fallback.onload = () => {
-                                imageCache[src] = fallback;
-                                resolve(fallback);
-                            };
-                            fallback.onerror = () => resolve(null);
-                            fallback.src = state.defaultAvatar;
-                        };
-                        return;
-                    }
-                }
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                let attempts = 0;
-                const load = () => {
-                    img.onload = () => {
-                        imageCache[src] = img;
-                        resolve(img);
-                    };
-                    img.onerror = () => {
-                        attempts++;
-                        if (attempts < maxRetries) {
-                            img.src = src + '?retry=' + attempts;
-                        } else {
-                            const fallback = new Image();
-                            fallback.crossOrigin = 'anonymous';
-                            fallback.onload = () => {
-                                imageCache[src] = fallback;
-                                resolve(fallback);
-                            };
-                            fallback.onerror = () => resolve(null);
-                            fallback.src = state.defaultAvatar;
-                        }
-                    };
-                    img.src = src;
-                };
-                load();
-                imageCache[src] = img;
-            });
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WIN HISTORY (only avatars)
+        // WIN HISTORY
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function addWinToHistory(name, pfp) {
             state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
@@ -1646,13 +1771,14 @@
             let html = '';
             state.winHistory.forEach(entry => {
                 const avatarSrc = entry.pfp || state.defaultAvatar;
-                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+                html +=
+                    `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
             });
             winHistoryEl.innerHTML = html;
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TOP LEADERBOARD (mock data with prizes)
+        // TOP LEADERBOARD
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function generateTopPlayers() {
             const names = ['CryptoKing', 'DiamondHands', 'BumpMaster', 'LuckyStar', 'MoonRider', 'ShadowDoge', 'GoldenGod',
@@ -1688,7 +1814,6 @@
             const players = state.topPlayers.length ? state.topPlayers : generateTopPlayers();
             if (!state.topPlayers.length) state.topPlayers = players;
 
-            // Podium: order = 3rd (left), 1st (center), 2nd (right)
             const top3 = players.slice(0, 3);
             const podiumOrder = [
                 { player: top3[2] || top3[0], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
@@ -1720,7 +1845,6 @@
             });
             podiumEl.innerHTML = podiumHtml;
 
-            // Rest (4-10)
             const rest = players.slice(3);
             if (rest.length === 0) {
                 topList.innerHTML = '';
@@ -1805,17 +1929,34 @@
                 pulseStartTime: 0,
                 pfpLoaded: false,
                 pfpImg: null,
+                pfpLoadFailed: false,
             };
-            loadImageWithFallback(avatarSrc).then(img => {
-                if (img) {
+
+            // Load PFP asynchronously
+            loadPFP(avatarSrc).then(img => {
+                if (img && img.naturalWidth > 0) {
                     p.pfpLoaded = true;
                     p.pfpImg = img;
+                    p.pfpLoadFailed = false;
                 } else {
                     p.pfpLoaded = false;
                     p.pfpImg = null;
+                    p.pfpLoadFailed = true;
+                    // Try default avatar as last resort
+                    if (avatarSrc !== state.defaultAvatar) {
+                        loadPFP(state.defaultAvatar).then(defImg => {
+                            if (defImg && defImg.naturalWidth > 0) {
+                                p.pfpLoaded = true;
+                                p.pfpImg = defImg;
+                                p.pfpLoadFailed = false;
+                                updatePlayerList();
+                            }
+                        });
+                    }
                 }
                 updatePlayerList();
             });
+
             state.players.push(p);
             computeRadii();
             haptic('medium');
@@ -1848,12 +1989,11 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY AUTO SHOW/HIDE + PLAYER LIST SLIDE
+        // BET OVERLAY
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateBetOverlayVisibility() {
             const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
             betOverlayWrap.classList.toggle('hidden', shouldHide);
-            // Also toggle player list shift
             playerListContainer.classList.toggle('shift-up', shouldHide);
         }
 
@@ -2037,7 +2177,7 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BOT (auto spawn)
+        // BOT AI
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const BOT_NAME = 'Bot';
 
@@ -2082,12 +2222,12 @@
             const minR = 14,
                 maxR = 52;
             const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-            const speed = 6.0 - norm * 2.0;
-            return speed;
+            const speed = 6.0 - norm * 3.0;
+            return Math.max(3.0, Math.min(6.0, speed));
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC (original timing: 3.5-6s open, 1.5-3.5s close)
+        // GAME LOGIC
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function startCountdown() {
             if (state.gameState !== 'idle') return;
@@ -2134,7 +2274,6 @@
                 p.alive = true;
                 p.isPopping = false;
             });
-            // Opening timer: 3.5 + random 2.5 = 3.5-6s
             state.openingTimer = 3.5 + Math.random() * 2.5;
             updatePlayerList();
         }
@@ -2228,7 +2367,7 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS (with knockback resistance)
+        // PHYSICS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -2282,12 +2421,10 @@
                         state: 'flashing',
                         _total: totalPts,
                     };
-                    // Opening duration: 3.5 + random 2.5
                     state.openingTimer = 3.5 + Math.random() * 2.5;
                     haptic('light');
                 } else {
                     state.opening = null;
-                    // Closing duration: 1.5 + random 2.0
                     state.openingTimer = 1.5 + Math.random() * 2.0;
                 }
             }
@@ -2421,8 +2558,8 @@
                             if (dvn > 0) {
                                 const totalMass = a.mass + b.mass;
                                 const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
-                                const aFactor = 1 - (a.mass / totalMass) * 0.5;
-                                const bFactor = 1 - (b.mass / totalMass) * 0.5;
+                                const aFactor = 1 - (a.mass / totalMass) * 0.6;
+                                const bFactor = 1 - (b.mass / totalMass) * 0.6;
                                 a.vx -= (impulse / a.mass) * aFactor * nx;
                                 a.vy -= (impulse / a.mass) * aFactor * ny;
                                 b.vx += (impulse / b.mass) * bFactor * nx;
@@ -2453,7 +2590,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER (with PFP as circle)
+        // RENDER – with PFP circles
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -2526,7 +2663,6 @@
                 if (isFlashing) {
                     const isRed = (opening.flashCount % 2 === 0);
                     ctx.save();
-
                     const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
 
                     let gapSegments = [];
@@ -2569,16 +2705,14 @@
                 ctx.closePath();
                 ctx.stroke();
             }
-
             ctx.restore();
 
-            // ── PLAYERS (draw PFP as circle) ──
+            // ── DRAW PLAYERS WITH PFP ──
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
                 const radius = p.displayRadius || p.radius;
                 const displayRadius = radius * popScale;
-                const alpha = 1;
 
                 let pulseScale = 1;
                 if (p.isPulsing) {
@@ -2591,53 +2725,62 @@
                 const finalRadius = displayRadius * pulseScale;
 
                 ctx.save();
-                ctx.globalAlpha = alpha;
 
-                if (p.pfpLoaded && p.pfpImg) {
-                    // Draw PFP as circle
-                    ctx.save();
+                // Shadow glow
+                ctx.shadowColor = 'rgba(0,0,0,0.6)';
+                ctx.shadowBlur = 12;
+
+                // Draw PFP as a circle
+                if (p.pfpLoaded && p.pfpImg && p.pfpImg.naturalWidth > 0) {
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
+                    ctx.arc(p.x, p.y, Math.max(finalRadius - 1, 1), 0, Math.PI * 2);
                     ctx.clip();
-                    const drawSize = Math.max(finalRadius - 2, 2) * 2;
-                    ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
-                    ctx.restore();
+
+                    const drawSize = Math.max(finalRadius - 1, 1) * 2;
+                    ctx.drawImage(p.pfpImg, p.x - (finalRadius - 1), p.y - (finalRadius - 1), drawSize, drawSize);
                 } else {
-                    // Fallback: colored circle with initial
+                    // Fallback: colored circle with initial letter
+                    ctx.shadowBlur = 0;
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
+                    ctx.arc(p.x, p.y, Math.max(finalRadius - 1, 1), 0, Math.PI * 2);
                     ctx.fill();
+
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${Math.max(finalRadius * 0.5, 6)}px system-ui, sans-serif`;
+                    const fontSize = Math.max(finalRadius * 0.45, 8);
+                    ctx.font = `600 ${fontSize}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
+                    ctx.shadowBlur = 0;
+                    ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y + 1);
                 }
 
                 // Outline
+                ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                ctx.lineWidth = 2;
-                ctx.shadowBlur = 0;
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
+
+                // "You" indicator ring
+                if (p.id === state.userId) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, finalRadius + 4, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(76, 175, 80, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 5]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
 
                 ctx.restore();
             });
-
-            ctx.shadowBlur = 0;
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // UI UPDATES
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateBalance() {
-            const target = Math.floor(state.balance);
-            pBalance.textContent = target;
-            animateBalanceTo(target);
-        }
-
         function updateProfile() {
             pWins.textContent = state.wins;
             pLosses.textContent = state.losses;
@@ -2669,7 +2812,8 @@
         function updateBetUI() {
             const existing = state.players.find(p => p.id === state.userId);
             const inGame = !!existing;
-            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
+            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState ===
+                'prestart');
 
             if (canBet) {
                 betBtn.textContent = inGame ? 'increase' : 'join';
@@ -2803,7 +2947,8 @@
         // EVENTS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         betBtn.addEventListener('click', () => {
-            if (state.gameState !== 'idle' && state.gameState !== 'countdown' && state.gameState !== 'prestart') return;
+            if (state.gameState !== 'idle' && state.gameState !== 'countdown' && state.gameState !== 'prestart')
+                return;
             let addAmount = parseInt(betInput.value) || 10;
             if (addAmount < 10) { betInput.value = 10;
                 addAmount = 10;
@@ -2865,6 +3010,7 @@
                 state.username = u.username || u.first_name || 'player';
                 state.userId = u.id?.toString() || state.userId;
                 state.pfp = u.photo_url || '';
+                // Validate PFP URL
                 if (state.pfp) {
                     try { new URL(state.pfp); } catch (_) { state.pfp = ''; }
                 }
@@ -2873,12 +3019,23 @@
                 state.pfp = 'https://i.pravatar.cc/100?img=69';
             }
             usernameDisplay.textContent = '@' + state.username;
+
+            // Set profile PFP
+            const profilePfpSrc = state.pfp || state.defaultAvatar;
+            profilePfp.src = profilePfpSrc;
+            // Pre-load user PFP
             if (state.pfp) {
-                profilePfp.src = state.pfp;
-                loadImageWithFallback(state.pfp);
+                loadPFP(state.pfp).then(img => {
+                    if (img && img.naturalWidth > 0) {
+                        profilePfp.src = state.pfp;
+                    } else {
+                        profilePfp.src = state.defaultAvatar;
+                    }
+                });
             } else {
                 profilePfp.src = state.defaultAvatar;
             }
+
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
             updateBalance();
@@ -2901,7 +3058,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – PFP circles, player list fixed, smooth slide animation');
+        console.log('◆ dllump – PFP loader fixed, circles show avatars');
     </script>
 </body>
 </html>
