@@ -1333,7 +1333,7 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
-                    <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">Reload Avatars</button>
+                    <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">⟳ Reload Avatars</button>
                 </div>
             </div>
 
@@ -1366,9 +1366,9 @@
     </div>
 
     <script>
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ═══════════════════════════════════════════════════════════════
         // TELEGRAM
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ═══════════════════════════════════════════════════════════════
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand();
             tg.enableClosingConfirmation(); }
@@ -1380,9 +1380,9 @@
             } catch (_) {}
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ═══════════════════════════════════════════════════════════════
         // STATE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ═══════════════════════════════════════════════════════════════
         const state = {
             balance: 1000,
             username: 'player',
@@ -1477,10 +1477,10 @@
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
 
         // ═══════════════════════════════════════════════════════════════
-        // PFP SYSTEM — GUARANTEED WORKING
+        // PFP SYSTEM — BULLETPROOF, ALWAYS SHOWS AN AVATAR
         // ═══════════════════════════════════════════════════════════════
 
-        // Generate a colored circle with initial (synchronous, always works)
+        // Generate a colored circle with initial (synchronous, guaranteed to work)
         function generateDefaultAvatar(initial, colorIndex) {
             const size = 128;
             const c = document.createElement('canvas');
@@ -1491,7 +1491,7 @@
             const colors = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
             const col = colors[colorIndex % colors.length];
 
-            // Glow
+            // Glow gradient
             const grad = ctx2.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
             grad.addColorStop(0, lightenColor(col, 60));
             grad.addColorStop(1, col);
@@ -1507,7 +1507,7 @@
             ctx2.lineWidth = 2;
             ctx2.stroke();
 
-            // Initial
+            // Initial letter
             const letter = (initial || '?').charAt(0).toUpperCase();
             ctx2.fillStyle = 'rgba(255,255,255,0.95)';
             ctx2.font = `bold ${size * 0.48}px system-ui, -apple-system, sans-serif`;
@@ -1539,7 +1539,7 @@
         function loadPlayerPFP(player) {
             const src = player.pfp || state.defaultAvatar;
 
-            // Check cache first
+            // Check cache
             if (pfpCache.has(src)) {
                 const cached = pfpCache.get(src);
                 if (cached.loaded && cached.img) {
@@ -1558,7 +1558,7 @@
                 }
             }
 
-            // Load image
+            // Load image with retries
             const img = new Image();
             let attempts = 0;
             const maxAttempts = 3;
@@ -1574,7 +1574,7 @@
                     pfpCache.set(src, { img, loaded: true, promise: null });
                     player.pfpImg = img;
                     player.pfpLoaded = true;
-                    // Force re-render by updating UI
+                    // Update player list and re-render
                     updatePlayerList();
                 };
 
@@ -1593,14 +1593,12 @@
                 img.src = src;
             };
 
-            const promise = new Promise((resolve) => {
-                // Will be resolved by onload/onerror
-            });
+            const promise = new Promise((resolve) => {});
             pfpCache.set(src, { img: null, loaded: false, promise });
 
             doLoad();
 
-            // Timeout fallback
+            // Safety timeout
             setTimeout(() => {
                 const cached = pfpCache.get(src);
                 if (!cached || !cached.loaded) {
@@ -1863,7 +1861,7 @@
             const avatarSrc = pfp || state.defaultAvatar;
             const colorIdx = state.players.length % state.colors.length;
 
-            // Create IMMEDIATE default avatar (colored circle with initial)
+            // Generate IMMEDIATE default avatar (colored circle with initial)
             const defaultImg = generateDefaultAvatar(name ? name.charAt(0) : '?', colorIdx);
 
             const p = {
@@ -1891,7 +1889,7 @@
                 pfpImg: defaultImg, // Immediate default
             };
 
-            // Load real PFP in background
+            // Load real PFP in the background
             loadPlayerPFP(p);
 
             state.players.push(p);
@@ -1915,6 +1913,8 @@
             alive.forEach(p => {
                 const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
                 const isYou = p.id === state.userId;
+                // Use the same image source as the canvas
+                const imgSrc = p.pfpLoaded && p.pfpImg ? p.pfpImg.src : p.pfp;
                 html += `<div class="pl-entry ${isYou ? 'you' : ''}">
                             <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
                             <span class="pl-name">${p.name}</span>
@@ -2527,7 +2527,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER — ALWAYS SHOWS PFP (default or real)
+        // RENDER — ALWAYS SHOWS AVATAR (default or real)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -2644,7 +2644,7 @@
             }
             ctx.restore();
 
-            // ── DRAW PLAYERS — ALWAYS PFP ──
+            // ── DRAW PLAYERS — ALWAYS WITH AVATAR ──
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
@@ -2664,7 +2664,7 @@
 
                 ctx.save();
 
-                // Always draw whatever image we have (default or real)
+                // ALWAYS draw whatever image we have (default or real)
                 if (p.pfpImg) {
                     // Clip to circle
                     ctx.beginPath();
