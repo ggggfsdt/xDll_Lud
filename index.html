@@ -4,124 +4,704 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>dllump · bump arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?56">
+    </script>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-        :root {
-            --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428;
-            --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45);
-            --text:#e8e8e8; --text2:#888; --border:#2a2a2e;
-            --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a;
-            --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
-        html,body { height:100%; overflow:hidden; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); touch-action:none; }
-        #app { display:flex; flex-direction:column; height:100%; max-width:440px; margin:0 auto; background:var(--bg); overflow:hidden; }
-        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px 8px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; min-height:52px; z-index:10; gap:8px; }
-        #balance-wrap { display:flex; align-items:center; gap:6px; background:var(--surface2); padding:3px 14px 3px 6px; border-radius:28px; border:1px solid var(--border); }
-        #diamond-icon { width:26px; height:26px; object-fit:contain; flex-shrink:0; display:block; animation:glowDiamond 2.8s ease-in-out infinite; }
-        @keyframes glowDiamond { 0%,100%{filter:drop-shadow(0 0 6px rgba(200,168,78,0.3));} 50%{filter:drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2);} }
-        #balance { font-size:17px; font-weight:700; color:#fff; letter-spacing:0.2px; font-variant-numeric:tabular-nums; }
-        #top-right { display:flex; align-items:center; gap:8px; }
-        #status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); transition:0.3s; }
-        #status-dot.offline { background:var(--red); box-shadow:0 0 12px var(--red); }
-        #username-display { font-size:13px; font-weight:500; color:var(--text2); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        :root {
+            --bg: #08080a;
+            --surface: #121214;
+            --surface2: #1a1a1e;
+            --surface3: #242428;
+            --primary: #4CAF50;
+            --primary-glow: rgba(76, 175, 80, 0.45);
+            --text: #e8e8e8;
+            --text2: #888;
+            --border: #2a2a2e;
+            --gold: #c8a84e;
+            --gold-dim: rgba(200, 168, 78, 0.2);
+            --red: #d45a5a;
+            --green: #5ac88a;
+            --radius: 16px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            touch-action: none;
+        }
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 440px;
+            margin: 0 auto;
+            background: var(--bg);
+            overflow: hidden;
+        }
+        #topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px 8px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            min-height: 52px;
+            z-index: 10;
+            gap: 8px;
+        }
+        #balance-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            padding: 3px 14px 3px 6px;
+            border-radius: 28px;
+            border: 1px solid var(--border);
+        }
+        #diamond-icon {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: block;
+            animation: glowDiamond 2.8s ease-in-out infinite;
+        }
+        @keyframes glowDiamond {
+            0%,
+            100% {
+                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2);
+            }
+        }
+        #balance {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
+            font-variant-numeric: tabular-nums;
+        }
+        #top-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 12px var(--green);
+            transition: 0.3s;
+        }
+        #status-dot.offline {
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red);
+        }
+        #username-display {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text2);
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
-        #main { flex:1; position:relative; overflow:hidden; background:var(--bg); display:flex; flex-direction:column; }
-        .tab-page { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transform:translateX(30px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease, visibility 0.35s ease; overflow:hidden; background:var(--bg); will-change:transform,opacity; }
-        .tab-page.active { opacity:1; visibility:visible; transform:translateX(0); z-index:2; }
-        .tab-page.exit { opacity:0; transform:translateX(-30px); z-index:1; transition:transform 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s; }
+        #main {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+        }
+        .tab-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(30px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, visibility 0.35s ease;
+            overflow: hidden;
+            background: var(--bg);
+            will-change: transform, opacity;
+        }
+        .tab-page.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 2;
+        }
+        .tab-page.exit {
+            opacity: 0;
+            transform: translateX(-30px);
+            z-index: 1;
+            transition: transform 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s;
+        }
 
-        #pvp-page { background:var(--bg); }
-        #arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; }
-        #game-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:var(--surface); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.8), 0 0 50px rgba(76,175,80,0.05); }
+        #pvp-page {
+            background: var(--bg);
+        }
+        #arena-wrap {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px 0 10px;
+            min-height: 0;
+        }
+        #game-canvas {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: var(--radius);
+            background: var(--surface);
+            touch-action: none;
+            display: block;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 0 50px rgba(76, 175, 80, 0.05);
+        }
 
-        #countdown-timer { position:absolute; top:4px; right:4px; font-size:18px; font-weight:700; color:#fff; text-shadow:0 0 20px rgba(76,175,80,0.4),0 0 40px rgba(0,0,0,0.8); z-index:3; pointer-events:none; display:none; font-variant-numeric:tabular-nums; letter-spacing:0.5px; background:rgba(0,0,0,0.6); padding:2px 8px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); }
+        #countdown-timer {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(76, 175, 80, 0.4), 0 0 40px rgba(0, 0, 0, 0.8);
+            z-index: 3;
+            pointer-events: none;
+            display: none;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-        #stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:var(--surface); border-top:1px solid var(--border); margin-top:0; }
-        #stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
-        #stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
-        #stats-bar .stat-item .value { color:#fff; font-weight:700; }
-        #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
+        #stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 14px 10px 14px;
+            flex-shrink: 0;
+            color: var(--text2);
+            font-size: 14px;
+            font-weight: 600;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            margin-top: 0;
+        }
+        #stats-bar .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #stats-bar .stat-item .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        #stats-bar .stat-item .value {
+            color: #fff;
+            font-weight: 700;
+        }
+        #stats-bar .stat-item .label {
+            color: var(--text2);
+            font-size: 12px;
+            margin-right: 2px;
+        }
 
-        #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.7; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; }
-        #waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
+        #waiting-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            color: var(--text2);
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            line-height: 1.6;
+        }
+        #waiting-text .sub {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
+        }
 
-        #winner-overlay { position:absolute; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:7; border-radius:var(--radius); flex-direction:column; gap:6px; padding:20px; }
-        #winner-overlay.show { display:flex; }
-        #winner-text { font-size:26px; font-weight:800; color:var(--gold); text-shadow:0 0 40px var(--gold-dim); text-align:center; }
-        #winner-sub { font-size:15px; color:var(--text2); margin-top:2px; }
-        #winner-close-btn { margin-top:14px; padding:10px 36px; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:15px; cursor:pointer; box-shadow:0 0 30px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; }
-        #winner-close-btn:active { transform:scale(0.94); opacity:0.8; }
+        #winner-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 7;
+            border-radius: var(--radius);
+            flex-direction: column;
+            gap: 6px;
+            padding: 20px;
+        }
+        #winner-overlay.show {
+            display: flex;
+        }
+        #winner-text {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--gold);
+            text-shadow: 0 0 40px var(--gold-dim);
+            text-align: center;
+        }
+        #winner-sub {
+            font-size: 15px;
+            color: var(--text2);
+            margin-top: 2px;
+        }
+        #winner-close-btn {
+            margin-top: 14px;
+            padding: 10px 36px;
+            border-radius: 30px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            box-shadow: 0 0 30px var(--primary-glow);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+        }
+        #winner-close-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
 
-        #bet-overlay { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:10px 16px; display:flex; align-items:center; gap:10px; backdrop-filter:blur(16px); z-index:5; box-shadow:0 8px 32px rgba(0,0,0,0.8); transition:0.3s; flex-wrap:wrap; justify-content:center; min-width:280px; }
-        #bet-overlay.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(16px); }
-        #bet-info { font-size:12px; color:var(--text2); display:flex; flex-direction:column; align-items:flex-start; gap:0px; min-width:70px; }
-        #bet-info .label { font-size:9px; text-transform:uppercase; opacity:0.5; letter-spacing:0.6px; }
-        #bet-info .value { font-weight:700; color:var(--gold); font-size:14px; }
-        #bet-input { width:60px; padding:6px 8px; border-radius:10px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:15px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
-        #bet-input:focus { border-color:var(--primary); box-shadow:0 0 24px var(--primary-glow); }
-        #bet-btn { padding:6px 18px; border-radius:12px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:0.2s; box-shadow:0 0 24px var(--primary-glow); letter-spacing:0.2px; white-space:nowrap; }
-        #bet-btn:active { transform:scale(0.94); opacity:0.8; }
-        #bet-btn:disabled { opacity:0.4; transform:none; pointer-events:none; }
-        #current-bet-display { color:var(--text2); font-size:12px; width:100%; text-align:center; margin-top:2px; border-top:1px solid var(--border); padding-top:4px; }
-        #current-bet-display span { color:var(--gold); font-weight:700; }
+        #bet-overlay {
+            position: absolute;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(16px);
+            z-index: 5;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            transition: 0.3s;
+            flex-wrap: wrap;
+            justify-content: center;
+            min-width: 280px;
+        }
+        #bet-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(16px);
+        }
+        #bet-info {
+            font-size: 12px;
+            color: var(--text2);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0px;
+            min-width: 70px;
+        }
+        #bet-info .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            opacity: 0.5;
+            letter-spacing: 0.6px;
+        }
+        #bet-info .value {
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 14px;
+        }
+        #bet-input {
+            width: 60px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+        #bet-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 24px var(--primary-glow);
+        }
+        #bet-btn {
+            padding: 6px 18px;
+            border-radius: 12px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 24px var(--primary-glow);
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+        #bet-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        #bet-btn:disabled {
+            opacity: 0.4;
+            transform: none;
+            pointer-events: none;
+        }
+        #current-bet-display {
+            color: var(--text2);
+            font-size: 12px;
+            width: 100%;
+            text-align: center;
+            margin-top: 2px;
+            border-top: 1px solid var(--border);
+            padding-top: 4px;
+        }
+        #current-bet-display span {
+            color: var(--gold);
+            font-weight: 700;
+        }
 
-        #profile-page { background:var(--bg); padding:20px 16px 10px; overflow-y:auto; align-items:center; }
-        .profile-card { width:100%; max-width:360px; background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
-        .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
-        .profile-name { font-size:20px; font-weight:700; margin-top:2px; }
-        .profile-username { font-size:14px; color:var(--text2); }
-        .profile-status { font-size:13px; padding:2px 18px; border-radius:30px; background:var(--surface2); color:var(--text2); border:1px solid var(--border); margin-top:2px; }
-        .profile-divider { width:70%; height:1px; background:var(--border); margin:6px 0 4px; }
-        .profile-stats { display:flex; gap:24px; margin-top:8px; width:100%; justify-content:center; }
-        .stat-item { text-align:center; }
-        .stat-item .num { font-size:22px; font-weight:800; color:var(--gold); }
-        .stat-item .lbl { font-size:11px; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; }
-        .stat-item .num.win { color:var(--green); }
-        .stat-item .num.loss { color:var(--red); }
-        .stat-item .num.rate { color:var(--primary); }
-        #p-balance { color:var(--gold); font-weight:700; }
+        #profile-page {
+            background: var(--bg);
+            padding: 20px 16px 10px;
+            overflow-y: auto;
+            align-items: center;
+        }
+        .profile-card {
+            width: 100%;
+            max-width: 360px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 24px 20px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.8);
+        }
+        .profile-pfp {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 2px solid var(--primary);
+            object-fit: cover;
+            box-shadow: 0 0 40px var(--primary-glow);
+        }
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 2px;
+        }
+        .profile-username {
+            font-size: 14px;
+            color: var(--text2);
+        }
+        .profile-status {
+            font-size: 13px;
+            padding: 2px 18px;
+            border-radius: 30px;
+            background: var(--surface2);
+            color: var(--text2);
+            border: 1px solid var(--border);
+            margin-top: 2px;
+        }
+        .profile-divider {
+            width: 70%;
+            height: 1px;
+            background: var(--border);
+            margin: 6px 0 4px;
+        }
+        .profile-stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item .num {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--gold);
+        }
+        .stat-item .lbl {
+            font-size: 11px;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+        }
+        .stat-item .num.win {
+            color: var(--green);
+        }
+        .stat-item .num.loss {
+            color: var(--red);
+        }
+        .stat-item .num.rate {
+            color: var(--primary);
+        }
+        #p-balance {
+            color: var(--gold);
+            font-weight: 700;
+        }
 
-        #top-page { background:var(--bg); padding:14px 14px 10px; overflow-y:auto; }
-        #top-list { display:flex; flex-direction:column; gap:5px; max-width:400px; margin:0 auto; width:100%; }
-        .top-entry { display:flex; align-items:center; gap:10px; background:var(--surface); border-radius:12px; padding:8px 14px; border:1px solid var(--border); transition:0.2s; }
-        .top-entry .rank { font-size:16px; font-weight:800; color:var(--text2); min-width:28px; text-align:center; }
-        .top-entry .rank.gold { color:var(--gold); }
-        .top-entry .rank.silver { color:#b8b8c8; }
-        .top-entry .rank.bronze { color:#cd8a5a; }
-        .top-entry .t-pfp { width:32px; height:32px; border-radius:50%; background:var(--surface2); border:1px solid var(--border); object-fit:cover; flex-shrink:0; }
-        .top-entry .t-name { flex:1; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-        .top-entry .t-wins { font-size:12px; color:var(--text2); white-space:nowrap; }
-        .top-entry .t-score { font-weight:700; color:var(--gold); font-size:14px; white-space:nowrap; }
+        #top-page {
+            background: var(--bg);
+            padding: 14px 14px 10px;
+            overflow-y: auto;
+        }
+        #top-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-width: 400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .top-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            transition: 0.2s;
+        }
+        .top-entry .rank {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text2);
+            min-width: 28px;
+            text-align: center;
+        }
+        .top-entry .rank.gold {
+            color: var(--gold);
+        }
+        .top-entry .rank.silver {
+            color: #b8b8c8;
+        }
+        .top-entry .rank.bronze {
+            color: #cd8a5a;
+        }
+        .top-entry .t-pfp {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .top-entry .t-name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .top-entry .t-wins {
+            font-size: 12px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+        .top-entry .t-score {
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 14px;
+            white-space: nowrap;
+        }
 
-        #tabs { display:flex; flex-shrink:0; background:var(--surface); border-top:1px solid var(--border); padding-bottom:var(--safe-bottom); padding-top:2px; z-index:10; position:relative; }
-        .tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 0 8px; border:none; background:transparent; color:var(--text2); font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; gap:1px; position:relative; letter-spacing:0.4px; text-transform:uppercase; }
-        .tab-btn .tab-icon { font-size:20px; line-height:1.2; transition:0.2s; opacity:0.7; }
-        .tab-btn.active { color:#ffffff !important; }
-        .tab-btn.active .tab-icon { opacity:1; transform:translateY(-1px); color:#ffffff !important; }
-        .tab-btn::after { content:''; position:absolute; top:0; left:30%; right:30%; height:2px; border-radius:0 0 4px 4px; background:#ffffff; opacity:0; transition:0.3s; }
-        .tab-btn.active::after { opacity:1; left:15%; right:15%; }
-        .tab-icon svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-        .tab-btn.active .tab-icon svg { stroke:#ffffff !important; }
-        .no-players-msg { text-align:center; color:var(--text2); padding:40px 0; opacity:0.4; font-size:14px; }
+        #tabs {
+            display: flex;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            padding-bottom: var(--safe-bottom);
+            padding-top: 2px;
+            z-index: 10;
+            position: relative;
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 0 8px;
+            border: none;
+            background: transparent;
+            color: var(--text2);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            gap: 1px;
+            position: relative;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+        }
+        .tab-btn .tab-icon {
+            font-size: 20px;
+            line-height: 1.2;
+            transition: 0.2s;
+            opacity: 0.7;
+        }
+        .tab-btn.active {
+            color: #ffffff !important;
+        }
+        .tab-btn.active .tab-icon {
+            opacity: 1;
+            transform: translateY(-1px);
+            color: #ffffff !important;
+        }
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 30%;
+            right: 30%;
+            height: 2px;
+            border-radius: 0 0 4px 4px;
+            background: #ffffff;
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .tab-btn.active::after {
+            opacity: 1;
+            left: 15%;
+            right: 15%;
+        }
+        .tab-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        .tab-btn.active .tab-icon svg {
+            stroke: #ffffff !important;
+        }
+        .no-players-msg {
+            text-align: center;
+            color: var(--text2);
+            padding: 40px 0;
+            opacity: 0.4;
+            font-size: 14px;
+        }
 
         @media (max-width:400px) {
-            #balance-wrap { padding:2px 10px 2px 4px; }
-            #balance { font-size:15px; }
-            #diamond-icon { width:22px; height:22px; }
-            #bet-overlay { padding:6px 12px; gap:6px; bottom:12px; min-width:auto; width:calc(100% - 24px); }
-            #bet-input { width:48px; font-size:13px; padding:4px 4px; }
-            #bet-btn { padding:4px 12px; font-size:12px; }
-            #bet-info .value { font-size:12px; }
-            .profile-card { padding:16px 14px 20px; }
-            .profile-pfp { width:60px; height:60px; }
-            .profile-name { font-size:17px; }
-            .stat-item .num { font-size:18px; }
-            #winner-text { font-size:22px; }
-            #username-display { max-width:60px; font-size:11px; }
-            #countdown-timer { font-size:16px; top:4px; right:4px; }
-            #stats-bar { font-size:12px; padding:4px 10px; }
-            #stats-bar .stat-item .icon { width:16px; height:16px; }
+            #balance-wrap {
+                padding: 2px 10px 2px 4px;
+            }
+            #balance {
+                font-size: 15px;
+            }
+            #diamond-icon {
+                width: 22px;
+                height: 22px;
+            }
+            #bet-overlay {
+                padding: 6px 12px;
+                gap: 6px;
+                bottom: 12px;
+                min-width: auto;
+                width: calc(100% - 24px);
+            }
+            #bet-input {
+                width: 48px;
+                font-size: 13px;
+                padding: 4px 4px;
+            }
+            #bet-btn {
+                padding: 4px 12px;
+                font-size: 12px;
+            }
+            #bet-info .value {
+                font-size: 12px;
+            }
+            .profile-card {
+                padding: 16px 14px 20px;
+            }
+            .profile-pfp {
+                width: 60px;
+                height: 60px;
+            }
+            .profile-name {
+                font-size: 17px;
+            }
+            .stat-item .num {
+                font-size: 18px;
+            }
+            #winner-text {
+                font-size: 22px;
+            }
+            #username-display {
+                max-width: 60px;
+                font-size: 11px;
+            }
+            #countdown-timer {
+                font-size: 16px;
+                top: 4px;
+                right: 4px;
+            }
+            #stats-bar {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            #stats-bar .stat-item .icon {
+                width: 16px;
+                height: 16px;
+            }
         }
     </style>
 </head>
@@ -129,7 +709,7 @@
     <div id="app">
         <div id="topbar">
             <div id="balance-wrap">
-                <img id="diamond-icon" src="https://i.postimg.cc/gjf8MC89/Snimok-ekrana-2026-07-07-143049-Photoroom.png" alt="diamond" />
+                <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
                 <span id="balance">1000</span>
             </div>
             <div id="top-right">
@@ -151,14 +731,14 @@
                     </div>
                     <div id="bet-overlay">
                         <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
-                        <input type="number" id="bet-input" value="10" min="1" max="9999" />
+                        <input type="number" id="bet-input" value="10" min="10" max="9999" />
                         <button id="bet-btn">join</button>
                         <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                     </div>
                 </div>
                 <div id="stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
-                    <div class="stat-item"><img src="https://i.postimg.cc/gjf8MC89/Snimok-ekrana-2026-07-07-143049-Photoroom.png" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
+                    <div class="stat-item"><img src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
                 </div>
             </div>
 
@@ -219,23 +799,21 @@
             pfp: '',
             wins: 0,
             losses: 0,
-            gameState: 'idle',
+            gameState: 'idle', // idle, countdown, prestart, playing, finished
             players: [],
             maxPlayers: 8,
             pot: 0,
             arenaSize: 0,
             cornerRadius: 0,
-            perimeterPoints: [], // array of {x, y} defining the border
-            openingStartIdx: -1,
-            openingEndIdx: -1,
-            opening: null, // { startIdx, endIdx }
+            perimeterPoints: [],
+            opening: null,
             botEnabled: true,
             botSpawned: false,
             winnerId: null,
             countdown: 3.0,
             countdownStartTime: 0,
+            prestartTimer: 0,
             openingTimer: 0,
-            openingGrowTimer: 3.0,
             gameTime: 0,
             lastTime: 0,
             currentTab: 'pvp',
@@ -285,15 +863,12 @@
         function getColor(i) { return COLORS[i % COLORS.length]; }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PERIMETER GENERATION (Rounded rectangle with segments)
+        // PERIMETER GENERATION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function generatePerimeter(size, cornerRadius, numPoints = 200) {
+        function generatePerimeter(size, cornerRadius, numPoints = 300) {
             const half = size / 2;
             const r = Math.min(cornerRadius, half);
             const points = [];
-            // We'll trace the perimeter clockwise starting from top-left corner
-            // Define 8 sections: top straight, top-right arc, right straight, bottom-right arc,
-            // bottom straight, bottom-left arc, left straight, top-left arc.
             const sections = [
                 { type: 'line', x1: -half + r, y1: -half, x2: half - r, y2: -half },
                 { type: 'arc', cx: half - r, cy: -half + r, start: -Math.PI / 2, end: 0 },
@@ -305,7 +880,6 @@
                 { type: 'arc', cx: -half + r, cy: -half + r, start: Math.PI, end: 3 * Math.PI / 2 }
             ];
 
-            // Compute total length
             let totalLen = 0;
             const segLengths = sections.map(seg => {
                 if (seg.type === 'line') {
@@ -318,19 +892,16 @@
             });
             totalLen = segLengths.reduce((a, b) => a + b, 0);
 
-            // Sample points evenly along perimeter
             const step = totalLen / numPoints;
             let accumulated = 0;
             let segIdx = 0;
-            let localT = 0;
             for (let i = 0; i < numPoints; i++) {
                 const target = i * step;
-                // Find which segment and local position
                 while (accumulated + segLengths[segIdx] < target) {
                     accumulated += segLengths[segIdx];
                     segIdx = (segIdx + 1) % sections.length;
                 }
-                localT = (target - accumulated) / segLengths[segIdx];
+                const localT = (target - accumulated) / segLengths[segIdx];
                 const seg = sections[segIdx];
                 let px, py;
                 if (seg.type === 'line') {
@@ -347,7 +918,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // CANVAS SIZING & PERIMETER UPDATE
+        // CANVAS SIZING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -360,17 +931,15 @@
             state.arenaSize = size;
             state.cornerRadius = size * 0.15;
             ctx.scale(dpr, dpr);
-            // Generate perimeter
-            state.perimeterPoints = generatePerimeter(size, state.cornerRadius, 200);
-            // If there's an opening, map the indices
-            if (state.opening) {
+            state.perimeterPoints = generatePerimeter(size, state.cornerRadius, 300);
+            if (state.opening && state.opening.startIdx !== undefined) {
                 const total = state.perimeterPoints.length;
-                const startIdx = Math.floor(state.opening.start * total);
-                const endIdx = Math.floor(state.opening.end * total);
-                state.opening.startIdx = startIdx;
-                state.opening.endIdx = endIdx;
+                const startIdx = Math.floor(state.opening.startIdx / (state.opening._total || total) * total);
+                const endIdx = Math.floor(state.opening.endIdx / (state.opening._total || total) * total);
+                state.opening.startIdx = startIdx % total;
+                state.opening.endIdx = endIdx % total;
+                state.opening._total = total;
             }
-            // Reposition players if needed
             const half = size / 2;
             state.players.forEach(p => {
                 if (p.x === undefined || p.x === 0) {
@@ -381,7 +950,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY
+        // PLAYER FACTORY (no particles)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -389,8 +958,8 @@
             state.players.forEach(p => {
                 const ratio = p.bet / totalBet;
                 const r = 18 + ratio * 34;
-                p.radius = Math.min(Math.max(r, 14), 52);
-                p.mass = p.radius * p.radius * 1.2;
+                const newTarget = Math.min(Math.max(r, 14), 52);
+                p.targetRadius = newTarget;
             });
         }
 
@@ -412,21 +981,78 @@
                 pfp: pfp || '',
                 color: getColor(state.players.length + 1),
                 radius: radius,
+                displayRadius: radius,
+                targetRadius: radius,
                 mass: radius * radius * 1.2,
                 x: x || half,
                 y: y || half,
                 vx: 0,
                 vy: 0,
                 alive: true,
+                isPopping: true,
+                popStartTime: performance.now(),
+                popDuration: 550,
+                pulseTime: 0,
+                isPulsing: false,
+                pulseStartTime: 0,
             };
             state.players.push(p);
             computeRadii();
+            haptic('medium');
             return p;
         }
 
-        function getPlayer(id) { return state.players.find(p => p.id === id); }
+        function easePopBounce(t) {
+            if (t >= 1) return 1;
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+        }
 
-        function getAlive() { return state.players.filter(p => p.alive); }
+        function getPopScale(player) {
+            if (!player.isPopping) return 1;
+            const elapsed = performance.now() - player.popStartTime;
+            const progress = Math.min(elapsed / player.popDuration, 1);
+            const scale = easePopBounce(progress);
+            if (progress >= 1) {
+                player.isPopping = false;
+                return 1;
+            }
+            return scale;
+        }
+
+        function getPlayerDisplayRadius(player) {
+            const diff = player.targetRadius - player.displayRadius;
+            if (Math.abs(diff) < 0.01) {
+                player.displayRadius = player.targetRadius;
+                return player.displayRadius;
+            }
+            const speed = 8.0;
+            player.displayRadius += diff * Math.min(1, speed * 0.016);
+            return player.displayRadius;
+        }
+
+        function updatePlayerAnimations() {
+            state.players.forEach(p => {
+                getPlayerDisplayRadius(p);
+                if (p.isPulsing) {
+                    const elapsed = (performance.now() - p.pulseStartTime) / 1000;
+                    if (elapsed > 0.6) {
+                        p.isPulsing = false;
+                        p.pulseTime = 0;
+                    } else {
+                        p.pulseTime = elapsed;
+                    }
+                }
+            });
+        }
+
+        function triggerPulse(player) {
+            player.isPulsing = true;
+            player.pulseStartTime = performance.now();
+            player.pulseTime = 0;
+            haptic('light');
+        }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // BOT
@@ -438,7 +1064,7 @@
             if (state.gameState === 'playing' || state.gameState === 'finished') return;
             if (state.players.some(p => p.id.startsWith('bot_'))) return;
             if (state.players.length >= state.maxPlayers) return;
-            const bet = Math.floor(Math.random() * 30) + 8;
+            const bet = Math.floor(Math.random() * 30) + 10; // min 10
             const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
             const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
             state.botSpawned = true;
@@ -452,7 +1078,7 @@
             if (!bot || !bot.alive || state.gameState !== 'playing') return;
             bot.vx += (Math.random() - 0.5) * 2.0 * dt;
             bot.vy += (Math.random() - 0.5) * 2.0 * dt;
-            const maxSp = speedForRadius(bot.radius);
+            const maxSp = speedForRadius(bot.displayRadius || bot.radius);
             const sp = Math.sqrt(bot.vx * bot.vx + bot.vy * bot.vy);
             if (sp > maxSp) {
                 bot.vx = (bot.vx / sp) * maxSp;
@@ -463,15 +1089,15 @@
         function speedForRadius(radius) {
             const minR = 14,
                 maxR = 52;
-            const minSpeed = 3.0,
-                maxSpeed = 8.5;
+            const minSpeed = 4.0,
+                maxSpeed = 9.5; // increased base speed
             const norm = (radius - minR) / (maxR - minR);
             const speed = maxSpeed - (maxSpeed - minSpeed) * Math.pow(norm, 1.6);
             return Math.max(minSpeed, Math.min(maxSpeed, speed));
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC
+        // GAME LOGIC with prestart phase
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function startCountdown() {
             if (state.gameState !== 'idle') return;
@@ -485,10 +1111,18 @@
             updateBetUI();
         }
 
+        function startPrestart() {
+            // After countdown ends, we go to prestart (2 seconds)
+            state.gameState = 'prestart';
+            state.prestartTimer = 2.0;
+            countdownTimer.textContent = 'GO!';
+            // We'll keep countdown visible with "GO!" for 2 seconds
+            haptic('heavy');
+        }
+
         function startGame() {
             state.gameState = 'playing';
             state.gameTime = 0;
-            state.openingGrowTimer = 3.0;
             state.openingTimer = 0;
             state.opening = null;
             state.winnerId = null;
@@ -501,15 +1135,16 @@
             const half = state.arenaSize / 2;
             alive.forEach((p, i) => {
                 const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
-                const baseSpeed = speedForRadius(p.radius);
-                const speed = baseSpeed * (0.8 + Math.random() * 0.6);
+                const baseSpeed = speedForRadius(p.displayRadius || p.radius);
+                const speed = baseSpeed * (0.9 + Math.random() * 0.5); // high initial speed
                 p.vx = Math.cos(angle) * speed;
                 p.vy = Math.sin(angle) * speed;
                 p.x = half + Math.cos(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
                 p.y = half + Math.sin(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
                 p.alive = true;
+                p.isPopping = false;
             });
-            state.openingTimer = 2.0 + Math.random() * 1.5;
+            state.openingTimer = 3.0 + Math.random() * 1.5;
         }
 
         function endGame(winnerId) {
@@ -563,10 +1198,12 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS – SEGMENT-BASED COLLISION WITH OPENING GAP
+        // PHYSICS with perfect restitution
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
+            state.gameTime += dt;
+
             const alive = getAlive();
             if (alive.length <= 1) {
                 if (alive.length === 1) endGame(alive[0].id);
@@ -588,33 +1225,56 @@
             const size = state.arenaSize;
             const pts = state.perimeterPoints;
             const totalPts = pts.length;
+            const half = size / 2;
 
             // Opening management
             state.openingTimer -= dt;
             if (state.openingTimer <= 0) {
                 if (!state.opening) {
-                    // Create opening: choose a random start index, gap size in terms of points
-                    const gapSize = Math.floor(0.1 * totalPts + Math.random() * 0.3 * totalPts); // 10-40% of perimeter
+                    const gameTime = state.gameTime;
+                    let minGap, maxGap;
+                    if (gameTime < 4) {
+                        minGap = 0.08;
+                        maxGap = 0.18;
+                    } else {
+                        minGap = 0.15;
+                        maxGap = 0.35;
+                    }
+                    const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
                     const startIdx = Math.floor(Math.random() * totalPts);
                     const endIdx = (startIdx + gapSize) % totalPts;
                     state.opening = {
                         startIdx: startIdx,
                         endIdx: endIdx,
-                        start: startIdx / totalPts,
-                        end: endIdx / totalPts,
+                        flashCount: 0,
+                        flashTimer: 0,
+                        state: 'flashing',
+                        _total: totalPts,
                     };
-                    state.openingTimer = 3.0 + Math.random() * 3.0;
+                    state.openingTimer = 3.5 + Math.random() * 2.5;
                     haptic('light');
                 } else {
                     state.opening = null;
-                    state.openingTimer = 0.8 + Math.random() * 2.2;
+                    state.openingTimer = 1.5 + Math.random() * 2.0;
                 }
             }
 
             const opening = state.opening;
-            // Helper to check if a point index is in the gap
+            if (opening && opening.state === 'flashing') {
+                opening.flashTimer += dt;
+                if (opening.flashTimer > 0.25) {
+                    opening.flashTimer = 0;
+                    opening.flashCount++;
+                    if (opening.flashCount >= 4) {
+                        opening.state = 'open';
+                        haptic('medium');
+                    }
+                }
+            }
+
             function isInGap(idx) {
                 if (!opening) return false;
+                if (opening.state !== 'open') return false;
                 const start = opening.startIdx;
                 const end = opening.endIdx;
                 if (start < end) {
@@ -624,7 +1284,7 @@
                 }
             }
 
-            const subSteps = 5;
+            const subSteps = 6;
             const subDt = dt / subSteps;
 
             for (let step = 0; step < subSteps; step++) {
@@ -632,18 +1292,15 @@
                     p.x += p.vx * subDt * 60;
                     p.y += p.vy * subDt * 60;
 
-                    // Collision detection against each segment of the perimeter
-                    let collided = false;
+                    const radius = p.displayRadius || p.radius;
+                    // Wall collision (segment)
                     for (let i = 0; i < totalPts; i++) {
                         const j = (i + 1) % totalPts;
-                        // Skip segments that are in the gap
                         if (isInGap(i) && isInGap(j)) continue;
-                        // Segment from pts[i] to pts[j]
                         const ax = pts[i].x,
                             ay = pts[i].y;
                         const bx = pts[j].x,
                             by = pts[j].y;
-                        // Compute distance from ball center to segment
                         const dx = bx - ax,
                             dy = by - ay;
                         const lenSq = dx * dx + dy * dy;
@@ -655,65 +1312,51 @@
                         const distX = p.x - nearX;
                         const distY = p.y - nearY;
                         const dist = Math.sqrt(distX * distX + distY * distY);
-                        if (dist < p.radius) {
-                            // Compute normal (from segment to ball center)
+                        if (dist < radius) {
                             const nx = distX / dist;
                             const ny = distY / dist;
-                            // Push ball out
-                            const overlap = p.radius - dist;
+                            const overlap = radius - dist;
                             p.x += nx * overlap;
                             p.y += ny * overlap;
-                            // Reflect velocity if moving into the segment
                             const vn = p.vx * nx + p.vy * ny;
                             if (vn < 0) {
-                                const restitution = 0.85;
-                                p.vx -= (1 + restitution) * vn * nx;
-                                p.vy -= (1 + restitution) * vn * ny;
-                                // Small damping to avoid jitter
-                                p.vx *= 0.995;
-                                p.vy *= 0.995;
+                                // Perfect restitution (no energy loss)
+                                p.vx -= 2 * vn * nx;
+                                p.vy -= 2 * vn * ny;
                             }
-                            collided = true;
-                            break; // only resolve one collision per step
+                            break;
                         }
                     }
 
-                    // Check if ball has escaped through the opening gap
-                    if (!collided && opening) {
-                        // Check if ball center is outside the perimeter
-                        // We can test by seeing if ball is beyond the bounding box and near the gap
-                        // For simplicity, we'll check if ball is outside the arena bounding box
-                        const margin = p.radius;
-                        const left = margin,
-                            right = size - margin;
-                        const top = margin,
-                            bottom = size - margin;
-                        let outside = false;
-                        if (p.x < left || p.x > right || p.y < top || p.y > bottom) {
-                            outside = true;
-                        }
-                        if (outside) {
-                            // Check if it's near the gap: find the closest point on perimeter
-                            let minDist = Infinity;
-                            let closestIdx = 0;
+                    // Elimination through gap
+                    if (opening && opening.state === 'open') {
+                        const cx = half,
+                            cy = half;
+                        const dirX = p.x - cx,
+                            dirY = p.y - cy;
+                        const distFromCenter = Math.sqrt(dirX * dirX + dirY * dirY);
+                        const escapeDist = half + radius * 3.0;
+                        if (distFromCenter > escapeDist) {
+                            const angle = Math.atan2(dirY, dirX);
+                            let closestGapIdx = -1;
+                            let minGapDist = Infinity;
                             for (let i = 0; i < totalPts; i++) {
-                                const dx = p.x - pts[i].x;
-                                const dy = p.y - pts[i].y;
-                                const d = dx * dx + dy * dy;
-                                if (d < minDist) {
-                                    minDist = d;
-                                    closestIdx = i;
+                                if (isInGap(i)) {
+                                    const dx = p.x - pts[i].x;
+                                    const dy = p.y - pts[i].y;
+                                    const d = dx * dx + dy * dy;
+                                    if (d < minGapDist) {
+                                        minGapDist = d;
+                                        closestGapIdx = i;
+                                    }
                                 }
                             }
-                            // If the closest point is in the gap, eliminate the ball
-                            if (isInGap(closestIdx)) {
-                                // Also check if velocity is outward (moving away from center)
-                                const cx = size / 2,
-                                    cy = size / 2;
-                                const dirX = p.x - cx,
-                                    dirY = p.y - cy;
+                            if (closestGapIdx >= 0) {
+                                const gapAngle = Math.atan2(pts[closestGapIdx].y - cy, pts[closestGapIdx].x - cx);
+                                const angleDiff = Math.abs(angle - gapAngle);
+                                const normalizedDiff = Math.min(angleDiff, 2 * Math.PI - angleDiff);
                                 const vOut = p.vx * dirX + p.vy * dirY;
-                                if (vOut > 0) {
+                                if (normalizedDiff < 0.8 && vOut > 0) {
                                     p.alive = false;
                                     haptic('medium');
                                     return;
@@ -723,7 +1366,7 @@
                     }
                 });
 
-                // Circle collisions (mass-based)
+                // Circle collisions with perfect restitution
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -731,7 +1374,9 @@
                         const dx = b.x - a.x,
                             dy = b.y - a.y;
                         const dist = Math.sqrt(dx * dx + dy * dy);
-                        const minDist = a.radius + b.radius;
+                        const rA = a.displayRadius || a.radius;
+                        const rB = b.displayRadius || b.radius;
+                        const minDist = rA + rB;
                         if (dist < minDist && dist > 0.001) {
                             const nx = dx / dist,
                                 ny = dy / dist;
@@ -744,8 +1389,8 @@
                                 dvy = a.vy - b.vy;
                             const dvn = dvx * nx + dvy * ny;
                             if (dvn > 0) {
-                                const restitution = 0.85;
-                                const impulse = (1 + restitution) * dvn / (1 / a.mass + 1 / b.mass);
+                                // Perfect elastic collision (restitution 1)
+                                const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
                                 a.vx -= impulse / a.mass * nx;
                                 a.vy -= impulse / a.mass * ny;
                                 b.vx += impulse / b.mass * nx;
@@ -755,18 +1400,13 @@
                     }
                 }
 
-                // Speed cap
+                // Speed cap only (no damping)
                 alive.forEach(p => {
-                    const maxSp = speedForRadius(p.radius);
+                    const maxSp = speedForRadius(p.displayRadius || p.radius);
                     const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
                     if (sp > maxSp) {
                         p.vx = (p.vx / sp) * maxSp;
                         p.vy = (p.vy / sp) * maxSp;
-                    }
-                    const minSp = 0.6;
-                    if (sp < minSp && sp > 0) {
-                        p.vx = (p.vx / sp) * minSp;
-                        p.vy = (p.vy / sp) * minSp;
                     }
                 });
             }
@@ -775,7 +1415,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – ROUNDED SQUARE WITH PERIMETER SEGMENTS AND GAP
+        // RENDER
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
 
@@ -801,137 +1441,206 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Arena shadow (dark rim)
+            // Arena shadow
+            const pts = state.perimeterPoints;
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 30;
             ctx.fillStyle = '#1a1a1e';
-            // Draw the rounded rect as a filled shape
-            const pts = state.perimeterPoints;
             if (pts.length > 0) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) {
-                    ctx.lineTo(pts[i].x, pts[i].y);
-                }
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
                 ctx.fill();
             }
             ctx.restore();
 
-            // Main arena surface (lighter)
+            // Main arena
             ctx.save();
             ctx.fillStyle = '#28282e';
             if (pts.length > 0) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) {
-                    ctx.lineTo(pts[i].x, pts[i].y);
-                }
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
                 ctx.fill();
             }
             ctx.restore();
 
-            // Draw border segments, skipping the gap
+            // ── BORDER DRAWING with reduced flash size ──
             const opening = state.opening;
-            const isFlashing = opening && state.openingTimer > 2.5;
-            ctx.save();
-            ctx.strokeStyle = isFlashing ? '#ff3333' : 'rgba(160,160,176,0.3)';
-            ctx.lineWidth = isFlashing ? 8 : 6;
-            ctx.shadowColor = isFlashing ? 'rgba(255,50,50,0.8)' : 'none';
-            ctx.shadowBlur = isFlashing ? 30 : 0;
+            const isFlashing = opening && opening.state === 'flashing';
+            const isOpen = opening && opening.state === 'open';
+            const total = pts.length;
 
-            if (pts.length > 1) {
-                const total = pts.length;
+            ctx.save();
+
+            const hasGap = opening !== null && (isFlashing || isOpen);
+
+            if (hasGap) {
+                const start = opening.startIdx;
+                const end = opening.endIdx;
+
+                // Draw border excluding gap
+                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
+                ctx.lineWidth = 5;
+
                 for (let i = 0; i < total; i++) {
                     const j = (i + 1) % total;
-                    // Skip segments that are in the gap
-                    if (opening) {
-                        const start = opening.startIdx;
-                        const end = opening.endIdx;
-                        let inGap = false;
-                        if (start < end) {
-                            if (i >= start && i < end) inGap = true;
-                            // Also skip if j is in gap
-                            if (j >= start && j < end) inGap = true;
-                        } else {
-                            if (i >= start || i < end) inGap = true;
-                            if (j >= start || j < end) inGap = true;
-                        }
-                        if (inGap) continue;
+                    let inGap = false;
+                    if (start < end) {
+                        if (i >= start && i < end) inGap = true;
+                        if (j >= start && j < end) inGap = true;
+                    } else {
+                        if (i >= start || i < end) inGap = true;
+                        if (j >= start || j < end) inGap = true;
                     }
+                    if (inGap) continue;
                     ctx.beginPath();
                     ctx.moveTo(pts[i].x, pts[i].y);
                     ctx.lineTo(pts[j].x, pts[j].y);
                     ctx.stroke();
                 }
+
+                // ── FLASH EFFECT (reduced size) ──
+                if (isFlashing) {
+                    const isRed = (opening.flashCount % 2 === 0);
+                    ctx.save();
+
+                    const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
+
+                    let gapSegments = [];
+                    if (start < end) {
+                        for (let i = start; i < end; i++) {
+                            const j = (i + 1) % total;
+                            gapSegments.push({ i, j });
+                        }
+                    } else {
+                        for (let i = start; i < total; i++) {
+                            const j = (i + 1) % total;
+                            gapSegments.push({ i, j });
+                        }
+                        for (let i = 0; i < end; i++) {
+                            const j = (i + 1) % total;
+                            gapSegments.push({ i, j });
+                        }
+                    }
+
+                    // Thinner line for flash
+                    ctx.strokeStyle = flashColor;
+                    ctx.lineWidth = isRed ? 6 : 4; // reduced from 16
+                    ctx.shadowColor = isRed ? 'rgba(255,0,68,0.6)' : 'none';
+                    ctx.shadowBlur = isRed ? 20 : 0; // reduced from 60
+
+                    for (const seg of gapSegments) {
+                        ctx.beginPath();
+                        ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
+                        ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
+                        ctx.stroke();
+                    }
+
+                    // Reduced glow ring (optional, keep small)
+                    if (isRed) {
+                        let cx = 0,
+                            cy = 0,
+                            count = 0;
+                        for (const seg of gapSegments) {
+                            cx += pts[seg.i].x;
+                            cy += pts[seg.i].y;
+                            count++;
+                        }
+                        if (count > 0) {
+                            cx /= count;
+                            cy /= count;
+                            const pulseRadius = 15 + Math.sin(performance.now() / 120) * 5;
+                            const gradRing = ctx.createRadialGradient(cx, cy, 0, cx, cy, pulseRadius);
+                            gradRing.addColorStop(0, 'rgba(255,0,68,0.3)');
+                            gradRing.addColorStop(1, 'rgba(255,0,68,0)');
+                            ctx.beginPath();
+                            ctx.arc(cx, cy, pulseRadius, 0, Math.PI * 2);
+                            ctx.fillStyle = gradRing;
+                            ctx.shadowBlur = 0;
+                            ctx.fill();
+                        }
+                    }
+
+                    ctx.restore();
+                }
+                // When open: no highlight
+            } else {
+                // Full border
+                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.stroke();
             }
+
             ctx.restore();
 
-            // ── PLAYERS with PFPs ──
+            // ── PLAYERS (no bet numbers) ──
             state.players.forEach(p => {
                 const isAlive = p.alive;
-                const radius = isAlive ? p.radius : p.radius * 0.5;
+                const popScale = getPopScale(p);
+                const radius = isAlive ? (p.displayRadius || p.radius) : (p.displayRadius || p.radius) * 0.5;
+                const displayRadius = radius * popScale;
                 const alpha = isAlive ? 1 : 0.2;
+
+                let pulseScale = 1;
+                if (p.isPulsing) {
+                    const t = p.pulseTime;
+                    if (t < 0.6) {
+                        const phase = t / 0.6;
+                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase);
+                    }
+                }
+                const finalRadius = displayRadius * pulseScale;
+
                 ctx.save();
                 ctx.globalAlpha = alpha;
-
-                // Circle outline
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = p.color || '#a0a0b0';
                 ctx.lineWidth = 2.5;
                 ctx.shadowColor = 'rgba(255,255,255,0.1)';
                 ctx.shadowBlur = 8;
                 ctx.stroke();
 
-                // PFP Image
                 const pfpSrc = p.pfp || '';
                 if (pfpSrc) {
                     const img = loadImage(pfpSrc);
                     if (img.complete && img.naturalWidth > 0) {
                         ctx.save();
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
+                        ctx.arc(p.x, p.y, Math.max(finalRadius - 3, 2), 0, Math.PI * 2);
                         ctx.clip();
-                        ctx.drawImage(img, p.x - (radius - 3), p.y - (radius - 3), (radius - 3) * 2, (radius - 3) * 2);
+                        const drawSize = Math.max(finalRadius - 3, 2) * 2;
+                        ctx.drawImage(img, p.x - (finalRadius - 3), p.y - (finalRadius - 3), drawSize, drawSize);
                         ctx.restore();
                     } else {
-                        // Fallback: colored circle with initial
                         ctx.fillStyle = p.color || '#a0a0b0';
                         ctx.beginPath();
-                        ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
+                        ctx.arc(p.x, p.y, Math.max(finalRadius - 3, 2), 0, Math.PI * 2);
                         ctx.fill();
                         ctx.fillStyle = '#fff';
-                        ctx.font = `${radius * 0.5}px system-ui, sans-serif`;
+                        ctx.font = `${Math.max(finalRadius * 0.5, 6)}px system-ui, sans-serif`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                     }
                 } else {
-                    // No PFP: colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, radius - 3, 0, Math.PI * 2);
+                    ctx.arc(p.x, p.y, Math.max(finalRadius - 3, 2), 0, Math.PI * 2);
                     ctx.fill();
                     ctx.fillStyle = '#fff';
-                    ctx.font = `${radius * 0.5}px system-ui, sans-serif`;
+                    ctx.font = `${Math.max(finalRadius * 0.5, 6)}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
-                }
-
-                // Bet amount below
-                if (isAlive) {
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = '#ddd';
-                    ctx.font = `bold ${Math.max(10, radius * 0.35)}px system-ui, sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'top';
-                    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                    ctx.shadowBlur = 6;
-                    ctx.fillText(p.bet, p.x, p.y + radius + 4);
                 }
                 ctx.restore();
             });
@@ -979,7 +1688,7 @@
         function updateBetUI() {
             const existing = state.players.find(p => p.id === state.userId);
             const inGame = !!existing;
-            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown');
+            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
 
             if (canBet) {
                 betBtn.textContent = inGame ? 'increase' : 'join';
@@ -999,7 +1708,7 @@
 
             const val = parseInt(betInput.value) || 10;
             betAmountDisplay.textContent = Math.min(val, state.balance);
-            if (betInput.value === '' || parseInt(betInput.value) === 0) {
+            if (betInput.value === '' || parseInt(betInput.value) < 10) {
                 betInput.value = 10;
             }
         }
@@ -1080,21 +1789,42 @@
         // GAME LOOP
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let lastTime = 0;
+        let accumulator = 0;
+        const fixedTimestep = 1 / 60;
 
         function gameLoop(timestamp) {
+            if (lastTime === 0) lastTime = timestamp;
             const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
             lastTime = timestamp;
-            if (state.gameState === 'playing') updatePhysics(dt);
+
+            updatePlayerAnimations();
+
+            if (state.gameState === 'playing') {
+                accumulator += dt;
+                while (accumulator >= fixedTimestep) {
+                    updatePhysics(fixedTimestep);
+                    accumulator -= fixedTimestep;
+                }
+            }
 
             if (state.gameState === 'countdown') {
                 const elapsed = (performance.now() - state.countdownStartTime) / 1000;
                 let remaining = Math.max(0, 3.0 - elapsed);
                 if (remaining <= 0) {
-                    startGame();
+                    startPrestart(); // go to prestart
                 } else {
                     const secs = Math.floor(remaining);
                     const ms = Math.floor((remaining - secs) * 100);
                     countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                }
+            }
+
+            if (state.gameState === 'prestart') {
+                state.prestartTimer -= dt;
+                if (state.prestartTimer <= 0) {
+                    startGame();
+                } else {
+                    countdownTimer.textContent = 'GO! ' + Math.ceil(state.prestartTimer) + 's';
                 }
             }
 
@@ -1111,13 +1841,20 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // HELPERS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function getPlayer(id) { return state.players.find(p => p.id === id); }
+
+        function getAlive() { return state.players.filter(p => p.alive); }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // EVENTS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         betBtn.addEventListener('click', () => {
-            if (state.gameState !== 'idle' && state.gameState !== 'countdown') return;
+            if (state.gameState !== 'idle' && state.gameState !== 'countdown' && state.gameState !== 'prestart') return;
             let addAmount = parseInt(betInput.value) || 10;
-            if (addAmount < 1) { betInput.value = 1;
-                addAmount = 1;
+            if (addAmount < 10) { betInput.value = 10;
+                addAmount = 10;
                 haptic('light'); }
             if (addAmount > state.balance) { betInput.value = state.balance;
                 addAmount = state.balance;
@@ -1129,6 +1866,7 @@
                 existing.bet += addAmount;
                 state.pot += addAmount;
                 computeRadii();
+                triggerPulse(existing);
                 updateBalance();
                 updateBetUI();
                 updateProfile();
@@ -1147,7 +1885,7 @@
                 haptic('medium');
                 if (!state.botSpawned && state.botEnabled) {
                     setTimeout(() => { if (state.botEnabled && (state.gameState === 'idle' || state.gameState ===
-                            'countdown')) spawnBot(); }, 400);
+                            'countdown' || state.gameState === 'prestart')) spawnBot(); }, 400);
                 }
             }
             betInput.value = 10;
@@ -1156,10 +1894,10 @@
 
         betInput.addEventListener('input', () => {
             let val = parseInt(betInput.value) || 0;
-            if (val < 0) betInput.value = 0;
+            if (val < 10) betInput.value = 10;
             if (val > state.balance) betInput.value = state.balance;
-            betAmountDisplay.textContent = (parseInt(betInput.value) || 0);
-            if (betInput.value === '') betInput.value = 10;
+            betAmountDisplay.textContent = (parseInt(betInput.value) || 10);
+            if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
         });
 
         betInput.value = 10;
@@ -1223,7 +1961,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – segment-based rounded square, proper gap, balls slide out to lose');
+        console.log('◆ dllump – refined flash, no particles, perfect restitution, min bet 10, prestart phase');
     </script>
 </body>
 </html>
