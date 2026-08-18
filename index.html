@@ -487,6 +487,7 @@
             opacity: 0.7;
         }
 
+        /* Player list - fixed height, scrollable, transitions for smooth slide */
         #player-list-container {
             width: 100%;
             max-height: 100px;
@@ -498,7 +499,13 @@
             padding: 0px 4px 2px 4px;
             flex-shrink: 0;
             scrollbar-width: thin;
+            /* default margin, will be animated */
             margin-top: -8px;
+            transition: margin-top 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+        /* when bet overlay hidden, slide up */
+        #player-list-container.shift-up {
+            margin-top: -40px;
         }
         #player-list-container::-webkit-scrollbar {
             width: 3px;
@@ -1166,7 +1173,10 @@
                 max-height: 80px;
                 padding: 0 2px 2px 2px;
                 gap: 2px;
-                margin-top: -6px;
+                margin-top: -8px;
+            }
+            #player-list-container.shift-up {
+                margin-top: -35px;
             }
             .pl-entry {
                 font-size: 10px;
@@ -1838,11 +1848,13 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY AUTO SHOW/HIDE
+        // BET OVERLAY AUTO SHOW/HIDE + PLAYER LIST SLIDE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateBetOverlayVisibility() {
             const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
             betOverlayWrap.classList.toggle('hidden', shouldHide);
+            // Also toggle player list shift
+            playerListContainer.classList.toggle('shift-up', shouldHide);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2441,7 +2453,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER
+        // RENDER (with PFP as circle)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -2560,7 +2572,7 @@
 
             ctx.restore();
 
-            // ── PLAYERS (hide eliminated) ──
+            // ── PLAYERS (draw PFP as circle) ──
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
@@ -2582,6 +2594,7 @@
                 ctx.globalAlpha = alpha;
 
                 if (p.pfpLoaded && p.pfpImg) {
+                    // Draw PFP as circle
                     ctx.save();
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -2590,6 +2603,7 @@
                     ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                     ctx.restore();
                 } else {
+                    // Fallback: colored circle with initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -2601,6 +2615,7 @@
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                 }
 
+                // Outline
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = 'rgba(255,255,255,0.2)';
@@ -2886,7 +2901,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – full game restored, frog GIF added, original timing, taller podium, timer & history lowered');
+        console.log('◆ dllump – PFP circles, player list fixed, smooth slide animation');
     </script>
 </body>
 </html>
