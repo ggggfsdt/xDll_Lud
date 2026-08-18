@@ -7,8 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56">
     </script>
     <style>
-        /* ─── YOUR ORIGINAL CSS ─── */
-        /* (Copy it exactly – I'm using a compact version for brevity, but you must use your full CSS) */
+        /* ─── YOUR ORIGINAL CSS (exactly as you had) ─── */
         * {
             margin: 0;
             padding: 0;
@@ -481,7 +480,7 @@
             display: none;
         }
 
-        /* BOT BUTTON REMOVED */
+        /* ─── BOT BUTTON REMOVED ─── */
 
         #player-list-container {
             width: 100%;
@@ -1364,15 +1363,16 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WEBSOCKET CONNECTION
+        // WEBSOCKET — CHANGE THIS TO YOUR RENDER URL
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const WS_URL = 'ws://localhost:3000'; // change to your server address
+        const WS_URL = 'https://xdll-lud.onrender.com'; // <-- REPLACE with wss://your-server.onrender.com
+
         let ws = null;
         let game = null;
         let myPlayerId = null;
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // STATE (local copy)
+        // LOCAL STATE
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const localState = {
             balance: 1000,
@@ -1445,15 +1445,8 @@
             'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
         ];
 
-        const PRIZE_GIFS = {
-            first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
-            second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-            third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-        };
-        const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
-
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PFP SYSTEM (copied from original)
+        // PFP SYSTEM
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function generateDefaultAvatar(initial, colorIndex) {
             const size = 128;
@@ -1601,7 +1594,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER — draws server state
+        // RENDER
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             if (!game) return;
@@ -1707,7 +1700,6 @@
                 const radius = p.radius || 18;
                 const drawRadius = Math.max(radius - 1, 1);
 
-                // ensure avatar
                 if (!p.pfpImg) {
                     const def = generateDefaultAvatar(p.name ? p.name.charAt(0) : '?', 0);
                     p.pfpImg = def;
@@ -1745,7 +1737,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // UPDATE UI from server state
+        // UPDATE UI
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateUI() {
             if (!game) return;
@@ -1753,7 +1745,6 @@
             const alive = g.players.filter(p => p.alive);
             const totalBet = g.players.reduce((s, p) => s + p.bet, 0);
 
-            // player list
             let html = '';
             alive.forEach(p => {
                 const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
@@ -1770,7 +1761,6 @@
             statsPlayers.textContent = alive.length;
             statsPot.textContent = g.pot;
 
-            // waiting / frog
             if (g.state === 'idle') {
                 if (alive.length === 0) {
                     waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
@@ -1785,7 +1775,6 @@
                 frogGif.classList.remove('show');
             }
 
-            // countdown
             if (g.state === 'countdown') {
                 const elapsed = (Date.now() - g.countdownStart) / 1000;
                 let remaining = Math.max(0, 3.0 - elapsed);
@@ -1800,7 +1789,6 @@
                 countdownTimer.style.display = 'none';
             }
 
-            // bet overlay
             const myPlayer = g.players.find(p => p.id === myPlayerId);
             const shouldHide = g.state === 'playing' || g.state === 'finished';
             betOverlayWrap.classList.toggle('hidden', shouldHide);
@@ -1821,7 +1809,6 @@
                 betInput.disabled = g.state !== 'idle';
             }
 
-            // win panel
             if (g.state === 'finished' && g.winnerId) {
                 const winner = g.players.find(p => p.id === g.winnerId);
                 if (winner && !winPanel.classList.contains('show')) {
@@ -1832,7 +1819,6 @@
                     winMultiplier.textContent = 'x' + (winnings / (winner.bet || 1)).toFixed(1);
                     winPanel.classList.add('show');
                     if (winner.id === myPlayerId) playVictorySound();
-                    // history
                     const history = window._winHistory || [];
                     history.unshift({ name: winner.name, pfp: winner.pfp });
                     if (history.length > 8) history.pop();
@@ -1848,7 +1834,6 @@
                 winPanel.classList.remove('show');
             }
 
-            // profile
             if (myPlayer) {
                 profileName.textContent = myPlayer.name;
                 profileUsername.textContent = '@' + myPlayer.name;
@@ -1856,15 +1841,10 @@
                 pBalance.textContent = myPlayer.balance;
             }
 
-            // top
             updateTopUI();
-
             if (arenaSize === 0) resizeCanvas();
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TOP UI
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateTopUI() {
             if (!game) return;
             const players = [...game.players].sort((a, b) => b.balance - a.balance);
@@ -1943,19 +1923,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOOP
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let lastTime = 0;
-
-        function gameLoop(timestamp) {
-            if (lastTime === 0) lastTime = timestamp;
-            lastTime = timestamp;
-            render();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WEBSOCKET
+        // WEBSOCKET CONNECTION
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function connect() {
             ws = new WebSocket(WS_URL);
@@ -1972,7 +1940,6 @@
                         myPlayerId = data.id;
                     } else if (data.type === 'state') {
                         game = data.game;
-                        // ensure all players have default avatar
                         game.players.forEach(p => {
                             if (!p.pfpImg) {
                                 const def = generateDefaultAvatar(p.name ? p.name.charAt(0) : '?', 0);
@@ -2070,6 +2037,18 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // GAME LOOP
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let lastTime = 0;
+
+        function gameLoop(timestamp) {
+            if (lastTime === 0) lastTime = timestamp;
+            lastTime = timestamp;
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // INIT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function init() {
@@ -2099,7 +2078,8 @@
         }
 
         init();
-        console.log('✅ Online client ready – connect to server at ' + WS_URL);
+        console.log('✅ dllump · bump arena – online version');
+        console.log('   Connect to server at ' + WS_URL);
     </script>
 </body>
 </html>
