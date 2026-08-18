@@ -607,7 +607,7 @@
             max-width: 380px;
             background: var(--surface2);
             border-radius: var(--radius) var(--radius) 0 0;
-            padding: 18px 18px 22px;
+            padding: 20px 18px 24px;
             border: 1px solid var(--border);
             border-bottom: none;
             box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.7);
@@ -618,8 +618,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            max-height: 70vh;
+            gap: 10px;
+            max-height: 75vh;
             overflow-y: auto;
         }
         #win-panel.show {
@@ -628,37 +628,38 @@
             pointer-events: auto;
         }
         #win-gif-container {
-            width: 50%;
-            max-width: 140px;
+            width: 70%;
+            max-width: 220px;
             aspect-ratio: 16/9;
-            border-radius: 10px;
+            border-radius: 12px;
             overflow: hidden;
             flex-shrink: 0;
             background: transparent;
             border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
         #win-gif-container img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             display: block;
-            border-radius: 6px;
+            border-radius: 8px;
         }
         #win-details {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0px;
+            gap: 2px;
             width: 100%;
         }
         #win-name {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--gold);
             text-align: center;
         }
         #win-multiplier {
-            font-size: 28px;
+            font-size: 30px;
             font-weight: 800;
             color: #fff;
             text-align: center;
@@ -677,7 +678,7 @@
             letter-spacing: 0.3px;
             width: 100%;
             text-align: center;
-            margin-top: 2px;
+            margin-top: 4px;
         }
         #win-continue-btn:active {
             transform: scale(0.94);
@@ -746,17 +747,17 @@
             }
             #win-panel {
                 width: 96%;
-                padding: 14px;
+                padding: 16px;
             }
             #win-name {
-                font-size: 18px;
+                font-size: 20px;
             }
             #win-multiplier {
-                font-size: 22px;
+                font-size: 24px;
             }
             #win-gif-container {
-                width: 45%;
-                max-width: 110px;
+                width: 65%;
+                max-width: 160px;
             }
         }
     </style>
@@ -1021,7 +1022,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY (with PFP support)
+        // PLAYER FACTORY (with improved PFP loading)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
@@ -1066,8 +1067,25 @@
                 pulseTime: 0,
                 isPulsing: false,
                 pulseStartTime: 0,
+                // For PFP loading
+                pfpLoaded: false,
+                pfpImg: null,
             };
             state.players.push(p);
+            // Load PFP if provided
+            if (pfp) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    p.pfpLoaded = true;
+                    p.pfpImg = img;
+                };
+                img.onerror = () => {
+                    p.pfpLoaded = false;
+                    p.pfpImg = null;
+                };
+                img.src = pfp;
+            }
             computeRadii();
             haptic('medium');
             return p;
@@ -1218,10 +1236,18 @@
             const winner = getPlayer(winnerId);
 
             if (winner) {
-                const winnings = Math.floor(state.pot * 0.95);
-                const multiplier = (winnings / winner.bet).toFixed(1);
+                // Calculate winnings correctly: winner gets their bet back + (losers' bets minus commission)
+                const totalPot = state.pot;
+                const winnerBet = winner.bet;
+                const losersBets = totalPot - winnerBet;
+                // Commission only from losers: 2%
+                const commission = Math.floor(losersBets * 0.02);
+                const netWin = losersBets - commission;
+                const totalWinnings = winnerBet + netWin;
+                const multiplier = (totalWinnings / winnerBet).toFixed(1);
+
                 if (winner.id === state.userId) {
-                    state.balance += winnings;
+                    state.balance += netWin; // winner already has their bet deducted, we add net win
                     state.wins++;
                 } else {
                     state.losses++;
@@ -1507,20 +1533,8 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER (with PFP)
+        // RENDER (with PFP using loaded images)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const imageCache = {};
-
-        function loadImage(src) {
-            if (!imageCache[src]) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.src = src;
-                imageCache[src] = img;
-            }
-            return imageCache[src];
-        }
-
         function render() {
             const w = state.arenaSize;
             const half = w / 2;
@@ -1659,32 +1673,17 @@
                 ctx.save();
                 ctx.globalAlpha = alpha;
 
-                const pfpSrc = p.pfp || '';
-                if (pfpSrc) {
-                    const img = loadImage(pfpSrc);
-                    // Draw PFP if loaded, else fallback
-                    if (img.complete && img.naturalWidth > 0) {
-                        ctx.save();
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
-                        ctx.clip();
-                        const drawSize = Math.max(finalRadius - 2, 2) * 2;
-                        ctx.drawImage(img, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
-                        ctx.restore();
-                    } else {
-                        // Fallback color + initial
-                        ctx.fillStyle = p.color || '#a0a0b0';
-                        ctx.beginPath();
-                        ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.fillStyle = '#fff';
-                        ctx.font = `${Math.max(finalRadius * 0.5, 6)}px system-ui, sans-serif`;
-                        ctx.textAlign = 'center';
-                        ctx.textBaseline = 'middle';
-                        ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
-                    }
+                // Draw PFP if loaded, else fallback color
+                if (p.pfpLoaded && p.pfpImg) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
+                    ctx.clip();
+                    const drawSize = Math.max(finalRadius - 2, 2) * 2;
+                    ctx.drawImage(p.pfpImg, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
+                    ctx.restore();
                 } else {
-                    // No PFP
+                    // Fallback color + initial
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -1815,14 +1814,13 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TAB SWITCHING (fixed)
+        // TAB SWITCHING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
             state.currentTab = tabId;
 
-            // Hide old page
             const oldEl = tabPages[oldTab];
             if (oldEl) {
                 oldEl.classList.remove('active');
@@ -1832,7 +1830,6 @@
                 }, 350);
             }
 
-            // Show new page
             const newEl = tabPages[tabId];
             if (newEl) {
                 setTimeout(() => {
@@ -1842,7 +1839,6 @@
                 }, 50);
             }
 
-            // Update tab buttons
             tabBtns.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
@@ -1850,18 +1846,12 @@
             haptic('light');
         }
 
-        // Attach click listeners with debug
         tabBtns.forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const tab = this.dataset.tab;
-                console.log('Tab clicked:', tab);
                 switchTab(tab);
             });
-            // Also touch for mobile
-            btn.addEventListener('touchstart', function(e) {
-                // Just to ensure it works, but we use click
-            }, { passive: true });
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1999,11 +1989,9 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
-            // Ensure pvp page active
             Object.keys(tabPages).forEach(key => {
                 tabPages[key].classList.toggle('active', key === 'pvp');
             });
-            // Force tabs to be clickable
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             requestAnimationFrame(gameLoop);
@@ -2012,7 +2000,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – FINAL FIX: tabs clickable, GIFs animate, PFPs show');
+        console.log('◆ dllump – FINAL: PFPs fixed, win money fixed, GIFs bigger and visible');
     </script>
 </body>
 </html>
