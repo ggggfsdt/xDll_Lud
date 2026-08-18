@@ -230,214 +230,81 @@
             pointer-events: none;
             display: none;
             font-variant-numeric: tabular-nums;
-            letter-spacing: 0.5px;
-            background: transparent;
-            border: none;
-            backdrop-filter: none;
-            padding: 0;
-            line-height: 1;
         }
 
-        #win-history {
-            position: absolute;
-            top: 52px;
-            right: 12px;
-            z-index: 4;
+        #stats-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 6px 10px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .stat {
             display: flex;
             align-items: center;
             gap: 4px;
-            pointer-events: none;
-            max-width: 60%;
-            overflow-x: auto;
-            scrollbar-width: none;
-            flex-direction: row-reverse;
-        }
-        #win-history::-webkit-scrollbar {
-            display: none;
-        }
-        .win-entry {
-            flex-shrink: 0;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid var(--gold);
-            background: var(--surface3);
-        }
-        .win-entry img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        #waiting-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 2;
-            text-align: center;
             color: var(--text2);
-            font-size: 18px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            opacity: 0.7;
-            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
-            line-height: 1.6;
-        }
-        #waiting-text .sub {
-            font-size: 13px;
-            font-weight: 400;
-            opacity: 0.5;
-            margin-top: 2px;
         }
 
         #bet-overlay-wrap {
             position: absolute;
-            bottom: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-            width: 92%;
-            max-width: 360px;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-        #bet-overlay-wrap.hidden {
-            opacity: 0;
-            pointer-events: none;
-            transform: translateX(-50%) translateY(20px);
-        }
-        #bet-overlay {
-            background: var(--surface2);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            backdrop-filter: blur(16px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-            flex-wrap: wrap;
-            justify-content: center;
-            transition: 0.3s;
-            position: relative;
-        }
-        #bet-overlay.collapsed {
-            padding: 6px 12px;
-            gap: 4px;
-            cursor: pointer;
-        }
-        #bet-overlay.collapsed>*:not(.bet-toggle) {
-            display: none;
-        }
-        #bet-overlay.collapsed .bet-toggle {
-            display: flex;
-            width: 100%;
-            justify-content: center;
-            color: var(--text2);
-            font-size: 13px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            gap: 6px;
-            align-items: center;
-        }
-        .bet-toggle {
-            display: none;
-            cursor: pointer;
-            user-select: none;
-            background: none;
-            border: none;
-            color: var(--text2);
-            font-size: 16px;
-            padding: 2px 8px;
-            transition: 0.2s;
-            font-family: monospace;
-        }
-        .bet-toggle:active {
-            opacity: 0.6;
-        }
-        #bet-overlay:not(.collapsed) .bet-toggle {
-            display: flex;
-            position: absolute;
-            top: 4px;
-            right: 8px;
-            font-size: 16px;
-            color: var(--text2);
-            opacity: 0.6;
-            padding: 2px;
-            transform: rotate(0deg);
-        }
-        #bet-overlay:not(.collapsed) .bet-toggle::before {
-            content: '>';
-            display: inline-block;
-            transform: rotate(90deg);
-        }
-        #bet-overlay.collapsed .bet-toggle {
-            display: flex;
-            font-size: 14px;
-            gap: 6px;
-            color: var(--text2);
-        }
-        #bet-overlay.collapsed .bet-toggle span {
-            font-size: 11px;
-            opacity: 0.5;
-        }
-        #bet-overlay.collapsed .bet-toggle::before {
-            content: '>';
-            display: inline-block;
-            transform: rotate(-90deg);
-            margin-right: 4px;
-        }
-        #bet-overlay:not(.collapsed) .bet-toggle-text {
-            display: none;
-        }
-        #bet-overlay.collapsed .bet-toggle-text {
-            display: inline;
-        }
-
-        #bet-info {
-            font-size: 12px;
-            color: var(--text2);
+            bottom: 0;
+            left: 0;
+            right: 0;
             display: flex;
             flex-direction: column;
-            align-items: flex-start;
-            gap: 0px;
-            min-width: 70px;
+            gap: 0;
+            width: 100%;
+            background: transparent;
+            z-index: 15;
+            padding: 0;
+            transform: translateY(0%);
+            pointer-events: none;
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            touch-action: none;
         }
-        #bet-info .label {
-            font-size: 9px;
-            text-transform: uppercase;
-            opacity: 0.5;
-            letter-spacing: 0.6px;
+
+        #bet-overlay-wrap.hide {
+            transform: translateY(100%);
+            pointer-events: none;
         }
-        #bet-info .value {
-            font-weight: 700;
-            color: var(--gold);
-            font-size: 14px;
+
+        #bet-overlay {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: linear-gradient(180deg, transparent 0%, rgba(12, 12, 14, 0.95) 30%, rgba(12, 12, 14, 1) 100%);
+            padding: 24px 10px 16px;
+            width: 100%;
+            pointer-events: auto;
+            border-top: 1px solid var(--border);
         }
+
+        #bet-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
         #bet-input {
-            width: 60px;
-            padding: 6px 8px;
-            border-radius: 10px;
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 12px;
             border: 1px solid var(--border);
-            background: var(--surface3);
-            color: var(--text);
+            background: var(--surface2);
+            color: #fff;
             font-size: 15px;
             font-weight: 600;
-            text-align: center;
-            outline: none;
-            font-variant-numeric: tabular-nums;
         }
-        #bet-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 24px var(--primary-glow);
-        }
+
         #bet-btn {
-            padding: 6px 18px;
+            padding: 10px 24px;
             border-radius: 12px;
             border: none;
             background: var(--primary);
@@ -445,366 +312,304 @@
             font-weight: 700;
             font-size: 14px;
             cursor: pointer;
+            box-shadow: 0 0 20px var(--primary-glow);
             transition: 0.2s;
-            box-shadow: 0 0 24px var(--primary-glow);
-            letter-spacing: 0.2px;
             white-space: nowrap;
         }
-        #bet-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
-        #bet-btn:disabled {
-            opacity: 0.4;
-            transform: none;
-            pointer-events: none;
-        }
-        #current-bet-display {
-            color: var(--text2);
-            font-size: 12px;
-            width: 100%;
-            text-align: center;
-            margin-top: 2px;
-            border-top: 1px solid var(--border);
-            padding-top: 4px;
-        }
-        #current-bet-display span {
-            color: var(--gold);
-            font-weight: 700;
-        }
-        #bet-overlay.collapsed #current-bet-display,
-        #bet-overlay.collapsed #bet-info,
-        #bet-overlay.collapsed #bet-input,
-        #bet-overlay.collapsed #bet-btn {
-            display: none;
+
+        #bet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--primary-glow);
         }
 
-        #add-bot-btn {
-            padding: 4px 12px;
-            border-radius: 12px;
+        #bet-btn:active {
+            transform: translateY(0);
+        }
+
+        .bet-tab {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .bet-preset-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
             border: 1px solid var(--border);
-            background: var(--surface3);
+            background: var(--surface2);
             color: var(--text2);
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
-            white-space: nowrap;
-        }
-        #add-bot-btn:active {
-            transform: scale(0.94);
-            opacity: 0.7;
         }
 
-        #player-list-container {
-            width: 100%;
-            max-height: 100px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            padding: 2px 4px 2px 4px;
-            flex-shrink: 0;
-            scrollbar-width: thin;
-            transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
-            margin-top: 0;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-        }
-        #player-list-container.shift-up {
-            max-height: 0 !important;
-            padding: 0 !important;
-            border: none !important;
-            overflow: hidden !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
-            margin-top: 0 !important;
-        }
-        #player-list-container::-webkit-scrollbar {
-            width: 3px;
-        }
-        #player-list-container::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 10px;
-        }
-        .pl-entry {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: var(--surface2);
-            border-radius: 20px;
-            padding: 2px 10px 2px 4px;
-            border: 1px solid var(--border);
-            font-size: 12px;
-            color: #ccc;
-            opacity: 0.85;
-            width: auto;
-            min-width: 140px;
-            max-width: 200px;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .pl-entry.you {
-            border-color: var(--primary);
-            opacity: 1;
-        }
-        .pl-entry .pl-avatar {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
+        .bet-preset-btn:hover {
             background: var(--surface3);
-        }
-        .pl-entry .pl-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .pl-entry .pl-name {
-            font-weight: 600;
-            max-width: 60px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 12px;
-        }
-        .pl-entry .pl-bet {
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 12px;
-        }
-        .pl-entry .pl-chance {
-            color: var(--text2);
-            font-size: 10px;
-            margin-left: 2px;
+            color: #fff;
         }
 
-        #stats-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 14px 10px 14px;
-            flex-shrink: 0;
+        .bet-preset-btn.active {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+        }
+
+        #waiting-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
             color: var(--text2);
             font-size: 14px;
-            font-weight: 600;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            margin-top: 0;
+            z-index: 2;
+            display: none;
         }
-        #stats-bar .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        #stats-bar .stat-item .icon {
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
-        }
-        #stats-bar .stat-item .value {
-            color: #fff;
-            font-weight: 700;
-        }
-        #stats-bar .stat-item .label {
-            color: var(--text2);
-            font-size: 12px;
-            margin-right: 2px;
+
+        #profile-page,
+        #top-page {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
         }
 
         #profile-page {
             background: var(--bg);
-            padding: 20px 16px 10px;
-            overflow-y: auto;
-            align-items: center;
         }
-        .profile-card {
-            width: 100%;
-            max-width: 360px;
-            background: var(--surface);
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            padding: 24px 20px 28px;
+
+        #profile-header {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.8);
+            gap: 12px;
+            padding: 24px 16px 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
         }
-        .profile-pfp {
-            width: 72px;
-            height: 72px;
+
+        #profile-pfp {
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
-            background: var(--surface2);
-            border: 2px solid var(--primary);
+            border: 2px solid var(--gold);
             object-fit: cover;
-            box-shadow: 0 0 40px var(--primary-glow);
+            flex-shrink: 0;
         }
-        .profile-name {
+
+        #profile-name {
             font-size: 20px;
             font-weight: 700;
-            margin-top: 2px;
+            color: #fff;
         }
-        .profile-username {
+
+        #profile-username {
             font-size: 14px;
             color: var(--text2);
         }
-        .profile-status {
-            font-size: 13px;
-            padding: 2px 18px;
-            border-radius: 30px;
-            background: var(--surface2);
+
+        #profile-status {
+            font-size: 12px;
             color: var(--text2);
-            border: 1px solid var(--border);
-            margin-top: 2px;
-        }
-        .profile-divider {
-            width: 70%;
-            height: 1px;
-            background: var(--border);
-            margin: 6px 0 4px;
-        }
-        .profile-stats {
-            display: flex;
-            gap: 24px;
-            margin-top: 8px;
-            width: 100%;
-            justify-content: center;
-        }
-        .stat-item {
-            text-align: center;
-        }
-        .stat-item .num {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--gold);
-        }
-        .stat-item .lbl {
-            font-size: 11px;
-            color: var(--text2);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.6;
-        }
-        .stat-item .num.win {
-            color: var(--green);
-        }
-        .stat-item .num.loss {
-            color: var(--red);
-        }
-        .stat-item .num.rate {
-            color: var(--primary);
-        }
-        #p-balance {
-            color: var(--gold);
-            font-weight: 700;
         }
 
-        #top-page {
-            background: var(--bg);
-            padding: 14px 14px 10px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-        }
-        #podium {
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
+        #profile-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 12px;
-            width: 100%;
-            max-width: 400px;
-            padding: 20px 0 10px;
-            flex-wrap: wrap;
+            padding: 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
         }
-        .podium-col {
+
+        .profile-stat {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            flex: 1;
-            min-width: 70px;
-            max-width: 110px;
-            transition: 0.2s;
-        }
-        .podium-col .rank-badge {
-            font-size: 14px;
-            font-weight: 800;
-            color: var(--text2);
+            padding: 8px;
             background: var(--surface2);
-            padding: 2px 12px;
-            border-radius: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .profile-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .profile-stat-label {
+            font-size: 11px;
+            color: var(--text2);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        #reload-pfp-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 8px 16px 0;
+        }
+
+        #player-list-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 16px;
+        }
+
+        .player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--surface2);
+            padding: 10px 12px;
+            border-radius: 12px;
             border: 1px solid var(--border);
         }
-        .podium-col .rank-badge.gold {
-            color: var(--gold);
-            border-color: var(--gold);
-        }
-        .podium-col .rank-badge.silver {
-            color: #b8b8c8;
-            border-color: #b8b8c8;
-        }
-        .podium-col .rank-badge.bronze {
-            color: #cd8a5a;
-            border-color: #cd8a5a;
-        }
-        .podium-col .podium-pfp {
-            width: 52px;
-            height: 52px;
+
+        .player-card img {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            background: var(--surface2);
-            border: 2px solid var(--border);
             object-fit: cover;
             flex-shrink: 0;
-            transition: 0.2s;
         }
-        .podium-col .podium-pfp.gold {
-            border-color: var(--gold);
-            box-shadow: 0 0 30px var(--gold-dim);
+
+        .player-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
         }
-        .podium-col .podium-pfp.silver {
-            border-color: #b8b8c8;
-            box-shadow: 0 0 20px rgba(184, 184, 200, 0.2);
-        }
-        .podium-col .podium-pfp.bronze {
-            border-color: #cd8a5a;
-            box-shadow: 0 0 20px rgba(205, 138, 90, 0.2);
-        }
-        .podium-col .podium-name {
-            font-size: 12px;
+
+        .player-name {
+            font-size: 14px;
             font-weight: 600;
-            color: var(--text);
-            text-align: center;
-            max-width: 100%;
+            color: #fff;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .podium-col .podium-prize {
+
+        .player-bet {
+            font-size: 12px;
+            color: var(--text2);
+        }
+
+        #podium {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 20px;
+            padding: 24px 16px 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            min-height: 220px;
+        }
+
+        .podium-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+        }
+
+        .rank-badge {
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
-            gap: 4px;
-            font-size: 11px;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: 700;
+            background: var(--surface2);
             color: #fff;
-            background: rgba(255, 255, 255, 0.06);
-            padding: 2px 8px;
-            border-radius: 12px;
+        }
+
+        .rank-badge.gold {
+            background: linear-gradient(135deg, #f0d080, var(--gold));
+            color: #000;
+        }
+
+        .rank-badge.silver {
+            background: linear-gradient(135deg, #d0d0e0, #b8b8c8);
+            color: #000;
+        }
+
+        .rank-badge.bronze {
+            background: linear-gradient(135deg, #e0a070, #cd8a5a);
+            color: #000;
+        }
+
+        .podium-pfp {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .podium-pfp.gold {
+            border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(200, 168, 78, 0.4);
+        }
+
+        .podium-pfp.silver {
+            border-color: #b8b8c8;
+            box-shadow: 0 0 8px rgba(184, 184, 200, 0.2);
+        }
+
+        .podium-pfp.bronze {
+            border-color: #cd8a5a;
+            box-shadow: 0 0 8px rgba(205, 138, 90, 0.15);
+        }
+
+        .podium-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .podium-col .podium-prize img {
+
+        .podium-prize {
+            font-size: 11px;
+            color: var(--gold);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .podium-prize img {
             width: 18px;
             height: 18px;
             object-fit: contain;
         }
+
         .podium-col .podium-stats {
             font-size: 10px;
             color: var(--text2);
             opacity: 0.6;
         }
+
         .podium-col .podium-base {
             width: 100%;
             border-radius: 3px 3px 0 0;
@@ -812,30 +617,36 @@
             margin-top: 2px;
             min-height: 6px;
         }
+
         .podium-col .podium-base.gold {
             background: linear-gradient(180deg, #f0d080, var(--gold));
             height: 100px;
             min-height: 100px;
             box-shadow: 0 -4px 40px rgba(200, 168, 78, 0.4);
         }
+
         .podium-col .podium-base.silver {
             background: linear-gradient(180deg, #d0d0e0, #b8b8c8);
             height: 75px;
             min-height: 75px;
             box-shadow: 0 -4px 30px rgba(184, 184, 200, 0.25);
         }
+
         .podium-col .podium-base.bronze {
             background: linear-gradient(180deg, #e0a070, #cd8a5a);
             height: 50px;
             min-height: 50px;
             box-shadow: 0 -4px 20px rgba(205, 138, 90, 0.2);
         }
+
         .podium-col.p1 {
             transform: translateY(-6px);
         }
+
         .podium-col.p2 {
             transform: translateY(0px);
         }
+
         .podium-col.p3 {
             transform: translateY(6px);
         }
@@ -848,6 +659,7 @@
             margin: 10px auto 0;
             width: 100%;
         }
+
         .top-entry {
             display: flex;
             align-items: center;
@@ -858,6 +670,7 @@
             border: 1px solid var(--border);
             transition: 0.2s;
         }
+
         .top-entry .rank {
             font-size: 14px;
             font-weight: 700;
@@ -865,15 +678,19 @@
             min-width: 28px;
             text-align: center;
         }
+
         .top-entry .rank.gold {
             color: var(--gold);
         }
+
         .top-entry .rank.silver {
             color: #b8b8c8;
         }
+
         .top-entry .rank.bronze {
             color: #cd8a5a;
         }
+
         .top-entry .t-pfp {
             width: 28px;
             height: 28px;
@@ -883,6 +700,7 @@
             object-fit: cover;
             flex-shrink: 0;
         }
+
         .top-entry .t-name {
             flex: 1;
             font-weight: 600;
@@ -891,17 +709,20 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
         .top-entry .t-wins {
             font-size: 11px;
             color: var(--text2);
             white-space: nowrap;
         }
+
         .top-entry .t-score {
             font-weight: 700;
             color: var(--gold);
             font-size: 13px;
             white-space: nowrap;
         }
+
         .top-entry .t-prize {
             font-size: 11px;
             color: #fff;
@@ -913,6 +734,7 @@
             padding: 1px 8px;
             border-radius: 12px;
         }
+
         .top-entry .t-prize img {
             width: 18px;
             height: 18px;
@@ -930,6 +752,7 @@
             position: relative;
             pointer-events: auto !important;
         }
+
         .tab-btn {
             flex: 1;
             display: flex;
@@ -950,6 +773,7 @@
             pointer-events: auto !important;
             touch-action: manipulation;
         }
+
         .tab-btn .tab-icon {
             font-size: 20px;
             line-height: 1.2;
@@ -957,14 +781,17 @@
             opacity: 0.7;
             pointer-events: none;
         }
+
         .tab-btn.active {
             color: #ffffff !important;
         }
+
         .tab-btn.active .tab-icon {
             opacity: 1;
             transform: translateY(-1px);
             color: #ffffff !important;
         }
+
         .tab-btn::after {
             content: '';
             position: absolute;
@@ -977,11 +804,13 @@
             opacity: 0;
             transition: 0.3s;
         }
+
         .tab-btn.active::after {
             opacity: 1;
             left: 15%;
             right: 15%;
         }
+
         .tab-icon svg {
             width: 22px;
             height: 22px;
@@ -992,9 +821,11 @@
             stroke-linejoin: round;
             pointer-events: none;
         }
+
         .tab-btn.active .tab-icon svg {
             stroke: #ffffff !important;
         }
+
         .no-players-msg {
             text-align: center;
             color: var(--text2);
@@ -1027,11 +858,13 @@
             max-height: 75vh;
             overflow-y: auto;
         }
+
         #win-panel.show {
             transform: translateX(-50%) translateY(0%);
             opacity: 1;
             pointer-events: auto;
         }
+
         #win-gif-container {
             width: 70%;
             max-width: 220px;
@@ -1043,6 +876,7 @@
             border: none;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
+
         #win-gif-container img {
             width: 100%;
             height: 100%;
@@ -1050,6 +884,7 @@
             display: block;
             border-radius: 8px;
         }
+
         #win-avatar-container {
             width: 60px;
             height: 60px;
@@ -1059,12 +894,14 @@
             flex-shrink: 0;
             background: var(--surface3);
         }
+
         #win-avatar-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
+
         #win-details {
             display: flex;
             flex-direction: column;
@@ -1072,18 +909,21 @@
             gap: 2px;
             width: 100%;
         }
+
         #win-name {
             font-size: 24px;
             font-weight: 700;
             color: var(--gold);
             text-align: center;
         }
+
         #win-multiplier {
             font-size: 30px;
             font-weight: 800;
             color: #fff;
             text-align: center;
         }
+
         #win-continue-btn {
             padding: 10px 0;
             border-radius: 30px;
@@ -1098,172 +938,50 @@
             letter-spacing: 0.3px;
             width: 100%;
             text-align: center;
-            margin-top: 4px;
-        }
-        #win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
         }
 
-        @media (max-width:400px) {
-            #balance-wrap {
-                padding: 2px 10px 2px 4px;
-            }
-            #balance {
-                font-size: 15px;
-            }
-            #diamond-icon {
-                width: 22px;
-                height: 22px;
-            }
-            #bet-overlay-wrap {
-                width: 96%;
-            }
-            #bet-overlay {
-                padding: 8px 12px;
-                gap: 6px;
-            }
-            #bet-input {
-                width: 48px;
-                font-size: 13px;
-                padding: 4px 4px;
-            }
-            #bet-btn {
-                padding: 4px 12px;
-                font-size: 12px;
-            }
-            #bet-info .value {
-                font-size: 12px;
-            }
-            .profile-card {
-                padding: 16px 14px 20px;
-            }
-            .profile-pfp {
-                width: 60px;
-                height: 60px;
-            }
-            .profile-name {
-                font-size: 17px;
-            }
-            .stat-item .num {
-                font-size: 18px;
-            }
-            #username-display {
-                max-width: 60px;
-                font-size: 11px;
-            }
-            #countdown-timer {
-                font-size: 18px;
-                top: 12px;
-                right: 12px;
-            }
-            #stats-bar {
-                font-size: 12px;
-                padding: 4px 10px;
-            }
-            #stats-bar .stat-item .icon {
-                width: 16px;
-                height: 16px;
-            }
-            #win-panel {
-                width: 96%;
-                padding: 16px;
-            }
-            #win-name {
-                font-size: 20px;
-            }
-            #win-multiplier {
-                font-size: 24px;
-            }
-            #win-gif-container {
-                width: 65%;
-                max-width: 160px;
-            }
-            #win-avatar-container {
-                width: 50px;
-                height: 50px;
-            }
-            #player-list-container {
-                max-height: 80px;
-                padding: 2px 2px;
-                gap: 2px;
-            }
-            .pl-entry {
-                font-size: 10px;
-                padding: 1px 6px 1px 3px;
-                min-width: 100px;
-                max-width: 150px;
-            }
-            .pl-entry .pl-avatar {
-                width: 14px;
-                height: 14px;
-            }
-            .pl-entry .pl-name {
-                max-width: 40px;
-                font-size: 10px;
-            }
-            .pl-entry .pl-bet {
-                font-size: 10px;
-            }
-            .pl-entry .pl-chance {
-                font-size: 9px;
-            }
-            #add-bot-btn {
-                font-size: 10px;
-                padding: 3px 10px;
-            }
-            #win-history {
-                top: 42px;
-                right: 8px;
-                gap: 3px;
-            }
-            .win-entry {
-                width: 22px;
-                height: 22px;
-            }
-            #podium {
-                gap: 8px;
-                padding: 10px 0 6px;
-            }
-            .podium-col .podium-pfp {
-                width: 42px;
-                height: 42px;
-            }
-            .podium-col .podium-name {
-                font-size: 10px;
-            }
-            .podium-col .podium-prize {
-                font-size: 9px;
-                padding: 1px 6px;
-            }
-            .podium-col .podium-prize img {
-                width: 14px;
-                height: 14px;
-            }
-            .podium-col .rank-badge {
-                font-size: 11px;
-                padding: 1px 8px;
-            }
-            .podium-col .podium-base.gold {
-                height: 75px;
-                min-height: 75px;
-            }
-            .podium-col .podium-base.silver {
-                height: 56px;
-                min-height: 56px;
-            }
-            .podium-col .podium-base.bronze {
-                height: 38px;
-                min-height: 38px;
-            }
-            .top-entry .t-prize img {
-                width: 16px;
-                height: 16px;
-            }
-            #frog-gif {
-                width: 50%;
-                max-width: 120px;
-            }
+        #win-continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+
+        #win-history {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 16px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .win-entry {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            background: var(--surface2);
+        }
+
+        .win-entry img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #add-bot-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 8px 16px;
         }
     </style>
 </head>
@@ -1271,69 +989,100 @@
     <div id="app">
         <div id="topbar">
             <div id="balance-wrap">
-                <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
+                <img id="diamond-icon"
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%23c8a84e' d='M20 2l10 12h-6v12h-8V14h-6z'/%3E%3Cpath fill='%23d4b860' d='M20 26v12l-10-12h6V14h8v12z'/%3E%3C/svg%3E" />
                 <span id="balance">1000</span>
             </div>
             <div id="top-right">
-                <span id="username-display">player</span>
-                <div id="status-dot"></div>
+                <div id="status-dot" class="online"></div>
+                <span id="username-display">@player</span>
             </div>
         </div>
 
         <div id="main">
-            <div id="pvp-page" class="tab-page active">
+            <div id="pvp-page" class="tab-page">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
-                    <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">3.00</div>
-                    <div id="win-history"></div>
-                    <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
-
+                    <img id="frog-gif"
+                        src="https://i.postimg.cc/c4kRXmPF/frog.gif" />
+                    <div id="countdown-timer"></div>
+                    <div id="waiting-text">Place a bet to play</div>
                     <div id="win-panel">
-                        <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
-                        <div id="win-avatar-container"><img id="win-avatar" src="" alt="winner" /></div>
+                        <div id="win-gif-container"><img id="win-gif" src="" /></div>
+                        <div id="win-avatar-container"><img id="win-avatar" src="" /></div>
                         <div id="win-details">
-                            <div id="win-name">Winner</div>
-                            <div id="win-multiplier">x2.5</div>
+                            <div id="win-name"></div>
+                            <div id="win-multiplier"></div>
                         </div>
                         <button id="win-continue-btn">Continue</button>
                     </div>
-
-                    <div id="bet-overlay-wrap">
+                    <div id="bet-overlay-wrap" class="hide">
                         <div id="bet-overlay">
-                            <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
-                            <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
-                            <input type="number" id="bet-input" value="10" min="10" max="9999" />
-                            <button id="bet-btn">join</button>
-                            <button id="add-bot-btn">+ Bot</button>
-                            <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                            <div class="bet-tab">
+                                <button class="bet-preset-btn active" data-amount="10">10</button>
+                                <button class="bet-preset-btn" data-amount="50">50</button>
+                                <button class="bet-preset-btn" data-amount="100">100</button>
+                                <button class="bet-preset-btn" data-amount="500">500</button>
+                            </div>
+                            <div id="bet-input-wrap">
+                                <input id="bet-input" type="number" inputmode="numeric" placeholder="Bet amount" value="10" min="10" />
+                                <button id="bet-btn">BET</button>
+                            </div>
+                            <div style="text-align: center; font-size: 11px; color: var(--text2); margin-top: 4px;">
+                                Current bet: <span id="current-bet-value">10</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <div id="stats-bar">
+                    <div class="stat">
+                        <span>👥</span>
+                        <span id="stats-players">0</span>
+                    </div>
+                    <div class="stat">
+                        <span>💰</span>
+                        <span id="stats-pot">0</span>
                     </div>
                 </div>
 
                 <div id="player-list-container"></div>
-
-                <div id="stats-bar">
-                    <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
-                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
-                </div>
             </div>
 
             <div id="profile-page" class="tab-page">
-                <div class="profile-card">
-                    <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
-                    <div class="profile-name" id="profile-name">Player</div>
-                    <div class="profile-username" id="profile-username">@username</div>
-                    <div class="profile-status" id="profile-status">online</div>
-                    <div class="profile-divider"></div>
-                    <div class="profile-stats">
-                        <div class="stat-item"><div class="num win" id="p-wins">0</div><div class="lbl">wins</div></div>
-                        <div class="stat-item"><div class="num loss" id="p-losses">0</div><div class="lbl">losses</div></div>
-                        <div class="stat-item"><div class="num rate" id="p-winrate">0%</div><div class="lbl">winrate</div></div>
+                <div id="profile-header">
+                    <img id="profile-pfp"
+                        src="https://i.pravatar.cc/150?img=0" />
+                    <div id="profile-name">Player</div>
+                    <div id="profile-username">@player</div>
+                    <div id="profile-status">● Online</div>
+                </div>
+
+                <div id="profile-stats">
+                    <div class="profile-stat">
+                        <div class="profile-stat-value" id="p-wins">0</div>
+                        <div class="profile-stat-label">Wins</div>
                     </div>
-                    <div class="profile-divider"></div>
-                    <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
-                    <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">Reload Avatars</button>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value" id="p-losses">0</div>
+                        <div class="profile-stat-label">Losses</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value" id="p-winrate">0%</div>
+                        <div class="profile-stat-label">Win Rate</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-stat-value" id="p-balance">1000</div>
+                        <div class="profile-stat-label">Balance</div>
+                    </div>
+                </div>
+
+                <button id="reload-pfp-btn">Reload Profile PFP</button>
+                <button id="add-bot-btn">Add Bot Player</button>
+
+                <div style="padding: 16px; text-align: center;">
+                    <div style="font-size: 12px; color: var(--text2); margin-bottom: 12px;">Recent Wins</div>
+                    <div id="win-history"></div>
                 </div>
             </div>
 
@@ -1345,58 +1094,181 @@
 
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp">
-                <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="4" y1="20" x2="20" y2="4" />
-                        <line x1="20" y1="20" x2="4" y2="4" />
-                        <line x1="3" y1="3" x2="7" y2="7" />
-                        <line x1="17" y1="17" x2="21" y2="21" />
-                        <path d="M6 18 L9 15" />
-                        <path d="M18 6 L15 9" />
-                        <circle cx="12" cy="12" r="2" fill="currentColor" />
-                    </svg></span>PvP</button>
+                <div class="tab-icon">⚔️</div>
+                PvP
+            </button>
             <button class="tab-btn" data-tab="profile">
-                <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5" /><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20" /></svg></span>Profile</button>
+                <div class="tab-icon">👤</div>
+                Profile
+            </button>
             <button class="tab-btn" data-tab="top">
-                <span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z" />
-                        <circle cx="12" cy="9" r="6" />
-                        <circle cx="12" cy="9" r="3" fill="currentColor" />
-                    </svg></span>Top</button>
+                <div class="tab-icon">🏆</div>
+                Top
+            </button>
         </div>
     </div>
 
     <script>
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TELEGRAM
+        // ENHANCED PFP LOADING WITH MULTIPLE FALLBACK STRATEGIES
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const tg = window.Telegram?.WebApp;
-        if (tg) { tg.expand();
-            tg.enableClosingConfirmation(); }
+        const pfpCache = new Map();
+        const imageCanvas = document.createElement('canvas');
+        imageCanvas.width = 256;
+        imageCanvas.height = 256;
+        
+        // Image proxy services (in case direct load fails)
+        const PROXY_SERVICES = [
+            (url) => url, // Try direct first
+            (url) => `https://images.weserv.nl/?url=${encodeURIComponent(url)}&w=256&h=256&fit=cover`,
+            (url) => `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=256&h=256`,
+        ];
 
-        function haptic(style = 'light') {
-            try {
-                if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style);
-                else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12);
-            } catch (_) {}
+        function createColoredFallback(seed) {
+            // Create a deterministic colored circle based on the seed
+            const ctx = imageCanvas.getContext('2d');
+            const hue = (seed * 137.508) % 360; // Golden angle for color distribution
+            ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+            ctx.beginPath();
+            ctx.arc(128, 128, 120, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Add initials placeholder
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 80px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('?', 128, 128);
+            
+            const dataUrl = imageCanvas.toDataURL('image/png');
+            const img = new Image();
+            img.src = dataUrl;
+            img._isFallback = true;
+            return img;
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // STATE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const state = {
-            balance: 1000,
+        function loadImage(src, maxRetries = 3, proxyIndex = 0) {
+            return new Promise((resolve) => {
+                if (!src) {
+                    resolve(createColoredFallback(1));
+                    return;
+                }
+
+                // Check cache first
+                if (pfpCache.has(src)) {
+                    const cached = pfpCache.get(src);
+                    if (cached.loaded) {
+                        resolve(cached.img);
+                        return;
+                    }
+                    if (cached.promise) {
+                        cached.promise.then(resolve);
+                        return;
+                    }
+                }
+
+                const img = new Image();
+                let attempts = 0;
+                let resolved = false;
+
+                const doLoad = () => {
+                    // Always set crossOrigin for external URLs
+                    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
+                        img.crossOrigin = 'anonymous';
+                    }
+
+                    img.onload = () => {
+                        if (resolved) return;
+                        resolved = true;
+                        // Verify the image actually loaded
+                        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                            pfpCache.set(src, { img, loaded: true, promise: null });
+                            resolve(img);
+                        } else {
+                            // Image loaded but is empty
+                            attempts++;
+                            if (attempts < maxRetries && proxyIndex < PROXY_SERVICES.length) {
+                                const nextProxy = PROXY_SERVICES[proxyIndex + 1];
+                                if (nextProxy) {
+                                    loadImage(src, maxRetries, proxyIndex + 1).then(resolve);
+                                } else {
+                                    resolve(createColoredFallback(hashCode(src)));
+                                }
+                            } else {
+                                resolve(createColoredFallback(hashCode(src)));
+                            }
+                        }
+                    };
+
+                    img.onerror = () => {
+                        if (resolved) return;
+                        attempts++;
+                        
+                        // Try next proxy service
+                        if (proxyIndex + 1 < PROXY_SERVICES.length) {
+                            resolved = true;
+                            loadImage(src, maxRetries, proxyIndex + 1).then(resolve);
+                        } else if (attempts < maxRetries) {
+                            // Retry with timestamp cache bust
+                            const separator = src.includes('?') ? '&' : '?';
+                            img.src = src + separator + 't=' + Date.now();
+                        } else {
+                            if (resolved) return;
+                            resolved = true;
+                            resolve(createColoredFallback(hashCode(src)));
+                        }
+                    };
+
+                    // Apply proxy URL if available
+                    const proxyFn = PROXY_SERVICES[proxyIndex];
+                    img.src = proxyFn ? proxyFn(src) : src;
+                };
+
+                // Set cache entry
+                const promise = new Promise((res) => {});
+                pfpCache.set(src, { img: null, loaded: false, promise });
+
+                doLoad();
+
+                // Timeout guard (8 seconds)
+                const timeoutId = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve(createColoredFallback(hashCode(src)));
+                    }
+                }, 8000);
+
+                // Cleanup on resolution
+                const originalResolve = resolve;
+                resolve = (val) => {
+                    clearTimeout(timeoutId);
+                    originalResolve(val);
+                };
+            });
+        }
+
+        function hashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return Math.abs(hash);
+        }
+
+        let state = {
+            userId: '123456',
             username: 'player',
-            userId: 'user_' + Date.now().toString(36),
             pfp: '',
+            balance: 1000,
             wins: 0,
             losses: 0,
-            gameState: 'idle',
-            players: [],
-            maxPlayers: 8,
             pot: 0,
-            arenaSize: 0,
-            cornerRadius: 0,
+            players: [],
+            arenaSize: 400,
             perimeterPoints: [],
+            gameState: 'idle',
             opening: null,
             botEnabled: true,
             botSpawned: false,
@@ -1414,182 +1286,49 @@
             topPlayers: [],
         };
 
-        // DOM refs
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
-        const balanceEl = document.getElementById('balance');
-        const usernameDisplay = document.getElementById('username-display');
-        const statusDot = document.getElementById('status-dot');
-        const waitingText = document.getElementById('waiting-text');
-        const frogGif = document.getElementById('frog-gif');
-        const betOverlayWrap = document.getElementById('bet-overlay-wrap');
-        const betOverlay = document.getElementById('bet-overlay');
-        const betToggleBtn = document.getElementById('bet-toggle-btn');
-        const betInput = document.getElementById('bet-input');
-        const betBtn = document.getElementById('bet-btn');
-        const betAmountDisplay = document.getElementById('bet-amount-display');
-        const currentBetDisplay = document.getElementById('current-bet-value');
-        const countdownTimer = document.getElementById('countdown-timer');
-        const statsPlayers = document.getElementById('stats-players');
-        const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
         const profileName = document.getElementById('profile-name');
         const profileUsername = document.getElementById('profile-username');
-        const profileStatus = document.getElementById('profile-status');
         const pWins = document.getElementById('p-wins');
         const pLosses = document.getElementById('p-losses');
         const pWinrate = document.getElementById('p-winrate');
         const pBalance = document.getElementById('p-balance');
-        const topList = document.getElementById('top-list');
-        const podiumEl = document.getElementById('podium');
+        const usernameDisplay = document.getElementById('username-display');
+        const balanceEl = document.getElementById('balance');
+        const waitingText = document.getElementById('waiting-text');
+        const countdownTimer = document.getElementById('countdown-timer');
+        const statsPlayers = document.getElementById('stats-players');
+        const statsPot = document.getElementById('stats-pot');
+        const betBtn = document.getElementById('bet-btn');
+        const betInput = document.getElementById('bet-input');
+        const betAmountDisplay = document.getElementById('current-bet-value');
+        const winPanel = document.getElementById('win-panel');
+        const winAvatar = document.getElementById('win-avatar');
+        const winName = document.getElementById('win-name');
+        const winMultiplier = document.getElementById('win-multiplier');
+        const winContinueBtn = document.getElementById('win-continue-btn');
+        const playerListContainer = document.getElementById('player-list-container');
+        const reloadPfpBtn = document.getElementById('reload-pfp-btn');
+        const addBotBtn = document.getElementById('add-bot-btn');
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabPages = {
             pvp: document.getElementById('pvp-page'),
             profile: document.getElementById('profile-page'),
             top: document.getElementById('top-page'),
         };
-        const winPanel = document.getElementById('win-panel');
-        const winGif = document.getElementById('win-gif');
-        const winAvatar = document.getElementById('win-avatar');
-        const winName = document.getElementById('win-name');
-        const winMultiplier = document.getElementById('win-multiplier');
-        const winContinueBtn = document.getElementById('win-continue-btn');
-        const playerListContainer = document.getElementById('player-list-container');
-        const addBotBtn = document.getElementById('add-bot-btn');
-        const winHistoryEl = document.getElementById('win-history');
-        const reloadPfpBtn = document.getElementById('reload-pfp-btn');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
-            'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
-            'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
-            'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
         ];
 
-        const PRIZE_GIFS = {
-            first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
-            second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-            third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-        };
-        const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ROBUST PFP LOADER (with fallback & caching)
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const pfpCache = new Map();
         let defaultAvatarImg = null;
-
-        function loadPFP(src, maxRetries = 3) {
-            return new Promise((resolve) => {
-                if (!src || src === '') src = state.defaultAvatar;
-                if (pfpCache.has(src)) {
-                    const cached = pfpCache.get(src);
-                    if (cached.loaded) {
-                        resolve(cached.img);
-                        return;
-                    }
-                    if (cached.promise) {
-                        cached.promise.then(resolve);
-                        return;
-                    }
-                }
-
-                const img = new Image();
-                let attempts = 0;
-                let resolved = false;
-
-                const tryLoad = () => {
-                    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
-                        img.crossOrigin = 'anonymous';
-                    } else {
-                        img.crossOrigin = undefined;
-                    }
-
-                    img.onload = () => {
-                        if (resolved) return;
-                        resolved = true;
-                        pfpCache.set(src, { img, loaded: true, promise: null });
-                        resolve(img);
-                    };
-
-                    img.onerror = () => {
-                        attempts++;
-                        if (attempts < maxRetries) {
-                            const separator = src.includes('?') ? '&' : '?';
-                            img.src = src + separator + 'retry=' + attempts + '&t=' + Date.now();
-                        } else {
-                            if (resolved) return;
-                            resolved = true;
-                            if (src !== state.defaultAvatar) {
-                                loadPFP(state.defaultAvatar).then(defImg => resolve(defImg));
-                            } else {
-                                pfpCache.set(src, { img: null, loaded: false, promise: null });
-                                resolve(null);
-                            }
-                        }
-                    };
-
-                    img.src = src;
-                };
-
-                const promise = new Promise((res) => {});
-                const cacheEntry = { img: null, loaded: false, promise: promise };
-                pfpCache.set(src, cacheEntry);
-
-                tryLoad();
-
-                const timeoutId = setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        if (src !== state.defaultAvatar) {
-                            loadPFP(state.defaultAvatar).then(defImg => resolve(defImg));
-                        } else {
-                            resolve(null);
-                        }
-                    }
-                }, 8000);
-
-                const wrappedResolve = (val) => {
-                    clearTimeout(timeoutId);
-                    resolve(val);
-                };
-
-                const origOnload = img.onload;
-                const origOnerror = img.onerror;
-                img.onload = () => {
-                    if (resolved) return;
-                    resolved = true;
-                    pfpCache.set(src, { img, loaded: true, promise: null });
-                    wrappedResolve(img);
-                };
-                img.onerror = () => {
-                    attempts++;
-                    if (attempts < maxRetries) {
-                        const separator = src.includes('?') ? '&' : '?';
-                        img.src = src + separator + 'retry=' + attempts + '&t=' + Date.now();
-                        return;
-                    }
-                    if (resolved) return;
-                    resolved = true;
-                    if (src !== state.defaultAvatar) {
-                        loadPFP(state.defaultAvatar).then(defImg => wrappedResolve(defImg));
-                    } else {
-                        pfpCache.set(src, { img: null, loaded: false, promise: null });
-                        wrappedResolve(null);
-                    }
-                };
-                const currentSrc = img.src;
-                if (currentSrc && currentSrc !== 'about:blank') {
-                    img.src = '';
-                    setTimeout(() => { img.src = currentSrc; }, 10);
-                }
-            });
-        }
+        loadImage(state.defaultAvatar).then(img => { defaultAvatarImg = img; });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PERIMETER GENERATION
+        // PERIMETER & CANVAS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function generatePerimeter(size, cornerRadius, numPoints = 300) {
             const half = size / 2;
@@ -1609,8 +1348,7 @@
             let totalLen = 0;
             const segLengths = sections.map(seg => {
                 if (seg.type === 'line') {
-                    const dx = seg.x2 - seg.x1,
-                        dy = seg.y2 - seg.y1;
+                    const dx = seg.x2 - seg.x1, dy = seg.y2 - seg.y1;
                     return Math.sqrt(dx * dx + dy * dy);
                 } else {
                     return r * (seg.end - seg.start);
@@ -1643,201 +1381,23 @@
             return points;
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // CANVAS SIZING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function resizeCanvas() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
-            canvas.width = size * dpr;
-            canvas.height = size * dpr;
-            canvas.style.width = size + 'px';
-            canvas.style.height = size + 'px';
+            const wrap = document.getElementById('arena-wrap');
+            const size = Math.min(wrap.clientWidth, wrap.clientHeight);
             state.arenaSize = size;
-            state.cornerRadius = size * 0.15;
-            ctx.scale(dpr, dpr);
-            state.perimeterPoints = generatePerimeter(size, state.cornerRadius, 300);
-            if (state.opening && state.opening.startIdx !== undefined) {
-                const total = state.perimeterPoints.length;
-                const startIdx = Math.floor(state.opening.startIdx / (state.opening._total || total) * total);
-                const endIdx = Math.floor(state.opening.endIdx / (state.opening._total || total) * total);
-                state.opening.startIdx = startIdx % total;
-                state.opening.endIdx = endIdx % total;
-                state.opening._total = total;
-            }
-            const half = size / 2;
-            state.players.forEach(p => {
-                if (p.x === undefined || p.x === 0) {
-                    p.x = half + (Math.random() - 0.5) * (size * 0.4);
-                    p.y = half + (Math.random() - 0.5) * (size * 0.4);
-                }
-            });
+            canvas.width = size;
+            canvas.height = size;
+            state.perimeterPoints = generatePerimeter(size, 20);
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // FROG VISIBILITY
+        // PLAYER FACTORY WITH IMPROVED PFP LOADING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateFrogVisibility() {
-            const alive = getAlive();
-            const showFrog = alive.length < 2 && state.gameState === 'idle';
-            frogGif.classList.toggle('show', showFrog);
-            waitingText.style.display = showFrog ? 'none' : 'block';
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WIN HISTORY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function addWinToHistory(name, pfp) {
-            state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
-            if (state.winHistory.length > state.maxHistory) {
-                state.winHistory.pop();
-            }
-            updateWinHistoryUI();
-        }
-
-        function updateWinHistoryUI() {
-            if (state.winHistory.length === 0) {
-                winHistoryEl.innerHTML = '';
-                return;
-            }
-            let html = '';
-            state.winHistory.forEach(entry => {
-                const avatarSrc = entry.pfp || state.defaultAvatar;
-                html +=
-                    `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-            });
-            winHistoryEl.innerHTML = html;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TOP LEADERBOARD
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function generateTopPlayers() {
-            const names = ['CryptoKing', 'DiamondHands', 'BumpMaster', 'LuckyStar', 'MoonRider', 'ShadowDoge', 'GoldenGod',
-                'SilverFox', 'NeonNinja', 'PixelPirate'
-            ];
-            const top = [];
-            for (let i = 0; i < 10; i++) {
-                const wins = Math.floor(Math.random() * 50) + 5;
-                const score = Math.floor(Math.random() * 3000) + 100;
-                const pfp = 'https://i.pravatar.cc/100?img=' + (i + 20);
-                top.push({
-                    name: names[i % names.length] + (i > 4 ? '' : ''),
-                    pfp: pfp,
-                    wins: wins,
-                    score: score,
-                    rank: i + 1
-                });
-            }
-            top.sort((a, b) => b.score - a.score);
-            top.forEach((p, idx) => p.rank = idx + 1);
-            return top;
-        }
-
-        function getPrizeForRank(rank) {
-            if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
-            if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
-            if (rank === 4 || rank === 5) return { label: '1500', gif: DIAMOND_GIF };
-            if (rank >= 6 && rank <= 10) return { label: '100', gif: DIAMOND_GIF };
-            return null;
-        }
-
-        function updateTopUI() {
-            const players = state.topPlayers.length ? state.topPlayers : generateTopPlayers();
-            if (!state.topPlayers.length) state.topPlayers = players;
-
-            const top3 = players.slice(0, 3);
-            const podiumOrder = [
-                { player: top3[2] || top3[0], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
-                { player: top3[0] || top3[1], cls: 'gold', label: '🥇', base: 'gold', colClass: 'p1' },
-                { player: top3[1] || top3[2], cls: 'silver', label: '🥈', base: 'silver', colClass: 'p2' }
-            ];
-
-            let podiumHtml = '';
-            podiumOrder.forEach((info) => {
-                const p = info.player;
-                if (!p) return;
-                const prize = getPrizeForRank(p.rank);
-                let prizeHtml = '';
-                if (prize) {
-                    if (prize.gif) {
-                        prizeHtml = `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`;
-                    } else {
-                        prizeHtml = prize.label;
-                    }
-                }
-                podiumHtml += `<div class="podium-col ${info.colClass}">
-                            <div class="rank-badge ${info.cls}">${info.label}</div>
-                            <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                            <div class="podium-name">${p.name}</div>
-                            <div class="podium-prize">${prizeHtml}</div>
-                            <div class="podium-stats">${p.wins} wins · ${p.score}</div>
-                            <div class="podium-base ${info.base}"></div>
-                        </div>`;
-            });
-            podiumEl.innerHTML = podiumHtml;
-
-            const rest = players.slice(3);
-            if (rest.length === 0) {
-                topList.innerHTML = '';
-                return;
-            }
-            let listHtml = '';
-            rest.forEach(p => {
-                const rank = p.rank;
-                let rClass = 'rank';
-                if (rank === 4) rClass += ' gold';
-                else if (rank === 5) rClass += ' silver';
-                else if (rank === 6) rClass += ' bronze';
-
-                const prize = getPrizeForRank(rank);
-                let prizeHtml = '';
-                if (prize) {
-                    if (prize.gif) {
-                        prizeHtml = `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`;
-                    } else {
-                        prizeHtml = prize.label;
-                    }
-                }
-
-                listHtml += `<div class="top-entry">
-                            <div class="${rClass}">#${rank}</div>
-                            <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                            <div class="t-name">${p.name}</div>
-                            <div class="t-wins">${p.wins} wins</div>
-                            <div class="t-score">${p.score}</div>
-                            <div class="t-prize">${prizeHtml}</div>
-                        </div>`;
-            });
-            topList.innerHTML = listHtml;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER FACTORY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function computeRadii() {
-            const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
-            if (totalBet === 0) return;
-            state.players.forEach(p => {
-                const ratio = p.bet / totalBet;
-                const r = 18 + ratio * 34;
-                const newTarget = Math.min(Math.max(r, 14), 52);
-                p.targetRadius = newTarget;
-            });
-        }
-
         function makePlayer(id, bet, name, pfp) {
             const half = state.arenaSize / 2;
             const radius = 18;
-            let x, y, attempts = 0,
-                overlap = true;
-            while (overlap && attempts < 100) {
-                x = half + (Math.random() - 0.5) * (state.arenaSize * 0.6);
-                y = half + (Math.random() - 0.5) * (state.arenaSize * 0.6);
-                overlap = state.players.some(p => Math.hypot(p.x - x, p.y - y) < p.radius + radius + 5);
-                attempts++;
-            }
+            let x = half, y = half;
+            
             const avatarSrc = pfp || state.defaultAvatar;
             const p = {
                 id,
@@ -1848,8 +1408,8 @@
                 displayRadius: radius,
                 targetRadius: radius,
                 mass: radius * radius * 1.2,
-                x: x || half,
-                y: y || half,
+                x: x,
+                y: y,
                 vx: 0,
                 vy: 0,
                 alive: true,
@@ -1858,657 +1418,47 @@
                 popDuration: 550,
                 pulseTime: 0,
                 isPulsing: false,
-                pulseStartTime: 0,
                 pfpLoaded: false,
                 pfpImg: null,
             };
 
-            // Load PFP
-            loadPFP(avatarSrc).then(img => {
+            // Load PFP with enhanced error handling
+            loadImage(avatarSrc).then(img => {
                 if (img && img.naturalWidth > 0) {
                     p.pfpLoaded = true;
                     p.pfpImg = img;
+                    console.log(`✓ PFP loaded for ${name}:`, avatarSrc);
                 } else {
-                    p.pfpLoaded = false;
-                    p.pfpImg = null;
+                    console.warn(`⚠ PFP failed for ${name}, using fallback`);
+                    p.pfpLoaded = true;
+                    p.pfpImg = img || defaultAvatarImg;
                 }
+                updatePlayerList();
+            }).catch(err => {
+                console.error(`✗ PFP error for ${name}:`, err);
+                p.pfpLoaded = true;
+                p.pfpImg = defaultAvatarImg;
                 updatePlayerList();
             });
 
             state.players.push(p);
             computeRadii();
-            haptic('medium');
             updatePlayerList();
             return p;
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER LIST UI
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updatePlayerList() {
-            const alive = state.players.filter(p => p.alive);
+        function computeRadii() {
             const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
-            if (alive.length === 0) {
-                playerListContainer.innerHTML = '';
-                return;
-            }
-            let html = '';
-            alive.forEach(p => {
-                const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
-                const isYou = p.id === state.userId;
-                html += `<div class="pl-entry ${isYou ? 'you' : ''}">
-                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${p.name}</span>
-                            <span class="pl-bet">${p.bet}</span>
-                            <span class="pl-chance">${chance}%</span>
-                        </div>`;
-            });
-            playerListContainer.innerHTML = html;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateBetOverlayVisibility() {
-            const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
-            betOverlayWrap.classList.toggle('hidden', shouldHide);
-            playerListContainer.classList.toggle('shift-up', shouldHide);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATION HELPERS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function easePopBounce(t) {
-            if (t >= 1) return 1;
-            const c1 = 1.70158;
-            const c3 = c1 + 1;
-            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-        }
-
-        function getPopScale(player) {
-            if (!player.isPopping) return 1;
-            const elapsed = performance.now() - player.popStartTime;
-            const progress = Math.min(elapsed / player.popDuration, 1);
-            const scale = easePopBounce(progress);
-            if (progress >= 1) {
-                player.isPopping = false;
-                return 1;
-            }
-            return scale;
-        }
-
-        function getPlayerDisplayRadius(player) {
-            const diff = player.targetRadius - player.displayRadius;
-            if (Math.abs(diff) < 0.01) {
-                player.displayRadius = player.targetRadius;
-                return player.displayRadius;
-            }
-            const speed = 8.0;
-            player.displayRadius += diff * Math.min(1, speed * 0.016);
-            return player.displayRadius;
-        }
-
-        function updatePlayerAnimations() {
+            if (totalBet === 0) return;
             state.players.forEach(p => {
-                getPlayerDisplayRadius(p);
-                if (p.isPulsing) {
-                    const elapsed = (performance.now() - p.pulseStartTime) / 1000;
-                    if (elapsed > 0.6) {
-                        p.isPulsing = false;
-                        p.pulseTime = 0;
-                    } else {
-                        p.pulseTime = elapsed;
-                    }
-                }
+                const ratio = p.bet / totalBet;
+                const r = 18 + ratio * 34;
+                p.targetRadius = Math.min(Math.max(r, 14), 52);
             });
         }
 
-        function triggerPulse(player) {
-            player.isPulsing = true;
-            player.pulseStartTime = performance.now();
-            player.pulseTime = 0;
-            haptic('light');
-        }
-
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATED BALANCE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let balanceAnimInterval = null;
-
-        function animateBalanceTo(target) {
-            const current = parseInt(balanceEl.textContent) || 0;
-            if (current === target) {
-                balanceEl.textContent = target;
-                return;
-            }
-            const diff = target - current;
-            const steps = Math.min(Math.abs(diff), 40);
-            const stepSize = diff / steps;
-            let step = 0;
-
-            if (balanceAnimInterval) {
-                clearInterval(balanceAnimInterval);
-                balanceAnimInterval = null;
-            }
-
-            balanceAnimInterval = setInterval(() => {
-                step++;
-                const newVal = Math.round(current + stepSize * step);
-                if (step >= steps || Math.abs(newVal - target) < 1) {
-                    balanceEl.textContent = target;
-                    clearInterval(balanceAnimInterval);
-                    balanceAnimInterval = null;
-                } else {
-                    balanceEl.textContent = newVal;
-                }
-            }, 25);
-        }
-
-        function updateBalance() {
-            const target = Math.floor(state.balance);
-            pBalance.textContent = target;
-            animateBalanceTo(target);
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // VICTORY SOUND
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let audioCtx = null;
-        let victorySoundPlaying = false;
-
-        function playVictorySound() {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new(window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                if (victorySoundPlaying) return;
-                victorySoundPlaying = true;
-
-                const now = audioCtx.currentTime;
-                const notes = [523.25, 659.25, 783.99, 1046.50];
-                const durations = [0.12, 0.12, 0.12, 0.2];
-                const startTimes = [0, 0.14, 0.28, 0.45];
-
-                for (let i = 0; i < notes.length; i++) {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(notes[i], now + startTimes[i]);
-                    gain.gain.setValueAtTime(0.18, now + startTimes[i]);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[i] + durations[i]);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + startTimes[i]);
-                    osc.stop(now + startTimes[i] + durations[i]);
-                }
-
-                setTimeout(() => {
-                    victorySoundPlaying = false;
-                }, 800);
-            } catch (e) {
-                console.log('Audio not available');
-                victorySoundPlaying = false;
-            }
-        }
-
-        function stopVictorySound() {
-            victorySoundPlaying = false;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY COLLAPSE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let betCollapsed = false;
-
-        betToggleBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            betCollapsed = !betCollapsed;
-            betOverlay.classList.toggle('collapsed', betCollapsed);
-            if (betCollapsed) {
-                this.innerHTML = '<span class="bet-toggle-text">bet</span>';
-            } else {
-                this.innerHTML = '<span class="bet-toggle-text">bet</span>';
-            }
-            haptic('light');
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ADD BOT
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        addBotBtn.addEventListener('click', function() {
-            if (state.gameState === 'playing' || state.gameState === 'finished') return;
-            const botName = 'Bot' + (state.players.filter(p => p.id.startsWith('bot_')).length + 1);
-            const bet = Math.floor(Math.random() * 40) + 10;
-            const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
-            const bot = makePlayer('bot_' + Date.now(), bet, botName, botPfp);
-            state.pot += bet;
-            state.botSpawned = true;
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            updatePlayerList();
-            updateFrogVisibility();
-            haptic('medium');
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BOT AI
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const BOT_NAME = 'Bot';
-
-        function spawnBot() {
-            if (!state.botEnabled || state.botSpawned) return;
-            if (state.gameState === 'playing' || state.gameState === 'finished') return;
-            if (state.players.some(p => p.id.startsWith('bot_'))) return;
-            if (state.players.length >= state.maxPlayers) return;
-            const bet = Math.floor(Math.random() * 30) + 10;
-            const botPfp = 'https://i.pravatar.cc/150?img=' + (Math.floor(Math.random() * 70) + 1);
-            const bot = makePlayer('bot_' + Date.now(), bet, BOT_NAME, botPfp);
-            state.pot += bet;
-            state.botSpawned = true;
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            updatePlayerList();
-            updateBetOverlayVisibility();
-            updateFrogVisibility();
-            haptic('light');
-        }
-
-        function botAI(dt) {
-            const bot = state.players.find(p => p.id.startsWith('bot_'));
-            if (!bot || !bot.alive || state.gameState !== 'playing') return;
-            bot.vx += (Math.random() - 0.5) * 1.2 * dt;
-            bot.vy += (Math.random() - 0.5) * 1.2 * dt;
-            const maxSp = speedForRadius(bot.displayRadius || bot.radius);
-            const sp = Math.sqrt(bot.vx * bot.vx + bot.vy * bot.vy);
-            if (sp > maxSp) {
-                bot.vx = (bot.vx / sp) * maxSp;
-                bot.vy = (bot.vy / sp) * maxSp;
-            }
-            if (sp < 3.0 && sp > 0.01) {
-                const ratio = 3.0 / sp;
-                bot.vx *= ratio;
-                bot.vy *= ratio;
-            }
-        }
-
-        function speedForRadius(radius) {
-            const minR = 14,
-                maxR = 52;
-            const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-            const speed = 6.0 - norm * 3.0;
-            return Math.max(3.0, Math.min(6.0, speed));
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function startCountdown() {
-            if (state.gameState !== 'idle') return;
-            if (getAlive().length < 2) return;
-            state.gameState = 'countdown';
-            state.countdown = 3.0;
-            state.countdownStartTime = performance.now();
-            waitingText.style.display = 'none';
-            frogGif.classList.remove('show');
-            countdownTimer.style.display = 'block';
-            haptic('heavy');
-            updateBetUI();
-            updateBetOverlayVisibility();
-        }
-
-        function startPrestart() {
-            state.gameState = 'prestart';
-            state.prestartTimer = 2.0;
-            countdownTimer.textContent = 'GO!';
-            haptic('heavy');
-            updateBetOverlayVisibility();
-        }
-
-        function startGame() {
-            state.gameState = 'playing';
-            state.gameTime = 0;
-            state.openingTimer = 0;
-            state.opening = null;
-            state.winnerId = null;
-            waitingText.style.display = 'none';
-            countdownTimer.style.display = 'none';
-            updateBetOverlayVisibility();
-
-            const alive = getAlive();
-            const half = state.arenaSize / 2;
-            alive.forEach((p, i) => {
-                const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
-                const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-                const speed = baseSpeed * (0.9 + Math.random() * 0.2);
-                p.vx = Math.cos(angle) * speed;
-                p.vy = Math.sin(angle) * speed;
-                p.x = half + Math.cos(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
-                p.y = half + Math.sin(angle) * (state.arenaSize * 0.15 + Math.random() * 15);
-                p.alive = true;
-                p.isPopping = false;
-            });
-            state.openingTimer = 3.5 + Math.random() * 2.5;
-            updatePlayerList();
-        }
-
-        function endGame(winnerId) {
-            if (state.gameState === 'finished') return;
-            state.gameState = 'finished';
-            state.winnerId = winnerId;
-            const winner = getPlayer(winnerId);
-
-            if (winner) {
-                const totalPot = state.pot;
-                const winnerBet = winner.bet;
-                const losersBets = totalPot - winnerBet;
-                const commission = Math.floor(losersBets * 0.02);
-                const winnings = totalPot - commission;
-
-                if (winner.id === state.userId) {
-                    state.balance += winnings;
-                    state.wins++;
-                    playVictorySound();
-                } else {
-                    state.losses++;
-                }
-                updateBalance();
-                updateProfile();
-                updateTopUI();
-
-                addWinToHistory(winner.name, winner.pfp);
-
-                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-                winGif.src = randomGif;
-                winAvatar.src = winner.pfp;
-                winName.textContent = winner.name + ' wins!';
-                winMultiplier.textContent = 'x' + (winnings / winnerBet).toFixed(1);
-
-                winPanel.classList.add('show');
-                haptic('heavy');
-
-                state.pot = 0;
-                state.opening = null;
-                updatePlayerList();
-                updateBetOverlayVisibility();
-
-                if (window.winTimeout) clearTimeout(window.winTimeout);
-                window.winTimeout = setTimeout(() => {
-                    hideWinPanelAndReset();
-                }, 3000);
-
-            } else {
-                state.gameState = 'idle';
-                state.players = [];
-                state.botSpawned = false;
-                state.opening = null;
-                waitingText.style.display = 'block';
-                countdownTimer.style.display = 'none';
-                updateWaitingText();
-                updateBetUI();
-                updateStatsBar();
-                updatePlayerList();
-                updateBetOverlayVisibility();
-                updateFrogVisibility();
-            }
-        }
-
-        function hideWinPanelAndReset() {
-            winPanel.classList.remove('show');
-            stopVictorySound();
-            if (window.winTimeout) {
-                clearTimeout(window.winTimeout);
-                window.winTimeout = null;
-            }
-            state.players = [];
-            state.gameState = 'idle';
-            state.botSpawned = false;
-            state.opening = null;
-            state.pot = 0;
-            waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
-            updateWaitingText();
-            updateBetUI();
-            updateStatsBar();
-            updatePlayerList();
-            updateBetOverlayVisibility();
-            updateFrogVisibility();
-            if (state.botEnabled) spawnBot();
-        }
-
-        winContinueBtn.addEventListener('click', () => {
-            hideWinPanelAndReset();
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updatePhysics(dt) {
-            if (state.gameState !== 'playing') return;
-            state.gameTime += dt;
-
-            const alive = getAlive();
-            if (alive.length <= 1) {
-                if (alive.length === 1) endGame(alive[0].id);
-                else {
-                    state.gameState = 'idle';
-                    state.players = [];
-                    state.botSpawned = false;
-                    state.opening = null;
-                    waitingText.style.display = 'block';
-                    countdownTimer.style.display = 'none';
-                    updateWaitingText();
-                    updateBetUI();
-                    updateStatsBar();
-                    updatePlayerList();
-                    updateBetOverlayVisibility();
-                    updateFrogVisibility();
-                }
-                return;
-            }
-
-            const size = state.arenaSize;
-            const pts = state.perimeterPoints;
-            const totalPts = pts.length;
-            const half = size / 2;
-
-            state.openingTimer -= dt;
-            if (state.openingTimer <= 0) {
-                if (!state.opening) {
-                    const gameTime = state.gameTime;
-                    let minGap, maxGap;
-                    if (gameTime < 4) {
-                        minGap = 0.08;
-                        maxGap = 0.18;
-                    } else {
-                        minGap = 0.15;
-                        maxGap = 0.35;
-                    }
-                    const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
-                    const startIdx = Math.floor(Math.random() * totalPts);
-                    const endIdx = (startIdx + gapSize) % totalPts;
-                    state.opening = {
-                        startIdx: startIdx,
-                        endIdx: endIdx,
-                        flashCount: 0,
-                        flashTimer: 0,
-                        state: 'flashing',
-                        _total: totalPts,
-                    };
-                    state.openingTimer = 3.5 + Math.random() * 2.5;
-                    haptic('light');
-                } else {
-                    state.opening = null;
-                    state.openingTimer = 1.5 + Math.random() * 2.0;
-                }
-            }
-
-            const opening = state.opening;
-            if (opening && opening.state === 'flashing') {
-                opening.flashTimer += dt;
-                if (opening.flashTimer > 0.25) {
-                    opening.flashTimer = 0;
-                    opening.flashCount++;
-                    if (opening.flashCount >= 4) {
-                        opening.state = 'open';
-                        haptic('medium');
-                    }
-                }
-            }
-
-            function isInGap(idx) {
-                if (!opening) return false;
-                if (opening.state !== 'open') return false;
-                const start = opening.startIdx;
-                const end = opening.endIdx;
-                if (start < end) {
-                    return idx >= start && idx <= end;
-                } else {
-                    return idx >= start || idx <= end;
-                }
-            }
-
-            const subSteps = 6;
-            const subDt = dt / subSteps;
-
-            for (let step = 0; step < subSteps; step++) {
-                alive.forEach(p => {
-                    p.x += p.vx * subDt * 60;
-                    p.y += p.vy * subDt * 60;
-
-                    const radius = p.displayRadius || p.radius;
-                    for (let i = 0; i < totalPts; i++) {
-                        const j = (i + 1) % totalPts;
-                        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-                        const ax = pts[i].x,
-                            ay = pts[i].y;
-                        const bx = pts[j].x,
-                            by = pts[j].y;
-                        const dx = bx - ax,
-                            dy = by - ay;
-                        const lenSq = dx * dx + dy * dy;
-                        if (lenSq === 0) continue;
-                        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-                        t = Math.max(0, Math.min(1, t));
-                        const nearX = ax + t * dx;
-                        const nearY = ay + t * dy;
-                        const distX = p.x - nearX;
-                        const distY = p.y - nearY;
-                        const dist = Math.sqrt(distX * distX + distY * distY);
-                        if (dist < radius) {
-                            const nx = distX / dist;
-                            const ny = distY / dist;
-                            const overlap = radius - dist;
-                            p.x += nx * overlap;
-                            p.y += ny * overlap;
-                            const vn = p.vx * nx + p.vy * ny;
-                            if (vn < 0) {
-                                p.vx -= 2 * vn * nx;
-                                p.vy -= 2 * vn * ny;
-                            }
-                            break;
-                        }
-                    }
-
-                    if (opening && opening.state === 'open') {
-                        const cx = half,
-                            cy = half;
-                        const dx = p.x - cx,
-                            dy = p.y - cy;
-                        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                        const escapeThreshold = half * 1.12 + radius;
-                        if (distFromCenter > escapeThreshold) {
-                            let nearestGapIdx = -1;
-                            let minDist = Infinity;
-                            for (let i = 0; i < totalPts; i++) {
-                                if (isInGap(i)) {
-                                    const d = (p.x - pts[i].x) ** 2 + (p.y - pts[i].y) ** 2;
-                                    if (d < minDist) {
-                                        minDist = d;
-                                        nearestGapIdx = i;
-                                    }
-                                }
-                            }
-                            if (nearestGapIdx >= 0) {
-                                const angle = Math.atan2(dy, dx);
-                                const gapAngle = Math.atan2(pts[nearestGapIdx].y - cy, pts[nearestGapIdx].x - cx);
-                                let diff = Math.abs(angle - gapAngle);
-                                diff = Math.min(diff, 2 * Math.PI - diff);
-                                const vOut = p.vx * dx + p.vy * dy;
-                                if (diff < 0.8 && vOut > 0) {
-                                    p.alive = false;
-                                    haptic('medium');
-                                    updatePlayerList();
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                });
-
-                for (let i = 0; i < alive.length; i++) {
-                    for (let j = i + 1; j < alive.length; j++) {
-                        const a = alive[i],
-                            b = alive[j];
-                        const dx = b.x - a.x,
-                            dy = b.y - a.y;
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        const rA = a.displayRadius || a.radius;
-                        const rB = b.displayRadius || b.radius;
-                        const minDist = rA + rB;
-                        if (dist < minDist && dist > 0.001) {
-                            haptic('light');
-                            const nx = dx / dist,
-                                ny = dy / dist;
-                            const overlap = (minDist - dist) * 0.5;
-                            a.x -= nx * overlap;
-                            a.y -= ny * overlap;
-                            b.x += nx * overlap;
-                            b.y += ny * overlap;
-
-                            const dvx = a.vx - b.vx,
-                                dvy = a.vy - b.vy;
-                            const dvn = dvx * nx + dvy * ny;
-                            if (dvn > 0) {
-                                const totalMass = a.mass + b.mass;
-                                const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
-                                const aFactor = 1 - (a.mass / totalMass) * 0.6;
-                                const bFactor = 1 - (b.mass / totalMass) * 0.6;
-                                a.vx -= (impulse / a.mass) * aFactor * nx;
-                                a.vy -= (impulse / a.mass) * aFactor * ny;
-                                b.vx += (impulse / b.mass) * bFactor * nx;
-                                b.vy += (impulse / b.mass) * bFactor * ny;
-                            }
-                        }
-                    }
-                }
-
-                alive.forEach(p => {
-                    const maxSp = speedForRadius(p.displayRadius || p.radius);
-                    const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-                    if (sp > maxSp) {
-                        p.vx = (p.vx / sp) * maxSp;
-                        p.vy = (p.vy / sp) * maxSp;
-                    }
-                    const minSp = 3.0;
-                    if (sp < minSp && sp > 0.01) {
-                        const ratio = minSp / sp;
-                        p.vx *= ratio;
-                        p.vy *= ratio;
-                    }
-                });
-            }
-
-            botAI(dt);
-            updatePlayerList();
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER – always uses PFP images (default avatar as fallback)
+        // RENDER WITH IMPROVED PFP DRAWING
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
@@ -2535,162 +1485,60 @@
             }
             ctx.restore();
 
+            // Draw border
             ctx.save();
-            ctx.fillStyle = '#28282e';
+            ctx.strokeStyle = 'rgba(160,160,176,0.3)';
+            ctx.lineWidth = 5;
             if (pts.length > 0) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
                 for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
-                ctx.fill();
-            }
-            ctx.restore();
-
-            const opening = state.opening;
-            const isFlashing = opening && opening.state === 'flashing';
-            const isOpen = opening && opening.state === 'open';
-            const total = pts.length;
-
-            ctx.save();
-            const hasGap = opening !== null && (isFlashing || isOpen);
-
-            if (hasGap) {
-                const start = opening.startIdx;
-                const end = opening.endIdx;
-
-                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
-                ctx.lineWidth = 5;
-
-                for (let i = 0; i < total; i++) {
-                    const j = (i + 1) % total;
-                    let inGap = false;
-                    if (start < end) {
-                        if (i >= start && i < end) inGap = true;
-                        if (j >= start && j < end) inGap = true;
-                    } else {
-                        if (i >= start || i < end) inGap = true;
-                        if (j >= start || j < end) inGap = true;
-                    }
-                    if (inGap) continue;
-                    ctx.beginPath();
-                    ctx.moveTo(pts[i].x, pts[i].y);
-                    ctx.lineTo(pts[j].x, pts[j].y);
-                    ctx.stroke();
-                }
-
-                if (isFlashing) {
-                    const isRed = (opening.flashCount % 2 === 0);
-                    ctx.save();
-                    const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
-
-                    let gapSegments = [];
-                    if (start < end) {
-                        for (let i = start; i < end; i++) {
-                            const j = (i + 1) % total;
-                            gapSegments.push({ i, j });
-                        }
-                    } else {
-                        for (let i = start; i < total; i++) {
-                            const j = (i + 1) % total;
-                            gapSegments.push({ i, j });
-                        }
-                        for (let i = 0; i < end; i++) {
-                            const j = (i + 1) % total;
-                            gapSegments.push({ i, j });
-                        }
-                    }
-
-                    ctx.strokeStyle = flashColor;
-                    ctx.lineWidth = isRed ? 5 : 3;
-                    ctx.shadowBlur = 0;
-                    ctx.shadowColor = 'transparent';
-
-                    for (const seg of gapSegments) {
-                        ctx.beginPath();
-                        ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
-                        ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
-                        ctx.stroke();
-                    }
-
-                    ctx.restore();
-                }
-            } else {
-                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
-                ctx.lineWidth = 5;
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
                 ctx.stroke();
             }
             ctx.restore();
 
-            // ── DRAW PLAYERS – always use PFP images ──
+            // ── DRAW PLAYERS WITH PFP ──
             state.players.forEach(p => {
                 if (!p.alive) return;
-                const popScale = getPopScale(p);
                 const radius = p.displayRadius || p.radius;
-                const displayRadius = radius * popScale;
-
-                let pulseScale = 1;
-                if (p.isPulsing) {
-                    const t = p.pulseTime;
-                    if (t < 0.6) {
-                        const phase = t / 0.6;
-                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase);
-                    }
-                }
-                const finalRadius = displayRadius * pulseScale;
-
+                
                 ctx.save();
 
-                // Determine image to draw: player's PFP or default avatar
+                // Get image to draw
                 let imgToDraw = null;
-                if (p.pfpLoaded && p.pfpImg && p.pfpImg.naturalWidth > 0) {
+                if (p.pfpImg && p.pfpImg.naturalWidth > 0) {
                     imgToDraw = p.pfpImg;
                 } else if (defaultAvatarImg && defaultAvatarImg.naturalWidth > 0) {
                     imgToDraw = defaultAvatarImg;
                 }
 
-                // Draw circle with image
+                // Draw circular clip
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, Math.max(finalRadius - 1, 1), 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
                 ctx.closePath();
 
-                // Clip to circle and draw image
                 ctx.save();
                 ctx.clip();
 
+                // Draw image inside circle
                 if (imgToDraw) {
-                    const drawSize = Math.max(finalRadius - 1, 1) * 2;
-                    ctx.drawImage(imgToDraw, p.x - (finalRadius - 1), p.y - (finalRadius - 1), drawSize, drawSize);
+                    const imgSize = radius * 2;
+                    ctx.drawImage(imgToDraw, p.x - radius, p.y - radius, imgSize, imgSize);
                 } else {
-                    // Ultimate fallback: a dark circle (should not happen if default loads)
-                    ctx.fillStyle = '#333';
+                    // Fallback colored circle
+                    ctx.fillStyle = '#444';
                     ctx.fill();
                 }
                 ctx.restore();
 
-                // Outline with a cool gold-tinted glow
-                ctx.shadowColor = 'rgba(200,168,78,0.3)';
-                ctx.shadowBlur = 8;
+                // Draw outline
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(200,168,78,0.5)';
-                ctx.lineWidth = 2;
+                ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+                const isYou = p.id === state.userId;
+                ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.4)';
+                ctx.lineWidth = isYou ? 2.5 : 1.5;
                 ctx.stroke();
-                ctx.shadowBlur = 0;
-
-                // "You" ring
-                if (p.id === state.userId) {
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, finalRadius + 4, 0, Math.PI * 2);
-                    ctx.strokeStyle = 'rgba(76, 175, 80, 0.6)';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([4, 6]);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
 
                 ctx.restore();
             });
@@ -2699,329 +1547,142 @@
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // UI UPDATES
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        function updateBalance() {
+            balanceEl.textContent = state.balance;
+            pBalance.textContent = state.balance;
+        }
+
         function updateProfile() {
             pWins.textContent = state.wins;
             pLosses.textContent = state.losses;
             const total = state.wins + state.losses;
             pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
-            profileName.textContent = state.username;
-            profileUsername.textContent = '@' + state.username;
             if (state.pfp) profilePfp.src = state.pfp;
-            updateBalance();
-        }
-
-        function updateStatsBar() {
-            const alive = getAlive();
-            statsPlayers.textContent = alive.length;
-            statsPot.textContent = state.pot;
-        }
-
-        function updateWaitingText() {
-            const alive = getAlive();
-            if (alive.length === 0) {
-                waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
-            } else {
-                waitingText.innerHTML =
-                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span><div class="sub">need ${Math.max(0, 2 - alive.length)} more to start</div>`;
-            }
-            updateFrogVisibility();
         }
 
         function updateBetUI() {
-            const existing = state.players.find(p => p.id === state.userId);
-            const inGame = !!existing;
-            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState ===
-                'prestart');
+            betAmountDisplay.textContent = betInput.value || 10;
+        }
 
-            if (canBet) {
-                betBtn.textContent = inGame ? 'increase' : 'join';
-                betBtn.disabled = false;
-                betInput.disabled = false;
-            } else {
-                betBtn.textContent = inGame ? 'in game' : 'waiting';
-                betBtn.disabled = true;
-                betInput.disabled = true;
+        function updatePlayerList() {
+            const alive = state.players.filter(p => p.alive);
+            if (alive.length === 0) {
+                playerListContainer.innerHTML = '';
+                return;
             }
-
-            if (existing) {
-                currentBetDisplay.textContent = existing.bet;
-            } else {
-                currentBetDisplay.textContent = '0';
-            }
-
-            const val = parseInt(betInput.value) || 10;
-            betAmountDisplay.textContent = Math.min(val, state.balance);
-            if (betInput.value === '' || parseInt(betInput.value) < 10) {
-                betInput.value = 10;
-            }
+            let html = '';
+            alive.forEach(p => {
+                const pfpSrc = p.pfp || state.defaultAvatar;
+                html += `<div class="player-card">
+                    <img src="${pfpSrc}" onerror="this.src='${state.defaultAvatar}'" />
+                    <div class="player-info">
+                        <div class="player-name">${p.name}</div>
+                        <div class="player-bet">Bet: ${p.bet}</div>
+                    </div>
+                </div>`;
+            });
+            playerListContainer.innerHTML = html;
+            statsPlayers.textContent = state.players.length;
+            statsPot.textContent = state.pot;
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TAB SWITCHING
+        // GAME LOOP & EVENTS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function switchTab(tabId) {
-            if (state.currentTab === tabId) return;
-            const oldTab = state.currentTab;
-            state.currentTab = tabId;
-
-            const oldEl = tabPages[oldTab];
-            if (oldEl) {
-                oldEl.classList.remove('active');
-                oldEl.classList.add('exit');
-                setTimeout(() => {
-                    oldEl.classList.remove('exit');
-                }, 350);
-            }
-
-            const newEl = tabPages[tabId];
-            if (newEl) {
-                setTimeout(() => {
-                    newEl.classList.add('active');
-                    if (tabId === 'profile') updateProfile();
-                    if (tabId === 'top') updateTopUI();
-                }, 50);
-            }
-
-            tabBtns.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.tab === tabId);
-            });
-
-            haptic('light');
-        }
-
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                const tab = this.dataset.tab;
-                switchTab(tab);
-            });
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RELOAD PFP (test button)
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        reloadPfpBtn.addEventListener('click', function() {
-            // Force reload user's PFP
-            const user = state.players.find(p => p.id === state.userId);
-            if (user) {
-                // Clear cache and reload
-                const src = user.pfp;
-                if (pfpCache.has(src)) {
-                    pfpCache.delete(src);
-                }
-                loadPFP(src).then(img => {
-                    if (img && img.naturalWidth > 0) {
-                        user.pfpLoaded = true;
-                        user.pfpImg = img;
-                    } else {
-                        user.pfpLoaded = false;
-                        user.pfpImg = null;
-                    }
-                    updatePlayerList();
-                    haptic('medium');
-                });
-            } else {
-                // If not in game, just reload profile avatar
-                if (state.pfp) {
-                    const src = state.pfp;
-                    if (pfpCache.has(src)) {
-                        pfpCache.delete(src);
-                    }
-                    loadPFP(src).then(img => {
-                        if (img && img.naturalWidth > 0) {
-                            profilePfp.src = src;
-                        } else {
-                            profilePfp.src = state.defaultAvatar;
-                        }
-                        haptic('medium');
-                    });
-                }
-            }
-        });
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOOP
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        let lastTime = 0;
-        let accumulator = 0;
-        const fixedTimestep = 1 / 60;
-
-        function gameLoop(timestamp) {
-            if (lastTime === 0) lastTime = timestamp;
-            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
-            lastTime = timestamp;
-
-            updatePlayerAnimations();
-
-            if (state.gameState === 'playing') {
-                accumulator += dt;
-                while (accumulator >= fixedTimestep) {
-                    updatePhysics(fixedTimestep);
-                    accumulator -= fixedTimestep;
-                }
-            }
-
-            if (state.gameState === 'countdown') {
-                const elapsed = (performance.now() - state.countdownStartTime) / 1000;
-                let remaining = Math.max(0, 3.0 - elapsed);
-                if (remaining <= 0) {
-                    startPrestart();
-                } else {
-                    const secs = Math.floor(remaining);
-                    const ms = Math.floor((remaining - secs) * 100);
-                    countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                }
-            }
-
-            if (state.gameState === 'prestart') {
-                state.prestartTimer -= dt;
-                if (state.prestartTimer <= 0) {
-                    startGame();
-                } else {
-                    countdownTimer.textContent = 'GO!';
-                }
-            }
-
-            if (state.gameState === 'idle') {
-                if (!state.botSpawned && state.players.length === 0) {
-                    setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
-                }
-                if (getAlive().length >= 2) startCountdown();
-                updateBetOverlayVisibility();
-                updateFrogVisibility();
-            }
-
-            updateStatsBar();
+        function gameLoop() {
             render();
+            updateBetUI();
             requestAnimationFrame(gameLoop);
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // HELPERS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function getPlayer(id) { return state.players.find(p => p.id === id); }
-
-        function getAlive() { return state.players.filter(p => p.alive); }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // EVENTS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         betBtn.addEventListener('click', () => {
-            if (state.gameState !== 'idle' && state.gameState !== 'countdown' && state.gameState !== 'prestart')
-                return;
-            let addAmount = parseInt(betInput.value) || 10;
-            if (addAmount < 10) { betInput.value = 10;
-                addAmount = 10;
-                haptic('light'); }
-            if (addAmount > state.balance) { betInput.value = state.balance;
-                addAmount = state.balance;
-                haptic('light'); }
-
+            let amount = parseInt(betInput.value) || 10;
+            if (amount < 10) amount = 10;
+            if (amount > state.balance) amount = state.balance;
+            
             const existing = state.players.find(p => p.id === state.userId);
             if (existing) {
-                state.balance -= addAmount;
-                existing.bet += addAmount;
-                state.pot += addAmount;
+                state.balance -= amount;
+                existing.bet += amount;
+                state.pot += amount;
                 computeRadii();
-                triggerPulse(existing);
-                updateBalance();
-                updateBetUI();
-                updateProfile();
-                updatePlayerList();
-                haptic('medium');
             } else {
-                if (addAmount > state.balance) { betInput.value = state.balance;
-                    addAmount = state.balance;
-                    haptic('light'); }
-                const player = makePlayer(state.userId, addAmount, state.username, state.pfp);
-                state.balance -= addAmount;
-                state.pot += addAmount;
-                updateBalance();
-                updateBetUI();
-                updateWaitingText();
-                updateProfile();
-                updatePlayerList();
-                haptic('medium');
-                if (!state.botSpawned && state.botEnabled) {
-                    setTimeout(() => { if (state.botEnabled && (state.gameState === 'idle' || state.gameState ===
-                            'countdown' || state.gameState === 'prestart')) spawnBot(); }, 400);
-                }
+                state.balance -= amount;
+                state.pot += amount;
+                makePlayer(state.userId, amount, state.username, state.pfp);
             }
-            betInput.value = 10;
+            
+            updateBalance();
             updateBetUI();
+            updateProfile();
+            updatePlayerList();
+            betInput.value = 10;
         });
 
-        betInput.addEventListener('input', () => {
-            let val = parseInt(betInput.value) || 0;
-            if (val < 10) betInput.value = 10;
-            if (val > state.balance) betInput.value = state.balance;
-            betAmountDisplay.textContent = (parseInt(betInput.value) || 10);
-            if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
-        });
-
-        betInput.value = 10;
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // INIT
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function init() {
-            // Preload default avatar
-            loadPFP(state.defaultAvatar).then(img => {
-                defaultAvatarImg = img;
+        // Tab switching
+        const switchTab = (tabId) => {
+            Object.keys(tabPages).forEach(key => {
+                tabPages[key].classList.toggle('active', key === tabId);
             });
+            tabBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
+            state.currentTab = tabId;
+        };
 
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchTab(btn.dataset.tab);
+            });
+        });
+
+        reloadPfpBtn.addEventListener('click', () => {
+            if (state.pfp) {
+                pfpCache.delete(state.pfp);
+                loadImage(state.pfp).then(img => {
+                    if (img && img.naturalWidth > 0) {
+                        profilePfp.src = state.pfp;
+                    }
+                });
+            }
+        });
+
+        addBotBtn.addEventListener('click', () => {
+            const botName = 'Bot #' + Math.floor(Math.random() * 1000);
+            const botPfp = 'https://i.pravatar.cc/150?img=' + Math.floor(Math.random() * 70);
+            makePlayer('bot_' + Date.now(), 100, botName, botPfp);
+            state.pot += 100;
+            updatePlayerList();
+        });
+
+        // Initialize
+        function init() {
+            const tg = window.Telegram?.WebApp;
             if (tg?.initDataUnsafe?.user) {
                 const u = tg.initDataUnsafe.user;
                 state.username = u.username || u.first_name || 'player';
                 state.userId = u.id?.toString() || state.userId;
                 state.pfp = u.photo_url || '';
-                if (state.pfp) {
-                    try { new URL(state.pfp); } catch (_) { state.pfp = ''; }
-                }
             } else {
                 state.username = 'test_user';
                 state.pfp = 'https://i.pravatar.cc/100?img=69';
             }
+
             usernameDisplay.textContent = '@' + state.username;
-
-            // Set profile PFP
-            const profilePfpSrc = state.pfp || state.defaultAvatar;
-            profilePfp.src = profilePfpSrc;
-            if (state.pfp) {
-                loadPFP(state.pfp).then(img => {
-                    if (img && img.naturalWidth > 0) {
-                        profilePfp.src = state.pfp;
-                    } else {
-                        profilePfp.src = state.defaultAvatar;
-                    }
-                });
-            } else {
-                profilePfp.src = state.defaultAvatar;
-            }
-
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
+            profilePfp.src = state.pfp || state.defaultAvatar;
+            
             updateBalance();
             updateProfile();
-            state.topPlayers = generateTopPlayers();
-            updateTopUI();
-            updateWinHistoryUI();
-            updateFrogVisibility();
+            updatePlayerList();
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
-            setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
-            Object.keys(tabPages).forEach(key => {
-                tabPages[key].classList.toggle('active', key === 'pvp');
-            });
-            document.getElementById('tabs').style.pointerEvents = 'auto';
-            tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             requestAnimationFrame(gameLoop);
-            statusDot.className = 'online';
         }
-        init();
 
-        window.__state = state;
-        console.log('◆ dllump – PFP images always used, cool gold outline added, reload button available.');
+        init();
+        console.log('✓ dllump · PFP Viewer v2 initialized');
     </script>
 </body>
 </html>
