@@ -20,7 +20,7 @@ let game = {
     perimeterPoints: [],
 };
 
-function generatePerimeter(size, cornerRadius, numPoints = 300) {
+function generatePerimeter(size, cornerRadius, numPoints = 200) {
     const half = size / 2;
     const r = Math.min(cornerRadius, half);
     const points = [];
@@ -67,7 +67,7 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
     }
     return points;
 }
-game.perimeterPoints = generatePerimeter(game.arenaSize, game.cornerRadius, 300);
+game.perimeterPoints = generatePerimeter(game.arenaSize, game.cornerRadius, 200);
 
 function getAlive() { return game.players.filter(p => p.alive); }
 
@@ -121,7 +121,7 @@ function updatePhysics(dt) {
         return idx >= start || idx <= end;
     }
 
-    const subSteps = 6;
+    const subSteps = 4; // reduced from 6 for performance
     const subDt = dt / subSteps;
 
     for (let step = 0; step < subSteps; step++) {
@@ -173,6 +173,7 @@ function updatePhysics(dt) {
                         const vOut = p.vx * dx + p.vy * dy;
                         if (diff < 0.8 && vOut > 0) {
                             p.alive = false;
+                            // broadcast immediately when someone dies
                             broadcastState();
                         }
                     }
@@ -180,6 +181,7 @@ function updatePhysics(dt) {
             }
         });
 
+        // Circle collisions
         for (let i = 0; i < alive.length; i++) {
             for (let j = i + 1; j < alive.length; j++) {
                 const a = alive[i], b = alive[j];
@@ -284,7 +286,12 @@ function resetGame() {
     broadcastState();
 }
 
+let broadcastCounter = 0;
 function broadcastState() {
+    // Throttle to 20 Hz (every 3rd frame if called at 60 Hz)
+    broadcastCounter++;
+    if (broadcastCounter % 3 !== 0 && game.state === 'playing') return;
+    // But we always broadcast for state changes (countdown, finished, etc.)
     const payload = JSON.stringify({ type: 'state', game });
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) client.send(payload);
@@ -350,6 +357,7 @@ wss.on('connection', (ws) => {
     });
 });
 
+// Game loop at 60 Hz, but broadcast throttled
 setInterval(() => {
     const dt = 1 / 60;
     if (game.state === 'countdown') {
@@ -360,7 +368,7 @@ setInterval(() => {
         if (game.prestartTimer <= 0) startGame();
     } else if (game.state === 'playing') {
         updatePhysics(dt);
-        broadcastState();
+        broadcastState(); // throttled internally
     }
 }, 1000 / 60);
 
