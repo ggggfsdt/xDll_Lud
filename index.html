@@ -520,9 +520,9 @@
             border-top: 1px solid var(--border);
             padding-bottom: var(--safe-bottom);
             padding-top: 2px;
-            z-index: 100;
+            z-index: 9999 !important;
             position: relative;
-            pointer-events: auto;
+            pointer-events: auto !important;
         }
         .tab-btn {
             flex: 1;
@@ -541,13 +541,15 @@
             position: relative;
             letter-spacing: 0.4px;
             text-transform: uppercase;
-            pointer-events: auto;
+            pointer-events: auto !important;
+            touch-action: manipulation;
         }
         .tab-btn .tab-icon {
             font-size: 20px;
             line-height: 1.2;
             transition: 0.2s;
             opacity: 0.7;
+            pointer-events: none;
         }
         .tab-btn.active {
             color: #ffffff !important;
@@ -582,6 +584,7 @@
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
+            pointer-events: none;
         }
         .tab-btn.active .tab-icon svg {
             stroke: #ffffff !important;
@@ -594,7 +597,7 @@
             font-size: 14px;
         }
 
-        /* --- WIN PANEL (bigger, slides from below, no black bg on GIF) --- */
+        /* --- WIN PANEL (bigger, slides from below, no black bg) --- */
         #win-panel {
             position: absolute;
             left: 50%;
@@ -632,6 +635,7 @@
             overflow: hidden;
             flex-shrink: 0;
             background: transparent;
+            border: none;
         }
         #win-gif-container img {
             width: 100%;
@@ -1811,13 +1815,14 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TAB SWITCHING
+        // TAB SWITCHING (fixed)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
             state.currentTab = tabId;
 
+            // Hide old page
             const oldEl = tabPages[oldTab];
             if (oldEl) {
                 oldEl.classList.remove('active');
@@ -1827,6 +1832,7 @@
                 }, 350);
             }
 
+            // Show new page
             const newEl = tabPages[tabId];
             if (newEl) {
                 setTimeout(() => {
@@ -1836,12 +1842,27 @@
                 }, 50);
             }
 
+            // Update tab buttons
             tabBtns.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.tab === tabId);
             });
 
             haptic('light');
         }
+
+        // Attach click listeners with debug
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const tab = this.dataset.tab;
+                console.log('Tab clicked:', tab);
+                switchTab(tab);
+            });
+            // Also touch for mobile
+            btn.addEventListener('touchstart', function(e) {
+                // Just to ensure it works, but we use click
+            }, { passive: true });
+        });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // GAME LOOP
@@ -1978,6 +1999,7 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             setTimeout(() => { if (state.botEnabled && state.gameState === 'idle') spawnBot(); }, 800);
+            // Ensure pvp page active
             Object.keys(tabPages).forEach(key => {
                 tabPages[key].classList.toggle('active', key === 'pvp');
             });
@@ -1990,7 +2012,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – final: big slide-up win panel, no black bg, PFPs restored, tabs clickable');
+        console.log('◆ dllump – FINAL FIX: tabs clickable, GIFs animate, PFPs show');
     </script>
 </body>
 </html>
