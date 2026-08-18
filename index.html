@@ -181,12 +181,11 @@
             touch-action: none;
             display: block;
             box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 0 50px rgba(76, 175, 80, 0.05);
-            position: relative;
         }
 
         #countdown-timer {
             position: absolute;
-            bottom: 16px;
+            bottom: 60px;
             left: 16px;
             font-size: 22px;
             font-weight: 700;
@@ -445,58 +444,6 @@
         #p-balance {
             color: var(--gold);
             font-weight: 700;
-        }
-
-        /* PFP test buttons */
-        .pfp-test-section {
-            margin-top: 12px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            align-items: center;
-        }
-        .pfp-test-section .label {
-            font-size: 12px;
-            color: var(--text2);
-            opacity: 0.6;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .pfp-test-btns {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .pfp-test-btn {
-            padding: 4px 12px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            background: var(--surface2);
-            color: var(--text);
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-        }
-        .pfp-test-btn.active {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: #fff;
-            box-shadow: 0 0 20px var(--primary-glow);
-        }
-        .pfp-test-btn:active {
-            transform: scale(0.94);
-        }
-        .pfp-status {
-            font-size: 11px;
-            color: var(--text2);
-            opacity: 0.5;
-            margin-top: 2px;
-            text-align: center;
-            min-height: 18px;
         }
 
         #top-page {
@@ -803,7 +750,7 @@
             }
             #countdown-timer {
                 font-size: 18px;
-                bottom: 12px;
+                bottom: 50px;
                 left: 12px;
                 padding: 3px 10px;
             }
@@ -832,10 +779,6 @@
             #win-avatar-container {
                 width: 50px;
                 height: 50px;
-            }
-            .pfp-test-btn {
-                font-size: 10px;
-                padding: 3px 10px;
             }
         }
     </style>
@@ -898,18 +841,6 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
-
-                    <!-- PFP TEST SECTION -->
-                    <div class="pfp-test-section">
-                        <div class="label">PFP test panel</div>
-                        <div class="pfp-test-btns">
-                            <button class="pfp-test-btn active" data-strategy="0">Cache</button>
-                            <button class="pfp-test-btn" data-strategy="1">Pre-fetch</button>
-                            <button class="pfp-test-btn" data-strategy="2">Direct</button>
-                            <button class="pfp-test-btn" data-strategy="3">Refresh</button>
-                        </div>
-                        <div class="pfp-status" id="pfp-status">✓ Strategy: Cache + onload</div>
-                    </div>
                 </div>
             </div>
 
@@ -971,8 +902,6 @@
             lastTime: 0,
             currentTab: 'pvp',
             defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-            pfpStrategy: 0, // 0=cache+onload, 1=pre-fetch, 2=direct, 3=refresh
-            pfpLoadStatus: 'ready',
         };
 
         // DOM refs
@@ -1011,7 +940,6 @@
         const winName = document.getElementById('win-name');
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
-        const pfpStatus = document.getElementById('pfp-status');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -1118,21 +1046,19 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // IMAGE CACHE (Strategy 0: Cache + onload)
+        // IMAGE CACHE (single reliable method)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
-        const imageLoadCallbacks = {};
 
-        function loadImageWithCallback(src, callback) {
+        function getCachedImage(src, callback) {
             if (imageCache[src]) {
                 const img = imageCache[src];
                 if (img.complete && img.naturalWidth > 0) {
                     callback(img);
                     return img;
                 } else {
-                    // Wait for load
-                    img.onload = () => { callback(img); };
-                    img.onerror = () => { callback(null); };
+                    img.onload = () => callback(img);
+                    img.onerror = () => callback(null);
                     return img;
                 }
             }
@@ -1148,36 +1074,6 @@
             };
             img.src = src;
             imageCache[src] = img;
-            return img;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PFP STRATEGIES
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // Strategy 1: Pre-fetch all images using fetch
-        const preFetchedBlobs = {};
-
-        async function prefetchImage(src) {
-            if (preFetchedBlobs[src]) return preFetchedBlobs[src];
-            try {
-                const response = await fetch(src);
-                const blob = await response.blob();
-                const url = URL.createObjectURL(blob);
-                preFetchedBlobs[src] = url;
-                return url;
-            } catch (e) {
-                console.warn('Prefetch failed:', src);
-                return null;
-            }
-        }
-
-        // Strategy 2: Direct image with no cache
-        function loadDirectImage(src, callback) {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => { callback(img); };
-            img.onerror = () => { callback(null); };
-            img.src = src + '?t=' + Date.now();
             return img;
         }
 
@@ -1230,114 +1126,22 @@
                 pulseStartTime: 0,
                 pfpLoaded: false,
                 pfpImg: null,
-                pfpObjectUrl: null,
             };
-            // Load PFP based on strategy
-            loadPFPForPlayer(p);
+            // Load image asynchronously
+            getCachedImage(avatarSrc, (img) => {
+                if (img) {
+                    p.pfpLoaded = true;
+                    p.pfpImg = img;
+                } else {
+                    p.pfpLoaded = false;
+                    p.pfpImg = null;
+                }
+            });
             state.players.push(p);
             computeRadii();
             haptic('medium');
             return p;
         }
-
-        function loadPFPForPlayer(player) {
-            const src = player.pfp;
-            const strategy = state.pfpStrategy;
-
-            if (strategy === 0) {
-                // Strategy 0: Cache + onload
-                loadImageWithCallback(src, (img) => {
-                    if (img && img.complete && img.naturalWidth > 0) {
-                        player.pfpLoaded = true;
-                        player.pfpImg = img;
-                    } else {
-                        player.pfpLoaded = false;
-                        player.pfpImg = null;
-                    }
-                });
-            } else if (strategy === 1) {
-                // Strategy 1: Pre-fetch
-                prefetchImage(src).then(url => {
-                    if (url) {
-                        const img = new Image();
-                        img.crossOrigin = 'anonymous';
-                        img.onload = () => {
-                            player.pfpLoaded = true;
-                            player.pfpImg = img;
-                        };
-                        img.onerror = () => {
-                            player.pfpLoaded = false;
-                            player.pfpImg = null;
-                        };
-                        img.src = url;
-                    } else {
-                        player.pfpLoaded = false;
-                        player.pfpImg = null;
-                    }
-                });
-            } else if (strategy === 2) {
-                // Strategy 2: Direct (no cache)
-                loadDirectImage(src, (img) => {
-                    if (img && img.complete && img.naturalWidth > 0) {
-                        player.pfpLoaded = true;
-                        player.pfpImg = img;
-                    } else {
-                        player.pfpLoaded = false;
-                        player.pfpImg = null;
-                    }
-                });
-            } else if (strategy === 3) {
-                // Strategy 3: Refresh - force reload with cache buster
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    player.pfpLoaded = true;
-                    player.pfpImg = img;
-                    // Update cache
-                    imageCache[src] = img;
-                };
-                img.onerror = () => {
-                    player.pfpLoaded = false;
-                    player.pfpImg = null;
-                };
-                img.src = src + '?refresh=' + Date.now();
-            }
-        }
-
-        // ── Re-load all PFPs when strategy changes ──
-        function reloadAllPFPs() {
-            state.players.forEach(p => {
-                p.pfpLoaded = false;
-                p.pfpImg = null;
-                loadPFPForPlayer(p);
-            });
-            // Also update user PFP in profile
-            if (state.pfp) {
-                const img = new Image();
-                img.crossOrigin = 'anonymous';
-                img.onload = () => {
-                    profilePfp.src = state.pfp;
-                };
-                img.onerror = () => {
-                    profilePfp.src = state.defaultAvatar;
-                };
-                img.src = state.pfp;
-            }
-            const strategyNames = ['Cache + onload', 'Pre-fetch', 'Direct (no cache)', 'Refresh (force)'];
-            pfpStatus.textContent = '✓ Strategy: ' + strategyNames[state.pfpStrategy] + ' (reloaded)';
-            haptic('light');
-        }
-
-        // ── PFP test buttons ──
-        document.querySelectorAll('.pfp-test-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.pfp-test-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                const strategy = parseInt(this.dataset.strategy);
-                state.pfpStrategy = strategy;
-                reloadAllPFPs();
-            });
-        });
 
         function easePopBounce(t) {
             if (t >= 1) return 1;
@@ -2221,8 +2025,8 @@
             usernameDisplay.textContent = '@' + state.username;
             if (state.pfp) {
                 profilePfp.src = state.pfp;
-                // Preload for cache
-                loadImageWithCallback(state.pfp, () => {});
+                // Preload into cache
+                getCachedImage(state.pfp, () => {});
             } else {
                 profilePfp.src = state.defaultAvatar;
             }
@@ -2245,7 +2049,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – PFP test panel added, timer moved bottom-left');
+        console.log('◆ dllump – PFP fixed with cache, timer bottom-left, buttons removed');
     </script>
 </body>
 </html>
