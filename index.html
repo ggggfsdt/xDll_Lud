@@ -93,6 +93,9 @@
             color: #fff;
             letter-spacing: 0.2px;
             font-variant-numeric: tabular-nums;
+            transition: none;
+            display: inline-block;
+            min-width: 40px;
         }
         #top-right {
             display: flex;
@@ -183,11 +186,11 @@
             box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 0 50px rgba(76, 175, 80, 0.05);
         }
 
-        /* TIMER - bottom-left corner, no background */
+        /* Timer - top-right corner, no background */
         #countdown-timer {
             position: absolute;
-            bottom: 10px;
-            left: 12px;
+            top: 8px;
+            right: 12px;
             font-size: 22px;
             font-weight: 700;
             color: #fff;
@@ -751,8 +754,8 @@
             }
             #countdown-timer {
                 font-size: 18px;
-                bottom: 8px;
-                left: 8px;
+                top: 6px;
+                right: 8px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -897,6 +900,7 @@
             winnerId: null,
             countdown: 3.0,
             countdownStartTime: 0,
+            prestartTimer: 0, // 2 seconds "GO!"
             openingTimer: 0,
             gameTime: 0,
             lastTime: 0,
@@ -1046,11 +1050,12 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // IMAGE CACHE (single reliable method)
+        // IMAGE CACHE (with fallback)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const imageCache = {};
 
         function getCachedImage(src, callback) {
+            if (!src) src = state.defaultAvatar;
             if (imageCache[src]) {
                 const img = imageCache[src];
                 if (img.complete && img.naturalWidth > 0) {
@@ -1058,7 +1063,17 @@
                     return img;
                 } else {
                     img.onload = () => callback(img);
-                    img.onerror = () => callback(null);
+                    img.onerror = () => {
+                        // fallback to default
+                        const fallback = new Image();
+                        fallback.crossOrigin = 'anonymous';
+                        fallback.onload = () => {
+                            imageCache[src] = fallback;
+                            callback(fallback);
+                        };
+                        fallback.onerror = () => callback(null);
+                        fallback.src = state.defaultAvatar;
+                    };
                     return img;
                 }
             }
@@ -1069,8 +1084,15 @@
                 callback(img);
             };
             img.onerror = () => {
-                imageCache[src] = null;
-                callback(null);
+                // fallback to default
+                const fallback = new Image();
+                fallback.crossOrigin = 'anonymous';
+                fallback.onload = () => {
+                    imageCache[src] = fallback;
+                    callback(fallback);
+                };
+                fallback.onerror = () => callback(null);
+                fallback.src = state.defaultAvatar;
             };
             img.src = src;
             imageCache[src] = img;
@@ -1196,6 +1218,41 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ANIMATED BALANCE
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        let balanceAnimInterval = null;
+
+        function animateBalanceTo(target) {
+            const current = parseInt(balanceEl.textContent) || state.balance;
+            if (current === target) return;
+            const diff = target - current;
+            const steps = Math.min(Math.abs(diff), 30); // max 30 steps
+            const stepSize = diff / steps;
+            let step = 0;
+
+            if (balanceAnimInterval) clearInterval(balanceAnimInterval);
+
+            balanceAnimInterval = setInterval(() => {
+                step++;
+                const newVal = Math.round(current + stepSize * step);
+                if (step >= steps || Math.abs(newVal - target) < 1) {
+                    balanceEl.textContent = target;
+                    clearInterval(balanceAnimInterval);
+                    balanceAnimInterval = null;
+                } else {
+                    balanceEl.textContent = newVal;
+                }
+            }, 30);
+        }
+
+        // Override updateBalance to use animation
+        function updateBalance() {
+            const target = Math.floor(state.balance);
+            pBalance.textContent = target;
+            animateBalanceTo(target);
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // BOT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         const BOT_NAME = 'Bot';
@@ -1243,7 +1300,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // GAME LOGIC
+        // GAME LOGIC (with prestart)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function startCountdown() {
             if (state.gameState !== 'idle') return;
@@ -1255,6 +1312,13 @@
             countdownTimer.style.display = 'block';
             haptic('heavy');
             updateBetUI();
+        }
+
+        function startPrestart() {
+            state.gameState = 'prestart';
+            state.prestartTimer = 2.0;
+            countdownTimer.textContent = 'GO!';
+            haptic('heavy');
         }
 
         function startGame() {
@@ -1362,7 +1426,7 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS
+        // PHYSICS (with haptic on bump)
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1524,6 +1588,7 @@
                     }
                 });
 
+                // Circle collisions with haptic feedback
                 for (let i = 0; i < alive.length; i++) {
                     for (let j = i + 1; j < alive.length; j++) {
                         const a = alive[i],
@@ -1535,6 +1600,8 @@
                         const rB = b.displayRadius || b.radius;
                         const minDist = rA + rB;
                         if (dist < minDist && dist > 0.001) {
+                            // Trigger haptic on collision
+                            haptic('light');
                             const nx = dx / dist,
                                 ny = dy / dist;
                             const overlap = (minDist - dist) * 0.5;
@@ -1716,7 +1783,6 @@
                 ctx.save();
                 ctx.globalAlpha = alpha;
 
-                // Try to draw PFP if loaded
                 if (p.pfpLoaded && p.pfpImg) {
                     ctx.save();
                     ctx.beginPath();
@@ -1738,7 +1804,6 @@
                     ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                 }
 
-                // Outline
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, finalRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = 'rgba(255,255,255,0.2)';
@@ -1756,8 +1821,9 @@
         // UI UPDATES
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateBalance() {
-            balanceEl.textContent = Math.floor(state.balance);
-            pBalance.textContent = Math.floor(state.balance);
+            const target = Math.floor(state.balance);
+            pBalance.textContent = target;
+            animateBalanceTo(target);
         }
 
         function updateProfile() {
@@ -1792,7 +1858,7 @@
         function updateBetUI() {
             const existing = state.players.find(p => p.id === state.userId);
             const inGame = !!existing;
-            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown');
+            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
 
             if (canBet) {
                 betBtn.textContent = inGame ? 'increase' : 'join';
@@ -1924,11 +1990,20 @@
                 const elapsed = (performance.now() - state.countdownStartTime) / 1000;
                 let remaining = Math.max(0, 3.0 - elapsed);
                 if (remaining <= 0) {
-                    startGame();
+                    startPrestart();
                 } else {
                     const secs = Math.floor(remaining);
                     const ms = Math.floor((remaining - secs) * 100);
                     countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                }
+            }
+
+            if (state.gameState === 'prestart') {
+                state.prestartTimer -= dt;
+                if (state.prestartTimer <= 0) {
+                    startGame();
+                } else {
+                    countdownTimer.textContent = 'GO!';
                 }
             }
 
@@ -1955,7 +2030,7 @@
         // EVENTS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         betBtn.addEventListener('click', () => {
-            if (state.gameState !== 'idle' && state.gameState !== 'countdown') return;
+            if (state.gameState !== 'idle' && state.gameState !== 'countdown' && state.gameState !== 'prestart') return;
             let addAmount = parseInt(betInput.value) || 10;
             if (addAmount < 10) { betInput.value = 10;
                 addAmount = 10;
@@ -1989,7 +2064,7 @@
                 haptic('medium');
                 if (!state.botSpawned && state.botEnabled) {
                     setTimeout(() => { if (state.botEnabled && (state.gameState === 'idle' || state.gameState ===
-                            'countdown')) spawnBot(); }, 400);
+                            'countdown' || state.gameState === 'prestart')) spawnBot(); }, 400);
                 }
             }
             betInput.value = 10;
@@ -2049,7 +2124,7 @@
         init();
 
         window.__state = state;
-        console.log('◆ dllump – timer at bottom-left, no background, PFP cache fixed');
+        console.log('◆ dllump – timer top-right, PFP fix, bump vibrations, balance animation, prestart restored');
     </script>
 </body>
 </html>
