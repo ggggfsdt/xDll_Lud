@@ -169,6 +169,7 @@
             justify-content: center;
             padding: 10px 10px 0 10px;
             min-height: 0;
+            overflow: visible;
         }
         #game-canvas {
             width: 100%;
@@ -519,9 +520,9 @@
             border-top: 1px solid var(--border);
             padding-bottom: var(--safe-bottom);
             padding-top: 2px;
-            z-index: 30;
-            /* ensure above all arena elements */;
+            z-index: 100;
             position: relative;
+            pointer-events: auto;
         }
         .tab-btn {
             flex: 1;
@@ -540,6 +541,7 @@
             position: relative;
             letter-spacing: 0.4px;
             text-transform: uppercase;
+            pointer-events: auto;
         }
         .tab-btn .tab-icon {
             font-size: 20px;
@@ -592,27 +594,30 @@
             font-size: 14px;
         }
 
-        /* --- WIN PANEL (no backdrop, slide up, top stops at center) --- */
+        /* --- WIN PANEL (bigger, slides from below, no black bg on GIF) --- */
         #win-panel {
             position: absolute;
-            top: 50%;
             left: 50%;
+            bottom: 0;
             transform: translateX(-50%) translateY(100%);
-            width: 88%;
-            max-width: 360px;
+            width: 92%;
+            max-width: 380px;
             background: var(--surface2);
-            border-radius: var(--radius);
-            padding: 16px 18px 20px;
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 18px 18px 22px;
             border: 1px solid var(--border);
-            box-shadow: 0 -4px 40px rgba(0, 0, 0, 0.7);
-            z-index: 20;
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            border-bottom: none;
+            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.7);
+            z-index: 25;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
             opacity: 0;
             pointer-events: none;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 8px;
+            max-height: 70vh;
+            overflow-y: auto;
         }
         #win-panel.show {
             transform: translateX(-50%) translateY(0%);
@@ -620,20 +625,20 @@
             pointer-events: auto;
         }
         #win-gif-container {
-            width: 60%;
-            max-width: 160px;
+            width: 50%;
+            max-width: 140px;
             aspect-ratio: 16/9;
             border-radius: 10px;
             overflow: hidden;
-            background: #000;
-            border: 1px solid var(--border);
             flex-shrink: 0;
+            background: transparent;
         }
         #win-gif-container img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+            border-radius: 6px;
         }
         #win-details {
             display: flex;
@@ -643,25 +648,25 @@
             width: 100%;
         }
         #win-name {
-            font-size: 19px;
+            font-size: 22px;
             font-weight: 700;
             color: var(--gold);
             text-align: center;
         }
         #win-multiplier {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 800;
             color: #fff;
             text-align: center;
         }
         #win-continue-btn {
-            padding: 8px 0;
+            padding: 10px 0;
             border-radius: 30px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 16px;
             cursor: pointer;
             box-shadow: 0 0 20px var(--primary-glow);
             transition: 0.2s;
@@ -736,18 +741,18 @@
                 height: 16px;
             }
             #win-panel {
-                width: 94%;
+                width: 96%;
                 padding: 14px;
             }
             #win-name {
-                font-size: 16px;
+                font-size: 18px;
             }
             #win-multiplier {
-                font-size: 20px;
+                font-size: 22px;
             }
             #win-gif-container {
-                width: 50%;
-                max-width: 120px;
+                width: 45%;
+                max-width: 110px;
             }
         }
     </style>
@@ -772,9 +777,9 @@
                     <div id="countdown-timer">3.00</div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
-                    <!-- WIN PANEL (no backdrop) -->
+                    <!-- WIN PANEL -->
                     <div id="win-panel">
-                        <div id="win-gif-container"><img id="win-gif" src="" alt="win animation" /></div>
+                        <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
                         <div id="win-details">
                             <div id="win-name">Winner</div>
                             <div id="win-multiplier">x2.5</div>
@@ -1221,12 +1226,11 @@
                 updateProfile();
                 updateTopList();
 
-                // Show win panel
+                // Show win panel - random GIF with cache buster
+                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+                winGif.src = randomGif + '?t=' + Date.now();
                 winName.textContent = winner.name + ' wins!';
                 winMultiplier.textContent = 'x' + multiplier;
-                // Random GIF with cache buster to ensure change
-                const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)] + '?t=' + Date.now();
-                winGif.src = randomGif;
 
                 winPanel.classList.add('show');
                 haptic('heavy');
@@ -1281,7 +1285,7 @@
         });
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PHYSICS (fixed elimination: must be far outside)
+        // PHYSICS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updatePhysics(dt) {
             if (state.gameState !== 'playing') return;
@@ -1375,10 +1379,9 @@
                     p.y += p.vy * subDt * 60;
 
                     const radius = p.displayRadius || p.radius;
-                    // Wall collision (full perimeter, including gap when closed)
+                    // Wall collision
                     for (let i = 0; i < totalPts; i++) {
                         const j = (i + 1) % totalPts;
-                        // Only skip collision if opening is open and both points are in gap
                         if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
                         const ax = pts[i].x,
                             ay = pts[i].y;
@@ -1410,17 +1413,15 @@
                         }
                     }
 
-                    // ── ELIMINATION: only when opening is open and circle is far outside ──
+                    // ── ELIMINATION ──
                     if (opening && opening.state === 'open') {
                         const cx = half,
                             cy = half;
                         const dx = p.x - cx,
                             dy = p.y - cy;
                         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-                        // Escape threshold: much larger than arena radius
                         const escapeThreshold = half * 1.2 + radius;
                         if (distFromCenter > escapeThreshold) {
-                            // Check if the escape direction aligns with the gap
                             let nearestGapIdx = -1;
                             let minDist = Infinity;
                             for (let i = 0; i < totalPts; i++) {
@@ -1437,7 +1438,6 @@
                                 const gapAngle = Math.atan2(pts[nearestGapIdx].y - cy, pts[nearestGapIdx].x - cx);
                                 let diff = Math.abs(angle - gapAngle);
                                 diff = Math.min(diff, 2 * Math.PI - diff);
-                                // Outward velocity component
                                 const vOut = p.vx * dx + p.vy * dy;
                                 if (diff < 0.8 && vOut > 0) {
                                     p.alive = false;
@@ -1658,6 +1658,7 @@
                 const pfpSrc = p.pfp || '';
                 if (pfpSrc) {
                     const img = loadImage(pfpSrc);
+                    // Draw PFP if loaded, else fallback
                     if (img.complete && img.naturalWidth > 0) {
                         ctx.save();
                         ctx.beginPath();
@@ -1667,7 +1668,7 @@
                         ctx.drawImage(img, p.x - (finalRadius - 2), p.y - (finalRadius - 2), drawSize, drawSize);
                         ctx.restore();
                     } else {
-                        // Fallback color
+                        // Fallback color + initial
                         ctx.fillStyle = p.color || '#a0a0b0';
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -1679,7 +1680,7 @@
                         ctx.fillText(p.name.charAt(0).toUpperCase(), p.x, p.y);
                     }
                 } else {
-                    // No PFP, use color + initial
+                    // No PFP
                     ctx.fillStyle = p.color || '#a0a0b0';
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, Math.max(finalRadius - 2, 2), 0, Math.PI * 2);
@@ -1980,13 +1981,16 @@
             Object.keys(tabPages).forEach(key => {
                 tabPages[key].classList.toggle('active', key === 'pvp');
             });
+            // Force tabs to be clickable
+            document.getElementById('tabs').style.pointerEvents = 'auto';
+            tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             requestAnimationFrame(gameLoop);
             statusDot.className = 'online';
         }
         init();
 
         window.__state = state;
-        console.log('◆ dllump – final: clean win panel, PFPs restored, fixed elimination, tabs work');
+        console.log('◆ dllump – final: big slide-up win panel, no black bg, PFPs restored, tabs clickable');
     </script>
 </body>
 </html>
