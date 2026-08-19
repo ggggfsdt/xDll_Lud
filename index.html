@@ -6,9 +6,9 @@
     <title>dllump · bump arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js?56">
     </script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
+    </script>
     <style>
-        /* ─── Full CSS (identical to the previous working version) ─── */
         * {
             margin: 0;
             padding: 0;
@@ -33,37 +33,52 @@
             --radius: 16px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
         html,
         body {
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
+            background: #08080a;
             color: var(--text);
             touch-action: none;
         }
+        /* ─── BLACK BACKGROUND IMAGE ─── */
         #app {
             display: flex;
             flex-direction: column;
             height: 100%;
             max-width: 440px;
             margin: 0 auto;
-            background: var(--bg);
+            background: #08080a;
+            background-image: url('https://i.postimg.cc/ncz4Kznn/photo-5202192649983563686-y.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             overflow: hidden;
+            position: relative;
         }
+        /* dark overlay to keep readability */
+        #app::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.70);
+            z-index: 0;
+            pointer-events: none;
+        }
+        #app>* {
+            position: relative;
+            z-index: 1;
+        }
+
         #topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 10px 14px 8px;
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
             min-height: 52px;
@@ -136,9 +151,9 @@
             flex: 1;
             position: relative;
             overflow: hidden;
-            background: var(--bg);
             display: flex;
             flex-direction: column;
+            background: transparent;
         }
         .tab-page {
             position: absolute;
@@ -153,7 +168,7 @@
             transform: translateX(30px);
             transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, visibility 0.35s ease;
             overflow: hidden;
-            background: var(--bg);
+            background: transparent;
             will-change: transform, opacity;
         }
         .tab-page.active {
@@ -170,12 +185,12 @@
         }
 
         #pvp-page {
-            background: var(--bg);
             display: flex;
             flex-direction: column;
             flex: 1;
             height: 100%;
             overflow: hidden;
+            background: transparent;
         }
 
         #arena-wrap {
@@ -195,11 +210,14 @@
             max-width: 100%;
             max-height: 100%;
             border-radius: var(--radius);
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.60);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             touch-action: none;
             display: block;
-            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.8), 0 0 50px rgba(76, 175, 80, 0.05);
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(76, 175, 80, 0.05);
             flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
         #frog-gif {
@@ -273,9 +291,28 @@
             display: block;
         }
 
-        /* ─── Waiting text removed ─── */
         #waiting-text {
-            display: none !important;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            color: var(--text2);
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            line-height: 1.6;
+            display: block;
+        }
+        #waiting-text .sub {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
         }
 
         #bet-overlay-wrap {
@@ -296,14 +333,15 @@
             transform: translateX(-50%) translateY(20px);
         }
         #bet-overlay {
-            background: var(--surface2);
+            background: rgba(26, 26, 30, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 10px 16px;
             display: flex;
             align-items: center;
             gap: 10px;
-            backdrop-filter: blur(16px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
             flex-wrap: wrap;
             justify-content: center;
@@ -476,7 +514,9 @@
             scrollbar-width: thin;
             transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
             margin-top: 0;
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--border);
         }
         #player-list-container.shift-up {
@@ -499,7 +539,7 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            background: var(--surface2);
+            background: rgba(26, 26, 30, 0.80);
             border-radius: 20px;
             padding: 2px 10px 2px 4px;
             border: 1px solid var(--border);
@@ -557,7 +597,9 @@
             color: var(--text2);
             font-size: 14px;
             font-weight: 600;
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-top: 1px solid var(--border);
             margin-top: 0;
         }
@@ -582,15 +624,17 @@
         }
 
         #profile-page {
-            background: var(--bg);
             padding: 20px 16px 10px;
             overflow-y: auto;
             align-items: center;
+            background: transparent;
         }
         .profile-card {
             width: 100%;
             max-width: 360px;
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-radius: var(--radius);
             border: 1px solid var(--border);
             padding: 24px 20px 28px;
@@ -721,7 +765,6 @@
             min-height: 18px;
         }
 
-        /* ─── Centered promo modal ─── */
         #promo-modal {
             position: fixed;
             top: 50%;
@@ -789,13 +832,13 @@
         }
 
         #top-page {
-            background: var(--bg);
             padding: 14px 14px 10px;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
+            background: transparent;
         }
         #podium {
             display: flex;
@@ -821,10 +864,11 @@
             font-size: 14px;
             font-weight: 800;
             color: var(--text2);
-            background: var(--surface2);
+            background: rgba(26, 26, 30, 0.80);
             padding: 2px 12px;
             border-radius: 20px;
             border: 1px solid var(--border);
+            backdrop-filter: blur(4px);
         }
         .podium-col .rank-badge.gold {
             color: var(--gold);
@@ -938,7 +982,9 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-radius: 12px;
             padding: 6px 14px;
             border: 1px solid var(--border);
@@ -1008,7 +1054,9 @@
         #tabs {
             display: flex;
             flex-shrink: 0;
-            background: var(--surface);
+            background: rgba(18, 18, 20, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-top: 1px solid var(--border);
             padding-bottom: var(--safe-bottom);
             padding-top: 2px;
@@ -1089,6 +1137,7 @@
             font-size: 14px;
         }
 
+        /* ─── WIN PANEL ─── */
         #win-panel {
             position: absolute;
             left: 50%;
@@ -1096,12 +1145,14 @@
             transform: translateX(-50%) translateY(100%);
             width: 92%;
             max-width: 380px;
-            background: var(--surface2);
+            background: rgba(26, 26, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-radius: var(--radius) var(--radius) 0 0;
             padding: 20px 18px 24px;
             border: 1px solid var(--border);
             border-bottom: none;
-            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.7);
+            box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.8);
             z-index: 25;
             transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
             opacity: 0;
@@ -1387,10 +1438,9 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">10.00</div>
+                    <div id="countdown-timer">3.00</div>
                     <div id="win-history"></div>
-                    <!-- waiting-text is hidden via CSS -->
-                    <div id="waiting-text"></div>
+                    <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
@@ -1476,7 +1526,6 @@
         </div>
     </div>
 
-    <!-- ─── Centered promo modal ─── -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -1486,7 +1535,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // CONFIG
+        // CONFIG — point this at your deployed backend
         // ═══════════════════════════════════════════════════════════════
         const SERVER_URL = 'https://dllump-production.up.railway.app';
 
@@ -1514,7 +1563,6 @@
             pfp: '',
             wins: 0,
             losses: 0,
-            winHistory: [],
             gameState: 'idle',
             players: [],
             pot: 0,
@@ -1525,6 +1573,8 @@
             countdownStartTime: 0,
             currentTab: 'pvp',
             defaultAvatar: 'https://i.pravatar.cc/150?img=0',
+            winHistory: [],
+            maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
         };
@@ -1537,6 +1587,7 @@
         const balanceEl = document.getElementById('balance');
         const usernameDisplay = document.getElementById('username-display');
         const statusDot = document.getElementById('status-dot');
+        const waitingText = document.getElementById('waiting-text');
         const frogGif = document.getElementById('frog-gif');
         const betOverlayWrap = document.getElementById('bet-overlay-wrap');
         const betOverlay = document.getElementById('bet-overlay');
@@ -1712,6 +1763,8 @@
                 const initData = tg?.initData || '';
                 socket.emit('join', { initData }, (res) => {
                     if (!res?.ok) {
+                        waitingText.innerHTML =
+                            `<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error || 'try reopening the app'}</div>`;
                         return;
                     }
                     state.userId = res.user.id;
@@ -1720,7 +1773,6 @@
                     state.balance = res.user.balance;
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
-                    state.winHistory = res.user.winHistory || [];
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -1791,6 +1843,7 @@
             state.players = state.players.filter(p => seen.has(p.id));
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
+                waitingText.style.display = 'block';
                 countdownTimer.style.display = 'none';
             }
             if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
@@ -1799,22 +1852,18 @@
 
             updateStatsBar();
             updateBetUI();
+            updateWaitingText();
             updateBetOverlayVisibility();
             updatePlayerList();
             updateFrogVisibility();
         }
 
+        // ─── WIN SCREEN ──────────────────────────────────────────────
         function handleRoundEnd(payload) {
+            console.log('[roundEnd] payload:', payload);
             if (!payload) { hideWinPanelAndReset(); return; }
 
-            state.winHistory.unshift({
-                winnerName: payload.winnerName,
-                winnerPfp: payload.winnerPfp,
-                winnings: payload.winnings,
-                timestamp: Date.now(),
-            });
-            if (state.winHistory.length > 20) state.winHistory.pop();
-
+            addWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
 
             if (payload.winnerId === state.userId) {
@@ -1835,9 +1884,10 @@
             winPanel.classList.add('show');
             haptic('heavy');
             countdownTimer.style.display = 'none';
+            waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
-            window.winTimeout = setTimeout(hideWinPanelAndReset, 3000);
+            window.winTimeout = setTimeout(hideWinPanelAndReset, 5000);
         }
 
         function hideWinPanelAndReset() {
@@ -1845,7 +1895,9 @@
             stopVictorySound();
             if (window.winTimeout) { clearTimeout(window.winTimeout);
                 window.winTimeout = null; }
+            waitingText.style.display = 'block';
             countdownTimer.style.display = 'none';
+            updateWaitingText();
             updateBetUI();
             updateStatsBar();
             updateBetOverlayVisibility();
@@ -1869,7 +1921,9 @@
             });
         }
 
-        // ─── Helpers ──────────────────────────────────────────────────
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // HELPERS
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function getAlive() { return state.players.filter(p => p.alive); }
 
         function getPlayer(id) { return state.players.find(p => p.id === id); }
@@ -1999,8 +2053,8 @@
             ctx.clearRect(0, 0, w, w);
 
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, '#0a0a0a');
-            grad.addColorStop(1, '#000000');
+            grad.addColorStop(0, 'rgba(10,10,10,0.85)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.95)');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
@@ -2008,7 +2062,7 @@
             ctx.save();
             ctx.shadowColor = 'rgba(0,0,0,0.9)';
             ctx.shadowBlur = 30;
-            ctx.fillStyle = '#1a1a1e';
+            ctx.fillStyle = 'rgba(26,26,30,0.80)';
             if (pts.length > 0) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
@@ -2019,7 +2073,7 @@
             ctx.restore();
 
             ctx.save();
-            ctx.fillStyle = '#28282e';
+            ctx.fillStyle = 'rgba(40,40,46,0.60)';
             if (pts.length > 0) {
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
@@ -2076,7 +2130,7 @@
                     ctx.restore();
                 }
             } else if (total > 0) {
-                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
+                ctx.strokeStyle = 'rgba(160,160,176,0.25)';
                 ctx.lineWidth = 5;
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
@@ -2086,6 +2140,7 @@
             }
             ctx.restore();
 
+            // ─── DRAW PLAYERS WITH PFP ──────────────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
@@ -2103,27 +2158,28 @@
                     py = p.y * s;
 
                 ctx.save();
-                if (p.pfpImg) {
-                    ctx.beginPath();
-                    ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
-                    ctx.closePath();
-                    ctx.clip();
+                // clip to circle
+                ctx.beginPath();
+                ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+
+                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
                 } else {
-                    ctx.beginPath();
-                    ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
-                    ctx.closePath();
+                    // fallback color + initial
                     ctx.fillStyle = p.color || '#555';
-                    ctx.fill();
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
                     ctx.fillStyle = '#fff';
                     ctx.font = `${drawRadius * 0.5}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(p.name.charAt(0).toUpperCase(), px, py + 1);
+                    ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
                 }
                 ctx.restore();
 
+                // border
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
@@ -2136,9 +2192,9 @@
             });
         }
 
-        // ═══════════════════════════════════════════════════════════════
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // UI UPDATES
-        // ═══════════════════════════════════════════════════════════════
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateProfile() {
             pWins.textContent = state.wins;
             pLosses.textContent = state.losses;
@@ -2153,6 +2209,17 @@
         function updateStatsBar() {
             statsPlayers.textContent = getAlive().length;
             statsPot.textContent = state.pot;
+        }
+
+        function updateWaitingText() {
+            const alive = getAlive();
+            if (alive.length === 0) {
+                waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
+            } else {
+                waitingText.innerHTML =
+                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span><div class="sub">need ${Math.max(0, 2 - alive.length)} more to start</div>`;
+            }
+            updateFrogVisibility();
         }
 
         function updateBetUI() {
@@ -2180,11 +2247,24 @@
             const alive = getAlive();
             const showFrog = alive.length < 2 && state.gameState === 'idle';
             frogGif.classList.toggle('show', showFrog);
+            waitingText.style.display = showFrog ? 'none' : 'block';
         }
 
         // ─── Win history ──────────────────────────────────────────────
+        function addWinToHistory(name, pfp) {
+            state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
+            if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
+            updateWinHistoryUI();
+        }
+
         function updateWinHistoryUI() {
-            // Already handled by addWinToHistory
+            if (state.winHistory.length === 0) { winHistoryEl.innerHTML = ''; return; }
+            let html = '';
+            state.winHistory.forEach(entry => {
+                const avatarSrc = entry.pfp || state.defaultAvatar;
+                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            winHistoryEl.innerHTML = html;
         }
 
         // ─── Top UI ──────────────────────────────────────────────────
@@ -2294,9 +2374,7 @@
             }
         });
 
-        // ═══════════════════════════════════════════════════════════════
-        // PROMO CODE
-        // ═══════════════════════════════════════════════════════════════
+        // ─── Promo ──────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
             const code = promoInput.value.trim().toUpperCase();
             if (!code) {
@@ -2356,7 +2434,7 @@
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
+                const remaining = Math.max(0, 3.0 - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
