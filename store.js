@@ -42,7 +42,6 @@ async function getUser(id, defaults = {}) {
   } else {
     if (defaults.username) data.users[id].username = defaults.username;
     if (defaults.pfp) data.users[id].pfp = defaults.pfp;
-    // ensure banned field exists
     if (data.users[id].banned === undefined) data.users[id].banned = false;
   }
   return data.users[id];
