@@ -2,16 +2,17 @@ const fs = require('fs');
 const path = require('path');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.json');
-const STARTING_BALANCE = 1000;
+const STARTING_BALANCE = parseInt(process.env.STARTING_BALANCE) || 50;
 
-let data = { users: {} };
+let data = { users: {}, promoCodes: [] };
 let saveQueued = false;
 
 function load() {
   try {
     data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+    if (!data.promoCodes) data.promoCodes = [];
   } catch (e) {
-    data = { users: {} };
+    data = { users: {}, promoCodes: [] };
   }
 }
 load();
@@ -68,4 +69,60 @@ async function allUsersCount() {
   return Object.keys(data.users).length;
 }
 
-module.exports = { getUser, saveUser, getAllUsers, topPlayers, allUsersCount };
+// ─── Promo codes ──────────────────────────────────────────────
+function generateRandomCode(length = 8) {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < length; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+async function createPromoCode(amount, code = null, maxUses = 1) {
+  const finalCode = code || generateRandomCode();
+  const promo = {
+    code: finalCode,
+    amount: parseInt(amount),
+    maxUses: parseInt(maxUses),
+    usedCount: 0,
+    createdAt: Date.now(),
+  };
+  data.promoCodes.push(promo);
+  queueSave();
+  return promo;
+}
+
+async function redeemPromoCode(code, userId) {
+  const promo = data.promoCodes.find(p => p.code === code);
+  if (!promo) return { ok: false, error: 'Invalid code' };
+  if (promo.usedCount >= promo.maxUses) return { ok: false, error: 'Code already used' };
+  const user = await getUser(userId);
+  if (!user) return { ok: false, error: 'User not found' };
+  user.balance += promo.amount;
+  await saveUser(user);
+  promo.usedCount += 1;
+  queueSave();
+  return { ok: true, amount: promo.amount, newBalance: user.balance };
+}
+
+async function getPromoCodes() {
+  return data.promoCodes;
+}
+
+async function deletePromoCode(code) {
+  data.promoCodes = data.promoCodes.filter(p => p.code !== code);
+  queueSave();
+}
+
+module.exports = {
+  getUser,
+  saveUser,
+  getAllUsers,
+  topPlayers,
+  allUsersCount,
+  createPromoCode,
+  redeemPromoCode,
+  getPromoCodes,
+  deletePromoCode,
+};
