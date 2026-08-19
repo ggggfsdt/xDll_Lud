@@ -345,7 +345,10 @@ function updatePhysics(dt) {
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
-  const subSteps = 6;
+  const subSteps = 10; // was 6 — smaller circles move faster (see speedForRadius) and the
+  // extra substeps keep their per-step travel distance small enough that they can't tunnel
+  // deep into a wall/another circle before a collision is caught, which is what was causing
+  // the "glitchy" snap-corrections on small circles.
   const subDt = dt / subSteps;
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
@@ -353,6 +356,13 @@ function updatePhysics(dt) {
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
       const radius = p.displayRadius || p.radius;
+
+      // Find the CLOSEST wall segment, not just the first one that registers a hit.
+      // Near corners several consecutive segments can all be within `radius` of a
+      // small circle; picking the first one (in perimeter index order, not distance
+      // order) could push the circle in a slightly wrong direction — a small nudge
+      // for a big circle, but a visibly wrong snap for an 8px one.
+      let bestDist = Infinity, bestNx = 0, bestNy = 0;
       for (let i = 0; i < totalPts; i++) {
         const j = (i + 1) % totalPts;
         if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
@@ -366,15 +376,18 @@ function updatePhysics(dt) {
         const nearX = ax + t * dx, nearY = ay + t * dy;
         const distX = p.x - nearX, distY = p.y - nearY;
         const dist = Math.sqrt(distX * distX + distY * distY);
-        if (dist < radius) {
-          const nx = distX / dist, ny = distY / dist;
-          const overlap = radius - dist;
-          p.x += nx * overlap;
-          p.y += ny * overlap;
-          const vn = p.vx * nx + p.vy * ny;
-          if (vn < 0) { p.vx -= 2 * vn * nx; p.vy -= 2 * vn * ny; }
-          break;
+        if (dist < radius && dist < bestDist) {
+          bestDist = dist;
+          bestNx = distX / dist;
+          bestNy = distY / dist;
         }
+      }
+      if (bestDist < Infinity) {
+        const overlap = radius - bestDist;
+        p.x += bestNx * overlap;
+        p.y += bestNy * overlap;
+        const vn = p.vx * bestNx + p.vy * bestNy;
+        if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
       }
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
