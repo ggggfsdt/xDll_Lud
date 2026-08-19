@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// dllump · bump arena — multiplayer backend
+// dllump · bump arena — multiplayer backend (FULL)
 // ═══════════════════════════════════════════════════════════════
 
 process.on('uncaughtException', (err) => {
@@ -154,7 +154,6 @@ function computeRadii() {
     const r = 18 + ratio * 34;
     p.targetRadius = Math.min(Math.max(r, 14), 52);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
-    // Immediately update displayRadius so sizes change during countdown
     p.displayRadius = p.targetRadius;
   });
 }
@@ -260,6 +259,7 @@ async function endGame(winnerId) {
   }, 3000);
 }
 
+// ─── Physics ────────────────────────────────────────────────
 function isInGap(idx) {
   const opening = room.opening;
   if (!opening || opening.state !== 'open') return false;
@@ -393,7 +393,6 @@ function updatePhysics(dt) {
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
-  // Smooth displayRadius towards target (only during playing)
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
@@ -515,13 +514,81 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {});
 });
 
-// ─── Admin API (unchanged) ────────────────────────────────────
-// ... (full admin code as before, omitted for brevity, but you must include it)
-// ─────────────────────────────────────────────────────────────
-// ADMIN API (requires ADMIN_SECRET)
-// ─────────────────────────────────────────────────────────────
-const ADMIN_HTML = `...`; // keep your existing admin HTML
-// ... all admin routes (same as before)
+// ─── ADMIN API (FULL) ─────────────────────────────────────────
+const ADMIN_HTML = `
+<!DOCTYPE html>
+<html>
+<head><title>Admin Panel</title><style>body{background:#0a0a0c;color:#e0e0e0;font-family:sans-serif;padding:20px;max-width:800px;margin:auto;}table{width:100%;border-collapse:collapse;margin-top:10px;}th,td{padding:8px;border:1px solid #333;text-align:left;}button{padding:4px 12px;border:none;border-radius:4px;cursor:pointer;}.ban{background:#d45a5a;color:#fff;}.unban{background:#5ac88a;color:#000;}.promo{background:#c8a84e;color:#000;margin:5px;}</style></head>
+<body>
+<h1>Admin Panel</h1>
+<div id="users"></div>
+<hr>
+<h2>Promo Codes</h2>
+<input id="promoCode" placeholder="Code" /><input id="promoAmount" placeholder="Amount" type="number" /><button onclick="createPromo()">Create</button>
+<ul id="promoList"></ul>
+<script>
+async function load(){ const r=await fetch('/admin/users'); const d=await r.json(); let html='<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Banned</th><th>Action</th></tr>';
+d.users.forEach(u=>{html+='<tr><td>'+u.id+'</td><td>'+u.username+'</td><td>'+u.balance+'</td><td>'+u.wins+'</td><td>'+(u.banned?'✅':'❌')+'</td><td><button class="'+(u.banned?'unban':'ban')+'" onclick="toggleBan(\''+u.id+'\')">'+(u.banned?'Unban':'Ban')+'</button></td></tr>';});
+html+='</table>'; document.getElementById('users').innerHTML=html;
+const p=await fetch('/admin/promos'); const pd=await p.json(); let list=''; pd.codes.forEach(c=>{list+='<li>'+c.code+' → '+c.amount+' 💎 <button onclick="deletePromo(\''+c.code+'\')">🗑️</button></li>';}); document.getElementById('promoList').innerHTML=list;
+}
+async function toggleBan(id){ await fetch('/admin/ban',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:id,secret:'${ADMIN_SECRET}'})}); load(); }
+async function createPromo(){ const code=document.getElementById('promoCode').value.trim(); const amount=parseInt(document.getElementById('promoAmount').value); if(!code||!amount)return; await fetch('/admin/promos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,amount,secret:'${ADMIN_SECRET}'})}); load(); }
+async function deletePromo(code){ await fetch('/admin/promos/'+code,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({secret:'${ADMIN_SECRET}'})}); load(); }
+load();
+</script>
+</body>
+</html>
+`;
+
+app.get('/admin', (req, res) => {
+  res.send(ADMIN_HTML);
+});
+
+app.get('/admin/users', async (req, res) => {
+  const users = await getAllUsers();
+  res.json({ users });
+});
+
+app.post('/admin/ban', async (req, res) => {
+  const { userId, secret } = req.body;
+  if (secret !== ADMIN_SECRET) return res.status(403).json({ error: 'Forbidden' });
+  const user = await getUser(userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  user.banned = !user.banned;
+  await saveUser(user);
+  res.json({ ok: true });
+});
+
+app.post('/admin/promos', async (req, res) => {
+  const { code, amount, secret } = req.body;
+  if (secret !== ADMIN_SECRET) return res.status(403).json({ error: 'Forbidden' });
+  if (!code || !amount) return res.status(400).json({ error: 'Missing code or amount' });
+  await createPromoCode(code.toUpperCase(), amount);
+  res.json({ ok: true });
+});
+
+app.get('/admin/promos', async (req, res) => {
+  const codes = await getPromoCodes();
+  res.json({ codes });
+});
+
+app.delete('/admin/promos/:code', async (req, res) => {
+  const { secret } = req.body;
+  if (secret !== ADMIN_SECRET) return res.status(403).json({ error: 'Forbidden' });
+  await deletePromoCode(req.params.code.toUpperCase());
+  res.json({ ok: true });
+});
+
+app.post('/redeem', async (req, res) => {
+  const { code, userId } = req.body;
+  if (!code || !userId) return res.status(400).json({ error: 'Missing code or userId' });
+  const result = await redeemPromoCode(code.toUpperCase(), userId);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+  const user = await getUser(userId);
+  res.json({ ok: true, amount: result.amount, newBalance: user.balance });
+});
+
 // ─── Start server ──────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`bump arena server listening on :${PORT}`);
