@@ -13,6 +13,7 @@ function load() {
     data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
     if (!data.promoCodes) data.promoCodes = [];
   } catch (e) {
+    console.warn('No existing data file, starting fresh.');
     data = { users: {}, promoCodes: [] };
   }
 }
@@ -20,7 +21,11 @@ load();
 
 function flush() {
   saveQueued = false;
-  fs.writeFile(DB_PATH, JSON.stringify(data), () => {});
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data));
+  } catch (e) {
+    console.error('Failed to write data file:', e);
+  }
 }
 
 function queueSave() {
@@ -85,7 +90,6 @@ async function allUsersCount() {
   return Object.keys(data.users).length;
 }
 
-// ─── Promo codes ──────────────────────────────────────────────
 function generateRandomCode(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
