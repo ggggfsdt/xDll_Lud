@@ -415,7 +415,6 @@ io.on('connection', (socket) => {
       username: tgUser.username || tgUser.first_name || 'player',
       pfp: tgUser.photo_url || '',
     });
-    // check if banned
     if (user.banned) {
       ack?.({ ok: false, error: 'You have been banned.' });
       return;
@@ -460,6 +459,7 @@ io.on('connection', (socket) => {
 // ─────────────────────────────────────────────────────────────
 // ADMIN API (requires ADMIN_SECRET)
 // ─────────────────────────────────────────────────────────────
+// We serve a simple HTML page built as a string – note the backticks inside are escaped.
 const ADMIN_HTML = `
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -489,7 +489,7 @@ button.danger{background:#e06060}input{padding:6px;border-radius:4px;border:1px 
   <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban</button>
 </div>
 <script>
-const ADMIN_SECRET = '${ADMIN_SECRET}'; // injected from server
+const ADMIN_SECRET = '${ADMIN_SECRET}';
 async function fetchAdmin(path, method='GET', body=null) {
   const headers = {'admin-secret': document.getElementById('secret').value};
   if(body) headers['Content-Type'] = 'application/json';
@@ -508,8 +508,8 @@ async function refreshPlayers(){
   const players = data.players || [];
   let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
   players.forEach(p => {
-    html += `<tr><td>${p.id}</td><td>${p.username}</td><td>${p.balance}</td><td>${p.wins}</td><td>${p.losses}</td><td>${p.banned ? '🚫' : ''}</td>
-    <td><button onclick="banPlayer('${p.id}')">Ban</button></td></tr>`;
+    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
+    <td><button onclick="banPlayer('\${p.id}')">Ban</button></td></tr>\`;
   });
   html += '</table>';
   document.getElementById('players').innerHTML = html;
@@ -604,7 +604,7 @@ app.post('/admin/api/ban', adminAuth, async (req, res) => {
   if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
   const user = await getUser(id);
   if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-  user.banned = !user.banned; // toggle
+  user.banned = !user.banned;
   await saveUser(user);
   res.json({ ok: true, banned: user.banned });
 });
