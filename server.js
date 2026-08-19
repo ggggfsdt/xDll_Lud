@@ -120,9 +120,11 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
+const MIN_RADIUS = 8;
+const MAX_RADIUS = 52;
+
 function speedForRadius(radius) {
-  const minR = 14, maxR = 52;
-  const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
+  const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
   const speed = 8.0 - norm * 5.5;
   return Math.max(2.5, Math.min(8.0, speed));
 }
@@ -155,8 +157,11 @@ function computeRadii() {
   if (totalBet === 0) return;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    const r = 18 + ratio * 34;
-    p.targetRadius = Math.min(Math.max(r, 14), 52);
+    // exponent > 1 compresses small shares toward the floor (way smaller for a tiny
+    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS
+    const scaled = Math.pow(ratio, 1.3);
+    const r = MIN_RADIUS + scaled * (MAX_RADIUS - MIN_RADIUS);
+    p.targetRadius = Math.min(Math.max(r, MIN_RADIUS), MAX_RADIUS);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
     // Immediately update displayRadius so sizes change during countdown
     p.displayRadius = p.targetRadius;
@@ -503,6 +508,7 @@ io.on('connection', (socket) => {
         user: {
           ...user,
           winHistory: user.winHistory || [],
+          anonymous: !!user.anonymous,
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         recentWinners: room.recentWinners,
@@ -531,7 +537,7 @@ io.on('connection', (socket) => {
       await saveUser(user);
       const existing = getPlayer(userId);
       if (existing) { existing.bet += amt; computeRadii(); }
-      else { makePlayer(userId, amt, user.username, user.pfp); }
+      else { makePlayer(userId, amt, user.username, user.anonymous ? '' : user.pfp); }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
@@ -541,9 +547,33 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('setAnonymous', async ({ enabled }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      const user = await getUser(userId);
+      if (!user) return ack?.({ ok: false, error: 'User not found.' });
+      user.anonymous = !!enabled;
+      await saveUser(user);
+
+      // if they're already sitting in an active round, update their live avatar
+      // immediately instead of waiting for the next round to pick it up
+      const livePlayer = getPlayer(userId);
+      if (livePlayer) {
+        livePlayer.pfp = user.anonymous ? '' : user.pfp;
+        broadcastState();
+      }
+      ack?.({ ok: true, anonymous: user.anonymous });
+    } catch (err) {
+      console.error('setAnonymous error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
   socket.on('leaderboard', async (_, ack) => {
     try {
-      ack?.({ ok: true, top: await topPlayers(20) });
+      const top = await topPlayers(20);
+      const masked = top.map(u => (u.anonymous ? { ...u, pfp: '' } : u));
+      ack?.({ ok: true, top: masked });
     } catch (err) {
       console.error('Leaderboard error:', err);
       ack?.({ ok: false, error: 'Internal error' });
@@ -866,7 +896,8 @@ app.get('/health', (req, res) => {
 });
 app.get('/leaderboard', async (req, res) => {
   try {
-    res.json({ top: await topPlayers(20) });
+    const top = await topPlayers(20);
+    res.json({ top: top.map(u => (u.anonymous ? { ...u, pfp: '' } : u)) });
   } catch (err) {
     console.error('Leaderboard error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
