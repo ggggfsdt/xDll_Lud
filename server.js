@@ -2,6 +2,15 @@
 // dllump · bump arena — multiplayer backend
 // ═══════════════════════════════════════════════════════════════
 
+// ─── Catch unhandled errors and keep the process alive ──────
+process.on('uncaughtException', (err) => {
+  console.error('💥 Uncaught Exception:', err.stack);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// ─── Imports ──────────────────────────────────────────────────
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
@@ -24,15 +33,18 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
-// ─── express + socket.io ───
+// ─── express + socket.io ──────────────────────────────────────
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const io = new Server(server, {
+  cors: { origin: '*' },
+  transports: ['websocket', 'polling'],
+});
 
-// ─── Telegram auth ───
+// ─── Telegram auth ─────────────────────────────────────────────
 function verifyInitData(initData) {
   if (!BOT_TOKEN) return null;
   try {
@@ -52,10 +64,13 @@ function verifyInitData(initData) {
     const userJson = params.get('user');
     if (!userJson) return null;
     return JSON.parse(userJson);
-  } catch (e) { return null; }
+  } catch (e) {
+    console.error('Auth error:', e);
+    return null;
+  }
 }
 
-// ─── Arena geometry ───
+// ─── Arena geometry ─────────────────────────────────────────────
 const ARENA_SIZE = 400;
 const CORNER_RADIUS = ARENA_SIZE * 0.15;
 
@@ -72,7 +87,9 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
     { type: 'line', x1: -half, y1: half - r, x2: -half, y2: -half + r },
     { type: 'arc', cx: -half + r, cy: -half + r, start: Math.PI, end: 3 * Math.PI / 2 }
   ];
-  const segLengths = sections.map(seg => seg.type === 'line' ? Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1) : r * (seg.end - seg.start));
+  const segLengths = sections.map(seg => seg.type === 'line'
+    ? Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1)
+    : r * (seg.end - seg.start));
   const totalLen = segLengths.reduce((a, b) => a + b, 0);
   const step = totalLen / numPoints;
   const points = [];
@@ -107,7 +124,7 @@ function speedForRadius(radius) {
   return 6.0 - norm * 3.0;
 }
 
-// ─── Room ───
+// ─── Room ──────────────────────────────────────────────────────
 const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
 const MAX_PLAYERS = 8;
 
@@ -203,32 +220,36 @@ async function endGame(winnerId) {
   const winner = getPlayer(winnerId);
   let payload = null;
   if (winner) {
-    const totalPot = room.pot;
-    const winnerBet = winner.bet;
-    const losersBets = totalPot - winnerBet;
-    const commission = Math.floor(losersBets * 0.02);
-    const winnings = totalPot - commission;
-    const winnerUser = await getUser(winner.id);
-    if (winnerUser) {
-      winnerUser.balance += winnings;
-      winnerUser.wins += 1;
-      await saveUser(winnerUser);
-    }
-    for (const p of room.players) {
-      if (p.id === winner.id) continue;
-      const u = await getUser(p.id);
-      if (u) { u.losses += 1; await saveUser(u); }
-    }
-    // Store win in winner's history
-    await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
+    try {
+      const totalPot = room.pot;
+      const winnerBet = winner.bet;
+      const losersBets = totalPot - winnerBet;
+      const commission = Math.floor(losersBets * 0.02);
+      const winnings = totalPot - commission;
+      const winnerUser = await getUser(winner.id);
+      if (winnerUser) {
+        winnerUser.balance += winnings;
+        winnerUser.wins += 1;
+        await saveUser(winnerUser);
+      }
+      for (const p of room.players) {
+        if (p.id === winner.id) continue;
+        const u = await getUser(p.id);
+        if (u) { u.losses += 1; await saveUser(u); }
+      }
+      // Store win in winner's history
+      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
 
-    payload = {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      winnerPfp: winner.pfp,
-      winnings,
-      multiplier: +(winnings / winnerBet).toFixed(2),
-    };
+      payload = {
+        winnerId: winner.id,
+        winnerName: winner.name,
+        winnerPfp: winner.pfp,
+        winnings,
+        multiplier: +(winnings / winnerBet).toFixed(2),
+      };
+    } catch (err) {
+      console.error('Error in endGame:', err);
+    }
   }
   io.to(room.id).emit('roundEnd', payload);
   setTimeout(() => {
@@ -378,24 +399,28 @@ function updatePhysics(dt) {
   });
 }
 
-// ─── Game Loop ───
+// ─── Game Loop ────────────────────────────────────────────────
 const TICK_HZ = 30;
 let lastTick = Date.now();
 setInterval(() => {
   const now = Date.now();
   const dt = Math.min((now - lastTick) / 1000, 0.1);
   lastTick = now;
-  if (room.gameState === 'playing') updatePhysics(dt);
-  else if (room.gameState === 'countdown') {
-    const elapsed = (now - room.countdownStartTime) / 1000;
-    if (elapsed >= 3.0) startPrestart();
-  } else if (room.gameState === 'prestart') {
-    room.prestartTimer -= dt;
-    if (room.prestartTimer <= 0) startGame();
-  } else if (room.gameState === 'idle') {
-    if (getAlive().length >= 2) startCountdown();
+  try {
+    if (room.gameState === 'playing') updatePhysics(dt);
+    else if (room.gameState === 'countdown') {
+      const elapsed = (now - room.countdownStartTime) / 1000;
+      if (elapsed >= 3.0) startPrestart();
+    } else if (room.gameState === 'prestart') {
+      room.prestartTimer -= dt;
+      if (room.prestartTimer <= 0) startGame();
+    } else if (room.gameState === 'idle') {
+      if (getAlive().length >= 2) startCountdown();
+    }
+    broadcastState();
+  } catch (err) {
+    console.error('Game loop error:', err);
   }
-  broadcastState();
 }, 1000 / TICK_HZ);
 
 function broadcastState() {
@@ -411,71 +436,88 @@ function broadcastState() {
   });
 }
 
-// ─── Socket.io ───
+// ─── Socket.io ────────────────────────────────────────────────
 io.on('connection', (socket) => {
   let userId = null;
   socket.on('join', async ({ initData }, ack) => {
-    let tgUser = verifyInitData(initData);
-    if (!tgUser && ALLOW_DEV_LOGIN) {
-      tgUser = { id: 'dev_' + socket.id.slice(0, 6), username: 'dev_player', photo_url: '' };
+    try {
+      let tgUser = verifyInitData(initData);
+      if (!tgUser && ALLOW_DEV_LOGIN) {
+        tgUser = { id: 'dev_' + socket.id.slice(0, 6), username: 'dev_player', photo_url: '' };
+      }
+      if (!tgUser) {
+        ack?.({ ok: false, error: 'Could not verify Telegram login.' });
+        return;
+      }
+      userId = String(tgUser.id);
+      socket.data.userId = userId;
+      socket.join(room.id);
+      const user = await getUser(userId, {
+        username: tgUser.username || tgUser.first_name || 'player',
+        pfp: tgUser.photo_url || '',
+      });
+      if (user.banned) {
+        ack?.({ ok: false, error: 'You have been banned.' });
+        return;
+      }
+      ack?.({
+        ok: true,
+        user: {
+          ...user,
+          winHistory: user.winHistory || [],
+        },
+        arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
+      });
+      broadcastState();
+    } catch (err) {
+      console.error('Join error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
     }
-    if (!tgUser) {
-      ack?.({ ok: false, error: 'Could not verify Telegram login.' });
-      return;
-    }
-    userId = String(tgUser.id);
-    socket.data.userId = userId;
-    socket.join(room.id);
-    const user = await getUser(userId, {
-      username: tgUser.username || tgUser.first_name || 'player',
-      pfp: tgUser.photo_url || '',
-    });
-    if (user.banned) {
-      ack?.({ ok: false, error: 'You have been banned.' });
-      return;
-    }
-    ack?.({
-      ok: true,
-      user: {
-        ...user,
-        winHistory: user.winHistory || [],
-      },
-      arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
-    });
-    broadcastState();
   });
 
   socket.on('placeBet', async ({ amount }, ack) => {
-    if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-    if (!['idle', 'countdown', 'prestart'].includes(room.gameState)) {
-      return ack?.({ ok: false, error: 'Round already in progress.' });
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      if (!['idle', 'countdown', 'prestart'].includes(room.gameState)) {
+        return ack?.({ ok: false, error: 'Round already in progress.' });
+      }
+      const amt = Math.max(10, Math.floor(Number(amount) || 0));
+      const user = await getUser(userId);
+      if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
+      if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
+      if (room.players.length >= MAX_PLAYERS && !getPlayer(userId)) {
+        return ack?.({ ok: false, error: 'Arena is full.' });
+      }
+      user.balance -= amt;
+      await saveUser(user);
+      const existing = getPlayer(userId);
+      if (existing) { existing.bet += amt; computeRadii(); }
+      else { makePlayer(userId, amt, user.username, user.pfp); }
+      room.pot += amt;
+      ack?.({ ok: true, balance: user.balance });
+      broadcastState();
+    } catch (err) {
+      console.error('Bet error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
     }
-    const amt = Math.max(10, Math.floor(Number(amount) || 0));
-    const user = await getUser(userId);
-    if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
-    if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
-    if (room.players.length >= MAX_PLAYERS && !getPlayer(userId)) {
-      return ack?.({ ok: false, error: 'Arena is full.' });
-    }
-    user.balance -= amt;
-    await saveUser(user);
-    const existing = getPlayer(userId);
-    if (existing) { existing.bet += amt; computeRadii(); }
-    else { makePlayer(userId, amt, user.username, user.pfp); }
-    room.pot += amt;
-    ack?.({ ok: true, balance: user.balance });
-    broadcastState();
   });
 
   socket.on('leaderboard', async (_, ack) => {
-    ack?.({ ok: true, top: await topPlayers(20) });
+    try {
+      ack?.({ ok: true, top: await topPlayers(20) });
+    } catch (err) {
+      console.error('Leaderboard error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
   });
 
-  socket.on('disconnect', () => {});
+  socket.on('disconnect', () => {
+    // Optional: remove player from room if they leave? Already handled by timeout reset.
+  });
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API (requires ADMIN_SECRET) — keep the same as before
+// ADMIN API (requires ADMIN_SECRET)
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `
 <!DOCTYPE html>
@@ -616,117 +658,181 @@ app.get('/admin', (req, res) => {
 
 // Admin API endpoints
 app.get('/admin/api/players', adminAuth, async (req, res) => {
-  const users = await getAllUsers();
-  res.json({ players: users });
+  try {
+    const users = await getAllUsers();
+    res.json({ players: users });
+  } catch (err) {
+    console.error('Admin players error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
 app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
-  const users = await getAllUsers();
-  for (const u of users) {
-    u.balance = 50;
-    await saveUser(u);
+  try {
+    const users = await getAllUsers();
+    for (const u of users) {
+      u.balance = 50;
+      await saveUser(u);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Reset money error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
   }
-  res.json({ ok: true });
 });
 
 app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
-  const users = await getAllUsers();
-  for (const u of users) {
-    u.wins = 0;
-    u.losses = 0;
-    await saveUser(u);
+  try {
+    const users = await getAllUsers();
+    for (const u of users) {
+      u.wins = 0;
+      u.losses = 0;
+      await saveUser(u);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Reset top error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
   }
-  res.json({ ok: true });
 });
 
 app.post('/admin/api/wipe', adminAuth, async (req, res) => {
-  const all = await getAllUsers();
-  for (const u of all) {
-    u.balance = 50;
-    u.wins = 0;
-    u.losses = 0;
-    u.banned = false;
-    u.winHistory = [];
-    await saveUser(u);
+  try {
+    const all = await getAllUsers();
+    for (const u of all) {
+      u.balance = 50;
+      u.wins = 0;
+      u.losses = 0;
+      u.banned = false;
+      u.winHistory = [];
+      await saveUser(u);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Wipe error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
   }
-  res.json({ ok: true });
 });
 
 app.post('/admin/api/add-money', adminAuth, async (req, res) => {
-  const { id, amount } = req.body;
-  if (!id || !amount || isNaN(amount)) return res.status(400).json({ ok: false, error: 'Invalid' });
-  const user = await getUser(id);
-  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-  user.balance += amount;
-  await saveUser(user);
-  res.json({ ok: true, balance: user.balance });
+  try {
+    const { id, amount } = req.body;
+    if (!id || !amount || isNaN(amount)) return res.status(400).json({ ok: false, error: 'Invalid' });
+    const user = await getUser(id);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    user.balance += amount;
+    await saveUser(user);
+    res.json({ ok: true, balance: user.balance });
+  } catch (err) {
+    console.error('Add money error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
 app.post('/admin/api/set-money', adminAuth, async (req, res) => {
-  const { id, amount } = req.body;
-  if (!id || isNaN(amount) || amount < 0) return res.status(400).json({ ok: false, error: 'Invalid' });
-  const user = await getUser(id);
-  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-  user.balance = amount;
-  await saveUser(user);
-  res.json({ ok: true, balance: user.balance });
+  try {
+    const { id, amount } = req.body;
+    if (!id || isNaN(amount) || amount < 0) return res.status(400).json({ ok: false, error: 'Invalid' });
+    const user = await getUser(id);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    user.balance = amount;
+    await saveUser(user);
+    res.json({ ok: true, balance: user.balance });
+  } catch (err) {
+    console.error('Set money error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
 app.post('/admin/api/ban', adminAuth, async (req, res) => {
-  const { id } = req.body;
-  if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
-  const user = await getUser(id);
-  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-  user.banned = !user.banned;
-  await saveUser(user);
-  res.json({ ok: true, banned: user.banned });
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+    const user = await getUser(id);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    user.banned = !user.banned;
+    await saveUser(user);
+    res.json({ ok: true, banned: user.banned });
+  } catch (err) {
+    console.error('Ban error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
 // Promo admin endpoints
 app.post('/admin/api/create-promo', adminAuth, async (req, res) => {
-  const { amount, code, maxUses } = req.body;
-  if (!amount || isNaN(amount) || amount < 1) return res.status(400).json({ ok: false, error: 'Invalid amount' });
-  const promo = await createPromoCode(amount, code || null, maxUses || 1);
-  res.json({ ok: true, code: promo.code });
+  try {
+    const { amount, code, maxUses } = req.body;
+    if (!amount || isNaN(amount) || amount < 1) return res.status(400).json({ ok: false, error: 'Invalid amount' });
+    const promo = await createPromoCode(amount, code || null, maxUses || 1);
+    res.json({ ok: true, code: promo.code });
+  } catch (err) {
+    console.error('Create promo error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
 app.post('/admin/api/delete-promo', adminAuth, async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
-  await deletePromoCode(code);
-  res.json({ ok: true });
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
+    await deletePromoCode(code);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete promo error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
 app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
-  const codes = await getPromoCodes();
-  res.json({ codes });
+  try {
+    const codes = await getPromoCodes();
+    res.json({ codes });
+  } catch (err) {
+    console.error('Get promo codes error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
-// Public promo redeem endpoint (anyone can use)
+// Public promo redeem endpoint
 app.post('/redeem', async (req, res) => {
-  const { code, userId } = req.body;
-  if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-  const result = await redeemPromoCode(code, userId);
-  res.json(result);
+  try {
+    const { code, userId } = req.body;
+    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    const result = await redeemPromoCode(code, userId);
+    res.json(result);
+  } catch (err) {
+    console.error('Redeem promo error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
-// Also support GET for easy testing
 app.get('/redeem', async (req, res) => {
-  const { code, userId } = req.query;
-  if (!code || !userId) return res.send('Missing code or userId');
-  const result = await redeemPromoCode(code, userId);
-  res.json(result);
+  try {
+    const { code, userId } = req.query;
+    if (!code || !userId) return res.send('Missing code or userId');
+    const result = await redeemPromoCode(code, userId);
+    res.json(result);
+  } catch (err) {
+    console.error('Redeem promo (GET) error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
-// ─── Health & leaderboard (public) ───
+// ─── Health & leaderboard (public) ──────────────────────────
 app.get('/health', (req, res) => {
   res.json({ ok: true, players: room.players.length, gameState: room.gameState });
 });
 app.get('/leaderboard', async (req, res) => {
-  res.json({ top: await topPlayers(20) });
+  try {
+    res.json({ top: await topPlayers(20) });
+  } catch (err) {
+    console.error('Leaderboard error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
 });
 
-// ─── Start server ───
+// ─── Start server ──────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`bump arena server listening on :${PORT}`);
   if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set — real Telegram login cannot be verified.');
