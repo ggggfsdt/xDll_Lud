@@ -9,7 +9,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
     </script>
     <style>
-        /* ─── Full CSS ─── */
+        /* ─── Full CSS (identical to working version) ─── */
         * {
             margin: 0;
             padding: 0;
@@ -69,7 +69,6 @@
             position: relative;
             z-index: 1;
         }
-
         #topbar {
             display: flex;
             align-items: center;
@@ -1136,7 +1135,7 @@
             font-size: 14px;
         }
 
-        /* ─── WIN PANEL — FIXED ─── */
+        /* ─── WIN PANEL ─── */
         #win-panel {
             position: absolute;
             left: 50%;
@@ -1462,11 +1461,10 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">3.00</div>
+                    <div id="countdown-timer">10.00</div>
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
-                    <!-- WIN PANEL - FIXED -->
                     <div id="win-panel">
                         <div class="win-header">🏆 round winner</div>
                         <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
@@ -1890,6 +1888,7 @@
             console.log('[roundEnd] payload:', payload);
             if (!payload) { hideWinPanelAndReset(); return; }
 
+            // Update win history
             addWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
 
@@ -2462,9 +2461,10 @@
         function renderLoop() {
             updatePlayerAnimations();
 
+            // FIXED: countdown uses 10 seconds (matches server)
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 3.0 - elapsed);
+                const remaining = Math.max(0, 10.0 - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
@@ -2495,7 +2495,7 @@
                 updateProfile();
                 haptic('medium');
             });
-            betInput.value = 10;
+            // FIXED: do NOT reset betInput.value – keep the user's entered amount
             updateBetUI();
         });
 
