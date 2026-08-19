@@ -1707,7 +1707,6 @@
             let attempts = 0;
             const maxAttempts = 3;
             const doLoad = () => {
-                img.crossOrigin = (!src.startsWith('data:') && !src.startsWith('blob:')) ? 'anonymous' : undefined;
                 img.onload = () => {
                     pfpCache.set(src, { img, loaded: true });
                     player.pfpImg = img;
@@ -1776,6 +1775,13 @@
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
+
+                    if (Array.isArray(res.recentWinners) && res.recentWinners.length) {
+                        state.winHistory = res.recentWinners.slice(0, state.maxHistory).map(w => ({
+                            name: w.name, pfp: w.pfp, timestamp: Date.now(),
+                        }));
+                        updateWinHistoryUI();
+                    }
 
                     usernameDisplay.textContent = '@' + state.username;
                     profileName.textContent = state.username;
@@ -2217,7 +2223,7 @@
                 waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
             } else {
                 waitingText.innerHTML =
-                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span><div class="sub">need ${Math.max(0, 2 - alive.length)} more to start</div>`;
+                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span>`;
             }
             updateFrogVisibility();
         }
@@ -2365,7 +2371,6 @@
                 haptic('medium'); } else if (state.pfp) {
                 pfpCache.delete(state.pfp);
                 const img = new Image();
-                img.crossOrigin = 'anonymous';
                 img.onload = () => { profilePfp.src = state.pfp;
                     haptic('medium'); };
                 img.onerror = () => { profilePfp.src = state.defaultAvatar;
@@ -2470,11 +2475,21 @@
         });
 
         betInput.addEventListener('input', () => {
-            let val = parseInt(betInput.value) || 0;
-            if (val < 10) betInput.value = 10;
-            if (val > state.balance) betInput.value = state.balance;
-            betAmountDisplay.textContent = (parseInt(betInput.value) || 10);
-            if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
+            // Don't force a value while the user is actively typing — that's what was
+            // making it impossible to clear "10" and type a new number (every keystroke
+            // that produced something below 10, including an empty field, was instantly
+            // snapped back to "10"). Clamping now only happens on blur / on submit.
+            const raw = betInput.value;
+            const val = parseInt(raw);
+            betAmountDisplay.textContent = (raw === '' || isNaN(val)) ? '10' : Math.min(val, state.balance);
+        });
+
+        betInput.addEventListener('blur', () => {
+            let val = parseInt(betInput.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > state.balance) val = state.balance;
+            betInput.value = val;
+            betAmountDisplay.textContent = val;
         });
         betInput.value = 10;
 
