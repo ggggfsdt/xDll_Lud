@@ -8,7 +8,6 @@
     </script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── Full CSS (unchanged, but modal repositioned) ─── */
         * {
             margin: 0;
             padding: 0;
@@ -481,6 +480,23 @@
             display: none;
         }
 
+        #add-bot-btn {
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text2);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        #add-bot-btn:active {
+            transform: scale(0.94);
+            opacity: 0.7;
+        }
+
         #player-list-container {
             width: 100%;
             max-height: 100px;
@@ -687,6 +703,7 @@
             font-weight: 700;
         }
 
+        /* ─── NEW: Promo section ─── */
         .promo-section {
             width: 100%;
             display: flex;
@@ -707,7 +724,6 @@
             color: var(--text);
             font-size: 14px;
             outline: none;
-            text-transform: uppercase;
         }
         .promo-row input:focus {
             border-color: var(--primary);
@@ -739,41 +755,43 @@
             min-height: 18px;
         }
 
-        /* ─── NEW: Centered promo modal ─── */
+        /* ─── NEW: Promo modal ─── */
         #promo-modal {
-            position: fixed;
-            top: 50%;
+            position: absolute;
             left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            width: 90%;
+            bottom: 0;
+            transform: translateX(-50%) translateY(100%);
+            width: 92%;
             max-width: 380px;
-            background: rgba(20, 20, 30, 0.96);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
-            border-radius: var(--radius);
-            padding: 28px 20px 24px;
+            background: rgba(20, 20, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 24px 18px 28px;
             border: 1px solid var(--border);
-            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9);
+            border-bottom: none;
+            box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.8);
             z-index: 30;
-            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
             opacity: 0;
             pointer-events: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
         }
         #promo-modal.show {
-            transform: translate(-50%, -50%) scale(1);
+            transform: translateX(-50%) translateY(0%);
             opacity: 1;
             pointer-events: auto;
         }
         #promo-modal .promo-gif {
-            width: 70%;
-            max-width: 160px;
+            width: 80%;
+            max-width: 200px;
             aspect-ratio: 1/1;
             object-fit: contain;
             border-radius: 12px;
+            background: transparent;
         }
         #promo-modal .promo-msg {
             font-size: 20px;
@@ -1210,12 +1228,188 @@
         }
 
         @media (max-width:400px) {
-            /* same as before */
+            #balance-wrap {
+                padding: 2px 10px 2px 4px;
+            }
+            #balance {
+                font-size: 15px;
+            }
+            #diamond-icon {
+                width: 22px;
+                height: 22px;
+            }
+            #bet-overlay-wrap {
+                width: 96%;
+            }
+            #bet-overlay {
+                padding: 8px 12px;
+                gap: 6px;
+            }
+            #bet-input {
+                width: 48px;
+                font-size: 13px;
+                padding: 4px 4px;
+            }
+            #bet-btn {
+                padding: 4px 12px;
+                font-size: 12px;
+            }
+            #bet-info .value {
+                font-size: 12px;
+            }
+            .profile-card {
+                padding: 16px 14px 20px;
+            }
+            .profile-pfp {
+                width: 60px;
+                height: 60px;
+            }
+            .profile-name {
+                font-size: 17px;
+            }
+            .stat-item .num {
+                font-size: 18px;
+            }
+            #username-display {
+                max-width: 60px;
+                font-size: 11px;
+            }
+            #countdown-timer {
+                font-size: 18px;
+                top: 12px;
+                right: 12px;
+            }
+            #stats-bar {
+                font-size: 12px;
+                padding: 4px 10px;
+            }
+            #stats-bar .stat-item .icon {
+                width: 16px;
+                height: 16px;
+            }
+            #win-panel {
+                width: 96%;
+                padding: 16px;
+            }
+            #win-name {
+                font-size: 20px;
+            }
+            #win-multiplier {
+                font-size: 24px;
+            }
+            #win-gif-container {
+                width: 65%;
+                max-width: 160px;
+            }
+            #win-avatar-container {
+                width: 50px;
+                height: 50px;
+            }
+            #player-list-container {
+                max-height: 80px;
+                padding: 2px 2px;
+                gap: 2px;
+            }
+            .pl-entry {
+                font-size: 10px;
+                padding: 1px 6px 1px 3px;
+                min-width: 100px;
+                max-width: 150px;
+            }
+            .pl-entry .pl-avatar {
+                width: 14px;
+                height: 14px;
+            }
+            .pl-entry .pl-name {
+                max-width: 40px;
+                font-size: 10px;
+            }
+            .pl-entry .pl-bet {
+                font-size: 10px;
+            }
+            .pl-entry .pl-chance {
+                font-size: 9px;
+            }
+            #add-bot-btn {
+                font-size: 10px;
+                padding: 3px 10px;
+            }
+            #win-history {
+                top: 42px;
+                right: 8px;
+                gap: 3px;
+            }
+            .win-entry {
+                width: 22px;
+                height: 22px;
+            }
+            #podium {
+                gap: 8px;
+                padding: 10px 0 6px;
+            }
+            .podium-col .podium-pfp {
+                width: 42px;
+                height: 42px;
+            }
+            .podium-col .podium-name {
+                font-size: 10px;
+            }
+            .podium-col .podium-prize {
+                font-size: 9px;
+                padding: 1px 6px;
+            }
+            .podium-col .podium-prize img {
+                width: 14px;
+                height: 14px;
+            }
+            .podium-col .rank-badge {
+                font-size: 11px;
+                padding: 1px 8px;
+            }
+            .podium-col .podium-base.gold {
+                height: 75px;
+                min-height: 75px;
+            }
+            .podium-col .podium-base.silver {
+                height: 56px;
+                min-height: 56px;
+            }
+            .podium-col .podium-base.bronze {
+                height: 38px;
+                min-height: 38px;
+            }
+            .top-entry .t-prize img {
+                width: 16px;
+                height: 16px;
+            }
+            #frog-gif {
+                width: 50%;
+                max-width: 120px;
+            }
+            #promo-modal {
+                padding: 20px 12px 22px;
+            }
+            #promo-modal .promo-gif {
+                max-width: 150px;
+            }
+            #promo-modal .promo-msg {
+                font-size: 17px;
+            }
+            #promo-modal .promo-sub {
+                font-size: 12px;
+            }
+            .promo-row input {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+            .promo-row button {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- ─── HTML structure (unchanged, except profile now has promo section) ─── -->
     <div id="app">
         <div id="topbar">
             <div id="balance-wrap">
@@ -1281,10 +1475,10 @@
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
 
-                    <!-- ─── Promo section ─── -->
+                    <!-- ─── NEW: Promo section ─── -->
                     <div class="promo-section">
                         <div class="promo-row">
-                            <input id="promo-input" placeholder="Enter promo code" maxlength="30" />
+                            <input id="promo-input" placeholder="Enter promo code" maxlength="20" />
                             <button id="promo-btn">Redeem</button>
                         </div>
                         <div class="promo-message" id="promo-message"></div>
@@ -1322,7 +1516,7 @@
         </div>
     </div>
 
-    <!-- ─── Centered promo modal ─── -->
+    <!-- ─── NEW: Promo modal ─── -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -1332,9 +1526,9 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // CONFIG — point this at your deployed backend (server)
+        // CONFIG — point this at your deployed backend (server/server.js)
         // ═══════════════════════════════════════════════════════════════
-        const SERVER_URL = 'https://dllump-production.up.railway.app';
+        const SERVER_URL = 'https://dllump-production.up.railway.app'; // ← change this after you deploy the server
 
         // ═══════════════════════════════════════════════════════════════
         // TELEGRAM
@@ -1360,7 +1554,6 @@
             pfp: '',
             wins: 0,
             losses: 0,
-            winHistory: [],
             gameState: 'idle',
             players: [],
             pot: 0,
@@ -1371,6 +1564,8 @@
             countdownStartTime: 0,
             currentTab: 'pvp',
             defaultAvatar: 'https://i.pravatar.cc/150?img=0',
+            winHistory: [],
+            maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
         };
@@ -1420,6 +1615,8 @@
         const playerListContainer = document.getElementById('player-list-container');
         const winHistoryEl = document.getElementById('win-history');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
+
+        // ─── Promo DOM refs ───
         const promoInput = document.getElementById('promo-input');
         const promoBtn = document.getElementById('promo-btn');
         const promoMessage = document.getElementById('promo-message');
@@ -1525,7 +1722,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // ARENA
+        // ARENA GEOMETRY
         // ═══════════════════════════════════════════════════════════════
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -1569,7 +1766,6 @@
                     state.balance = res.user.balance;
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
-                    state.winHistory = res.user.winHistory || [];
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -1581,7 +1777,6 @@
                     profilePfp.src = profilePfpSrc;
                     updateBalance();
                     updateProfile();
-                    updateUserWinHistoryUI();
                     refreshLeaderboard();
                 });
             });
@@ -1659,15 +1854,7 @@
         function handleRoundEnd(payload) {
             if (!payload) { hideWinPanelAndReset(); return; }
 
-            state.winHistory.unshift({
-                winnerName: payload.winnerName,
-                winnerPfp: payload.winnerPfp,
-                winnings: payload.winnings,
-                timestamp: Date.now(),
-            });
-            if (state.winHistory.length > 20) state.winHistory.pop();
-            updateUserWinHistoryUI();
-
+            addWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
 
             if (payload.winnerId === state.userId) {
@@ -1724,7 +1911,7 @@
             });
         }
 
-        // ─── Helpers ──────────────────────────────────────────────────
+        // ─── HELPERS ──────────────────────────────────────────────────
         function getAlive() { return state.players.filter(p => p.alive); }
 
         function getPlayer(id) { return state.players.find(p => p.id === id); }
@@ -1994,12 +2181,6 @@
         // ═══════════════════════════════════════════════════════════════
         // UI UPDATES
         // ═══════════════════════════════════════════════════════════════
-        function updateUserWinHistoryUI() {
-            const history = state.winHistory || [];
-            // We display it in the profile tab? There's no dedicated element, but we already have winHistoryEl in the arena.
-            // We'll keep the arena win history (recent winners) – it's already updated.
-        }
-
         function updateProfile() {
             pWins.textContent = state.wins;
             pLosses.textContent = state.losses;
@@ -2055,9 +2236,21 @@
             waitingText.style.display = showFrog ? 'none' : 'block';
         }
 
-        // ─── Win history (arena) ──────────────────────────────────────
+        // ─── Win history ──────────────────────────────────────────────
+        function addWinToHistory(name, pfp) {
+            state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
+            if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
+            updateWinHistoryUI();
+        }
+
         function updateWinHistoryUI() {
-            // Already handled by addWinToHistory in applyServerState
+            if (state.winHistory.length === 0) { winHistoryEl.innerHTML = ''; return; }
+            let html = '';
+            state.winHistory.forEach(entry => {
+                const avatarSrc = entry.pfp || state.defaultAvatar;
+                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            winHistoryEl.innerHTML = html;
         }
 
         // ─── Top UI ──────────────────────────────────────────────────
@@ -2168,24 +2361,28 @@
         });
 
         // ═══════════════════════════════════════════════════════════════
-        // PROMO CODE
+        // PROMO CODE — NEW
         // ═══════════════════════════════════════════════════════════════
-        promoBtn.addEventListener('click', async () => {
-            const code = promoInput.value.trim().toUpperCase();
+        const promoBtnElement = promoBtn;
+        const promoInputElement = promoInput;
+        const promoMessageElement = promoMessage;
+
+        promoBtnElement.addEventListener('click', async () => {
+            const code = promoInputElement.value.trim().toUpperCase();
             if (!code) {
-                promoMessage.textContent = 'Please enter a code.';
-                promoMessage.style.color = 'var(--red)';
+                promoMessageElement.textContent = 'Please enter a code.';
+                promoMessageElement.style.color = 'var(--red)';
                 return;
             }
             if (!state.userId) {
-                promoMessage.textContent = 'You are not logged in.';
-                promoMessage.style.color = 'var(--red)';
+                promoMessageElement.textContent = 'You are not logged in.';
+                promoMessageElement.style.color = 'var(--red)';
                 return;
             }
 
-            promoBtn.disabled = true;
-            promoBtn.textContent = '...';
-            promoMessage.textContent = '';
+            promoBtnElement.disabled = true;
+            promoBtnElement.textContent = '...';
+            promoMessageElement.textContent = '';
 
             try {
                 const response = await fetch(SERVER_URL + '/redeem', {
@@ -2198,30 +2395,33 @@
                     state.balance = data.newBalance;
                     updateBalance();
                     updateProfile();
+                    // Show modal
                     promoGif.src = DIAMOND_GIF;
                     promoMsg.textContent = `Successfully claimed ${data.amount} 💎`;
                     promoSub.textContent = `Your new balance is ${data.newBalance}`;
                     promoModal.classList.add('show');
                     haptic('heavy');
-                    promoMessage.textContent = '✅ Code redeemed!';
-                    promoMessage.style.color = 'var(--green)';
-                    promoInput.value = '';
+                    promoMessageElement.textContent = '✅ Code redeemed!';
+                    promoMessageElement.style.color = 'var(--green)';
+                    promoInputElement.value = '';
                 } else {
-                    promoMessage.textContent = data.error || 'Invalid or expired code.';
-                    promoMessage.style.color = 'var(--red)';
+                    promoMessageElement.textContent = data.error || 'Invalid or expired code.';
+                    promoMessageElement.style.color = 'var(--red)';
                 }
             } catch (e) {
-                promoMessage.textContent = 'Network error, please try again.';
-                promoMessage.style.color = 'var(--red)';
+                promoMessageElement.textContent = 'Network error, please try again.';
+                promoMessageElement.style.color = 'var(--red)';
             } finally {
-                promoBtn.disabled = false;
-                promoBtn.textContent = 'Redeem';
+                promoBtnElement.disabled = false;
+                promoBtnElement.textContent = 'Redeem';
             }
         });
 
         promoContinueBtn.addEventListener('click', () => {
             promoModal.classList.remove('show');
         });
+
+        // Also close modal on tap outside? The continue button is enough.
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
         function renderLoop() {
