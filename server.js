@@ -2,12 +2,12 @@
 // dllump · bump arena — multiplayer backend
 // ═══════════════════════════════════════════════════════════════
 
-// ─── Catch unhandled errors and keep the process alive ──────
+// ─── Catch unhandled errors ──────────────────────────────────
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err.stack);
 });
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('💥 Unhandled Rejection:', reason);
 });
 
 // ─── Imports ──────────────────────────────────────────────────
@@ -213,7 +213,6 @@ function startGame() {
   room.openingTimer = 3.5 + Math.random() * 2.5;
 }
 
-// ─── IMPORTANT: endGame MUST be async ──────────────────────
 async function endGame(winnerId) {
   if (room.gameState === 'finished') return;
   room.gameState = 'finished';
@@ -237,9 +236,7 @@ async function endGame(winnerId) {
         const u = await getUser(p.id);
         if (u) { u.losses += 1; await saveUser(u); }
       }
-      // Store win in winner's history
       await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-
       payload = {
         winnerId: winner.id,
         winnerName: winner.name,
@@ -511,9 +508,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('disconnect', () => {
-    // Optional: remove player from room if they leave? Already handled by timeout reset.
-  });
+  socket.on('disconnect', () => {});
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -819,7 +814,7 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── Health & leaderboard (public) ──────────────────────────
+// ─── Health & leaderboard ──────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({ ok: true, players: room.players.length, gameState: room.gameState });
 });
