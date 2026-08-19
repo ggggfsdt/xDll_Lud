@@ -1,18 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// Persistence — a plain JSON file on disk. This is intentionally
-// simple so the whole project runs with zero external database to
-// set up. It's fine for an MVP / small player base.
-//
-// IMPORTANT: Railway/Render/Fly's free/managed tiers usually give
-// the container an EPHEMERAL filesystem — data can be wiped on
-// redeploy or restart unless you attach a persistent volume. For
-// anything beyond testing, swap this file for a real database
-// (Railway's managed Postgres is one click away and works nicely
-// with something like Prisma or plain `pg`). Everything else in
-// server.js only talks to the functions exported here, so swapping
-// the storage layer later won't touch your game logic.
-// ═══════════════════════════════════════════════════════════════
-
 const fs = require('fs');
 const path = require('path');
 
@@ -39,7 +24,7 @@ function flush() {
 function queueSave() {
   if (saveQueued) return;
   saveQueued = true;
-  setTimeout(flush, 250); // debounce so a betting flurry doesn't hammer disk I/O
+  setTimeout(flush, 250);
 }
 
 async function getUser(id, defaults = {}) {
@@ -51,12 +36,14 @@ async function getUser(id, defaults = {}) {
       balance: STARTING_BALANCE,
       wins: 0,
       losses: 0,
+      banned: false,
     };
     queueSave();
-  } else if (defaults.username || defaults.pfp) {
-    // keep username/avatar fresh in case they changed it on Telegram
+  } else {
     if (defaults.username) data.users[id].username = defaults.username;
     if (defaults.pfp) data.users[id].pfp = defaults.pfp;
+    // ensure banned field exists
+    if (data.users[id].banned === undefined) data.users[id].banned = false;
   }
   return data.users[id];
 }
@@ -66,8 +53,13 @@ async function saveUser(user) {
   queueSave();
 }
 
+async function getAllUsers() {
+  return Object.values(data.users);
+}
+
 async function topPlayers(limit = 20) {
   return Object.values(data.users)
+    .filter(u => !u.banned)
     .sort((a, b) => (b.wins - a.wins) || (b.balance - a.balance))
     .slice(0, limit)
     .map(u => ({ id: u.id, username: u.username, pfp: u.pfp, wins: u.wins, losses: u.losses, balance: u.balance }));
@@ -77,4 +69,4 @@ async function allUsersCount() {
   return Object.keys(data.users).length;
 }
 
-module.exports = { getUser, saveUser, topPlayers, allUsersCount };
+module.exports = { getUser, saveUser, getAllUsers, topPlayers, allUsersCount };
