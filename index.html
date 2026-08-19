@@ -713,6 +713,68 @@
             font-weight: 700;
         }
 
+        .anon-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 2px;
+        }
+        .anon-row .anon-label {
+            display: flex;
+            flex-direction: column;
+            text-align: left;
+        }
+        .anon-row .anon-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .anon-row .anon-sub {
+            font-size: 11px;
+            color: var(--text2);
+            opacity: 0.7;
+        }
+        .switch {
+            position: relative;
+            flex-shrink: 0;
+            width: 46px;
+            height: 26px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            transition: background 0.2s ease;
+        }
+        .switch .slider::before {
+            content: "";
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            left: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s ease;
+        }
+        .switch input:checked + .slider {
+            background: var(--primary);
+        }
+        .switch input:checked + .slider::before {
+            transform: translateY(-50%) translateX(20px);
+        }
+
         .promo-section {
             width: 100%;
             display: flex;
@@ -1486,6 +1548,17 @@
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
 
+                    <div class="anon-row">
+                        <div class="anon-label">
+                            <span class="anon-title">Anonymous mode</span>
+                            <span class="anon-sub">hide your avatar from other players</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="anon-toggle" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
                     <div class="promo-section">
                         <div class="promo-row">
                             <input id="promo-input" placeholder="Enter promo code" maxlength="30" />
@@ -1563,6 +1636,7 @@
             pfp: '',
             wins: 0,
             losses: 0,
+            anonymous: false,
             gameState: 'idle',
             players: [],
             pot: 0,
@@ -1624,6 +1698,7 @@
         const playerListContainer = document.getElementById('player-list-container');
         const winHistoryEl = document.getElementById('win-history');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
+        const anonToggle = document.getElementById('anon-toggle');
         const promoInput = document.getElementById('promo-input');
         const promoBtn = document.getElementById('promo-btn');
         const promoMessage = document.getElementById('promo-message');
@@ -1772,6 +1847,8 @@
                     state.balance = res.user.balance;
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
+                    state.anonymous = !!res.user.anonymous;
+                    anonToggle.checked = state.anonymous;
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -1804,6 +1881,36 @@
             socket.on('roundEnd', (payload) => {
                 handleRoundEnd(payload);
             });
+        }
+
+        // ─── BUMP HAPTICS ────────────────────────────────────────────
+        // The server doesn't send explicit "these two players collided" events, but it
+        // does send everyone's live x/y/radius every tick — enough to detect a bump
+        // locally by checking distance vs. combined radius, same as the server's own
+        // collision check. We only care about collisions involving the local player
+        // (buzzing for every collision in an 8-player arena would be constant noise),
+        // and we only vibrate on the moment contact *starts*, not every frame while
+        // two circles are still overlapping.
+        let touchingIds = new Set();
+        function detectBumpsForHaptics() {
+            if (state.gameState !== 'playing') { touchingIds = new Set(); return; }
+            const me = getPlayer(state.userId);
+            if (!me || !me.alive) { touchingIds = new Set(); return; }
+
+            const nowTouching = new Set();
+            state.players.forEach(p => {
+                if (p.id === me.id || !p.alive) return;
+                const dx = p.x - me.x, dy = p.y - me.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
+                if (dist < minDist) nowTouching.add(p.id);
+            });
+
+            let isNewBump = false;
+            nowTouching.forEach(id => { if (!touchingIds.has(id)) isNewBump = true; });
+            if (isNewBump) haptic('medium');
+
+            touchingIds = nowTouching;
         }
 
         function applyServerState(snapshot) {
@@ -1847,6 +1954,8 @@
                 local.alive = sp.alive;
             });
             state.players = state.players.filter(p => seen.has(p.id));
+
+            detectBumpsForHaptics();
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
@@ -2377,6 +2486,23 @@
                     haptic('light'); };
                 img.src = state.pfp;
             }
+        });
+
+        // ─── Anonymous mode ─────────────────────────────────────────
+        anonToggle.addEventListener('change', () => {
+            if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
+            const enabled = anonToggle.checked;
+            anonToggle.disabled = true;
+            socket.emit('setAnonymous', { enabled }, (res) => {
+                anonToggle.disabled = false;
+                if (!res?.ok) {
+                    anonToggle.checked = state.anonymous; // revert on failure
+                    console.warn('setAnonymous failed:', res?.error);
+                    return;
+                }
+                state.anonymous = res.anonymous;
+                haptic('light');
+            });
         });
 
         // ─── Promo ──────────────────────────────────────────────────
