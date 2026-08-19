@@ -14,7 +14,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
-const cors = require('cors'); // <-- ADDED
+const cors = require('cors');
 const { Server } = require('socket.io');
 const {
   getUser,
@@ -36,7 +36,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
 // ─── express + socket.io ──────────────────────────────────────
 const app = express();
-app.use(cors()); // <-- ADDED: allow all origins (or restrict later)
+app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -120,10 +120,13 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
+// ─── NEW: more pronounced speed differences ──────────────────
 function speedForRadius(radius) {
   const minR = 14, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  return 6.0 - norm * 3.0;
+  // Bigger circles (norm close to 1) → slower (2.5), smaller → faster (8.0)
+  const speed = 8.0 - norm * 5.5;
+  return Math.max(2.5, Math.min(8.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -156,6 +159,8 @@ function computeRadii() {
     const r = 18 + ratio * 34;
     p.targetRadius = Math.min(Math.max(r, 14), 52);
     if (p.displayRadius === undefined) p.displayRadius = p.targetRadius;
+    // Update mass based on radius (mass proportional to area)
+    p.mass = p.targetRadius * p.targetRadius * 1.2;
   });
 }
 
@@ -182,6 +187,8 @@ function makePlayer(id, bet, name, pfp) {
   computeRadii();
   return p;
 }
+
+// ─── Rest of the server (identical to previous, unchanged) ──
 
 function startCountdown() {
   if (room.gameState !== 'idle') return;
