@@ -8,7 +8,7 @@
     </script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── Full CSS (same as before, but with modal fixed) ─── */
+        /* ─── Full CSS (identical to the previous working version) ─── */
         * {
             margin: 0;
             padding: 0;
@@ -1389,6 +1389,7 @@
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
                     <div id="countdown-timer">10.00</div>
                     <div id="win-history"></div>
+                    <!-- waiting-text is hidden via CSS -->
                     <div id="waiting-text"></div>
 
                     <div id="win-panel">
@@ -1711,7 +1712,6 @@
                 const initData = tg?.initData || '';
                 socket.emit('join', { initData }, (res) => {
                     if (!res?.ok) {
-                        // No waiting text – just show frog
                         return;
                     }
                     state.userId = res.user.id;
@@ -2180,7 +2180,6 @@
             const alive = getAlive();
             const showFrog = alive.length < 2 && state.gameState === 'idle';
             frogGif.classList.toggle('show', showFrog);
-            // No waiting text – frog only
         }
 
         // ─── Win history ──────────────────────────────────────────────
