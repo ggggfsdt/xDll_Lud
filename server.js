@@ -2,7 +2,6 @@
 // dllump · bump arena — multiplayer backend
 // ═══════════════════════════════════════════════════════════════
 
-// ─── Catch unhandled errors ──────────────────────────────────
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err.stack);
 });
@@ -10,7 +9,6 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection:', reason);
 });
 
-// ─── Imports ──────────────────────────────────────────────────
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
@@ -34,7 +32,6 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
-// ─── express + socket.io ──────────────────────────────────────
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -120,11 +117,9 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── NEW: more pronounced speed differences ──────────────────
 function speedForRadius(radius) {
   const minR = 14, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // Bigger circles (norm close to 1) → slower (2.5), smaller → faster (8.0)
   const speed = 8.0 - norm * 5.5;
   return Math.max(2.5, Math.min(8.0, speed));
 }
@@ -159,7 +154,6 @@ function computeRadii() {
     const r = 18 + ratio * 34;
     p.targetRadius = Math.min(Math.max(r, 14), 52);
     if (p.displayRadius === undefined) p.displayRadius = p.targetRadius;
-    // Update mass based on radius (mass proportional to area)
     p.mass = p.targetRadius * p.targetRadius * 1.2;
   });
 }
@@ -188,13 +182,13 @@ function makePlayer(id, bet, name, pfp) {
   return p;
 }
 
-// ─── Rest of the server (identical to previous, unchanged) ──
-
 function startCountdown() {
   if (room.gameState !== 'idle') return;
   if (getAlive().length < 2) return;
   room.gameState = 'countdown';
   room.countdownStartTime = Date.now();
+  // 10 seconds countdown
+  room.countdownEndTime = Date.now() + 10000;
 }
 
 function startPrestart() {
@@ -416,7 +410,7 @@ setInterval(() => {
     if (room.gameState === 'playing') updatePhysics(dt);
     else if (room.gameState === 'countdown') {
       const elapsed = (now - room.countdownStartTime) / 1000;
-      if (elapsed >= 3.0) startPrestart();
+      if (elapsed >= 10.0) startPrestart();
     } else if (room.gameState === 'prestart') {
       room.prestartTimer -= dt;
       if (room.prestartTimer <= 0) startGame();
@@ -521,7 +515,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API (requires ADMIN_SECRET)
+// ADMIN API (unchanged)
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `
 <!DOCTYPE html>
@@ -655,12 +649,10 @@ function adminAuth(req, res, next) {
   next();
 }
 
-// Serve admin HTML
 app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
-// Admin API endpoints
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -763,7 +755,6 @@ app.post('/admin/api/ban', adminAuth, async (req, res) => {
   }
 });
 
-// Promo admin endpoints
 app.post('/admin/api/create-promo', adminAuth, async (req, res) => {
   try {
     const { amount, code, maxUses } = req.body;
@@ -798,7 +789,6 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
   }
 });
 
-// ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
@@ -827,7 +817,6 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── Health & leaderboard ──────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({ ok: true, players: room.players.length, gameState: room.gameState });
 });
@@ -840,7 +829,6 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
-// ─── Start server ──────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`bump arena server listening on :${PORT}`);
   if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set — real Telegram login cannot be verified.');
