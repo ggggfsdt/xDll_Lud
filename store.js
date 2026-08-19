@@ -3,6 +3,7 @@ const path = require('path');
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'data.json');
 const STARTING_BALANCE = parseInt(process.env.STARTING_BALANCE) || 50;
+const MAX_HISTORY = 20;
 
 let data = { users: {}, promoCodes: [] };
 let saveQueued = false;
@@ -38,12 +39,14 @@ async function getUser(id, defaults = {}) {
       wins: 0,
       losses: 0,
       banned: false,
+      winHistory: [],
     };
     queueSave();
   } else {
     if (defaults.username) data.users[id].username = defaults.username;
     if (defaults.pfp) data.users[id].pfp = defaults.pfp;
     if (data.users[id].banned === undefined) data.users[id].banned = false;
+    if (!data.users[id].winHistory) data.users[id].winHistory = [];
   }
   return data.users[id];
 }
@@ -51,6 +54,19 @@ async function getUser(id, defaults = {}) {
 async function saveUser(user) {
   data.users[user.id] = user;
   queueSave();
+}
+
+async function addWinToHistory(userId, winnerName, winnerPfp, winnings) {
+  const user = await getUser(userId);
+  if (!user) return;
+  user.winHistory.unshift({
+    winnerName,
+    winnerPfp,
+    winnings,
+    timestamp: Date.now(),
+  });
+  if (user.winHistory.length > MAX_HISTORY) user.winHistory.pop();
+  await saveUser(user);
 }
 
 async function getAllUsers() {
@@ -118,6 +134,7 @@ async function deletePromoCode(code) {
 module.exports = {
   getUser,
   saveUser,
+  addWinToHistory,
   getAllUsers,
   topPlayers,
   allUsersCount,
