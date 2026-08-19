@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// dllump · bump arena — multiplayer backend
+// dllump · bump arena — multiplayer backendd
 //
 // This server is the single source of truth for every match:
 //   - it verifies each player's Telegram login
