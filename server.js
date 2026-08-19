@@ -14,7 +14,6 @@ process.on('unhandledRejection', (reason, promise) => {
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
-const cors = require('cors'); // <-- ADDED
 const { Server } = require('socket.io');
 const {
   getUser,
@@ -36,7 +35,6 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
 // ─── express + socket.io ──────────────────────────────────────
 const app = express();
-app.use(cors()); // <-- ADDED: allow all origins (or restrict later)
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -791,13 +789,11 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
   }
 });
 
-// ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
+// Public promo redeem endpoint
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
+    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
@@ -809,9 +805,7 @@ app.post('/redeem', async (req, res) => {
 app.get('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.query;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
+    if (!code || !userId) return res.send('Missing code or userId');
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
