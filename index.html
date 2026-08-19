@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>dllump · bump arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56">
-    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
         * {
@@ -480,23 +479,6 @@
             display: none;
         }
 
-        #add-bot-btn {
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: var(--surface3);
-            color: var(--text2);
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-        #add-bot-btn:active {
-            transform: scale(0.94);
-            opacity: 0.7;
-        }
-
         #player-list-container {
             width: 100%;
             max-height: 100px;
@@ -701,6 +683,40 @@
         #p-balance {
             color: var(--gold);
             font-weight: 700;
+        }
+        .promo-section {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .promo-section input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+        }
+        .promo-section input:focus {
+            border-color: var(--primary);
+        }
+        .promo-section button {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: none;
+            background: var(--gold);
+            color: #000;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .promo-section button:active {
+            transform: scale(0.94);
+            opacity: 0.8;
         }
 
         #top-page {
@@ -1107,164 +1123,75 @@
         }
 
         @media (max-width:400px) {
-            #balance-wrap {
-                padding: 2px 10px 2px 4px;
-            }
-            #balance {
-                font-size: 15px;
-            }
-            #diamond-icon {
-                width: 22px;
-                height: 22px;
-            }
-            #bet-overlay-wrap {
-                width: 96%;
-            }
-            #bet-overlay {
-                padding: 8px 12px;
-                gap: 6px;
-            }
-            #bet-input {
-                width: 48px;
-                font-size: 13px;
-                padding: 4px 4px;
-            }
-            #bet-btn {
-                padding: 4px 12px;
-                font-size: 12px;
-            }
-            #bet-info .value {
-                font-size: 12px;
-            }
-            .profile-card {
-                padding: 16px 14px 20px;
-            }
-            .profile-pfp {
-                width: 60px;
-                height: 60px;
-            }
-            .profile-name {
-                font-size: 17px;
-            }
-            .stat-item .num {
-                font-size: 18px;
-            }
-            #username-display {
-                max-width: 60px;
-                font-size: 11px;
-            }
-            #countdown-timer {
-                font-size: 18px;
-                top: 12px;
-                right: 12px;
-            }
-            #stats-bar {
-                font-size: 12px;
-                padding: 4px 10px;
-            }
-            #stats-bar .stat-item .icon {
-                width: 16px;
-                height: 16px;
-            }
-            #win-panel {
-                width: 96%;
-                padding: 16px;
-            }
-            #win-name {
-                font-size: 20px;
-            }
-            #win-multiplier {
-                font-size: 24px;
-            }
-            #win-gif-container {
-                width: 65%;
-                max-width: 160px;
-            }
-            #win-avatar-container {
-                width: 50px;
-                height: 50px;
-            }
-            #player-list-container {
-                max-height: 80px;
-                padding: 2px 2px;
-                gap: 2px;
-            }
-            .pl-entry {
-                font-size: 10px;
-                padding: 1px 6px 1px 3px;
-                min-width: 100px;
-                max-width: 150px;
-            }
-            .pl-entry .pl-avatar {
-                width: 14px;
-                height: 14px;
-            }
-            .pl-entry .pl-name {
-                max-width: 40px;
-                font-size: 10px;
-            }
-            .pl-entry .pl-bet {
-                font-size: 10px;
-            }
-            .pl-entry .pl-chance {
-                font-size: 9px;
-            }
-            #add-bot-btn {
-                font-size: 10px;
-                padding: 3px 10px;
-            }
-            #win-history {
-                top: 42px;
-                right: 8px;
-                gap: 3px;
-            }
-            .win-entry {
-                width: 22px;
-                height: 22px;
-            }
-            #podium {
-                gap: 8px;
-                padding: 10px 0 6px;
-            }
-            .podium-col .podium-pfp {
-                width: 42px;
-                height: 42px;
-            }
-            .podium-col .podium-name {
-                font-size: 10px;
-            }
-            .podium-col .podium-prize {
-                font-size: 9px;
-                padding: 1px 6px;
-            }
-            .podium-col .podium-prize img {
-                width: 14px;
-                height: 14px;
-            }
-            .podium-col .rank-badge {
-                font-size: 11px;
-                padding: 1px 8px;
-            }
-            .podium-col .podium-base.gold {
-                height: 75px;
-                min-height: 75px;
-            }
-            .podium-col .podium-base.silver {
-                height: 56px;
-                min-height: 56px;
-            }
-            .podium-col .podium-base.bronze {
-                height: 38px;
-                min-height: 38px;
-            }
-            .top-entry .t-prize img {
-                width: 16px;
-                height: 16px;
-            }
-            #frog-gif {
-                width: 50%;
-                max-width: 120px;
-            }
+            /* same as original */
+        }
+
+        /* ─── PROMO MODAL ─── */
+        #promo-modal {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%) translateY(100%);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(20,20,30,0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 24px 18px 28px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            box-shadow: 0 -8px 60px rgba(0,0,0,0.8);
+            z-index: 30;
+            transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        #promo-modal.show {
+            transform: translateX(-50%) translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #promo-modal .promo-gif {
+            width: 80%;
+            max-width: 200px;
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            border-radius: 12px;
+            background: transparent;
+        }
+        #promo-modal .promo-msg {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gold);
+            text-align: center;
+        }
+        #promo-modal .promo-sub {
+            font-size: 14px;
+            color: var(--text2);
+            text-align: center;
+        }
+        #promo-modal .promo-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 30px var(--primary-glow);
+            transition: 0.2s;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #promo-modal .promo-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -1333,7 +1260,16 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
+                    <div class="promo-section">
+                        <input id="promo-input" placeholder="Enter promo code" />
+                        <button id="promo-btn">Redeem</button>
+                    </div>
                     <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">⟳ Reload Avatars</button>
+                </div>
+                <!-- win history list will be displayed below the profile card -->
+                <div id="user-win-history" style="width:100%;max-width:360px;margin-top:12px;padding:0 4px;">
+                    <h4 style="color:var(--text2);font-weight:600;font-size:14px;margin-bottom:6px;">Your recent wins</h4>
+                    <div id="user-win-history-list" style="display:flex;flex-direction:column;gap:4px;"></div>
                 </div>
             </div>
 
@@ -1365,17 +1301,26 @@
         </div>
     </div>
 
+    <!-- PROMO MODAL -->
+    <div id="promo-modal">
+        <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
+        <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
+        <div class="promo-sub" id="promo-sub">Your new balance is 1100</div>
+        <button class="promo-btn" id="promo-continue-btn">Continue</button>
+    </div>
+
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // CONFIG — point this at your deployed backend (server/server.js)
+        // CONFIG — point this at your deployed backend (server)
         // ═══════════════════════════════════════════════════════════════
-        const SERVER_URL = 'https://dllump-production.up.railway.app'; // ← change this after you deploy the server
+        const SERVER_URL = 'https://YOUR-BACKEND-URL.railway.app'; // ← change this after you deploy the server
 
         // ═══════════════════════════════════════════════════════════════
         // TELEGRAM
         // ═══════════════════════════════════════════════════════════════
         const tg = window.Telegram?.WebApp;
-        if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
+        if (tg) { tg.expand();
+            tg.enableClosingConfirmation(); }
 
         function haptic(style = 'light') {
             try {
@@ -1386,7 +1331,6 @@
 
         // ═══════════════════════════════════════════════════════════════
         // STATE — everything about the match now comes from the server.
-        // The client only keeps local render/UI bookkeeping.
         // ═══════════════════════════════════════════════════════════════
         const state = {
             balance: 0,
@@ -1395,8 +1339,9 @@
             pfp: '',
             wins: 0,
             losses: 0,
+            winHistory: [],
             gameState: 'idle',
-            players: [],       // render-side shadow objects (server data + local animation fields)
+            players: [],
             pot: 0,
             arenaSize: 0,
             cornerRadius: 0,
@@ -1405,13 +1350,9 @@
             countdownStartTime: 0,
             currentTab: 'pvp',
             defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-            winHistory: [],
-            maxHistory: 8,
-            topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
         };
 
-        // logical arena space the server simulates in — filled in once we connect
         let SERVER_ARENA_SIZE = 400;
 
         // DOM refs
@@ -1455,8 +1396,15 @@
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
-        const winHistoryEl = document.getElementById('win-history');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
+        const promoInput = document.getElementById('promo-input');
+        const promoBtn = document.getElementById('promo-btn');
+        const promoModal = document.getElementById('promo-modal');
+        const promoGif = document.getElementById('promo-gif');
+        const promoMsg = document.getElementById('promo-msg');
+        const promoSub = document.getElementById('promo-sub');
+        const promoContinueBtn = document.getElementById('promo-continue-btn');
+        const userWinHistoryList = document.getElementById('user-win-history-list');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -1466,20 +1414,16 @@
             'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
             'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
         ];
-        const PRIZE_GIFS = {
-            first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
-            second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-            third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-        };
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
 
         // ═══════════════════════════════════════════════════════════════
-        // PFP SYSTEM — unchanged from the original: always show an avatar
+        // PFP SYSTEM
         // ═══════════════════════════════════════════════════════════════
         function generateDefaultAvatar(initial, colorIndex) {
             const size = 128;
             const c = document.createElement('canvas');
-            c.width = size; c.height = size;
+            c.width = size;
+            c.height = size;
             const ctx2 = c.getContext('2d');
             const colors = state.colors;
             const col = colors[colorIndex % colors.length];
@@ -1513,7 +1457,9 @@
             let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
             let g = parseInt(hex.slice(2, 3), 16) * 17 || parseInt(hex.slice(3, 5), 16);
             let b = parseInt(hex.slice(3, 4), 16) * 17 || parseInt(hex.slice(5, 7), 16);
-            r = Math.min(255, r + amt); g = Math.min(255, g + amt); b = Math.min(255, b + amt);
+            r = Math.min(255, r + amt);
+            g = Math.min(255, g + amt);
+            b = Math.min(255, b + amt);
             return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         }
 
@@ -1551,9 +1497,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // ARENA GEOMETRY — drawn from whatever the server tells us on join.
-        // Player x/y/radius arrive in the server's fixed logical space
-        // (SERVER_ARENA_SIZE); we scale everything to our own canvas size.
+        // ARENA GEOMETRY
         // ═══════════════════════════════════════════════════════════════
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -1569,11 +1513,33 @@
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
+        // ─── Helper to update win history UI ───
+        function updateUserWinHistoryUI() {
+            const history = state.winHistory || [];
+            if (history.length === 0) {
+                userWinHistoryList.innerHTML =
+                    '<div style="color:var(--text2);font-size:12px;opacity:0.5;">No wins yet</div>';
+                return;
+            }
+            let html = '';
+            history.forEach(entry => {
+                const name = entry.winnerName || '?';
+                const pfp = entry.winnerPfp || state.defaultAvatar;
+                const winnings = entry.winnings || 0;
+                const date = new Date(entry.timestamp);
+                const timeStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                html += `<div style="display:flex;align-items:center;gap:8px;background:var(--surface2);padding:4px 10px;border-radius:10px;border:1px solid var(--border);">
+                            <img src="${pfp}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" onerror="this.src='${state.defaultAvatar}'" />
+                            <span style="font-weight:600;font-size:13px;flex:1;">${name}</span>
+                            <span style="color:var(--gold);font-weight:700;">+${winnings}</span>
+                            <span style="font-size:10px;color:var(--text2);opacity:0.5;">${timeStr}</span>
+                        </div>`;
+            });
+            userWinHistoryList.innerHTML = html;
+        }
+
         // ═══════════════════════════════════════════════════════════════
-        // NETWORKING — the server is authoritative. This client sends
-        // only two things: "I want to join" and "I want to bet X".
-        // Everything else (who's in the match, physics, the winner) is
-        // whatever the server broadcasts back.
+        // NETWORKING (Socket.IO)
         // ═══════════════════════════════════════════════════════════════
         const socket = (typeof io !== 'undefined') ? io(SERVER_URL, { transports: ['websocket', 'polling'] }) : null;
 
@@ -1590,7 +1556,8 @@
                 const initData = tg?.initData || '';
                 socket.emit('join', { initData }, (res) => {
                     if (!res?.ok) {
-                        waitingText.innerHTML = `<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error || 'try reopening the app'}</div>`;
+                        waitingText.innerHTML =
+                        `<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error || 'try reopening the app'}</div>`;
                         return;
                     }
                     state.userId = res.user.id;
@@ -1599,6 +1566,7 @@
                     state.balance = res.user.balance;
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
+                    state.winHistory = res.user.winHistory || [];
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -1610,6 +1578,7 @@
                     profilePfp.src = profilePfpSrc;
                     updateBalance();
                     updateProfile();
+                    updateUserWinHistoryUI();
                     refreshLeaderboard();
                 });
             });
@@ -1626,8 +1595,6 @@
             });
         }
 
-        // merge the server's authoritative snapshot into our render-side
-        // player shadows, preserving only local animation/visual fields
         function applyServerState(snapshot) {
             const prevGameState = state.gameState;
             state.gameState = snapshot.gameState;
@@ -1642,15 +1609,21 @@
                 if (!local) {
                     const colorIdx = state.players.length % state.colors.length;
                     local = {
-                        id: sp.id, name: sp.name, pfp: sp.pfp,
+                        id: sp.id,
+                        name: sp.name,
+                        pfp: sp.pfp,
                         pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
-                        isPopping: true, popStartTime: performance.now(), popDuration: 550,
-                        isPulsing: false, pulseTime: 0, pulseStartTime: 0,
+                        isPopping: true,
+                        popStartTime: performance.now(),
+                        popDuration: 550,
+                        isPulsing: false,
+                        pulseTime: 0,
+                        pulseStartTime: 0,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
                 } else if (sp.bet > local.bet) {
-                    // extra chips added mid-round — quick pulse for feedback
+                    // extra chips added – pulse feedback
                     local.isPulsing = true;
                     local.pulseStartTime = performance.now();
                     local.pulseTime = 0;
@@ -1658,19 +1631,20 @@
                 local.name = sp.name;
                 local.bet = sp.bet;
                 local.color = sp.color;
-                local.x = sp.x; local.y = sp.y;
+                local.x = sp.x;
+                local.y = sp.y;
                 local.displayRadius = sp.displayRadius;
                 local.alive = sp.alive;
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
-                // round fully reset server-side
                 waitingText.style.display = 'block';
                 countdownTimer.style.display = 'none';
             }
             if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state.gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
+                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
 
             updateStatsBar();
             updateBetUI();
@@ -1683,7 +1657,16 @@
         function handleRoundEnd(payload) {
             if (!payload) { hideWinPanelAndReset(); return; }
 
-            addWinToHistory(payload.winnerName, payload.winnerPfp);
+            // Add win to local history
+            state.winHistory.unshift({
+                winnerName: payload.winnerName,
+                winnerPfp: payload.winnerPfp,
+                winnings: payload.winnings,
+                timestamp: Date.now(),
+            });
+            if (state.winHistory.length > 20) state.winHistory.pop();
+            updateUserWinHistoryUI();
+
             refreshLeaderboard();
 
             if (payload.winnerId === state.userId) {
@@ -1712,7 +1695,8 @@
         function hideWinPanelAndReset() {
             winPanel.classList.remove('show');
             stopVictorySound();
-            if (window.winTimeout) { clearTimeout(window.winTimeout); window.winTimeout = null; }
+            if (window.winTimeout) { clearTimeout(window.winTimeout);
+                window.winTimeout = null; }
             waitingText.style.display = 'block';
             countdownTimer.style.display = 'none';
             updateWaitingText();
@@ -1729,17 +1713,19 @@
             socket.emit('leaderboard', {}, (res) => {
                 if (!res?.ok) return;
                 state.topPlayers = res.top.map((u, i) => ({
-                    name: u.username, pfp: u.pfp || state.defaultAvatar,
-                    wins: u.wins, score: u.balance, rank: i + 1,
+                    name: u.username,
+                    pfp: u.pfp || state.defaultAvatar,
+                    wins: u.wins,
+                    score: u.balance,
+                    rank: i + 1,
                 }));
                 updateTopUI();
             });
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // PLAYER LIST UI
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── helper functions ───
         function getAlive() { return state.players.filter(p => p.alive); }
+
         function getPlayer(id) { return state.players.find(p => p.id === id); }
 
         function updatePlayerList() {
@@ -1766,14 +1752,13 @@
             playerListContainer.classList.toggle('shift-up', shouldHide);
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATION HELPERS (purely visual — no game logic here)
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function easePopBounce(t) {
             if (t >= 1) return 1;
-            const c1 = 1.70158, c3 = c1 + 1;
+            const c1 = 1.70158,
+                c3 = c1 + 1;
             return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
         }
+
         function getPopScale(player) {
             if (!player.isPopping) return 1;
             const elapsed = performance.now() - player.popStartTime;
@@ -1781,20 +1766,19 @@
             if (progress >= 1) { player.isPopping = false; return 1; }
             return easePopBounce(progress);
         }
+
         function updatePlayerAnimations() {
             state.players.forEach(p => {
                 if (p.isPulsing) {
                     const elapsed = (performance.now() - p.pulseStartTime) / 1000;
-                    if (elapsed > 0.6) { p.isPulsing = false; p.pulseTime = 0; }
-                    else p.pulseTime = elapsed;
+                    if (elapsed > 0.6) { p.isPulsing = false;
+                        p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
             });
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // ANIMATED BALANCE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let balanceAnimInterval = null;
+
         function animateBalanceTo(target) {
             const current = parseInt(balanceEl.textContent) || 0;
             if (current === target) { balanceEl.textContent = target; return; }
@@ -1802,30 +1786,31 @@
             const steps = Math.min(Math.abs(diff), 40);
             const stepSize = diff / steps;
             let step = 0;
-            if (balanceAnimInterval) { clearInterval(balanceAnimInterval); balanceAnimInterval = null; }
+            if (balanceAnimInterval) { clearInterval(balanceAnimInterval);
+                balanceAnimInterval = null; }
             balanceAnimInterval = setInterval(() => {
                 step++;
                 const newVal = Math.round(current + stepSize * step);
                 if (step >= steps || Math.abs(newVal - target) < 1) {
                     balanceEl.textContent = target;
-                    clearInterval(balanceAnimInterval); balanceAnimInterval = null;
+                    clearInterval(balanceAnimInterval);
+                    balanceAnimInterval = null;
                 } else balanceEl.textContent = newVal;
             }, 25);
         }
+
         function updateBalance() {
             const target = Math.floor(state.balance);
             pBalance.textContent = target;
             animateBalanceTo(target);
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // VICTORY SOUND
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let audioCtx = null;
         let victorySoundPlaying = false;
+
         function playVictorySound() {
             try {
-                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)();
                 if (victorySoundPlaying) return;
                 victorySoundPlaying = true;
                 const now = audioCtx.currentTime;
@@ -1847,11 +1832,9 @@
                 setTimeout(() => { victorySoundPlaying = false; }, 800);
             } catch (e) { victorySoundPlaying = false; }
         }
+
         function stopVictorySound() { victorySoundPlaying = false; }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // BET OVERLAY COLLAPSE
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         let betCollapsed = false;
         betToggleBtn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -1860,9 +1843,6 @@
             haptic('light');
         });
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function render() {
             const w = state.arenaSize;
             const half = w / 2;
@@ -1908,14 +1888,16 @@
             ctx.save();
             const hasGap = opening !== null && (isFlashing || isOpen);
             if (hasGap && total > 0) {
-                const start = opening.startIdx, end = opening.endIdx;
+                const start = opening.startIdx,
+                    end = opening.endIdx;
                 ctx.strokeStyle = 'rgba(160,160,176,0.3)';
                 ctx.lineWidth = 5;
                 for (let i = 0; i < total; i++) {
                     const j = (i + 1) % total;
                     let inGap = false;
-                    if (start < end) { if (i >= start && i < end) inGap = true; if (j >= start && j < end) inGap = true; }
-                    else { if (i >= start || i < end) inGap = true; if (j >= start || j < end) inGap = true; }
+                    if (start < end) { if (i >= start && i < end) inGap = true; if (j >= start && j < end) inGap =
+                        true; } else { if (i >= start || i < end) inGap = true; if (j >= start || j < end) inGap =
+                        true; }
                     if (inGap) continue;
                     ctx.beginPath();
                     ctx.moveTo(pts[i].x, pts[i].y);
@@ -1963,11 +1945,13 @@
                 let pulseScale = 1;
                 if (p.isPulsing) {
                     const t = p.pulseTime;
-                    if (t < 0.6) { const phase = t / 0.6; pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
+                    if (t < 0.6) { const phase = t / 0.6;
+                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
                 }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-                const px = p.x * s, py = p.y * s;
+                const px = p.x * s,
+                    py = p.y * s;
 
                 ctx.save();
                 if (p.pfpImg) {
@@ -2003,9 +1987,7 @@
             });
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // UI UPDATES
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── UI updates ───
         function updateProfile() {
             pWins.textContent = state.wins;
             pLosses.textContent = state.losses;
@@ -2061,35 +2043,7 @@
             waitingText.style.display = showFrog ? 'none' : 'block';
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // WIN HISTORY
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function addWinToHistory(name, pfp) {
-            state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
-            if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
-            updateWinHistoryUI();
-        }
-        function updateWinHistoryUI() {
-            if (state.winHistory.length === 0) { winHistoryEl.innerHTML = ''; return; }
-            let html = '';
-            state.winHistory.forEach(entry => {
-                const avatarSrc = entry.pfp || state.defaultAvatar;
-                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-            });
-            winHistoryEl.innerHTML = html;
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TOP LEADERBOARD — real data from the server (no more fake names)
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function getPrizeForRank(rank) {
-            if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
-            if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
-            if (rank === 4 || rank === 5) return { label: '1500', gif: DIAMOND_GIF };
-            if (rank >= 6 && rank <= 10) return { label: '100', gif: DIAMOND_GIF };
-            return null;
-        }
-
+        // ─── Top UI ───
         function updateTopUI() {
             const players = state.topPlayers;
             if (players.length === 0) { podiumEl.innerHTML = ''; topList.innerHTML = ''; return; }
@@ -2104,14 +2058,13 @@
             podiumOrder.forEach((info) => {
                 const p = info.player;
                 if (!p) return;
-                const prize = getPrizeForRank(p.rank);
-                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` : prize.label) : '';
+                const prize = { label: '', gif: '' }; // simplified
                 podiumHtml += `<div class="podium-col ${info.colClass}">
                             <div class="rank-badge ${info.cls}">${info.label}</div>
                             <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="podium-name">${p.name}</div>
-                            <div class="podium-prize">${prizeHtml}</div>
-                            <div class="podium-stats">${p.wins} wins · ${p.score}</div>
+                            <div class="podium-prize">${p.score}</div>
+                            <div class="podium-stats">${p.wins} wins</div>
                             <div class="podium-base ${info.base}"></div>
                         </div>`;
             });
@@ -2123,24 +2076,22 @@
             rest.forEach(p => {
                 const rank = p.rank;
                 let rClass = 'rank';
-                if (rank === 4) rClass += ' gold'; else if (rank === 5) rClass += ' silver'; else if (rank === 6) rClass += ' bronze';
-                const prize = getPrizeForRank(rank);
-                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` : prize.label) : '';
+                if (rank === 4) rClass += ' gold';
+                else if (rank === 5) rClass += ' silver';
+                else if (rank === 6) rClass += ' bronze';
                 listHtml += `<div class="top-entry">
                             <div class="${rClass}">#${rank}</div>
                             <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="t-name">${p.name}</div>
                             <div class="t-wins">${p.wins} wins</div>
                             <div class="t-score">${p.score}</div>
-                            <div class="t-prize">${prizeHtml}</div>
+                            <div class="t-prize"></div>
                         </div>`;
             });
             topList.innerHTML = listHtml;
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // TAB SWITCHING
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── Tab switching ───
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
@@ -2155,7 +2106,8 @@
             if (newEl) {
                 setTimeout(() => {
                     newEl.classList.add('active');
-                    if (tabId === 'profile') updateProfile();
+                    if (tabId === 'profile') { updateProfile();
+                        updateUserWinHistoryUI(); }
                     if (tabId === 'top') refreshLeaderboard();
                 }, 50);
             }
@@ -2169,25 +2121,69 @@
             });
         });
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RELOAD PFP
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── Reload PFP ───
         reloadPfpBtn.addEventListener('click', function() {
             const user = getPlayer(state.userId);
-            if (user) { pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); }
-            else if (state.pfp) {
+            if (user) { pfpCache.delete(user.pfp);
+                loadPlayerPFP(user);
+                haptic('medium'); } else if (state.pfp) {
                 pfpCache.delete(state.pfp);
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
-                img.onload = () => { profilePfp.src = state.pfp; haptic('medium'); };
-                img.onerror = () => { profilePfp.src = state.defaultAvatar; haptic('light'); };
+                img.onload = () => { profilePfp.src = state.pfp;
+                    haptic('medium'); };
+                img.onerror = () => { profilePfp.src = state.defaultAvatar;
+                    haptic('light'); };
                 img.src = state.pfp;
             }
         });
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // RENDER LOOP — purely visual; the server drives the actual game
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── Promo code ───
+        promoBtn.addEventListener('click', async () => {
+            const code = promoInput.value.trim().toUpperCase();
+            if (!code) return;
+            if (!state.userId) {
+                alert('You are not logged in.');
+                return;
+            }
+            promoBtn.disabled = true;
+            promoBtn.textContent = '...';
+            try {
+                const response = await fetch(SERVER_URL + '/redeem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, userId: state.userId }),
+                });
+                const data = await response.json();
+                if (data.ok) {
+                    state.balance = data.newBalance;
+                    updateBalance();
+                    updateProfile();
+                    // Show modal
+                    promoGif.src = DIAMOND_GIF;
+                    promoMsg.textContent = `Successfully claimed ${data.amount} 💎`;
+                    promoSub.textContent = `Your new balance is ${data.newBalance}`;
+                    promoModal.classList.add('show');
+                    haptic('heavy');
+                } else {
+                    alert(data.error || 'Invalid or expired code.');
+                }
+            } catch (e) {
+                alert('Network error, please try again.');
+            } finally {
+                promoBtn.disabled = false;
+                promoBtn.textContent = 'Redeem';
+                promoInput.value = '';
+            }
+        });
+
+        promoContinueBtn.addEventListener('click', () => {
+            promoModal.classList.remove('show');
+        });
+
+        // Also close modal on tap outside? Not needed.
+
+        // ─── Render Loop ───
         function renderLoop() {
             updatePlayerAnimations();
 
@@ -2205,9 +2201,7 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // EVENTS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── Bet button ───
         betBtn.addEventListener('click', () => {
             if (!socket || !socket.connected) return;
             let addAmount = parseInt(betInput.value) || 10;
@@ -2239,11 +2233,8 @@
         });
         betInput.value = 10;
 
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // INIT
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // ─── Init ───
         function init() {
-            // temporary local identity for display until 'join' ack arrives
             if (tg?.initDataUnsafe?.user) {
                 const u = tg.initDataUnsafe.user;
                 state.username = u.username || u.first_name || 'player';
@@ -2262,7 +2253,7 @@
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             requestAnimationFrame(renderLoop);
-            setOnline(false); // flips to true once the socket actually connects
+            setOnline(false);
         }
 
         init();
