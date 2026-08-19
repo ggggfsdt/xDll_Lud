@@ -142,6 +142,7 @@ function createRoom(id) {
     gameTime: 0,
     countdownStartTime: 0,
     prestartTimer: 0,
+    recentWinners: [], // last few winners, kept server-side so the win-history strip survives a client reload/reconnect
   };
 }
 const room = createRoom('main');
@@ -216,7 +217,7 @@ function startGame() {
     p.y = half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
     p.alive = true;
   });
-  room.openingTimer = 3.5 + Math.random() * 2.5;
+  room.openingTimer = 3.0 + Math.random() * 3.5; // time before the first opening appears
 }
 
 async function endGame(winnerId) {
@@ -247,6 +248,9 @@ async function endGame(winnerId) {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
+
+    room.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
+    if (room.recentWinners.length > 8) room.recentWinners.length = 8;
 
     // Persistence is best-effort from here on — log failures loudly but
     // never let them affect the payload we already built above.
@@ -309,21 +313,28 @@ function updatePhysics(dt) {
   if (room.openingTimer <= 0) {
     if (!room.opening) {
       const gameTime = room.gameTime;
-      const [minGap, maxGap] = gameTime < 4 ? [0.08, 0.18] : [0.15, 0.35];
+      // Openings start small-to-medium and grow larger as the round goes on,
+      // so early game has tighter escape windows and it opens up later.
+      let minGap, maxGap;
+      if (gameTime < 5) { [minGap, maxGap] = [0.05, 0.16]; }
+      else if (gameTime < 12) { [minGap, maxGap] = [0.12, 0.26]; }
+      else { [minGap, maxGap] = [0.20, 0.42]; }
       const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
       const startIdx = Math.floor(Math.random() * totalPts);
       const endIdx = (startIdx + gapSize) % totalPts;
-      room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, state: 'flashing' };
-      room.openingTimer = 3.5 + Math.random() * 2.5;
+      // slightly randomized blink speed each opening (a bit faster or slower than before)
+      const flashInterval = 0.18 + Math.random() * 0.14; // was fixed at 0.25
+      room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, flashInterval, state: 'flashing' };
+      room.openingTimer = 3.0 + Math.random() * 3.5; // was 3.5–6.0, now 3.0–6.5
     } else {
       room.opening = null;
-      room.openingTimer = 1.5 + Math.random() * 2.0;
+      room.openingTimer = 1.2 + Math.random() * 2.6; // was 1.5–3.5, now 1.2–3.8
     }
   }
   const opening = room.opening;
   if (opening && opening.state === 'flashing') {
     opening.flashTimer += dt;
-    if (opening.flashTimer > 0.25) {
+    if (opening.flashTimer > (opening.flashInterval || 0.25)) {
       opening.flashTimer = 0;
       opening.flashCount++;
       if (opening.flashCount >= 4) opening.state = 'open';
@@ -494,6 +505,7 @@ io.on('connection', (socket) => {
           winHistory: user.winHistory || [],
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
+        recentWinners: room.recentWinners,
       });
       broadcastState();
     } catch (err) {
