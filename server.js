@@ -14,6 +14,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
+const cors = require('cors'); // <-- ADDED
 const { Server } = require('socket.io');
 const {
   getUser,
@@ -35,6 +36,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
 // ─── express + socket.io ──────────────────────────────────────
 const app = express();
+app.use(cors()); // <-- ADDED: allow all origins (or restrict later)
 app.use(express.json());
 app.use(express.static('public'));
 
@@ -121,7 +123,8 @@ const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 function speedForRadius(radius) {
   const minR = 14, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  return 6.0 - norm * 3.0;
+  const speed = 8.0 - norm * 5.5;
+  return Math.max(2.5, Math.min(8.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -153,7 +156,9 @@ function computeRadii() {
     const ratio = p.bet / totalBet;
     const r = 18 + ratio * 34;
     p.targetRadius = Math.min(Math.max(r, 14), 52);
-    if (p.displayRadius === undefined) p.displayRadius = p.targetRadius;
+    p.mass = p.targetRadius * p.targetRadius * 1.2;
+    // Immediately update displayRadius so sizes change during countdown
+    p.displayRadius = p.targetRadius;
   });
 }
 
@@ -186,6 +191,7 @@ function startCountdown() {
   if (getAlive().length < 2) return;
   room.gameState = 'countdown';
   room.countdownStartTime = Date.now();
+  room.countdownEndTime = Date.now() + 10000; // 10 seconds
 }
 
 function startPrestart() {
@@ -218,36 +224,60 @@ async function endGame(winnerId) {
   room.gameState = 'finished';
   const winner = getPlayer(winnerId);
   let payload = null;
+
   if (winner) {
+    // Compute the payload from data we already have in memory FIRST.
+    // This is deliberately independent of any database/promo-code call
+    // below — if a store.js write fails for any reason, the win screen
+    // should still show. (Previously the whole payload lived inside the
+    // same try/catch as the DB writes, so any persistence error — e.g.
+    // from the newer promo-code/ban logic in store.js — silently
+    // resulted in `payload = null`, which is why the win screen and
+    // win-history strip could stop appearing with no visible error on
+    // the client.)
+    const totalPot = room.pot;
+    const winnerBet = winner.bet;
+    const losersBets = totalPot - winnerBet;
+    const commission = Math.floor(losersBets * 0.02);
+    const winnings = totalPot - commission;
+    payload = {
+      winnerId: winner.id,
+      winnerName: winner.name,
+      winnerPfp: winner.pfp,
+      winnings,
+      multiplier: +(winnings / winnerBet).toFixed(2),
+    };
+
+    // Persistence is best-effort from here on — log failures loudly but
+    // never let them affect the payload we already built above.
     try {
-      const totalPot = room.pot;
-      const winnerBet = winner.bet;
-      const losersBets = totalPot - winnerBet;
-      const commission = Math.floor(losersBets * 0.02);
-      const winnings = totalPot - commission;
       const winnerUser = await getUser(winner.id);
       if (winnerUser) {
         winnerUser.balance += winnings;
         winnerUser.wins += 1;
         await saveUser(winnerUser);
       }
-      for (const p of room.players) {
-        if (p.id === winner.id) continue;
+    } catch (err) {
+      console.error('endGame: failed to credit winner balance:', err);
+    }
+
+    for (const p of room.players) {
+      if (p.id === winner.id) continue;
+      try {
         const u = await getUser(p.id);
         if (u) { u.losses += 1; await saveUser(u); }
+      } catch (err) {
+        console.error('endGame: failed to update loser stats for', p.id, err);
       }
+    }
+
+    try {
       await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-      payload = {
-        winnerId: winner.id,
-        winnerName: winner.name,
-        winnerPfp: winner.pfp,
-        winnings,
-        multiplier: +(winnings / winnerBet).toFixed(2),
-      };
     } catch (err) {
-      console.error('Error in endGame:', err);
+      console.error('endGame: failed to write win history:', err);
     }
   }
+
   io.to(room.id).emit('roundEnd', payload);
   setTimeout(() => {
     room.players = [];
@@ -407,7 +437,7 @@ setInterval(() => {
     if (room.gameState === 'playing') updatePhysics(dt);
     else if (room.gameState === 'countdown') {
       const elapsed = (now - room.countdownStartTime) / 1000;
-      if (elapsed >= 3.0) startPrestart();
+      if (elapsed >= 10.0) startPrestart();
     } else if (room.gameState === 'prestart') {
       room.prestartTimer -= dt;
       if (room.prestartTimer <= 0) startGame();
@@ -789,11 +819,13 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
   }
 });
 
-// Public promo redeem endpoint
+// ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
-    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    if (!code || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    }
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
@@ -805,7 +837,9 @@ app.post('/redeem', async (req, res) => {
 app.get('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.query;
-    if (!code || !userId) return res.send('Missing code or userId');
+    if (!code || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    }
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
