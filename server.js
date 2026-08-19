@@ -27,6 +27,11 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
+app.post('/redeem', async (req, res) => {
+  const { code, userId } = req.body;
+  const result = await redeemPromoCode(code, userId);
+  res.json(result);
+});
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
