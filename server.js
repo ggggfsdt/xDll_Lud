@@ -1,44 +1,27 @@
 // ═══════════════════════════════════════════════════════════════
-// dllump · bump arena — multiplayer backendd
-//
-// This server is the single source of truth for every match:
-//   - it verifies each player's Telegram login
-//   - it holds everyone's balance and stats (persisted to disk)
-//   - it runs ONE authoritative physics simulation per room
-//   - it broadcasts snapshots to every connected client
-//   - it decides the winner and pays out
-//
-// Clients never decide who wins. That's what makes this fair when
-// strangers on the internet are betting against each other — no
-// client can lie about physics results, because the client doesn't
-// compute them anymore. It only *renders* what the server sends.
+// dllump · bump arena — multiplayer backend
 // ═══════════════════════════════════════════════════════════════
 
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
 const { Server } = require('socket.io');
-const { getUser, saveUser, topPlayers, allUsersCount } = require('./store');
+const { getUser, saveUser, topPlayers, allUsersCount, getAllUsers } = require('./store');
 
 const PORT = process.env.PORT || 3000;
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''; // required to verify real Telegram users
-const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true'; // set true only for local testing
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
+const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true';
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
+// ─── express + socket.io ───
 const app = express();
 app.use(express.json());
-app.use(express.static('public')); // put the client build here if you want to serve it from this same server
+app.use(express.static('public'));
 
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' } // tighten this to your actual mini-app domain before going live
-});
+const io = new Server(server, { cors: { origin: '*' } });
 
-// ─────────────────────────────────────────────────────────────
-// TELEGRAM AUTH — verifies the initData string Telegram gives the
-// mini app so we know the userId/username/photo really came from
-// Telegram and weren't just typed into the client by an attacker.
-// https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
-// ─────────────────────────────────────────────────────────────
+// ─── Telegram auth ───
 function verifyInitData(initData) {
   if (!BOT_TOKEN) return null;
   try {
@@ -53,23 +36,15 @@ function verifyInitData(initData) {
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
     const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
     if (computedHash !== hash) return null;
-
     const authDate = parseInt(params.get('auth_date') || '0', 10);
-    if (Date.now() / 1000 - authDate > 86400) return null; // reject stale logins (>24h old)
-
+    if (Date.now() / 1000 - authDate > 86400) return null;
     const userJson = params.get('user');
     if (!userJson) return null;
     return JSON.parse(userJson);
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
-// ─────────────────────────────────────────────────────────────
-// ARENA GEOMETRY — identical logic to the client, kept in one
-// fixed logical size. The client scales this to whatever pixel
-// size its canvas is; the server never needs to know pixel sizes.
-// ─────────────────────────────────────────────────────────────
+// ─── Arena geometry ───
 const ARENA_SIZE = 400;
 const CORNER_RADIUS = ARENA_SIZE * 0.15;
 
@@ -86,9 +61,7 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
     { type: 'line', x1: -half, y1: half - r, x2: -half, y2: -half + r },
     { type: 'arc', cx: -half + r, cy: -half + r, start: Math.PI, end: 3 * Math.PI / 2 }
   ];
-  const segLengths = sections.map(seg => seg.type === 'line'
-    ? Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1)
-    : r * (seg.end - seg.start));
+  const segLengths = sections.map(seg => seg.type === 'line' ? Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1) : r * (seg.end - seg.start));
   const totalLen = segLengths.reduce((a, b) => a + b, 0);
   const step = totalLen / numPoints;
   const points = [];
@@ -120,22 +93,18 @@ const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 function speedForRadius(radius) {
   const minR = 14, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  const speed = 6.0 - norm * 3.0;
-  return Math.max(3.0, Math.min(6.0, speed));
+  return 6.0 - norm * 3.0;
 }
 
-// ─────────────────────────────────────────────────────────────
-// ROOM — one shared arena. Simple MVP: everyone online plays in
-// the same room. (Easy to extend to multiple rooms/lobbies later.)
-// ─────────────────────────────────────────────────────────────
+// ─── Room ───
 const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
 const MAX_PLAYERS = 8;
 
 function createRoom(id) {
   return {
     id,
-    gameState: 'idle', // idle -> countdown -> prestart -> playing -> finished -> idle
-    players: [],       // players currently in this round
+    gameState: 'idle',
+    players: [],
     pot: 0,
     opening: null,
     openingTimer: 0,
@@ -144,7 +113,6 @@ function createRoom(id) {
     prestartTimer: 0,
   };
 }
-
 const room = createRoom('main');
 
 function getAlive() { return room.players.filter(p => p.alive); }
@@ -222,14 +190,12 @@ async function endGame(winnerId) {
   room.gameState = 'finished';
   const winner = getPlayer(winnerId);
   let payload = null;
-
   if (winner) {
     const totalPot = room.pot;
     const winnerBet = winner.bet;
     const losersBets = totalPot - winnerBet;
     const commission = Math.floor(losersBets * 0.02);
     const winnings = totalPot - commission;
-
     const winnerUser = await getUser(winner.id);
     if (winnerUser) {
       winnerUser.balance += winnings;
@@ -241,7 +207,6 @@ async function endGame(winnerId) {
       const u = await getUser(p.id);
       if (u) { u.losses += 1; await saveUser(u); }
     }
-
     payload = {
       winnerId: winner.id,
       winnerName: winner.name,
@@ -250,9 +215,7 @@ async function endGame(winnerId) {
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
   }
-
   io.to(room.id).emit('roundEnd', payload);
-
   setTimeout(() => {
     room.players = [];
     room.pot = 0;
@@ -271,17 +234,14 @@ function isInGap(idx) {
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
-
   const alive = getAlive();
   if (alive.length <= 1) {
     if (alive.length === 1) endGame(alive[0].id);
     else { room.gameState = 'idle'; room.players = []; room.opening = null; }
     return;
   }
-
   const half = ARENA_SIZE / 2;
   const totalPts = PERIMETER.length;
-
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
     if (!room.opening) {
@@ -297,7 +257,6 @@ function updatePhysics(dt) {
       room.openingTimer = 1.5 + Math.random() * 2.0;
     }
   }
-
   const opening = room.opening;
   if (opening && opening.state === 'flashing') {
     opening.flashTimer += dt;
@@ -307,16 +266,13 @@ function updatePhysics(dt) {
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
-
   const subSteps = 6;
   const subDt = dt / subSteps;
-
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
       if (!p.alive) return;
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
-
       const radius = p.displayRadius || p.radius;
       for (let i = 0; i < totalPts; i++) {
         const j = (i + 1) % totalPts;
@@ -341,7 +297,6 @@ function updatePhysics(dt) {
           break;
         }
       }
-
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
@@ -366,7 +321,6 @@ function updatePhysics(dt) {
         }
       }
     });
-
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -387,13 +341,14 @@ function updatePhysics(dt) {
             const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
             const aFactor = 1 - (a.mass / totalMass) * 0.6;
             const bFactor = 1 - (b.mass / totalMass) * 0.6;
-            a.vx -= (impulse / a.mass) * aFactor * nx; a.vy -= (impulse / a.mass) * aFactor * ny;
-            b.vx += (impulse / b.mass) * bFactor * nx; b.vy += (impulse / b.mass) * bFactor * ny;
+            a.vx -= (impulse / a.mass) * aFactor * nx;
+            a.vy -= (impulse / a.mass) * aFactor * ny;
+            b.vx += (impulse / b.mass) * bFactor * nx;
+            b.vy += (impulse / b.mass) * bFactor * ny;
           }
         }
       }
     }
-
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -402,29 +357,21 @@ function updatePhysics(dt) {
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
-
-  // radii ease toward target, same as the client used to do locally
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// GAME LOOP — server tick. This is the authoritative clock; the
-// client just plays back whatever this loop broadcasts.
-// ─────────────────────────────────────────────────────────────
+// ─── Game Loop ───
 const TICK_HZ = 30;
 let lastTick = Date.now();
-
 setInterval(() => {
   const now = Date.now();
   const dt = Math.min((now - lastTick) / 1000, 0.1);
   lastTick = now;
-
-  if (room.gameState === 'playing') {
-    updatePhysics(dt);
-  } else if (room.gameState === 'countdown') {
+  if (room.gameState === 'playing') updatePhysics(dt);
+  else if (room.gameState === 'countdown') {
     const elapsed = (now - room.countdownStartTime) / 1000;
     if (elapsed >= 3.0) startPrestart();
   } else if (room.gameState === 'prestart') {
@@ -433,7 +380,6 @@ setInterval(() => {
   } else if (room.gameState === 'idle') {
     if (getAlive().length >= 2) startCountdown();
   }
-
   broadcastState();
 }, 1000 / TICK_HZ);
 
@@ -450,14 +396,9 @@ function broadcastState() {
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// SOCKET.IO — this is where real players connect from Telegram.
-// No bots anywhere in this file — every player array entry only
-// ever gets created from a verified 'placeBet' from a real socket.
-// ─────────────────────────────────────────────────────────────
+// ─── Socket.io ───
 io.on('connection', (socket) => {
   let userId = null;
-
   socket.on('join', async ({ initData }, ack) => {
     let tgUser = verifyInitData(initData);
     if (!tgUser && ALLOW_DEV_LOGIN) {
@@ -470,12 +411,15 @@ io.on('connection', (socket) => {
     userId = String(tgUser.id);
     socket.data.userId = userId;
     socket.join(room.id);
-
     const user = await getUser(userId, {
       username: tgUser.username || tgUser.first_name || 'player',
       pfp: tgUser.photo_url || '',
     });
-
+    // check if banned
+    if (user.banned) {
+      ack?.({ ok: false, error: 'You have been banned.' });
+      return;
+    }
     ack?.({
       ok: true,
       user,
@@ -492,22 +436,16 @@ io.on('connection', (socket) => {
     const amt = Math.max(10, Math.floor(Number(amount) || 0));
     const user = await getUser(userId);
     if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
+    if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
     if (room.players.length >= MAX_PLAYERS && !getPlayer(userId)) {
       return ack?.({ ok: false, error: 'Arena is full.' });
     }
-
     user.balance -= amt;
     await saveUser(user);
-
     const existing = getPlayer(userId);
-    if (existing) {
-      existing.bet += amt;
-      computeRadii();
-    } else {
-      makePlayer(userId, amt, user.username, user.pfp);
-    }
+    if (existing) { existing.bet += amt; computeRadii(); }
+    else { makePlayer(userId, amt, user.username, user.pfp); }
     room.pot += amt;
-
     ack?.({ ok: true, balance: user.balance });
     broadcastState();
   });
@@ -516,27 +454,172 @@ io.on('connection', (socket) => {
     ack?.({ ok: true, top: await topPlayers(20) });
   });
 
-  socket.on('disconnect', () => {
-    // players stay in the round even if they close the app mid-match;
-    // their bet is already committed to the pot either way.
+  socket.on('disconnect', () => {});
+});
+
+// ─────────────────────────────────────────────────────────────
+// ADMIN API (requires ADMIN_SECRET)
+// ─────────────────────────────────────────────────────────────
+const ADMIN_HTML = `
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Admin Panel</title>
+<style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:800px;margin:auto}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+th,td{padding:8px;border:1px solid #333;text-align:left}
+button{padding:6px 12px;margin:2px;border:none;border-radius:6px;cursor:pointer;background:#4CAF50;color:#fff}
+button.danger{background:#e06060}input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff}
+.auth{display:flex;gap:10px;margin-bottom:20px}
+</style></head>
+<body>
+<h2>dllump Admin</h2>
+<div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
+<div id="content" style="display:none">
+  <button onclick="refreshPlayers()">Refresh Players</button>
+  <div id="players"></div>
+  <hr/>
+  <h3>Actions</h3>
+  <button class="danger" onclick="resetMoney()">Reset ALL Balances to 1000</button>
+  <button class="danger" onclick="resetTop()">Reset ALL Wins/Losses</button>
+  <hr/>
+  <h4>Add Money to Player</h4>
+  <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add</button>
+  <h4>Set Balance</h4>
+  <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set</button>
+  <h4>Ban Player</h4>
+  <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban</button>
+</div>
+<script>
+const ADMIN_SECRET = '${ADMIN_SECRET}'; // injected from server
+async function fetchAdmin(path, method='GET', body=null) {
+  const headers = {'admin-secret': document.getElementById('secret').value};
+  if(body) headers['Content-Type'] = 'application/json';
+  const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
+  return res.json();
+}
+function auth(){
+  const secret = document.getElementById('secret').value;
+  if(secret === ADMIN_SECRET) {
+    document.getElementById('content').style.display = 'block';
+    refreshPlayers();
+  } else alert('Wrong secret');
+}
+async function refreshPlayers(){
+  const data = await fetchAdmin('/players');
+  const players = data.players || [];
+  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
+  players.forEach(p => {
+    html += `<tr><td>${p.id}</td><td>${p.username}</td><td>${p.balance}</td><td>${p.wins}</td><td>${p.losses}</td><td>${p.banned ? '🚫' : ''}</td>
+    <td><button onclick="banPlayer('${p.id}')">Ban</button></td></tr>`;
   });
+  html += '</table>';
+  document.getElementById('players').innerHTML = html;
+}
+async function resetMoney(){ if(confirm('Reset all balances to 1000?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
+async function resetTop(){ if(confirm('Reset all wins/losses?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
+async function addMoney(){
+  const id = document.getElementById('addUserId').value;
+  const amount = parseInt(document.getElementById('addAmount').value);
+  if(!id || !amount) return;
+  await fetchAdmin('/add-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function setMoney(){
+  const id = document.getElementById('setUserId').value;
+  const amount = parseInt(document.getElementById('setAmount').value);
+  if(!id || isNaN(amount)) return;
+  await fetchAdmin('/set-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function banPlayer(id){
+  if(id && !confirm('Ban player '+id+'?')) return;
+  const userId = id || document.getElementById('banUserId').value;
+  if(!userId) return;
+  await fetchAdmin('/ban', 'POST', {id: userId});
+  refreshPlayers();
+}
+</script>
+</body></html>
+`;
+
+function adminAuth(req, res, next) {
+  const secret = req.headers['admin-secret'] || req.query.secret;
+  if (secret !== ADMIN_SECRET) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
+  next();
+}
+
+// Serve admin HTML
+app.get('/admin', (req, res) => {
+  res.send(ADMIN_HTML);
 });
 
-app.get('/', (req, res) => {
-  res.send('bump arena server is running');
+// Admin API endpoints
+app.get('/admin/api/players', adminAuth, async (req, res) => {
+  const users = await getAllUsers();
+  res.json({ players: users });
 });
 
+app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
+  const users = await getAllUsers();
+  for (const u of users) {
+    u.balance = 1000;
+    await saveUser(u);
+  }
+  res.json({ ok: true });
+});
+
+app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
+  const users = await getAllUsers();
+  for (const u of users) {
+    u.wins = 0;
+    u.losses = 0;
+    await saveUser(u);
+  }
+  res.json({ ok: true });
+});
+
+app.post('/admin/api/add-money', adminAuth, async (req, res) => {
+  const { id, amount } = req.body;
+  if (!id || !amount || isNaN(amount)) return res.status(400).json({ ok: false, error: 'Invalid' });
+  const user = await getUser(id);
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+  user.balance += amount;
+  await saveUser(user);
+  res.json({ ok: true, balance: user.balance });
+});
+
+app.post('/admin/api/set-money', adminAuth, async (req, res) => {
+  const { id, amount } = req.body;
+  if (!id || isNaN(amount) || amount < 0) return res.status(400).json({ ok: false, error: 'Invalid' });
+  const user = await getUser(id);
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+  user.balance = amount;
+  await saveUser(user);
+  res.json({ ok: true, balance: user.balance });
+});
+
+app.post('/admin/api/ban', adminAuth, async (req, res) => {
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+  const user = await getUser(id);
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+  user.banned = !user.banned; // toggle
+  await saveUser(user);
+  res.json({ ok: true, banned: user.banned });
+});
+
+// ─── Health & leaderboard (public) ───
 app.get('/health', (req, res) => {
   res.json({ ok: true, players: room.players.length, gameState: room.gameState });
 });
-
 app.get('/leaderboard', async (req, res) => {
-  res.json({ top: await topPlayers(20), totalUsers: await allUsersCount() });
+  res.json({ top: await topPlayers(20) });
 });
 
+// ─── Start server ───
 server.listen(PORT, () => {
   console.log(`bump arena server listening on :${PORT}`);
-  if (!BOT_TOKEN) {
-    console.warn('⚠ TELEGRAM_BOT_TOKEN is not set — real Telegram logins cannot be verified. Set ALLOW_DEV_LOGIN=true only for local testing.');
-  }
+  if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set — real Telegram login cannot be verified.');
+  if (ADMIN_SECRET === 'change-me-in-production') console.warn('⚠ Change ADMIN_SECRET environment variable!');
 });
