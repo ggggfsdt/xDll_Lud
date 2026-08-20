@@ -38,14 +38,28 @@ async function getUser(id, defaults = {}) {
       wins: 0,
       losses: 0,
       banned: false,
+      winHistory: [],
     };
     queueSave();
   } else {
     if (defaults.username) data.users[id].username = defaults.username;
     if (defaults.pfp) data.users[id].pfp = defaults.pfp;
     if (data.users[id].banned === undefined) data.users[id].banned = false;
+    if (!Array.isArray(data.users[id].winHistory)) data.users[id].winHistory = [];
   }
   return data.users[id];
+}
+
+// server.js calls this at the end of every round to record a win. Without it defined
+// here, the import silently resolves to undefined and every call throws (caught by
+// server.js's try/catch, so it fails silently) — no win ever actually gets saved.
+async function addWinToHistory(id, name, pfp, amount) {
+  const user = await getUser(id);
+  if (!Array.isArray(user.winHistory)) user.winHistory = [];
+  user.winHistory.unshift({ name, pfp, amount, timestamp: Date.now() });
+  if (user.winHistory.length > 20) user.winHistory.length = 20;
+  queueSave();
+  return user.winHistory;
 }
 
 async function saveUser(user) {
@@ -118,6 +132,7 @@ async function deletePromoCode(code) {
 module.exports = {
   getUser,
   saveUser,
+  addWinToHistory,
   getAllUsers,
   topPlayers,
   allUsersCount,
