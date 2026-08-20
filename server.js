@@ -120,24 +120,20 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-const MIN_RADIUS = 11;
+const MIN_RADIUS = 14;
 const MAX_RADIUS = 52;
 
+// Original hockey-puck speed curve (from the good physics build)
 function speedForRadius(radius) {
-  const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
-  const speed = 6.5 - norm * 3.5;
-  return Math.max(3.0, Math.min(6.5, speed));
+  const minR = 14, maxR = 52;
+  const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
+  const speed = 6.0 - norm * 3.0;
+  return Math.max(3.0, Math.min(6.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
 const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
 const MAX_PLAYERS = 8;
-
-// ─── Reactions ──────────────────────────────────────────────────
-const REACTION_EMOJIS = ['😂', '😮', '🔥', '💀', '👍', '❤️'];
-const REACTION_GIF_URL = 'https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif';
-const REACTION_COOLDOWN_MS = 1500;
-const reactionCooldowns = new Map(); // userId -> last reaction timestamp (ms)
 
 function createRoom(id) {
   return {
@@ -163,14 +159,13 @@ function computeRadii() {
   if (totalBet === 0) return;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    // exponent > 1 compresses small shares toward the floor (way smaller for a tiny
-    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS
-    const scaled = Math.pow(ratio, 1.3);
-    const r = MIN_RADIUS + scaled * (MAX_RADIUS - MIN_RADIUS);
-    p.targetRadius = Math.min(Math.max(r, MIN_RADIUS), MAX_RADIUS);
+    // Linear size scaling (original good feel)
+    const r = 18 + ratio * 34;
+    p.targetRadius = Math.min(Math.max(r, 14), 52);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
-    // Immediately update displayRadius so sizes change during countdown
-    p.displayRadius = p.targetRadius;
+    // Keep displayRadius in sync during countdown so sizes update live
+    if (p.displayRadius === undefined) p.displayRadius = p.targetRadius;
+    else p.displayRadius = p.targetRadius;
   });
 }
 
@@ -311,143 +306,114 @@ function isInGap(idx) {
 }
 
 function updatePhysics(dt) {
+  // ─── Restored original hockey-puck physics ───────────────────
+  // Circles slide, bounce off walls, and knock into each other
+  // with solid elastic impulses (same logic as the good old build).
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
+
   const alive = getAlive();
   if (alive.length <= 1) {
     if (alive.length === 1) endGame(alive[0].id);
     else { room.gameState = 'idle'; room.players = []; room.opening = null; }
     return;
   }
+
   const half = ARENA_SIZE / 2;
   const totalPts = PERIMETER.length;
+
+  // Opening spawn / despawn
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
     if (!room.opening) {
       const gameTime = room.gameTime;
-      // Openings start small-to-medium and grow larger as the round goes on,
-      // so early game has tighter escape windows and it opens up later.
-      let minGap, maxGap;
-      if (gameTime < 5) { [minGap, maxGap] = [0.05, 0.16]; }
-      else if (gameTime < 12) { [minGap, maxGap] = [0.12, 0.26]; }
-      else { [minGap, maxGap] = [0.20, 0.42]; }
+      const [minGap, maxGap] = gameTime < 4 ? [0.08, 0.18] : [0.15, 0.35];
       const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
       const startIdx = Math.floor(Math.random() * totalPts);
       const endIdx = (startIdx + gapSize) % totalPts;
-      // slightly randomized blink speed each opening (a bit faster or slower than before)
-      const flashInterval = 0.18 + Math.random() * 0.14; // was fixed at 0.25
-      room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, flashInterval, state: 'flashing' };
-      room.openingTimer = 3.0 + Math.random() * 3.5; // was 3.5–6.0, now 3.0–6.5
+      room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, state: 'flashing' };
+      room.openingTimer = 3.5 + Math.random() * 2.5;
     } else {
       room.opening = null;
-      room.openingTimer = 1.2 + Math.random() * 2.6; // was 1.5–3.5, now 1.2–3.8
+      room.openingTimer = 1.5 + Math.random() * 2.0;
     }
   }
+
   const opening = room.opening;
   if (opening && opening.state === 'flashing') {
     opening.flashTimer += dt;
-    if (opening.flashTimer > (opening.flashInterval || 0.25)) {
+    if (opening.flashTimer > 0.25) {
       opening.flashTimer = 0;
       opening.flashCount++;
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
 
-  // Finds the closest solid-wall segment to p (skipping segments inside an open gap)
-  // and, if p is overlapping it, pushes p back out and reflects its velocity.
-  // Returns true if a solid wall was actually hit this call.
-  //
-  // Correction magnitude is capped at 1.5x the circle's own radius — even in a rare
-  // deep-overlap edge case, this guarantees no single correction can violently
-  // Finds the closest solid-wall segment to p (skipping segments inside an open gap)
-  // and, if p is overlapping it, pushes p back out. If reflectVelocity is true it also
-  // bounces the velocity off the wall (normal physics, used for the main per-substep
-  // movement pass). If false, it ONLY corrects position with no velocity change — used
-  // for the safety pass after player-vs-player collisions, so we don't add a second
-  // "bounce" on top of the real one and cause jittering.
-  function resolveWallCollision(p, radius, reflectVelocity) {
-    let bestDist = Infinity, bestNx = 0, bestNy = 0;
-    for (let i = 0; i < totalPts; i++) {
-      const j = (i + 1) % totalPts;
-      if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-      const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
-      const bx = PERIMETER[j].x, by = PERIMETER[j].y;
-      const dx = bx - ax, dy = by - ay;
-      const lenSq = dx * dx + dy * dy;
-      if (lenSq === 0) continue;
-      let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-      const nearX = ax + t * dx, nearY = ay + t * dy;
-      const distX = p.x - nearX, distY = p.y - nearY;
-      const dist = Math.sqrt(distX * distX + distY * distY);
-      if (dist < radius && dist < bestDist) {
-        bestDist = dist;
-        bestNx = distX / dist;
-        bestNy = distY / dist;
-      }
-    }
-    if (bestDist === Infinity) return false;
-    let overlap = radius - bestDist;
-    overlap = Math.min(overlap, radius * 1.5);
-    p.x += bestNx * overlap;
-    p.y += bestNy * overlap;
-    if (reflectVelocity) {
-      const vn = p.vx * bestNx + p.vy * bestNy;
-      if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
-    }
-    return true;
-  }
-
-  // Is p actually lined up with (near the angular position of) the currently open gap,
-  // and clearly past the boundary? This is what decides "you actually escaped" vs.
-  // "you're just near a wall somewhere else" — without this check, elimination could
-  // fire from an ordinary near-boundary moment that had nothing to do with the gap.
-  function checkGapEscape(p, radius) {
-    if (!(opening && opening.state === 'open')) return false;
-    const cx = half, cy = half;
-    const dx = p.x - cx, dy = p.y - cy;
-    const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-    if (distFromCenter < half * 0.9) return false; // nowhere near the boundary yet
-
-    let nearestGapIdx = -1, minDist = Infinity;
-    for (let i = 0; i < totalPts; i++) {
-      if (isInGap(i)) {
-        const ddx = p.x - PERIMETER[i].x, ddy = p.y - PERIMETER[i].y;
-        const d = ddx * ddx + ddy * ddy;
-        if (d < minDist) { minDist = d; nearestGapIdx = i; }
-      }
-    }
-    if (nearestGapIdx < 0) return false;
-    const angle = Math.atan2(dy, dx);
-    const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
-    let diff = Math.abs(angle - gapAngle);
-    diff = Math.min(diff, 2 * Math.PI - diff);
-    // must actually be angled toward the gap (not just anywhere near the boundary),
-    // and clearly past the wall line — close enough that the gap can't close on them
-    // mid-flight without them already being marked eliminated
-    return diff < 0.55 && distFromCenter > half * 1.0 + radius * 0.3;
-  }
-
-  const subSteps = 10; // was 6 — smaller circles move faster (see speedForRadius) and the
-  // extra substeps keep their per-step travel distance small enough that they can't tunnel
-  // deep into a wall/another circle before a collision is caught, which is what was causing
-  // the "glitchy" snap-corrections on small circles.
+  const subSteps = 6;
   const subDt = dt / subSteps;
+
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
       if (!p.alive) return;
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
+
       const radius = p.displayRadius || p.radius;
 
-      resolveWallCollision(p, radius, true);
+      // Wall collisions — first solid segment hit, push out + reflect
+      for (let i = 0; i < totalPts; i++) {
+        const j = (i + 1) % totalPts;
+        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
+        const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
+        const bx = PERIMETER[j].x, by = PERIMETER[j].y;
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq === 0) continue;
+        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const nearX = ax + t * dx, nearY = ay + t * dy;
+        const distX = p.x - nearX, distY = p.y - nearY;
+        const dist = Math.sqrt(distX * distX + distY * distY);
+        if (dist < radius) {
+          const nx = distX / dist, ny = distY / dist;
+          const overlap = radius - dist;
+          p.x += nx * overlap;
+          p.y += ny * overlap;
+          const vn = p.vx * nx + p.vy * ny;
+          if (vn < 0) { p.vx -= 2 * vn * nx; p.vy -= 2 * vn * ny; }
+          break;
+        }
+      }
 
-      if (checkGapEscape(p, radius)) {
-        p.alive = false;
-        return;
+      // Elimination: must clearly leave through the open gap while moving outward
+      if (opening && opening.state === 'open') {
+        const cx = half, cy = half;
+        const dx = p.x - cx, dy = p.y - cy;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        // Slightly looser than original so brushing the edge doesn't count —
+        // circle must actually go out through the opening.
+        const escapeThreshold = half * 1.15 + radius;
+        if (distFromCenter > escapeThreshold) {
+          let nearestGapIdx = -1, minDist = Infinity;
+          for (let i = 0; i < totalPts; i++) {
+            if (isInGap(i)) {
+              const d = (p.x - PERIMETER[i].x) ** 2 + (p.y - PERIMETER[i].y) ** 2;
+              if (d < minDist) { minDist = d; nearestGapIdx = i; }
+            }
+          }
+          if (nearestGapIdx >= 0) {
+            const angle = Math.atan2(dy, dx);
+            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
+            let diff = Math.abs(angle - gapAngle);
+            diff = Math.min(diff, 2 * Math.PI - diff);
+            const vOut = p.vx * dx + p.vy * dy;
+            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
+          }
+        }
       }
     });
 
+    // Player vs player — elastic knock (hockey style)
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -477,16 +443,7 @@ function updatePhysics(dt) {
       }
     }
 
-    // Position-only safety pass: the player-vs-player separation above can shove someone
-    // straight into (or through) a wall if they were pinned against it — this catches
-    // that and nudges them back, WITHOUT touching velocity (that's the fix for the
-    // "shaking balloon" feel — reflecting velocity here too was double-bouncing every
-    // substep and destroying the clean hockey-puck slide).
-    stillAlive.forEach(p => {
-      const radius = p.displayRadius || p.radius;
-      resolveWallCollision(p, radius, false);
-    });
-
+    // Speed clamp
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -495,6 +452,8 @@ function updatePhysics(dt) {
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
+
+  // Radii ease toward target
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
@@ -650,29 +609,33 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Reactions ────────────────────────────────────────────────
-  // Server enforces the cooldown and whitelist itself — a modified client could try to
-  // spam or send arbitrary content otherwise, since this just gets relayed to everyone.
-  socket.on('reaction', ({ type, value }, ack) => {
+  // Emoji / reaction — 1.5s cooldown enforced server-side
+  const REACTION_COOLDOWN_MS = 1500;
+  const ALLOWED_REACTIONS = new Set([
+    '😂', '🔥', '💀', '😎', '❤️', '👀', '😭', '🐸',
+    'gif:pepe', // special animated reaction
+  ]);
+  socket.on('reaction', ({ emoji }, ack) => {
     try {
       if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const now = Date.now();
-      const last = reactionCooldowns.get(userId) || 0;
-      if (now - last < REACTION_COOLDOWN_MS) {
-        return ack?.({ ok: false, error: 'Too soon.' });
-      }
-
-      let payload;
-      if (type === 'gif') {
-        payload = { type: 'gif', value: REACTION_GIF_URL };
-      } else if (type === 'emoji' && REACTION_EMOJIS.includes(value)) {
-        payload = { type: 'emoji', value };
-      } else {
+      const key = String(emoji || '');
+      if (!ALLOWED_REACTIONS.has(key)) {
         return ack?.({ ok: false, error: 'Invalid reaction.' });
       }
-
-      reactionCooldowns.set(userId, now);
-      io.to(room.id).emit('reaction', { userId, ...payload });
+      const now = Date.now();
+      const last = socket.data.lastReactionAt || 0;
+      if (now - last < REACTION_COOLDOWN_MS) {
+        return ack?.({ ok: false, error: 'Cooldown', remaining: REACTION_COOLDOWN_MS - (now - last) });
+      }
+      socket.data.lastReactionAt = now;
+      const live = getPlayer(userId);
+      // Allow reactions anytime the player is in the arena (or just connected)
+      io.to(room.id).emit('reaction', {
+        userId,
+        emoji: key,
+        x: live ? live.x : null,
+        y: live ? live.y : null,
+      });
       ack?.({ ok: true });
     } catch (err) {
       console.error('reaction error:', err);
