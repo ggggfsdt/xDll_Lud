@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// dllump · bump arena — multiplayer backend
+// dllump · bump arena — multiplayer backend (fixed physics)
 // ═══════════════════════════════════════════════════════════════
 
 // ─── Catch unhandled errors ──────────────────────────────────
@@ -290,10 +290,10 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── NEW: Physics constants for balloon-like feel ────────────
-const RESTITUTION = 0.55;           // bounce softness (0 = no bounce, 1 = perfect elastic)
-const AIR_DAMPING = 0.98;           // per-tick velocity multiplier (slows down gradually)
-const MIN_SPEED_THRESHOLD = 0.05;   // below this, speed is set to 0 to avoid micro-sliding
+// ─── PHYSICS: balloon-like with gentle damping ──────────────
+const RESTITUTION = 0.60;              // soft bounce
+const AIR_DAMPING_PER_TICK = 0.995;    // applied once per tick (30 Hz) → ~0.86 per second
+const MIN_SPEED = 0.01;                // below this, set to zero to avoid micro‑drift
 
 function resolveWallCollision(p, radius, restitution = RESTITUTION) {
   const totalPts = PERIMETER.length;
@@ -325,7 +325,6 @@ function resolveWallCollision(p, radius, restitution = RESTITUTION) {
   p.y += bestNy * overlap;
   const vn = p.vx * bestNx + p.vy * bestNy;
   if (vn < 0) {
-    // reflect with restitution (soft bounce)
     p.vx -= (1 + restitution) * vn * bestNx;
     p.vy -= (1 + restitution) * vn * bestNy;
   }
@@ -374,7 +373,7 @@ function updatePhysics(dt) {
     }
   }
 
-  // Physics substeps (more substeps = smoother collisions)
+  // Physics substeps (10 per tick for smooth collisions)
   const subSteps = 10;
   const subDt = dt / subSteps;
   for (let step = 0; step < subSteps; step++) {
@@ -405,7 +404,6 @@ function updatePhysics(dt) {
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
             const totalMass = a.mass + b.mass;
-            // Apply restitution to the impulse (less bouncy)
             const impulse = (1 + RESTITUTION) * dvn / (1 / a.mass + 1 / b.mass);
             const aFactor = 1 - (a.mass / totalMass) * 0.6;
             const bFactor = 1 - (b.mass / totalMass) * 0.6;
@@ -424,18 +422,6 @@ function updatePhysics(dt) {
       resolveWallCollision(p, radius);
     });
 
-    // Apply air resistance (damping) and speed limits
-    stillAlive.forEach(p => {
-      p.vx *= AIR_DAMPING;
-      p.vy *= AIR_DAMPING;
-      // Clamp to max speed
-      const maxSp = speedForRadius(p.displayRadius || p.radius);
-      const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
-      // If speed is extremely small, set to 0 to stop drifting
-      if (sp < MIN_SPEED_THRESHOLD) { p.vx = 0; p.vy = 0; }
-    });
-
     // Eliminate players that have been pushed out of the arena (through gap)
     stillAlive.forEach(p => {
       const cx = half, cy = half;
@@ -446,6 +432,27 @@ function updatePhysics(dt) {
       }
     });
   }
+
+  // ─── Apply air damping ONCE per tick (not per substep) ───
+  // and clamp speed to max allowed
+  const aliveNow = getAlive();
+  aliveNow.forEach(p => {
+    // Gentle drag: multiply velocity by AIR_DAMPING_PER_TICK
+    p.vx *= AIR_DAMPING_PER_TICK;
+    p.vy *= AIR_DAMPING_PER_TICK;
+    // Clamp to max speed
+    const maxSp = speedForRadius(p.displayRadius || p.radius);
+    const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+    if (sp > maxSp) {
+      p.vx = (p.vx / sp) * maxSp;
+      p.vy = (p.vy / sp) * maxSp;
+    }
+    // If speed is below threshold, set to zero to avoid micro‑drift
+    if (sp < MIN_SPEED) {
+      p.vx = 0;
+      p.vy = 0;
+    }
+  });
 
   // Smooth radius transition
   room.players.forEach(p => {
