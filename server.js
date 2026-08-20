@@ -120,13 +120,13 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-const MIN_RADIUS = 8;
+const MIN_RADIUS = 11;
 const MAX_RADIUS = 52;
 
 function speedForRadius(radius) {
   const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
-  const speed = 8.0 - norm * 5.5;
-  return Math.max(2.5, Math.min(8.0, speed));
+  const speed = 6.5 - norm * 3.5;
+  return Math.max(3.0, Math.min(6.5, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -168,7 +168,7 @@ function computeRadii() {
   });
 }
 
-function makePlayer(id, bet, name, pfp) {
+function makePlayer(id, bet, name, pfp, crownRank) {
   const half = ARENA_SIZE / 2;
   const radius = 18;
   let x, y, attempts = 0, overlap = true;
@@ -186,6 +186,7 @@ function makePlayer(id, bet, name, pfp) {
     mass: radius * radius * 1.2,
     x: x ?? half, y: y ?? half, vx: 0, vy: 0,
     alive: true,
+    crownRank: crownRank || null, // 1 = gold crown/outline, 2 = silver crown/outline, null = none
   };
   room.players.push(p);
   computeRadii();
@@ -345,6 +346,46 @@ function updatePhysics(dt) {
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
+
+  // Finds the closest solid-wall segment to p (skipping segments inside an open gap)
+  // and, if p is overlapping it, pushes p back out and reflects its velocity.
+  // Returns true if a solid wall was actually hit this call.
+  //
+  // Correction magnitude is capped at 1.5x the circle's own radius — even in a rare
+  // deep-overlap edge case, this guarantees no single correction can violently
+  // "teleport" a circle across the arena; any leftover overlap just gets finished off
+  // over the next substep or two instead of snapping instantly.
+  function resolveWallCollision(p, radius) {
+    let bestDist = Infinity, bestNx = 0, bestNy = 0;
+    for (let i = 0; i < totalPts; i++) {
+      const j = (i + 1) % totalPts;
+      if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
+      const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
+      const bx = PERIMETER[j].x, by = PERIMETER[j].y;
+      const dx = bx - ax, dy = by - ay;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) continue;
+      let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+      const nearX = ax + t * dx, nearY = ay + t * dy;
+      const distX = p.x - nearX, distY = p.y - nearY;
+      const dist = Math.sqrt(distX * distX + distY * distY);
+      if (dist < radius && dist < bestDist) {
+        bestDist = dist;
+        bestNx = distX / dist;
+        bestNy = distY / dist;
+      }
+    }
+    if (bestDist === Infinity) return false;
+    let overlap = radius - bestDist;
+    overlap = Math.min(overlap, radius * 1.5);
+    p.x += bestNx * overlap;
+    p.y += bestNy * overlap;
+    const vn = p.vx * bestNx + p.vy * bestNy;
+    if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
+    return true;
+  }
+
   const subSteps = 10; // was 6 — smaller circles move faster (see speedForRadius) and the
   // extra substeps keep their per-step travel distance small enough that they can't tunnel
   // deep into a wall/another circle before a collision is caught, which is what was causing
@@ -357,62 +398,25 @@ function updatePhysics(dt) {
       p.y += p.vy * subDt * 60;
       const radius = p.displayRadius || p.radius;
 
-      // Find the CLOSEST wall segment, not just the first one that registers a hit.
-      // Near corners several consecutive segments can all be within `radius` of a
-      // small circle; picking the first one (in perimeter index order, not distance
-      // order) could push the circle in a slightly wrong direction — a small nudge
-      // for a big circle, but a visibly wrong snap for an 8px one.
-      let bestDist = Infinity, bestNx = 0, bestNy = 0;
-      for (let i = 0; i < totalPts; i++) {
-        const j = (i + 1) % totalPts;
-        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-        const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
-        const bx = PERIMETER[j].x, by = PERIMETER[j].y;
-        const dx = bx - ax, dy = by - ay;
-        const lenSq = dx * dx + dy * dy;
-        if (lenSq === 0) continue;
-        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-        t = Math.max(0, Math.min(1, t));
-        const nearX = ax + t * dx, nearY = ay + t * dy;
-        const distX = p.x - nearX, distY = p.y - nearY;
-        const dist = Math.sqrt(distX * distX + distY * distY);
-        if (dist < radius && dist < bestDist) {
-          bestDist = dist;
-          bestNx = distX / dist;
-          bestNy = distY / dist;
-        }
-      }
-      if (bestDist < Infinity) {
-        const overlap = radius - bestDist;
-        p.x += bestNx * overlap;
-        p.y += bestNy * overlap;
-        const vn = p.vx * bestNx + p.vy * bestNy;
-        if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
-      }
-      if (opening && opening.state === 'open') {
+      const hitWall = resolveWallCollision(p, radius);
+
+      if (!hitWall && opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-        const escapeThreshold = half * 1.12 + radius;
-        if (distFromCenter > escapeThreshold) {
-          let nearestGapIdx = -1, minDist = Infinity;
-          for (let i = 0; i < totalPts; i++) {
-            if (isInGap(i)) {
-              const d = (p.x - PERIMETER[i].x) ** 2 + (p.y - PERIMETER[i].y) ** 2;
-              if (d < minDist) { minDist = d; nearestGapIdx = i; }
-            }
-          }
-          if (nearestGapIdx >= 0) {
-            const angle = Math.atan2(dy, dx);
-            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
-            let diff = Math.abs(angle - gapAngle);
-            diff = Math.min(diff, 2 * Math.PI - diff);
-            const vOut = p.vx * dx + p.vy * dy;
-            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
-          }
+        // No solid wall caught them this frame while the gap is open — the only way to
+        // be out here without hitting a wall is having passed through the gap. Eliminate
+        // right away (small buffer past the boundary) instead of waiting for them to
+        // travel far out: that old, distant threshold left a window where the gap could
+        // close and reform a solid wall UNDER a player who hadn't been marked eliminated
+        // yet, which is what caused the "catapulted out but doesn't even lose" bug.
+        if (distFromCenter > half * 1.0 + radius * 0.4) {
+          p.alive = false;
+          return;
         }
       }
     });
+
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -441,6 +445,16 @@ function updatePhysics(dt) {
         }
       }
     }
+
+    // Second wall pass: the player-vs-player separation above can shove someone
+    // straight into (or through) a wall if they were pinned against it — this catches
+    // that and corrects it in the same substep, instead of letting it compound across
+    // several substeps into a big, visible glitch.
+    stillAlive.forEach(p => {
+      const radius = p.displayRadius || p.radius;
+      resolveWallCollision(p, radius);
+    });
+
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -487,6 +501,7 @@ function broadcastState() {
     players: room.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
+      crownRank: p.crownRank || null,
     })),
     opening: room.opening,
   });
@@ -550,7 +565,17 @@ io.on('connection', (socket) => {
       await saveUser(user);
       const existing = getPlayer(userId);
       if (existing) { existing.bet += amt; computeRadii(); }
-      else { makePlayer(userId, amt, user.username, user.anonymous ? '' : user.pfp); }
+      else {
+        let crownRank = null;
+        try {
+          const top2 = await topPlayers(2);
+          if (top2[0] && String(top2[0].id) === String(userId)) crownRank = 1;
+          else if (top2[1] && String(top2[1].id) === String(userId)) crownRank = 2;
+        } catch (err) {
+          console.error('crownRank lookup failed:', err);
+        }
+        makePlayer(userId, amt, user.username, user.anonymous ? '' : user.pfp, crownRank);
+      }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
@@ -875,14 +900,35 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
 });
 
 // ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
+// store.js's redeemPromoCode already enforces the code's overall maxUses, but that's
+// a global counter — it doesn't stop the SAME person from redeeming a multi-use code
+// more than once. We track that separately here, on the user's own record, so it
+// works regardless of how store.js's promo-code bookkeeping is structured.
+async function handleRedeem(code, userId) {
+  const normalizedCode = String(code).trim().toUpperCase();
+  const user = await getUser(userId);
+  if (!user) return { ok: false, error: 'User not found' };
+
+  user.redeemedCodes = user.redeemedCodes || [];
+  if (user.redeemedCodes.includes(normalizedCode)) {
+    return { ok: false, error: 'You already redeemed this code.' };
+  }
+
+  const result = await redeemPromoCode(code, userId);
+  if (result && result.ok) {
+    user.redeemedCodes.push(normalizedCode);
+    await saveUser(user);
+  }
+  return result;
+}
+
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
     if (!code || !userId) {
       return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
+    res.json(await handleRedeem(code, userId));
   } catch (err) {
     console.error('Redeem promo error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
@@ -895,8 +941,7 @@ app.get('/redeem', async (req, res) => {
     if (!code || !userId) {
       return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
+    res.json(await handleRedeem(code, userId));
   } catch (err) {
     console.error('Redeem promo (GET) error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
