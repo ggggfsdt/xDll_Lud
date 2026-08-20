@@ -238,22 +238,17 @@
             display: block;
         }
 
-        #countdown-wrap {
+        #countdown-timer {
             position: absolute;
             top: 16px;
             right: 16px;
-            z-index: 3;
-            pointer-events: none;
-            display: none;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 5px;
-        }
-        #countdown-timer {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
+            z-index: 3;
+            pointer-events: none;
+            display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
             background: transparent;
@@ -262,19 +257,25 @@
             padding: 0;
             line-height: 1;
         }
-        #countdown-progress-track {
-            width: 46px;
+        #countdown-progress {
+            position: absolute;
+            top: 42px;
+            right: 16px;
+            width: 48px;
             height: 3px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.18);
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            z-index: 3;
+            pointer-events: none;
+            display: none;
             overflow: hidden;
         }
         #countdown-progress-fill {
             height: 100%;
             width: 0%;
-            border-radius: 3px;
             background: #fff;
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
         }
 
         #win-history {
@@ -500,28 +501,6 @@
             transform: none;
             pointer-events: none;
         }
-        #allin-btn {
-            padding: 6px 14px;
-            border-radius: 12px;
-            border: 1px solid var(--gold);
-            background: rgba(212, 175, 55, 0.12);
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-            letter-spacing: 0.2px;
-        }
-        #allin-btn:active {
-            transform: scale(0.94);
-            background: rgba(212, 175, 55, 0.25);
-        }
-        #allin-btn:disabled {
-            opacity: 0.4;
-            transform: none;
-            pointer-events: none;
-        }
         #current-bet-display {
             color: var(--text2);
             font-size: 12px;
@@ -535,89 +514,103 @@
             color: var(--gold);
             font-weight: 700;
         }
-        #reactions-bar {
-            width: 100%;
+        #bet-overlay.collapsed #current-bet-display,
+        #bet-overlay.collapsed #bet-info,
+        #bet-overlay.collapsed #bet-input,
+        #bet-overlay.collapsed #bet-btn,
+        #bet-overlay.collapsed #all-in-btn,
+        #bet-overlay.collapsed #reaction-bar {
+            display: none;
+        }
+        #all-in-btn {
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--gold);
+            background: var(--gold-dim);
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        #all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        #all-in-btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        #reaction-bar {
             display: flex;
-            align-items: center;
+            width: 100%;
             justify-content: center;
-            gap: 6px;
-            margin-top: 6px;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 4px;
             padding-top: 6px;
             border-top: 1px solid var(--border);
-            flex-wrap: wrap;
         }
         .reaction-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
             border: 1px solid var(--border);
-            background: var(--surface2);
-            font-size: 15px;
-            line-height: 1;
+            background: var(--surface3);
+            font-size: 16px;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
+            transition: 0.15s;
             padding: 0;
-            transition: transform 0.12s ease, background 0.12s ease;
+            line-height: 1;
+        }
+        .reaction-btn img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            pointer-events: none;
         }
         .reaction-btn:active {
-            transform: scale(0.85);
-            background: var(--surface3);
+            transform: scale(0.88);
         }
         .reaction-btn:disabled {
             opacity: 0.35;
             pointer-events: none;
         }
-        .reaction-btn.reaction-gif-btn {
-            overflow: hidden;
-            padding: 0;
+        .reaction-btn.cooling {
+            opacity: 0.4;
         }
-        .reaction-btn.reaction-gif-btn img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        #bet-overlay.collapsed #current-bet-display,
-        #bet-overlay.collapsed #bet-info,
-        #bet-overlay.collapsed #bet-input,
-        #bet-overlay.collapsed #bet-btn,
-        #bet-overlay.collapsed #allin-btn,
-        #bet-overlay.collapsed #reactions-bar {
-            display: none;
-        }
-
-        #reaction-layer {
+        #floating-reactions {
             position: absolute;
-            left: 0;
-            top: 0;
-            width: 0;
-            height: 0;
+            inset: 0;
             pointer-events: none;
-            overflow: visible;
             z-index: 6;
+            overflow: hidden;
         }
-        .reaction-pop {
+        .floating-reaction {
             position: absolute;
-            transform: translate(-50%, -50%) scale(0);
-            font-size: 26px;
+            font-size: 28px;
             line-height: 1;
-            animation: reactionPop 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+            transform: translate(-50%, -50%) scale(0.3);
+            opacity: 0;
+            animation: reactionPop 1.4s ease-out forwards;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
         }
-        .reaction-pop img {
-            width: 34px;
-            height: 34px;
+        .floating-reaction img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
             display: block;
-            border-radius: 8px;
         }
         @keyframes reactionPop {
-            0% { transform: translate(-50%, -50%) scale(0) translateY(0); opacity: 0; }
-            18% { transform: translate(-50%, -50%) scale(1.25) translateY(-8px); opacity: 1; }
-            35% { transform: translate(-50%, -50%) scale(1) translateY(-10px); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(0.85) translateY(-46px); opacity: 0; }
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+            18%  { opacity: 1; transform: translate(-50%, -70%) scale(1.25); }
+            35%  { transform: translate(-50%, -85%) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -140%) scale(0.85); }
         }
 
         #player-list-container {
@@ -1561,12 +1554,10 @@
                 max-width: 60px;
                 font-size: 11px;
             }
-            #countdown-wrap {
-                top: 12px;
-                right: 12px;
-            }
             #countdown-timer {
                 font-size: 18px;
+                top: 12px;
+                right: 12px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -1711,15 +1702,11 @@
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
-                    <div id="reaction-layer"></div>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-wrap">
-                        <div id="countdown-timer">10.00</div>
-                        <div id="countdown-progress-track">
-                            <div id="countdown-progress-fill"></div>
-                        </div>
-                    </div>
+                    <div id="countdown-timer">10.00</div>
+                    <div id="countdown-progress"><div id="countdown-progress-fill"></div></div>
                     <div id="win-history"></div>
+                    <div id="floating-reactions"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
                     <div id="win-panel">
@@ -1738,18 +1725,17 @@
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                             <input type="number" id="bet-input" value="10" min="10" max="9999" />
                             <button id="bet-btn">join</button>
-                            <button id="allin-btn" title="Bet your entire balance">all in</button>
+                            <button id="all-in-btn">ALL IN</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
-                            <div id="reactions-bar">
-                                <button class="reaction-btn" data-emoji="😂">😂</button>
-                                <button class="reaction-btn" data-emoji="😮">😮</button>
-                                <button class="reaction-btn" data-emoji="🔥">🔥</button>
-                                <button class="reaction-btn" data-emoji="💀">💀</button>
-                                <button class="reaction-btn" data-emoji="👍">👍</button>
-                                <button class="reaction-btn" data-emoji="❤️">❤️</button>
-                                <button class="reaction-btn reaction-gif-btn" id="reaction-gif-btn" title="Send gif reaction">
-                                    <img src="https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif" alt="gif reaction" />
-                                </button>
+                            <div id="reaction-bar">
+                                <button class="reaction-btn" data-emoji="😂" title="lol">😂</button>
+                                <button class="reaction-btn" data-emoji="🔥" title="fire">🔥</button>
+                                <button class="reaction-btn" data-emoji="💀" title="skull">💀</button>
+                                <button class="reaction-btn" data-emoji="😎" title="cool">😎</button>
+                                <button class="reaction-btn" data-emoji="❤️" title="heart">❤️</button>
+                                <button class="reaction-btn" data-emoji="👀" title="eyes">👀</button>
+                                <button class="reaction-btn" data-emoji="😭" title="cry">😭</button>
+                                <button class="reaction-btn" data-emoji="gif:pepe" title="pepe"><img src="https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif" alt="🐸" /></button>
                             </div>
                         </div>
                     </div>
@@ -1902,15 +1888,14 @@
         const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
-        const allinBtn = document.getElementById('allin-btn');
-        const reactionsBar = document.getElementById('reactions-bar');
-        const reactionGifBtn = document.getElementById('reaction-gif-btn');
-        const reactionLayer = document.getElementById('reaction-layer');
+        const allInBtn = document.getElementById('all-in-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
         const countdownTimer = document.getElementById('countdown-timer');
-        const countdownWrap = document.getElementById('countdown-wrap');
+        const countdownProgress = document.getElementById('countdown-progress');
         const countdownProgressFill = document.getElementById('countdown-progress-fill');
+        const floatingReactions = document.getElementById('floating-reactions');
+        const reactionBtns = document.querySelectorAll('.reaction-btn');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -1959,6 +1944,7 @@
             'https://i.postimg.cc/CK4mnBsB/ezgif-3cacf477150edf7a.gif',
             'https://i.postimg.cc/054ZSqD7/pepe.gif'
         ];
+        const REACTION_GIF = 'https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif';
         const PRIZE_GIFS = {
             first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
             second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
@@ -2058,13 +2044,6 @@
             canvas.style.height = size + 'px';
             state.arenaSize = size;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-            // reaction-layer sits exactly on top of the canvas so reaction popups can be
-            // positioned using the same arena-space -> pixel math as the canvas drawing
-            reactionLayer.style.left = canvas.offsetLeft + 'px';
-            reactionLayer.style.top = canvas.offsetTop + 'px';
-            reactionLayer.style.width = size + 'px';
-            reactionLayer.style.height = size + 'px';
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
@@ -2132,8 +2111,16 @@
                 handleRoundEnd(payload);
             });
 
-            socket.on('reaction', ({ userId: fromId, type, value }) => {
-                spawnReaction(fromId, type, value);
+            socket.on('reaction', (data) => {
+                if (!data) return;
+                let wx = data.x, wy = data.y;
+                // Prefer live player position if we have them in the arena
+                const p = data.userId ? getPlayer(data.userId) : null;
+                if (p) {
+                    wx = p.renderX ?? p.x;
+                    wy = p.renderY ?? p.y;
+                }
+                spawnFloatingReaction(data.emoji, wx, wy);
             });
         }
 
@@ -2227,11 +2214,23 @@
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
-                countdownWrap.style.display = 'none';
+                countdownTimer.style.display = 'none';
+                countdownProgress.style.display = 'none';
             }
-            if (state.gameState === 'countdown') countdownWrap.style.display = 'flex';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownWrap.style.display = state
-                .gameState === 'countdown' ? 'flex' : countdownWrap.style.display;
+            if (state.gameState === 'countdown') {
+                countdownTimer.style.display = 'block';
+                countdownProgress.style.display = 'block';
+            }
+            if (state.gameState === 'playing' || state.gameState === 'finished' || state.gameState === 'prestart') {
+                if (state.gameState !== 'countdown') {
+                    countdownProgress.style.display = 'none';
+                }
+                if (state.gameState === 'prestart') {
+                    countdownTimer.style.display = 'block';
+                } else if (state.gameState !== 'countdown') {
+                    countdownTimer.style.display = 'none';
+                }
+            }
 
             updateStatsBar();
             updateBetUI();
@@ -2266,7 +2265,8 @@
             winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             winPanel.classList.add('show');
             haptic('heavy');
-            countdownWrap.style.display = 'none';
+            countdownTimer.style.display = 'none';
+            countdownProgress.style.display = 'none';
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2279,7 +2279,8 @@
             if (window.winTimeout) { clearTimeout(window.winTimeout);
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
-            countdownWrap.style.display = 'none';
+            countdownTimer.style.display = 'none';
+            countdownProgress.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2674,10 +2675,12 @@
                 betBtn.textContent = inGame ? 'increase' : 'join';
                 betBtn.disabled = false;
                 betInput.disabled = false;
+                if (allInBtn) allInBtn.disabled = state.balance < 10;
             } else {
                 betBtn.textContent = inGame ? 'in game' : 'waiting';
                 betBtn.disabled = true;
                 betInput.disabled = true;
+                if (allInBtn) allInBtn.disabled = true;
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
@@ -2821,74 +2824,6 @@
             });
         });
 
-        // ─── Reactions ───────────────────────────────────────────────
-        // Renders a floating emoji/gif at the sender's current circle position (or the
-        // arena center if they don't have a live circle right now), then removes itself.
-        function spawnReaction(fromUserId, type, value) {
-            const p = getPlayer(fromUserId);
-            const s = scaleFactor();
-            let x, y;
-            if (p) {
-                x = (p.renderX ?? p.x) * s;
-                y = (p.renderY ?? p.y) * s;
-            } else {
-                x = state.arenaSize / 2;
-                y = state.arenaSize / 2;
-            }
-            const el = document.createElement('div');
-            el.className = 'reaction-pop';
-            if (type === 'gif') {
-                const img = document.createElement('img');
-                img.src = value;
-                el.appendChild(img);
-            } else {
-                el.textContent = value;
-            }
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            reactionLayer.appendChild(el);
-            setTimeout(() => el.remove(), 1350);
-        }
-
-        const REACTION_COOLDOWN_MS = 1500;
-        let lastReactionAt = 0;
-
-        function sendReaction(type, value) {
-            if (!socket || !socket.connected) return;
-            const now = Date.now();
-            if (now - lastReactionAt < REACTION_COOLDOWN_MS) { haptic('light'); return; }
-            lastReactionAt = now;
-
-            // show it immediately for the sender too — don't wait on a server round-trip
-            if (state.userId) spawnReaction(state.userId, type, value);
-            haptic('light');
-
-            // brief visual cooldown on the buttons so it's obvious a reaction was just sent
-            document.querySelectorAll('.reaction-btn').forEach(b => b.disabled = true);
-            setTimeout(() => {
-                document.querySelectorAll('.reaction-btn').forEach(b => b.disabled = false);
-            }, REACTION_COOLDOWN_MS);
-
-            socket.emit('reaction', { type, value }, (res) => {
-                if (!res?.ok) console.warn('reaction rejected:', res?.error);
-            });
-        }
-
-        document.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
-            btn.addEventListener('click', () => sendReaction('emoji', btn.dataset.emoji));
-        });
-        reactionGifBtn.addEventListener('click', () => {
-            sendReaction('gif', reactionGifBtn.querySelector('img').src);
-        });
-
-        // ─── All In ──────────────────────────────────────────────────
-        allinBtn.addEventListener('click', () => {
-            if (state.balance < 10) { haptic('light'); return; }
-            betInput.value = Math.floor(state.balance);
-            betAmountDisplay.textContent = betInput.value;
-            betBtn.click();
-        });
-
         // ─── Reload PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
             const user = getPlayer(state.userId);
@@ -3004,17 +2939,20 @@
             updateRenderSmoothing(dt);
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
-                const totalCountdown = 10.0;
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, totalCountdown - elapsed);
+                const remaining = Math.max(0, 10.0 - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                const pct = Math.min(100, Math.max(0, (elapsed / totalCountdown) * 100));
+                // Progress bar fills left→right over the 10s countdown
+                const pct = Math.min(100, Math.max(0, (elapsed / 10.0) * 100));
                 countdownProgressFill.style.width = pct + '%';
+                countdownProgress.style.display = 'block';
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
                 countdownProgressFill.style.width = '100%';
+            } else {
+                countdownProgressFill.style.width = '0%';
             }
 
             render();
@@ -3062,6 +3000,101 @@
             betAmountDisplay.textContent = val;
         });
         betInput.value = 10;
+
+        // ─── ALL IN ───────────────────────────────────────────────────
+        if (allInBtn) {
+            allInBtn.addEventListener('click', () => {
+                if (!socket || !socket.connected) return;
+                const amount = Math.floor(state.balance);
+                if (amount < 10) { haptic('light'); return; }
+                betInput.value = amount;
+                betAmountDisplay.textContent = amount;
+                socket.emit('placeBet', { amount }, (res) => {
+                    if (!res?.ok) {
+                        haptic('light');
+                        console.warn('All-in rejected:', res?.error);
+                        return;
+                    }
+                    state.balance = res.balance;
+                    updateBalance();
+                    updateProfile();
+                    haptic('heavy');
+                });
+                betInput.value = 10;
+                updateBetUI();
+            });
+        }
+
+        // ─── EMOJI REACTIONS ──────────────────────────────────────────
+        let lastReactionAt = 0;
+        const REACTION_COOLDOWN = 1500;
+        function setReactionButtonsCooling(cooling) {
+            reactionBtns.forEach(btn => {
+                btn.disabled = cooling;
+                btn.classList.toggle('cooling', cooling);
+            });
+        }
+        function spawnFloatingReaction(emoji, worldX, worldY) {
+            if (!floatingReactions) return;
+            const canvas = document.getElementById('game-canvas');
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const wrap = document.getElementById('arena-wrap');
+            const wrapRect = wrap.getBoundingClientRect();
+            // Map server arena coords (0..SERVER_ARENA_SIZE) → pixels relative to arena-wrap
+            const arena = state.arenaSize || SERVER_ARENA_SIZE || 400;
+            const scaleX = rect.width / arena;
+            const scaleY = rect.height / arena;
+            const canvasLeft = rect.left - wrapRect.left;
+            const canvasTop = rect.top - wrapRect.top;
+            let px, py;
+            if (worldX != null && worldY != null) {
+                px = canvasLeft + worldX * scaleX;
+                py = canvasTop + worldY * scaleY;
+            } else {
+                px = canvasLeft + rect.width / 2;
+                py = canvasTop + rect.height / 2;
+            }
+            const el = document.createElement('div');
+            el.className = 'floating-reaction';
+            if (emoji === 'gif:pepe') {
+                const img = document.createElement('img');
+                img.src = REACTION_GIF;
+                img.alt = '🐸';
+                el.appendChild(img);
+            } else {
+                el.textContent = emoji;
+            }
+            el.style.left = px + 'px';
+            el.style.top = py + 'px';
+            floatingReactions.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+        reactionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!socket || !socket.connected) return;
+                const now = Date.now();
+                if (now - lastReactionAt < REACTION_COOLDOWN) {
+                    haptic('light');
+                    return;
+                }
+                const emoji = btn.dataset.emoji;
+                if (!emoji) return;
+                lastReactionAt = now;
+                setReactionButtonsCooling(true);
+                setTimeout(() => setReactionButtonsCooling(false), REACTION_COOLDOWN);
+                socket.emit('reaction', { emoji }, (res) => {
+                    if (!res?.ok) {
+                        // unlock early if server rejected
+                        lastReactionAt = 0;
+                        setReactionButtonsCooling(false);
+                        console.warn('Reaction rejected:', res?.error);
+                        return;
+                    }
+                    haptic('light');
+                });
+            });
+        });
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
