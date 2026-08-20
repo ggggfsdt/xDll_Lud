@@ -257,6 +257,26 @@
             padding: 0;
             line-height: 1;
         }
+        #countdown-progress {
+            position: absolute;
+            top: 42px;
+            right: 16px;
+            width: 48px;
+            height: 3px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            z-index: 3;
+            pointer-events: none;
+            display: none;
+            overflow: hidden;
+        }
+        #countdown-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #fff;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
 
         #win-history {
             position: absolute;
@@ -497,8 +517,100 @@
         #bet-overlay.collapsed #current-bet-display,
         #bet-overlay.collapsed #bet-info,
         #bet-overlay.collapsed #bet-input,
-        #bet-overlay.collapsed #bet-btn {
+        #bet-overlay.collapsed #bet-btn,
+        #bet-overlay.collapsed #all-in-btn,
+        #bet-overlay.collapsed #reaction-bar {
             display: none;
+        }
+        #all-in-btn {
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--gold);
+            background: var(--gold-dim);
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        #all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        #all-in-btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        #reaction-bar {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+            padding-top: 6px;
+            border-top: 1px solid var(--border);
+        }
+        .reaction-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.15s;
+            padding: 0;
+            line-height: 1;
+        }
+        .reaction-btn img {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            pointer-events: none;
+        }
+        .reaction-btn:active {
+            transform: scale(0.88);
+        }
+        .reaction-btn:disabled {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .reaction-btn.cooling {
+            opacity: 0.4;
+        }
+        #floating-reactions {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 6;
+            overflow: hidden;
+        }
+        .floating-reaction {
+            position: absolute;
+            font-size: 28px;
+            line-height: 1;
+            transform: translate(-50%, -50%) scale(0.3);
+            opacity: 0;
+            animation: reactionPop 1.4s ease-out forwards;
+            pointer-events: none;
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+        }
+        .floating-reaction img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            display: block;
+        }
+        @keyframes reactionPop {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+            18%  { opacity: 1; transform: translate(-50%, -70%) scale(1.25); }
+            35%  { transform: translate(-50%, -85%) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, -140%) scale(0.85); }
         }
 
         #player-list-container {
@@ -1592,7 +1704,9 @@
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
                     <div id="countdown-timer">10.00</div>
+                    <div id="countdown-progress"><div id="countdown-progress-fill"></div></div>
                     <div id="win-history"></div>
+                    <div id="floating-reactions"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
                     <div id="win-panel">
@@ -1611,7 +1725,18 @@
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                             <input type="number" id="bet-input" value="10" min="10" max="9999" />
                             <button id="bet-btn">join</button>
+                            <button id="all-in-btn">ALL IN</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                            <div id="reaction-bar">
+                                <button class="reaction-btn" data-emoji="😂" title="lol">😂</button>
+                                <button class="reaction-btn" data-emoji="🔥" title="fire">🔥</button>
+                                <button class="reaction-btn" data-emoji="💀" title="skull">💀</button>
+                                <button class="reaction-btn" data-emoji="😎" title="cool">😎</button>
+                                <button class="reaction-btn" data-emoji="❤️" title="heart">❤️</button>
+                                <button class="reaction-btn" data-emoji="👀" title="eyes">👀</button>
+                                <button class="reaction-btn" data-emoji="😭" title="cry">😭</button>
+                                <button class="reaction-btn" data-emoji="gif:pepe" title="pepe"><img src="https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif" alt="🐸" /></button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1763,9 +1888,14 @@
         const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
+        const allInBtn = document.getElementById('all-in-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
         const countdownTimer = document.getElementById('countdown-timer');
+        const countdownProgress = document.getElementById('countdown-progress');
+        const countdownProgressFill = document.getElementById('countdown-progress-fill');
+        const floatingReactions = document.getElementById('floating-reactions');
+        const reactionBtns = document.querySelectorAll('.reaction-btn');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -1809,8 +1939,12 @@
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
             'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
             'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif',
+            'https://i.postimg.cc/TYZkzX3F/ezgif-3f0e907be807d1cc.gif',
+            'https://i.postimg.cc/CK4mnBsB/ezgif-3cacf477150edf7a.gif',
+            'https://i.postimg.cc/054ZSqD7/pepe.gif'
         ];
+        const REACTION_GIF = 'https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif';
         const PRIZE_GIFS = {
             first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
             second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
@@ -1976,6 +2110,18 @@
             socket.on('roundEnd', (payload) => {
                 handleRoundEnd(payload);
             });
+
+            socket.on('reaction', (data) => {
+                if (!data) return;
+                let wx = data.x, wy = data.y;
+                // Prefer live player position if we have them in the arena
+                const p = data.userId ? getPlayer(data.userId) : null;
+                if (p) {
+                    wx = p.renderX ?? p.x;
+                    wy = p.renderY ?? p.y;
+                }
+                spawnFloatingReaction(data.emoji, wx, wy);
+            });
         }
 
         // ─── BUMP HAPTICS ────────────────────────────────────────────
@@ -2069,10 +2215,22 @@
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
                 countdownTimer.style.display = 'none';
+                countdownProgress.style.display = 'none';
             }
-            if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
-                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+            if (state.gameState === 'countdown') {
+                countdownTimer.style.display = 'block';
+                countdownProgress.style.display = 'block';
+            }
+            if (state.gameState === 'playing' || state.gameState === 'finished' || state.gameState === 'prestart') {
+                if (state.gameState !== 'countdown') {
+                    countdownProgress.style.display = 'none';
+                }
+                if (state.gameState === 'prestart') {
+                    countdownTimer.style.display = 'block';
+                } else if (state.gameState !== 'countdown') {
+                    countdownTimer.style.display = 'none';
+                }
+            }
 
             updateStatsBar();
             updateBetUI();
@@ -2108,6 +2266,7 @@
             winPanel.classList.add('show');
             haptic('heavy');
             countdownTimer.style.display = 'none';
+            countdownProgress.style.display = 'none';
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2121,6 +2280,7 @@
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
             countdownTimer.style.display = 'none';
+            countdownProgress.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2515,10 +2675,12 @@
                 betBtn.textContent = inGame ? 'increase' : 'join';
                 betBtn.disabled = false;
                 betInput.disabled = false;
+                if (allInBtn) allInBtn.disabled = state.balance < 10;
             } else {
                 betBtn.textContent = inGame ? 'in game' : 'waiting';
                 betBtn.disabled = true;
                 betInput.disabled = true;
+                if (allInBtn) allInBtn.disabled = true;
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
@@ -2782,8 +2944,15 @@
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                // Progress bar fills left→right over the 10s countdown
+                const pct = Math.min(100, Math.max(0, (elapsed / 10.0) * 100));
+                countdownProgressFill.style.width = pct + '%';
+                countdownProgress.style.display = 'block';
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
+                countdownProgressFill.style.width = '100%';
+            } else {
+                countdownProgressFill.style.width = '0%';
             }
 
             render();
@@ -2831,6 +3000,101 @@
             betAmountDisplay.textContent = val;
         });
         betInput.value = 10;
+
+        // ─── ALL IN ───────────────────────────────────────────────────
+        if (allInBtn) {
+            allInBtn.addEventListener('click', () => {
+                if (!socket || !socket.connected) return;
+                const amount = Math.floor(state.balance);
+                if (amount < 10) { haptic('light'); return; }
+                betInput.value = amount;
+                betAmountDisplay.textContent = amount;
+                socket.emit('placeBet', { amount }, (res) => {
+                    if (!res?.ok) {
+                        haptic('light');
+                        console.warn('All-in rejected:', res?.error);
+                        return;
+                    }
+                    state.balance = res.balance;
+                    updateBalance();
+                    updateProfile();
+                    haptic('heavy');
+                });
+                betInput.value = 10;
+                updateBetUI();
+            });
+        }
+
+        // ─── EMOJI REACTIONS ──────────────────────────────────────────
+        let lastReactionAt = 0;
+        const REACTION_COOLDOWN = 1500;
+        function setReactionButtonsCooling(cooling) {
+            reactionBtns.forEach(btn => {
+                btn.disabled = cooling;
+                btn.classList.toggle('cooling', cooling);
+            });
+        }
+        function spawnFloatingReaction(emoji, worldX, worldY) {
+            if (!floatingReactions) return;
+            const canvas = document.getElementById('game-canvas');
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const wrap = document.getElementById('arena-wrap');
+            const wrapRect = wrap.getBoundingClientRect();
+            // Map server arena coords (0..SERVER_ARENA_SIZE) → pixels relative to arena-wrap
+            const arena = state.arenaSize || SERVER_ARENA_SIZE || 400;
+            const scaleX = rect.width / arena;
+            const scaleY = rect.height / arena;
+            const canvasLeft = rect.left - wrapRect.left;
+            const canvasTop = rect.top - wrapRect.top;
+            let px, py;
+            if (worldX != null && worldY != null) {
+                px = canvasLeft + worldX * scaleX;
+                py = canvasTop + worldY * scaleY;
+            } else {
+                px = canvasLeft + rect.width / 2;
+                py = canvasTop + rect.height / 2;
+            }
+            const el = document.createElement('div');
+            el.className = 'floating-reaction';
+            if (emoji === 'gif:pepe') {
+                const img = document.createElement('img');
+                img.src = REACTION_GIF;
+                img.alt = '🐸';
+                el.appendChild(img);
+            } else {
+                el.textContent = emoji;
+            }
+            el.style.left = px + 'px';
+            el.style.top = py + 'px';
+            floatingReactions.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+        reactionBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!socket || !socket.connected) return;
+                const now = Date.now();
+                if (now - lastReactionAt < REACTION_COOLDOWN) {
+                    haptic('light');
+                    return;
+                }
+                const emoji = btn.dataset.emoji;
+                if (!emoji) return;
+                lastReactionAt = now;
+                setReactionButtonsCooling(true);
+                setTimeout(() => setReactionButtonsCooling(false), REACTION_COOLDOWN);
+                socket.emit('reaction', { emoji }, (res) => {
+                    if (!res?.ok) {
+                        // unlock early if server rejected
+                        lastReactionAt = 0;
+                        setReactionButtonsCooling(false);
+                        console.warn('Reaction rejected:', res?.error);
+                        return;
+                    }
+                    haptic('light');
+                });
+            });
+        });
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
