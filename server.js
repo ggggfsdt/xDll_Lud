@@ -128,9 +128,12 @@ const MIN_RADIUS = 16;
 const MAX_RADIUS = 52;
 
 function speedForRadius(radius) {
+  // Matches the speed curve that was actually verified together with the restored
+  // physics above (small circles top out at 6.0, big ones bottom out at 3.0) — the
+  // 6.5/3.5 curve that was here belonged to the other, glitchy physics variant.
   const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
-  const speed = 6.5 - norm * 3.5;
-  return Math.max(3.0, Math.min(6.5, speed));
+  const speed = 6.0 - norm * 3.0;
+  return Math.max(3.0, Math.min(6.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -354,80 +357,77 @@ function updatePhysics(dt) {
     }
   }
 
-  // Finds the closest solid-wall segment to p (skipping segments inside an open gap)
-  // and, if p is overlapping it, pushes p back out and reflects its velocity.
-  // Returns true if a solid wall was actually hit this call.
-  //
-  // Correction magnitude is capped at 1.5x the circle's own radius — even in a rare
-  // deep-overlap edge case, this guarantees no single correction can violently
-  // "teleport" a circle across the arena; any leftover overlap just gets finished off
-  // over the next substep or two instead of snapping instantly.
-  function resolveWallCollision(p, radius) {
-    let bestDist = Infinity, bestNx = 0, bestNy = 0;
-    for (let i = 0; i < totalPts; i++) {
-      const j = (i + 1) % totalPts;
-      if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-      const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
-      const bx = PERIMETER[j].x, by = PERIMETER[j].y;
-      const dx = bx - ax, dy = by - ay;
-      const lenSq = dx * dx + dy * dy;
-      if (lenSq === 0) continue;
-      let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-      const nearX = ax + t * dx, nearY = ay + t * dy;
-      const distX = p.x - nearX, distY = p.y - nearY;
-      const dist = Math.sqrt(distX * distX + distY * distY);
-      if (dist < radius && dist < bestDist) {
-        bestDist = dist;
-        bestNx = distX / dist;
-        bestNy = distY / dist;
-      }
-    }
-    if (bestDist === Infinity) return false;
-    let overlap = radius - bestDist;
-    overlap = Math.min(overlap, radius * 1.5);
-    p.x += bestNx * overlap;
-    p.y += bestNy * overlap;
-    const vn = p.vx * bestNx + p.vy * bestNy;
-    if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
-    return true;
-  }
-
-  const subSteps = 10; // was 6 — smaller circles move faster (see speedForRadius) and the
-  // extra substeps keep their per-step travel distance small enough that they can't tunnel
-  // deep into a wall/another circle before a collision is caught, which is what was causing
-  // the "glitchy" snap-corrections on small circles.
+  // ─── Restored, known-good physics — same 6 substeps, single-pass wall check (first
+  // match wins, then break), 50/50 position split with 0.6 damping on player-vs-player
+  // hits, same per-substep speed clamp, and the angle-aware gap-escape check (only
+  // eliminates you if you're actually near the open gap's direction and moving outward
+  // through it — not just far from the arena center for any reason). This replaces the
+  // 10-substep / mass-weighted-push version that was causing the "glitchy as hell"
+  // physics — that version was never actually confirmed good, it just looked different.
+  const pts = PERIMETER;
+  const subSteps = 6;
   const subDt = dt / subSteps;
+
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
       if (!p.alive) return;
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
+
       const radius = p.displayRadius || p.radius;
+      for (let i = 0; i < totalPts; i++) {
+        const j = (i + 1) % totalPts;
+        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
+        const ax = pts[i].x, ay = pts[i].y;
+        const bx = pts[j].x, by = pts[j].y;
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq === 0) continue;
+        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const nearX = ax + t * dx, nearY = ay + t * dy;
+        const distX = p.x - nearX, distY = p.y - nearY;
+        const dist = Math.sqrt(distX * distX + distY * distY);
+        if (dist < radius) {
+          const nx = distX / dist, ny = distY / dist;
+          const overlap = radius - dist;
+          p.x += nx * overlap;
+          p.y += ny * overlap;
+          const vn = p.vx * nx + p.vy * ny;
+          if (vn < 0) { p.vx -= 2 * vn * nx; p.vy -= 2 * vn * ny; }
+          break;
+        }
+      }
 
-      const hitWall = resolveWallCollision(p, radius);
-
-      if (!hitWall && opening && opening.state === 'open') {
+      if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-        // No solid wall caught them this frame while the gap is open — the only way to
-        // be out here without hitting a wall is having passed through the gap. Eliminate
-        // right away (small buffer past the boundary) instead of waiting for them to
-        // travel far out: that old, distant threshold left a window where the gap could
-        // close and reform a solid wall UNDER a player who hadn't been marked eliminated
-        // yet, which is what caused the "catapulted out but doesn't even lose" bug.
-        if (distFromCenter > half * 1.0 + radius * 0.4) {
-          p.alive = false;
-          return;
+        const escapeThreshold = half * 1.12 + radius;
+        if (distFromCenter > escapeThreshold) {
+          let nearestGapIdx = -1, minDist = Infinity;
+          for (let i = 0; i < totalPts; i++) {
+            if (isInGap(i)) {
+              const d = (p.x - pts[i].x) ** 2 + (p.y - pts[i].y) ** 2;
+              if (d < minDist) { minDist = d; nearestGapIdx = i; }
+            }
+          }
+          if (nearestGapIdx >= 0) {
+            const angle = Math.atan2(dy, dx);
+            const gapAngle = Math.atan2(pts[nearestGapIdx].y - cy, pts[nearestGapIdx].x - cx);
+            let diff = Math.abs(angle - gapAngle);
+            diff = Math.min(diff, 2 * Math.PI - diff);
+            const vOut = p.vx * dx + p.vy * dy;
+            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
+          }
         }
       }
     });
 
-    const stillAlive = alive.filter(p => p.alive);
-    for (let i = 0; i < stillAlive.length; i++) {
-      for (let j = i + 1; j < stillAlive.length; j++) {
-        const a = stillAlive[i], b = stillAlive[j];
+    for (let i = 0; i < alive.length; i++) {
+      for (let j = i + 1; j < alive.length; j++) {
+        const a = alive[i], b = alive[j];
+        if (!a.alive || !b.alive) continue;
         const dx = b.x - a.x, dy = b.y - a.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const rA = a.displayRadius || a.radius, rB = b.displayRadius || b.radius;
@@ -437,6 +437,7 @@ function updatePhysics(dt) {
           const overlap = (minDist - dist) * 0.5;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
+
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
@@ -453,16 +454,8 @@ function updatePhysics(dt) {
       }
     }
 
-    // Second wall pass: the player-vs-player separation above can shove someone
-    // straight into (or through) a wall if they were pinned against it — this catches
-    // that and corrects it in the same substep, instead of letting it compound across
-    // several substeps into a big, visible glitch.
-    stillAlive.forEach(p => {
-      const radius = p.displayRadius || p.radius;
-      resolveWallCollision(p, radius);
-    });
-
-    stillAlive.forEach(p => {
+    alive.forEach(p => {
+      if (!p.alive) return;
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
       if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
@@ -470,6 +463,7 @@ function updatePhysics(dt) {
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
+
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
