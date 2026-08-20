@@ -120,11 +120,7 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// Floor raised from 11 → 16, and the compression exponent below eased from 1.3 → 1.15,
-// so a player with a modest/average-sized bet isn't squashed down to a barely-visible
-// dot — everyone stays reasonably sized, only a truly tiny bet against a huge pot gets
-// close to the floor.
-const MIN_RADIUS = 16;
+const MIN_RADIUS = 11;
 const MAX_RADIUS = 52;
 
 function speedForRadius(radius) {
@@ -172,11 +168,8 @@ function computeRadii() {
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
     // exponent > 1 compresses small shares toward the floor (way smaller for a tiny
-    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS.
-    // Lowered from 1.3 → 1.15 (paired with the higher MIN_RADIUS above) so an average
-    // bet in an 8-player game lands noticeably bigger than the floor instead of
-    // hugging it.
-    const scaled = Math.pow(ratio, 1.15);
+    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS
+    const scaled = Math.pow(ratio, 1.3);
     const r = MIN_RADIUS + scaled * (MAX_RADIUS - MIN_RADIUS);
     p.targetRadius = Math.min(Math.max(r, MIN_RADIUS), MAX_RADIUS);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
