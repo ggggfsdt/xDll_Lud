@@ -9,7 +9,6 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
     </script>
     <style>
-        /* ─── Full existing CSS ─── */
         * {
             margin: 0;
             padding: 0;
@@ -58,6 +57,7 @@
             overflow: hidden;
             position: relative;
         }
+        /* dark overlay to keep readability */
         #app::before {
             content: '';
             position: absolute;
@@ -315,72 +315,6 @@
             margin-top: 2px;
         }
 
-        /* ─── Emoji row ───────────────────────────────────────────── */
-        #emoji-row {
-            position: absolute;
-            bottom: 78px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 6px;
-            z-index: 6;
-            background: rgba(0, 0, 0, 0.25);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            padding: 4px 8px;
-            border-radius: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            pointer-events: none;
-        }
-        #emoji-row button {
-            pointer-events: auto;
-            background: none;
-            border: none;
-            font-size: 22px;
-            line-height: 1;
-            cursor: pointer;
-            padding: 4px 6px;
-            transition: transform 0.15s ease;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.03);
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-        }
-        #emoji-row button:active {
-            transform: scale(0.8);
-        }
-        #emoji-row button.cooldown {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        /* floating emoji animation */
-        .floating-emoji {
-            position: fixed;
-            font-size: 36px;
-            pointer-events: none;
-            z-index: 100;
-            animation: floatUp 1s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-        }
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(0.6);
-            }
-            50% {
-                opacity: 1;
-                transform: translateY(-80px) scale(1.3);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-180px) scale(1);
-            }
-        }
-
         #bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -547,23 +481,6 @@
             transform: none;
             pointer-events: none;
         }
-        #all-in-btn {
-            padding: 6px 12px;
-            border-radius: 12px;
-            border: none;
-            background: #f0a030;
-            color: #000;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 0 16px rgba(240, 160, 48, 0.4);
-            white-space: nowrap;
-        }
-        #all-in-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
         #current-bet-display {
             color: var(--text2);
             font-size: 12px;
@@ -580,8 +497,7 @@
         #bet-overlay.collapsed #current-bet-display,
         #bet-overlay.collapsed #bet-info,
         #bet-overlay.collapsed #bet-input,
-        #bet-overlay.collapsed #bet-btn,
-        #bet-overlay.collapsed #all-in-btn {
+        #bet-overlay.collapsed #bet-btn {
             display: none;
         }
 
@@ -707,7 +623,6 @@
             margin-right: 2px;
         }
 
-        /* rest unchanged ... */
         #profile-page {
             padding: 20px 16px 10px;
             overflow-y: auto;
@@ -1507,10 +1422,6 @@
                 padding: 4px 12px;
                 font-size: 12px;
             }
-            #all-in-btn {
-                padding: 4px 8px;
-                font-size: 10px;
-            }
             #bet-info .value {
                 font-size: 12px;
             }
@@ -1659,19 +1570,6 @@
                 font-size: 12px;
                 padding: 6px 12px;
             }
-            #emoji-row {
-                bottom: 68px;
-                gap: 4px;
-                padding: 3px 6px;
-            }
-            #emoji-row button {
-                font-size: 18px;
-                width: 30px;
-                height: 30px;
-            }
-            .floating-emoji {
-                font-size: 28px;
-            }
         }
     </style>
 </head>
@@ -1697,16 +1595,6 @@
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
-                    <!-- ─── EMOJI ROW ──────────────────────────────── -->
-                    <div id="emoji-row">
-                        <button data-emoji="👍">👍</button>
-                        <button data-emoji="🎉">🎉</button>
-                        <button data-emoji="💎">💎</button>
-                        <button data-emoji="🚀">🚀</button>
-                        <button data-emoji="🔥">🔥</button>
-                        <button data-emoji="🐸">🐸</button>
-                    </div>
-
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
                         <div id="win-avatar-container"><img id="win-avatar" src="" alt="winner" /></div>
@@ -1723,7 +1611,6 @@
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                             <input type="number" id="bet-input" value="10" min="10" max="9999" />
                             <button id="bet-btn">join</button>
-                            <button id="all-in-btn">All in</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                         </div>
                     </div>
@@ -1816,7 +1703,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // CONFIG
+        // CONFIG — point this at your deployed backend
         // ═══════════════════════════════════════════════════════════════
         const SERVER_URL = 'https://dllump-production.up.railway.app';
 
@@ -1876,7 +1763,6 @@
         const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
-        const allInBtn = document.getElementById('all-in-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
         const countdownTimer = document.getElementById('countdown-timer');
@@ -1917,21 +1803,14 @@
         const promoSub = document.getElementById('promo-sub');
         const promoContinueBtn = document.getElementById('promo-continue-btn');
 
-        // ─── Extra win GIFs (3 new ones added) ────────────────────
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
             'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
             'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif',
-            // new ones:
-            'https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif',  // already present, but we'll keep
-            'https://i.postimg.cc/TYZkzX3F/ezgif-3f0e907be807d1cc.gif',
-            'https://i.postimg.cc/CK4mnBsB/ezgif-3cacf477150edf7a.gif',
-            'https://i.postimg.cc/054ZSqD7/pepe.gif'
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
         ];
-
         const PRIZE_GIFS = {
             first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
             second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
@@ -1940,7 +1819,7 @@
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
 
         // ═══════════════════════════════════════════════════════════════
-        // PFP SYSTEM (unchanged)
+        // PFP SYSTEM
         // ═══════════════════════════════════════════════════════════════
         function generateDefaultAvatar(initial, colorIndex) {
             const size = 128;
@@ -2019,7 +1898,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        // ARENA (unchanged)
+        // ARENA
         // ═══════════════════════════════════════════════════════════════
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
@@ -2036,7 +1915,7 @@
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
         // ═══════════════════════════════════════════════════════════════
-        // NETWORKING (unchanged)
+        // NETWORKING
         // ═══════════════════════════════════════════════════════════════
         const socket = (typeof io !== 'undefined') ? io(SERVER_URL, { transports: ['websocket', 'polling'] }) : null;
 
@@ -2099,9 +1978,15 @@
             });
         }
 
-        // ─── BUMP HAPTICS (unchanged) ────────────────────────────────
+        // ─── BUMP HAPTICS ────────────────────────────────────────────
+        // The server doesn't send explicit "these two players collided" events, but it
+        // does send everyone's live x/y/radius every tick — enough to detect a bump
+        // locally by checking distance vs. combined radius, same as the server's own
+        // collision check. We only care about collisions involving the local player
+        // (buzzing for every collision in an 8-player arena would be constant noise),
+        // and we only vibrate on the moment contact *starts*, not every frame while
+        // two circles are still overlapping.
         let touchingIds = new Set();
-
         function detectBumpsForHaptics() {
             if (state.gameState !== 'playing') { touchingIds = new Set(); return; }
             const me = getPlayer(state.userId);
@@ -2110,8 +1995,7 @@
             const nowTouching = new Set();
             state.players.forEach(p => {
                 if (p.id === me.id || !p.alive) return;
-                const dx = p.x - me.x,
-                    dy = p.y - me.y;
+                const dx = p.x - me.x, dy = p.y - me.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
                 if (dist < minDist) nowTouching.add(p.id);
@@ -2150,9 +2034,11 @@
                         pulseStartTime: 0,
                         isDying: false,
                         dieStartTime: 0,
-                        renderX: sp.x,
-                        renderY: sp.y,
-                        renderRadius: sp.displayRadius,
+                        // renderX/Y/Radius are the smoothed values actually drawn on screen —
+                        // they ease toward x/y/displayRadius (the raw server truth) every
+                        // animation frame instead of snapping straight to it, so motion looks
+                        // continuous even though the server only updates ~30x/sec.
+                        renderX: sp.x, renderY: sp.y, renderRadius: sp.displayRadius,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
@@ -2162,6 +2048,7 @@
                     local.pulseTime = 0;
                 }
                 if (local.alive && !sp.alive) {
+                    // just got eliminated this tick — play a shrink/fade instead of vanishing instantly
                     local.isDying = true;
                     local.dieStartTime = performance.now();
                     local.dieDuration = 450;
@@ -2195,7 +2082,7 @@
             updateFrogVisibility();
         }
 
-        // ─── WIN SCREEN (unchanged) ──────────────────────────────────
+        // ─── WIN SCREEN ──────────────────────────────────────────────
         function handleRoundEnd(payload) {
             console.log('[roundEnd] payload:', payload);
             if (!payload) { hideWinPanelAndReset(); return; }
@@ -2259,7 +2146,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // HELPERS (unchanged)
+        // HELPERS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function getAlive() { return state.players.filter(p => p.alive); }
 
@@ -2381,7 +2268,7 @@
         });
 
         // ═══════════════════════════════════════════════════════════════
-        // RENDER (unchanged)
+        // RENDER
         // ═══════════════════════════════════════════════════════════════
         function render() {
             const w = state.arenaSize;
@@ -2481,14 +2368,13 @@
             state.players.forEach(p => {
                 if (!p.alive && !p.isDying) return;
 
-                let dieScale = 1,
-                    dieAlpha = 1;
+                let dieScale = 1, dieAlpha = 1;
                 if (p.isDying) {
                     const elapsed = performance.now() - p.dieStartTime;
                     const t = Math.min(1, elapsed / (p.dieDuration || 450));
-                    dieScale = 1 - t;
-                    dieAlpha = 1 - t;
-                    if (t >= 1) { p.isDying = false; return; }
+                    dieScale = 1 - t; // shrink to nothing
+                    dieAlpha = 1 - t; // fade out
+                    if (t >= 1) { p.isDying = false; return; } // animation finished, stop drawing
                 }
 
                 const popScale = getPopScale(p);
@@ -2508,6 +2394,7 @@
                 ctx.save();
                 ctx.globalAlpha = dieAlpha;
 
+                // clip to circle
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
                 ctx.closePath();
@@ -2517,6 +2404,7 @@
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
                 } else {
+                    // fallback color + initial
                     ctx.fillStyle = p.color || '#555';
                     ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
                     ctx.fillStyle = '#fff';
@@ -2527,6 +2415,8 @@
                 }
                 ctx.restore();
 
+                // border — gold for the #1 leaderboard player, silver for #2, otherwise the
+                // usual subtle white ring (brighter/thicker if it's you)
                 ctx.save();
                 ctx.globalAlpha = dieAlpha;
                 ctx.shadowBlur = 0;
@@ -2557,9 +2447,9 @@
             });
         }
 
+        // small procedural crown icon (not an emoji, so we can color it gold/silver reliably)
         function drawCrown(ctx, cx, topY, size, color, alpha = 1) {
-            const w = size,
-                h = size * 0.62;
+            const w = size, h = size * 0.62;
             const baseY = topY - h * 0.15;
             const topPointY = baseY - h;
             ctx.save();
@@ -2587,7 +2477,7 @@
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // UI UPDATES (unchanged)
+        // UI UPDATES
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         function updateProfile() {
             pWins.textContent = state.wins;
@@ -2625,12 +2515,10 @@
                 betBtn.textContent = inGame ? 'increase' : 'join';
                 betBtn.disabled = false;
                 betInput.disabled = false;
-                allInBtn.disabled = false;
             } else {
                 betBtn.textContent = inGame ? 'in game' : 'waiting';
                 betBtn.disabled = true;
                 betInput.disabled = true;
-                allInBtn.disabled = true;
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
@@ -2645,7 +2533,6 @@
         ];
         let lastFrogGif = null;
         let frogWasVisible = false;
-
         function pickRandomFrogGif() {
             if (FROG_GIFS.length <= 1) return FROG_GIFS[0];
             let choice;
@@ -2681,7 +2568,7 @@
             winHistoryEl.innerHTML = html;
         }
 
-        // ─── Top UI (unchanged) ──────────────────────────────────────
+        // ─── Top UI ──────────────────────────────────────────────────
         function getPrizeForRank(rank) {
             if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
             if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
@@ -2707,8 +2594,8 @@
                 const prize = getPrizeForRank(p.rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
-                const crownHtml = info.cls === 'gold' ? '<div class="podium-crown">👑</div>' :
-                    info.cls === 'silver' ? '<div class="podium-crown">👑</div>' : '';
+                const crownHtml = info.cls === 'gold' ? '<div class="podium-crown">👑</div>'
+                    : info.cls === 'silver' ? '<div class="podium-crown">👑</div>' : '';
                 podiumHtml += `<div class="podium-col ${info.colClass}">
                             ${crownHtml}
                             <div class="rank-badge ${info.cls}">${info.label}</div>
@@ -2728,10 +2615,9 @@
                 const rank = p.rank;
                 let rClass = 'rank';
                 let rowAccent = '';
-                if (rank === 4) { rClass += ' gold';
-                    rowAccent = ' rank-gold'; } else if (rank === 5) { rClass += ' silver';
-                    rowAccent = ' rank-silver'; } else if (rank === 6) { rClass += ' bronze';
-                    rowAccent = ' rank-bronze'; }
+                if (rank === 4) { rClass += ' gold'; rowAccent = ' rank-gold'; }
+                else if (rank === 5) { rClass += ' silver'; rowAccent = ' rank-silver'; }
+                else if (rank === 6) { rClass += ' bronze'; rowAccent = ' rank-bronze'; }
                 const prize = getPrizeForRank(rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
@@ -2747,7 +2633,7 @@
             topList.innerHTML = listHtml;
         }
 
-        // ─── Tab switching (unchanged) ──────────────────────────────
+        // ─── Tab switching ──────────────────────────────────────────
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
@@ -2776,7 +2662,7 @@
             });
         });
 
-        // ─── Reload PFP (unchanged) ──────────────────────────────────
+        // ─── Reload PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
             const user = getPlayer(state.userId);
             if (user) { pfpCache.delete(user.pfp);
@@ -2792,7 +2678,7 @@
             }
         });
 
-        // ─── Anonymous mode (unchanged) ─────────────────────────────
+        // ─── Anonymous mode ─────────────────────────────────────────
         anonToggle.addEventListener('change', () => {
             if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
             const enabled = anonToggle.checked;
@@ -2800,7 +2686,7 @@
             socket.emit('setAnonymous', { enabled }, (res) => {
                 anonToggle.disabled = false;
                 if (!res?.ok) {
-                    anonToggle.checked = state.anonymous;
+                    anonToggle.checked = state.anonymous; // revert on failure
                     console.warn('setAnonymous failed:', res?.error);
                     return;
                 }
@@ -2809,7 +2695,7 @@
             });
         });
 
-        // ─── Promo (unchanged) ──────────────────────────────────────
+        // ─── Promo ──────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
             const code = promoInput.value.trim().toUpperCase();
             if (!code) {
@@ -2863,16 +2749,19 @@
             promoModal.classList.remove('show');
         });
 
-        // ─── RENDER LOOP (unchanged) ────────────────────────────────
+        // ─── RENDER LOOP ─────────────────────────────────────────────
+        // The server only broadcasts ~30 times/sec. Drawing raw server positions directly
+        // means most 60fps frames would just redraw the same spot, then jump — visually
+        // choppy, and any network hiccup reads as a "freeze". Instead we ease each
+        // player's renderX/Y/Radius toward the latest server values every frame, using a
+        // time-based (not frame-count-based) smoothing constant so it looks the same at
+        // 30fps or 120fps and can't compound into a stutter if a frame is dropped.
         let lastFrameTime = performance.now();
-
         function updateRenderSmoothing(dt) {
-            const halfLife = 0.05;
+            const halfLife = 0.05; // seconds for the render position to close half the gap to target
             const factor = 1 - Math.pow(0.5, dt / halfLife);
             state.players.forEach(p => {
-                if (p.renderX === undefined) { p.renderX = p.x;
-                    p.renderY = p.y;
-                    p.renderRadius = p.displayRadius; return; }
+                if (p.renderX === undefined) { p.renderX = p.x; p.renderY = p.y; p.renderRadius = p.displayRadius; return; }
                 p.renderX += (p.x - p.renderX) * factor;
                 p.renderY += (p.y - p.renderY) * factor;
                 p.renderRadius += ((p.displayRadius || p.renderRadius) - p.renderRadius) * factor;
@@ -2920,25 +2809,15 @@
                 updateProfile();
                 haptic('medium');
             });
-            // we keep the current bet input value, don't reset
+            betInput.value = 10;
             updateBetUI();
         });
 
-        // ─── ALL IN BUTTON ──────────────────────────────────────────
-        allInBtn.addEventListener('click', () => {
-            if (state.balance < 10) {
-                haptic('light');
-                return;
-            }
-            betInput.value = state.balance;
-            betAmountDisplay.textContent = state.balance;
-            // Optionally auto-click bet? We'll just set the value; user still needs to press "join" or "increase".
-            // But they might expect immediate bet? We'll just fill the field.
-            haptic('medium');
-        });
-
-        // ─── BET INPUT BEHAVIOR ─────────────────────────────────────
         betInput.addEventListener('input', () => {
+            // Don't force a value while the user is actively typing — that's what was
+            // making it impossible to clear "10" and type a new number (every keystroke
+            // that produced something below 10, including an empty field, was instantly
+            // snapped back to "10"). Clamping now only happens on blur / on submit.
             const raw = betInput.value;
             const val = parseInt(raw);
             betAmountDisplay.textContent = (raw === '' || isNaN(val)) ? '10' : Math.min(val, state.balance);
@@ -2952,42 +2831,6 @@
             betAmountDisplay.textContent = val;
         });
         betInput.value = 10;
-
-        // ─── EMOJI REACTIONS ────────────────────────────────────────
-        let emojiCooldown = false;
-
-        document.querySelectorAll('#emoji-row button').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (emojiCooldown) return;
-                const emoji = btn.dataset.emoji;
-                // create floating element
-                const rect = btn.getBoundingClientRect();
-                const x = rect.left + rect.width / 2;
-                const y = rect.top;
-
-                const el = document.createElement('div');
-                el.className = 'floating-emoji';
-                el.textContent = emoji;
-                el.style.left = x + 'px';
-                el.style.top = y + 'px';
-                document.body.appendChild(el);
-
-                // remove after animation ends (1s)
-                setTimeout(() => {
-                    if (el.parentNode) el.parentNode.removeChild(el);
-                }, 1000);
-
-                // trigger cooldown
-                emojiCooldown = true;
-                document.querySelectorAll('#emoji-row button').forEach(b => b.classList.add('cooldown'));
-                setTimeout(() => {
-                    emojiCooldown = false;
-                    document.querySelectorAll('#emoji-row button').forEach(b => b.classList.remove('cooldown'));
-                }, 1500);
-
-                haptic('light');
-            });
-        });
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
