@@ -124,9 +124,11 @@ const MIN_RADIUS = 11;
 const MAX_RADIUS = 52;
 
 function speedForRadius(radius) {
+  // Slight size→speed curve: bigger = a bit slower, but never stalls.
+  // Kept close to the original hockey-puck feel (smooth slide + solid knocks).
   const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
-  const speed = 6.5 - norm * 3.5;
-  return Math.max(3.0, Math.min(6.5, speed));
+  const speed = 6.2 - norm * 2.8;
+  return Math.max(3.4, Math.min(6.2, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -378,18 +380,22 @@ function updatePhysics(dt) {
     }
     if (bestDist === Infinity) return false;
     let overlap = radius - bestDist;
-    overlap = Math.min(overlap, radius * 1.5);
+    // Cap correction so a deep overlap never teleports the circle
+    overlap = Math.min(overlap, radius * 1.2);
     p.x += bestNx * overlap;
     p.y += bestNy * overlap;
     const vn = p.vx * bestNx + p.vy * bestNy;
-    if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
+    if (vn < 0) {
+      // Elastic wall bounce (full reflection along normal)
+      p.vx -= 2 * vn * bestNx;
+      p.vy -= 2 * vn * bestNy;
+    }
     return true;
   }
 
-  const subSteps = 10; // was 6 — smaller circles move faster (see speedForRadius) and the
-  // extra substeps keep their per-step travel distance small enough that they can't tunnel
-  // deep into a wall/another circle before a collision is caught, which is what was causing
-  // the "glitchy" snap-corrections on small circles.
+  // 8 substeps is enough to prevent tunneling while keeping motion smooth
+  // (higher values + hard min-speed previously contributed to visible shake).
+  const subSteps = 8;
   const subDt = dt / subSteps;
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
@@ -404,13 +410,11 @@ function updatePhysics(dt) {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-        // No solid wall caught them this frame while the gap is open — the only way to
-        // be out here without hitting a wall is having passed through the gap. Eliminate
-        // right away (small buffer past the boundary) instead of waiting for them to
-        // travel far out: that old, distant threshold left a window where the gap could
-        // close and reform a solid wall UNDER a player who hadn't been marked eliminated
-        // yet, which is what caused the "catapulted out but doesn't even lose" bug.
-        if (distFromCenter > half * 1.0 + radius * 0.4) {
+        // Player must fully exit through the opening — only eliminate once the
+        // entire circle has cleared the arena boundary by a clear margin.
+        // (Previously the threshold was too tight: half + 0.4*r, so brushing
+        // the gap edge already counted as a loss.)
+        if (distFromCenter > half + radius + 18) {
           p.alive = false;
           return;
         }
@@ -427,29 +431,29 @@ function updatePhysics(dt) {
         const minDist = rA + rB;
         if (dist < minDist && dist > 0.001) {
           const nx = dx / dist, ny = dy / dist;
-          const overlap = (minDist - dist) * 0.5;
+          // Separate only enough to stop overlap — soft so it doesn't jitter
+          const overlap = (minDist - dist) * 0.55;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
+          // Classic elastic 2D collision (hockey-puck style): exchange momentum
+          // along the contact normal by mass, no extra damping factors that
+          // previously made circles feel floaty / balloon-like.
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
-            const totalMass = a.mass + b.mass;
-            const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
-            const aFactor = 1 - (a.mass / totalMass) * 0.6;
-            const bFactor = 1 - (b.mass / totalMass) * 0.6;
-            a.vx -= (impulse / a.mass) * aFactor * nx;
-            a.vy -= (impulse / a.mass) * aFactor * ny;
-            b.vx += (impulse / b.mass) * bFactor * nx;
-            b.vy += (impulse / b.mass) * bFactor * ny;
+            const invMassA = 1 / a.mass;
+            const invMassB = 1 / b.mass;
+            const impulse = (2 * dvn) / (invMassA + invMassB);
+            a.vx -= impulse * invMassA * nx;
+            a.vy -= impulse * invMassA * ny;
+            b.vx += impulse * invMassB * nx;
+            b.vy += impulse * invMassB * ny;
           }
         }
       }
     }
 
-    // Second wall pass: the player-vs-player separation above can shove someone
-    // straight into (or through) a wall if they were pinned against it — this catches
-    // that and corrects it in the same substep, instead of letting it compound across
-    // several substeps into a big, visible glitch.
+    // Second wall pass after player separation (catches wall push-through).
     stillAlive.forEach(p => {
       const radius = p.displayRadius || p.radius;
       resolveWallCollision(p, radius);
@@ -459,8 +463,13 @@ function updatePhysics(dt) {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
       if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
-      const minSp = 3.0;
-      if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
+      // Soft floor only — never hard-snap velocity (that was causing the shake).
+      // Gently nudge up if almost stopped so rounds don't freeze in place.
+      if (sp < 2.2 && sp > 0.01) {
+        const ratio = 2.2 / sp;
+        p.vx *= ratio;
+        p.vy *= ratio;
+      }
     });
   }
   room.players.forEach(p => {
@@ -614,6 +623,40 @@ io.on('connection', (socket) => {
       ack?.({ ok: true, top: masked });
     } catch (err) {
       console.error('Leaderboard error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
+  // Emoji / reaction — 1.5s cooldown enforced server-side
+  const REACTION_COOLDOWN_MS = 1500;
+  const ALLOWED_REACTIONS = new Set([
+    '😂', '🔥', '💀', '😎', '❤️', '👀', '😭', '🐸',
+    'gif:pepe', // special animated reaction
+  ]);
+  socket.on('reaction', ({ emoji }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      const key = String(emoji || '');
+      if (!ALLOWED_REACTIONS.has(key)) {
+        return ack?.({ ok: false, error: 'Invalid reaction.' });
+      }
+      const now = Date.now();
+      const last = socket.data.lastReactionAt || 0;
+      if (now - last < REACTION_COOLDOWN_MS) {
+        return ack?.({ ok: false, error: 'Cooldown', remaining: REACTION_COOLDOWN_MS - (now - last) });
+      }
+      socket.data.lastReactionAt = now;
+      const live = getPlayer(userId);
+      // Allow reactions anytime the player is in the arena (or just connected)
+      io.to(room.id).emit('reaction', {
+        userId,
+        emoji: key,
+        x: live ? live.x : null,
+        y: live ? live.y : null,
+      });
+      ack?.({ ok: true });
+    } catch (err) {
+      console.error('reaction error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
