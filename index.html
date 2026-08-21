@@ -238,17 +238,22 @@
             display: block;
         }
 
-        #countdown-timer {
+        #countdown-wrap {
             position: absolute;
             top: 16px;
             right: 16px;
+            z-index: 3;
+            pointer-events: none;
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        #countdown-timer {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
-            z-index: 3;
-            pointer-events: none;
-            display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
             background: transparent;
@@ -256,6 +261,20 @@
             backdrop-filter: none;
             padding: 0;
             line-height: 1;
+        }
+        #countdown-progress-track {
+            width: 46px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.18);
+            overflow: hidden;
+        }
+        #countdown-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            background: #fff;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
         }
 
         #win-history {
@@ -922,6 +941,21 @@
             max-width: 110px;
             transition: 0.2s;
         }
+        .podium-crown {
+            font-size: 20px;
+            line-height: 1;
+            margin-bottom: -2px;
+            filter: drop-shadow(0 0 6px rgba(255, 212, 71, 0.7));
+            animation: crownFloat 2.2s ease-in-out infinite;
+        }
+        .podium-col.p2 .podium-crown {
+            font-size: 15px;
+            filter: grayscale(1) brightness(1.5) drop-shadow(0 0 5px rgba(216, 221, 227, 0.7));
+        }
+        @keyframes crownFloat {
+            0%, 100% { transform: translateY(0) rotate(-3deg); }
+            50% { transform: translateY(-3px) rotate(3deg); }
+        }
         .podium-col .rank-badge {
             font-size: 14px;
             font-weight: 800;
@@ -955,8 +989,15 @@
             transition: 0.2s;
         }
         .podium-col .podium-pfp.gold {
+            width: 64px;
+            height: 64px;
             border-color: var(--gold);
             box-shadow: 0 0 30px var(--gold-dim);
+            animation: goldPulse 2.2s ease-in-out infinite;
+        }
+        @keyframes goldPulse {
+            0%, 100% { box-shadow: 0 0 22px var(--gold-dim); }
+            50% { box-shadow: 0 0 40px var(--gold); }
         }
         .podium-col .podium-pfp.silver {
             border-color: #b8b8c8;
@@ -1351,10 +1392,12 @@
                 max-width: 60px;
                 font-size: 11px;
             }
-            #countdown-timer {
-                font-size: 18px;
+            #countdown-wrap {
                 top: 12px;
                 right: 12px;
+            }
+            #countdown-timer {
+                font-size: 18px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -1500,7 +1543,12 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">10.00</div>
+                    <div id="countdown-wrap">
+                        <div id="countdown-timer">10.00</div>
+                        <div id="countdown-progress-track">
+                            <div id="countdown-progress-fill"></div>
+                        </div>
+                    </div>
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
@@ -1670,7 +1718,9 @@
         const betBtn = document.getElementById('bet-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
+        const countdownWrap = document.getElementById('countdown-wrap');
         const countdownTimer = document.getElementById('countdown-timer');
+        const countdownProgressFill = document.getElementById('countdown-progress-fill');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -1937,6 +1987,11 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
+                        // renderX/Y/Radius are the smoothed values actually drawn on screen —
+                        // they ease toward x/y/displayRadius (the raw server truth) every
+                        // animation frame instead of snapping straight to it, so motion looks
+                        // continuous even though the server only updates ~30x/sec.
+                        renderX: sp.x, renderY: sp.y, renderRadius: sp.displayRadius,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
@@ -1952,6 +2007,7 @@
                 local.y = sp.y;
                 local.displayRadius = sp.displayRadius;
                 local.alive = sp.alive;
+                local.crownRank = sp.crownRank || null;
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
@@ -1959,11 +2015,11 @@
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
-                countdownTimer.style.display = 'none';
+                countdownWrap.style.display = 'none';
             }
-            if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
-                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+            if (state.gameState === 'countdown') countdownWrap.style.display = 'flex';
+            if (state.gameState === 'playing' || state.gameState === 'finished') countdownWrap.style.display = state
+                .gameState === 'countdown' ? 'flex' : countdownWrap.style.display;
 
             updateStatsBar();
             updateBetUI();
@@ -1998,7 +2054,7 @@
             winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             winPanel.classList.add('show');
             haptic('heavy');
-            countdownTimer.style.display = 'none';
+            countdownWrap.style.display = 'none';
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2011,7 +2067,7 @@
             if (window.winTimeout) { clearTimeout(window.winTimeout);
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
+            countdownWrap.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2259,7 +2315,7 @@
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
-                const radius = (p.displayRadius || 18) * s;
+                const radius = (p.renderRadius || p.displayRadius || 18) * s;
                 const displayRadius = radius * popScale;
                 let pulseScale = 1;
                 if (p.isPulsing) {
@@ -2269,8 +2325,8 @@
                 }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-                const px = p.x * s,
-                    py = p.y * s;
+                const px = (p.renderX ?? p.x) * s,
+                    py = (p.renderY ?? p.y) * s;
 
                 ctx.save();
                 // clip to circle
@@ -2294,17 +2350,64 @@
                 }
                 ctx.restore();
 
-                // border
+                // border — gold for the #1 leaderboard player, silver for #2, otherwise the
+                // usual subtle white ring (brighter/thicker if it's you). Static (no pulse).
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
                 const isYou = p.id === state.userId;
-                ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
-                ctx.lineWidth = isYou ? 2.5 : 1.5;
+                if (p.crownRank === 1) {
+                    ctx.strokeStyle = '#ffd447';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = 'rgba(255,212,71,0.7)';
+                    ctx.shadowBlur = 8;
+                } else if (p.crownRank === 2) {
+                    ctx.strokeStyle = '#d8dde3';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = 'rgba(216,221,227,0.6)';
+                    ctx.shadowBlur = 8;
+                } else {
+                    ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
+                    ctx.lineWidth = isYou ? 2.5 : 1.5;
+                }
                 ctx.stroke();
                 ctx.restore();
+
+                if (p.crownRank === 1 || p.crownRank === 2) {
+                    drawCrown(ctx, px, py - finalRadius, Math.max(finalRadius * 0.6, 10),
+                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', 1);
+                }
             });
+        }
+
+        // small procedural crown icon (not an emoji, so we can color it gold/silver reliably)
+        function drawCrown(ctx, cx, topY, size, color, alpha = 1) {
+            const w = size, h = size * 0.62;
+            const baseY = topY - h * 0.15;
+            const topPointY = baseY - h;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.moveTo(cx - w / 2, baseY);
+            ctx.lineTo(cx - w / 2, baseY - h * 0.45);
+            ctx.lineTo(cx - w / 3, baseY - h * 0.15);
+            ctx.lineTo(cx - w / 6, topPointY);
+            ctx.lineTo(cx, baseY - h * 0.25);
+            ctx.lineTo(cx + w / 6, topPointY);
+            ctx.lineTo(cx + w / 3, baseY - h * 0.15);
+            ctx.lineTo(cx + w / 2, baseY - h * 0.45);
+            ctx.lineTo(cx + w / 2, baseY);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+            ctx.restore();
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2408,7 +2511,10 @@
                 const prize = getPrizeForRank(p.rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
+                const crownHtml = info.cls === 'gold' ? '<div class="podium-crown">👑</div>'
+                    : info.cls === 'silver' ? '<div class="podium-crown">👑</div>' : '';
                 podiumHtml += `<div class="podium-col ${info.colClass}">
+                            ${crownHtml}
                             <div class="rank-badge ${info.cls}">${info.label}</div>
                             <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="podium-name">${p.name}</div>
@@ -2560,17 +2666,44 @@
         });
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
+        // The server only broadcasts ~30 times/sec. Drawing raw server positions directly
+        // means most 60fps+ frames would just redraw the same spot, then jump — visually
+        // choppy/laggy, and any network hiccup reads as a "freeze". Instead we ease each
+        // player's renderX/Y/Radius toward the latest server values every frame, using a
+        // time-based (not frame-count-based) smoothing constant so it looks the same at
+        // 30fps or 120fps and can't compound into a stutter if a frame is dropped.
+        let lastFrameTime = performance.now();
+        function updateRenderSmoothing(dt) {
+            const halfLife = 0.05; // seconds for the render position to close half the gap to target
+            const factor = 1 - Math.pow(0.5, dt / halfLife);
+            state.players.forEach(p => {
+                if (p.renderX === undefined) { p.renderX = p.x; p.renderY = p.y; p.renderRadius = p.displayRadius; return; }
+                p.renderX += (p.x - p.renderX) * factor;
+                p.renderY += (p.y - p.renderY) * factor;
+                p.renderRadius += ((p.displayRadius || p.renderRadius) - p.renderRadius) * factor;
+            });
+        }
+
         function renderLoop() {
+            const now = performance.now();
+            const dt = Math.min(0.1, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
             updatePlayerAnimations();
+            updateRenderSmoothing(dt);
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
+                const totalCountdown = 10.0;
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
+                const remaining = Math.max(0, totalCountdown - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                const pct = Math.min(100, Math.max(0, (elapsed / totalCountdown) * 100));
+                countdownProgressFill.style.width = pct + '%';
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
+                countdownProgressFill.style.width = '100%';
             }
 
             render();
