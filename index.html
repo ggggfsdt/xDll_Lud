@@ -264,7 +264,7 @@
             padding: 0;
         }
         #timer-progress-wrap {
-            width: 44px;  /* shorter */
+            width: 44px;
             height: 3px;
             background: rgba(255, 255, 255, 0.12);
             border-radius: 4px;
@@ -364,13 +364,11 @@
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 10px 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            padding: 12px 16px 16px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
-            flex-wrap: wrap;
-            justify-content: center;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             transition: 0.3s;
             position: relative;
         }
@@ -378,6 +376,8 @@
             padding: 6px 12px;
             gap: 4px;
             cursor: pointer;
+            flex-direction: row;
+            justify-content: center;
         }
         #bet-overlay.collapsed>*:not(.bet-toggle) {
             display: none;
@@ -447,59 +447,70 @@
             display: inline;
         }
 
-        #bet-info {
-            font-size: 12px;
-            color: var(--text2);
+        /* New bet UI layout */
+        .bet-row {
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0px;
-            min-width: 70px;
-        }
-        #bet-info .label {
-            font-size: 9px;
-            text-transform: uppercase;
-            opacity: 0.5;
-            letter-spacing: 0.6px;
-        }
-        #bet-info .value {
-            font-weight: 700;
-            color: var(--gold);
-            font-size: 14px;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
         }
         #bet-input {
-            width: 60px;
-            padding: 6px 8px;
+            flex: 1;
+            padding: 10px 12px;
             border-radius: 10px;
             border: 1px solid var(--border);
             background: var(--surface3);
             color: var(--text);
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 600;
             text-align: center;
             outline: none;
             font-variant-numeric: tabular-nums;
+            min-width: 0;
+            height: 48px;
         }
         #bet-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 24px var(--primary-glow);
         }
+        #all-in-btn {
+            flex-shrink: 0;
+            padding: 0 14px;
+            height: 48px;
+            border-radius: 10px;
+            border: none;
+            background: var(--gold);
+            color: #000;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
+        }
+        #all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
         #bet-btn {
-            padding: 6px 18px;
+            padding: 12px 0;
             border-radius: 12px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 18px;
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 0 24px var(--primary-glow);
-            letter-spacing: 0.2px;
-            white-space: nowrap;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 2px;
+            height: 50px;
         }
         #bet-btn:active {
-            transform: scale(0.94);
+            transform: scale(0.96);
             opacity: 0.8;
         }
         #bet-btn:disabled {
@@ -509,21 +520,24 @@
         }
         #current-bet-display {
             color: var(--text2);
-            font-size: 12px;
-            width: 100%;
+            font-size: 13px;
             text-align: center;
             margin-top: 2px;
             border-top: 1px solid var(--border);
-            padding-top: 4px;
+            padding-top: 6px;
         }
         #current-bet-display span {
             color: var(--gold);
             font-weight: 700;
         }
         #bet-overlay.collapsed #current-bet-display,
-        #bet-overlay.collapsed #bet-info,
-        #bet-overlay.collapsed #bet-input,
+        #bet-overlay.collapsed .bet-row,
         #bet-overlay.collapsed #bet-btn {
+            display: none;
+        }
+
+        /* Remove old bet-info */
+        #bet-info {
             display: none;
         }
 
@@ -1345,20 +1359,24 @@
                 width: 96%;
             }
             #bet-overlay {
-                padding: 8px 12px;
-                gap: 6px;
+                padding: 10px 12px 14px;
             }
             #bet-input {
-                width: 48px;
+                font-size: 16px;
+                height: 42px;
+                padding: 8px 10px;
+            }
+            #all-in-btn {
+                height: 42px;
                 font-size: 13px;
-                padding: 4px 4px;
+                padding: 0 10px;
             }
             #bet-btn {
-                padding: 4px 12px;
-                font-size: 12px;
+                height: 44px;
+                font-size: 16px;
             }
-            #bet-info .value {
-                font-size: 12px;
+            #bet-overlay.collapsed {
+                padding: 4px 8px;
             }
             .profile-card {
                 padding: 16px 14px 20px;
@@ -1555,8 +1573,10 @@
                     <div id="bet-overlay-wrap">
                         <div id="bet-overlay">
                             <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
-                            <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
-                            <input type="number" id="bet-input" value="10" min="10" max="9999" />
+                            <div class="bet-row">
+                                <input type="number" id="bet-input" value="10" min="10" max="9999" />
+                                <button id="all-in-btn">All In</button>
+                            </div>
                             <button id="bet-btn">join</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                         </div>
@@ -1692,7 +1712,7 @@
         };
 
         let SERVER_ARENA_SIZE = 400;
-        const VISUAL_RADIUS_SCALE = 0.85; // make circles slightly smaller overall
+        const VISUAL_RADIUS_SCALE = 0.85;
 
         // DOM refs
         const canvas = document.getElementById('game-canvas');
@@ -1707,7 +1727,7 @@
         const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
-        const betAmountDisplay = document.getElementById('bet-amount-display');
+        const allInBtn = document.getElementById('all-in-btn');
         const currentBetDisplay = document.getElementById('current-bet-value');
         const countdownTimer = document.getElementById('countdown-timer');
         const timerProgressWrap = document.getElementById('timer-progress-wrap');
@@ -1843,8 +1863,6 @@
             doLoad();
         }
 
-        // ─── No crown drawing ────────────────────────────────────────
-
         // ═══════════════════════════════════════════════════════════════
         // ARENA
         // ═══════════════════════════════════════════════════════════════
@@ -1862,7 +1880,6 @@
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
-        // ─── Smooth easing ──────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
         // ═══════════════════════════════════════════════════════════════
@@ -1982,7 +1999,6 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
-                        // Spawn animation properties
                         homeX: sp.x,
                         homeY: sp.y,
                         spawnStartX: sp.x + (Math.random() - 0.5) * 80,
@@ -2000,20 +2016,16 @@
                     local.homeX = sp.x;
                     local.homeY = sp.y;
 
-                    // During countdown/prestart, smoothly interpolate to home positions
                     if (isCountdown) {
-                        // If not already spawning, start spawn animation
                         if (!local.isSpawning) {
                             local.spawnStartX = local.x || sp.x;
                             local.spawnStartY = local.y || sp.y;
                             local.spawnStartTime = performance.now();
-                            local.spawnDuration = 2000; // 2 seconds (matches prestart timer)
+                            local.spawnDuration = 2000;
                             local.isSpawning = true;
                             local.spawnProgress = 0;
                         }
-                        // We'll update x/y in the animation loop
                     } else {
-                        // Not in countdown: set position directly if not spawning
                         if (!local.isSpawning) {
                             local.x = sp.x;
                             local.y = sp.y;
@@ -2034,7 +2046,6 @@
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
-            // If game becomes playing, ensure all players stop spawning and set positions
             if (state.gameState === 'playing' || state.gameState === 'finished') {
                 state.players.forEach(p => {
                     p.isSpawning = false;
@@ -2182,14 +2193,12 @@
         function updatePlayerAnimations() {
             const now = performance.now();
             state.players.forEach(p => {
-                // Pulse animation
                 if (p.isPulsing) {
                     const elapsed = (now - p.pulseStartTime) / 1000;
                     if (elapsed > 0.6) { p.isPulsing = false;
                         p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
 
-                // Spawn animation: smoothly move from spawnStart to home
                 if (p.isSpawning && p.homeX !== undefined) {
                     const elapsed = now - p.spawnStartTime;
                     const progress = Math.min(elapsed / p.spawnDuration, 1);
@@ -2270,6 +2279,13 @@
             betCollapsed = !betCollapsed;
             betOverlay.classList.toggle('collapsed', betCollapsed);
             haptic('light');
+        });
+
+        // ─── All In button ────────────────────────────────────────────
+        allInBtn.addEventListener('click', () => {
+            betInput.value = state.balance;
+            betInput.dispatchEvent(new Event('input'));
+            haptic('medium');
         });
 
         // ═══════════════════════════════════════════════════════════════
@@ -2369,7 +2385,6 @@
             }
             ctx.restore();
 
-            // ─── DRAW PLAYERS (no crowns) ──────────────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
 
@@ -2388,7 +2403,6 @@
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
 
-                // ─── Draw player circle ────────────────────────────
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
@@ -2409,7 +2423,6 @@
                 }
                 ctx.restore();
 
-                // ─── Border ──────────────────────────────────────────
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
@@ -2470,16 +2483,20 @@
                 betBtn.textContent = inGame ? 'increase' : 'join';
                 betBtn.disabled = false;
                 betInput.disabled = false;
+                allInBtn.disabled = false;
             } else {
                 betBtn.textContent = inGame ? 'in game' : 'waiting';
                 betBtn.disabled = true;
                 betInput.disabled = true;
+                allInBtn.disabled = true;
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
-            const val = parseInt(betInput.value) || 10;
-            betAmountDisplay.textContent = Math.min(val, state.balance);
-            if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
+            // Update input display
+            let val = parseInt(betInput.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > state.balance) val = state.balance;
+            betInput.value = val;
         }
 
         function updateFrogVisibility() {
@@ -2687,7 +2704,6 @@
         function renderLoop() {
             updatePlayerAnimations();
 
-            // ─── Update countdown timer + progress line ────────────
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
@@ -2735,7 +2751,17 @@
         betInput.addEventListener('input', () => {
             const raw = betInput.value;
             const val = parseInt(raw);
-            betAmountDisplay.textContent = (raw === '' || isNaN(val)) ? '10' : Math.min(val, state.balance);
+            // Allow empty input so user can fully delete the number
+            // We'll handle clamping on blur and on submit
+            if (raw === '') {
+                // Show placeholder or keep empty
+                betInput.dataset.empty = 'true';
+            } else {
+                delete betInput.dataset.empty;
+                if (!isNaN(val) && val > state.balance) {
+                    betInput.value = state.balance;
+                }
+            }
         });
 
         betInput.addEventListener('blur', () => {
@@ -2743,8 +2769,10 @@
             if (isNaN(val) || val < 10) val = 10;
             if (val > state.balance) val = state.balance;
             betInput.value = val;
-            betAmountDisplay.textContent = val;
+            delete betInput.dataset.empty;
+            updateBetUI(); // refresh display
         });
+
         betInput.value = 10;
 
         // ─── INIT ─────────────────────────────────────────────────────
