@@ -238,17 +238,22 @@
             display: block;
         }
 
-        #countdown-timer {
+        #countdown-wrap {
             position: absolute;
             top: 16px;
             right: 16px;
+            z-index: 3;
+            pointer-events: none;
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        #countdown-timer {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
-            z-index: 3;
-            pointer-events: none;
-            display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
             background: transparent;
@@ -256,6 +261,20 @@
             backdrop-filter: none;
             padding: 0;
             line-height: 1;
+        }
+        #countdown-progress-track {
+            width: 46px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.18);
+            overflow: hidden;
+        }
+        #countdown-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            background: #fff;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
         }
 
         #win-history {
@@ -902,36 +921,6 @@
             justify-content: flex-start;
             background: transparent;
         }
-        .top-header {
-            text-align: center;
-            margin-bottom: 4px;
-            animation: topFadeDown 0.4s ease both;
-        }
-        .top-header-title {
-            font-size: 22px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #ffe9a8, var(--gold), #ffe9a8);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            animation: goldShimmerText 3.5s linear infinite;
-            letter-spacing: 0.3px;
-        }
-        .top-header-sub {
-            font-size: 12px;
-            color: var(--text2);
-            opacity: 0.6;
-            margin-top: 2px;
-        }
-        @keyframes goldShimmerText {
-            0% { background-position: 0% center; }
-            100% { background-position: 200% center; }
-        }
-        @keyframes topFadeDown {
-            from { opacity: 0; transform: translateY(-8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
         #podium {
             display: flex;
             align-items: flex-end;
@@ -951,14 +940,6 @@
             min-width: 70px;
             max-width: 110px;
             transition: 0.2s;
-            animation: podiumRise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        }
-        .podium-col.p1 { animation-delay: 0.05s; }
-        .podium-col.p2 { animation-delay: 0.15s; }
-        .podium-col.p3 { animation-delay: 0.25s; }
-        @keyframes podiumRise {
-            from { opacity: 0; transform: translateY(18px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
         }
         .podium-crown {
             font-size: 20px;
@@ -1020,7 +1001,7 @@
         }
         .podium-col .podium-pfp.silver {
             border-color: #b8b8c8;
-            box-shadow: 0 0 20px rgba(184, 184, 200, 0.25);
+            box-shadow: 0 0 20px rgba(184, 184, 200, 0.2);
         }
         .podium-col .podium-pfp.bronze {
             border-color: #cd8a5a;
@@ -1035,10 +1016,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-        }
-        .podium-col.p1 .podium-name {
-            font-size: 13px;
-            font-weight: 800;
         }
         .podium-col .podium-prize {
             display: flex;
@@ -1067,26 +1044,12 @@
             background: var(--border);
             margin-top: 2px;
             min-height: 6px;
-            position: relative;
-            overflow: hidden;
         }
         .podium-col .podium-base.gold {
             background: linear-gradient(180deg, #f0d080, var(--gold));
             height: 100px;
             min-height: 100px;
             box-shadow: 0 -4px 40px rgba(200, 168, 78, 0.4);
-        }
-        .podium-col .podium-base.gold::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
-            background-size: 220% 100%;
-            animation: goldSweep 2.8s ease-in-out infinite;
-        }
-        @keyframes goldSweep {
-            0% { background-position: 120% 0; }
-            60%, 100% { background-position: -20% 0; }
         }
         .podium-col .podium-base.silver {
             background: linear-gradient(180deg, #d0d0e0, #b8b8c8);
@@ -1113,7 +1076,7 @@
         #top-list {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             max-width: 400px;
             margin: 10px auto 0;
             width: 100%;
@@ -1126,19 +1089,9 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             border-radius: 12px;
-            padding: 8px 14px;
+            padding: 6px 14px;
             border: 1px solid var(--border);
-            border-left: 3px solid transparent;
-            transition: transform 0.15s ease, background 0.15s ease;
-            animation: rowFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        }
-        .top-entry:active {
-            transform: scale(0.98);
-            background: rgba(28, 28, 32, 0.85);
-        }
-        @keyframes rowFadeIn {
-            from { opacity: 0; transform: translateX(-10px); }
-            to { opacity: 1; transform: translateX(0); }
+            transition: 0.2s;
         }
         .top-entry .rank {
             font-size: 14px;
@@ -1150,18 +1103,15 @@
         .top-entry .rank.gold {
             color: var(--gold);
         }
-        .top-entry.rank-gold { border-left-color: var(--gold); }
         .top-entry .rank.silver {
             color: #b8b8c8;
         }
-        .top-entry.rank-silver { border-left-color: #b8b8c8; }
         .top-entry .rank.bronze {
             color: #cd8a5a;
         }
-        .top-entry.rank-bronze { border-left-color: #cd8a5a; }
         .top-entry .t-pfp {
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: var(--surface2);
             border: 1px solid var(--border);
@@ -1442,10 +1392,12 @@
                 max-width: 60px;
                 font-size: 11px;
             }
-            #countdown-timer {
-                font-size: 18px;
+            #countdown-wrap {
                 top: 12px;
                 right: 12px;
+            }
+            #countdown-timer {
+                font-size: 18px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -1591,7 +1543,12 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">10.00</div>
+                    <div id="countdown-wrap">
+                        <div id="countdown-timer">10.00</div>
+                        <div id="countdown-progress-track">
+                            <div id="countdown-progress-fill"></div>
+                        </div>
+                    </div>
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
@@ -1663,10 +1620,6 @@
             </div>
 
             <div id="top-page" class="tab-page">
-                <div class="top-header">
-                    <div class="top-header-title">🏆 Leaderboard</div>
-                    <div class="top-header-sub">the best bumpers, ranked</div>
-                </div>
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
@@ -1765,7 +1718,9 @@
         const betBtn = document.getElementById('bet-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
+        const countdownWrap = document.getElementById('countdown-wrap');
         const countdownTimer = document.getElementById('countdown-timer');
+        const countdownProgressFill = document.getElementById('countdown-progress-fill');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -2032,8 +1987,6 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
-                        isDying: false,
-                        dieStartTime: 0,
                         // renderX/Y/Radius are the smoothed values actually drawn on screen —
                         // they ease toward x/y/displayRadius (the raw server truth) every
                         // animation frame instead of snapping straight to it, so motion looks
@@ -2046,12 +1999,6 @@
                     local.isPulsing = true;
                     local.pulseStartTime = performance.now();
                     local.pulseTime = 0;
-                }
-                if (local.alive && !sp.alive) {
-                    // just got eliminated this tick — play a shrink/fade instead of vanishing instantly
-                    local.isDying = true;
-                    local.dieStartTime = performance.now();
-                    local.dieDuration = 450;
                 }
                 local.name = sp.name;
                 local.bet = sp.bet;
@@ -2068,11 +2015,11 @@
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
-                countdownTimer.style.display = 'none';
+                countdownWrap.style.display = 'none';
             }
-            if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
-                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+            if (state.gameState === 'countdown') countdownWrap.style.display = 'flex';
+            if (state.gameState === 'playing' || state.gameState === 'finished') countdownWrap.style.display = state
+                .gameState === 'countdown' ? 'flex' : countdownWrap.style.display;
 
             updateStatsBar();
             updateBetUI();
@@ -2107,7 +2054,7 @@
             winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             winPanel.classList.add('show');
             haptic('heavy');
-            countdownTimer.style.display = 'none';
+            countdownWrap.style.display = 'none';
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2120,7 +2067,7 @@
             if (window.winTimeout) { clearTimeout(window.winTimeout);
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
+            countdownWrap.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2366,19 +2313,9 @@
 
             // ─── DRAW PLAYERS WITH PFP ──────────────────────────────
             state.players.forEach(p => {
-                if (!p.alive && !p.isDying) return;
-
-                let dieScale = 1, dieAlpha = 1;
-                if (p.isDying) {
-                    const elapsed = performance.now() - p.dieStartTime;
-                    const t = Math.min(1, elapsed / (p.dieDuration || 450));
-                    dieScale = 1 - t; // shrink to nothing
-                    dieAlpha = 1 - t; // fade out
-                    if (t >= 1) { p.isDying = false; return; } // animation finished, stop drawing
-                }
-
+                if (!p.alive) return;
                 const popScale = getPopScale(p);
-                const radius = (p.renderRadius || 18) * s;
+                const radius = (p.renderRadius || p.displayRadius || 18) * s;
                 const displayRadius = radius * popScale;
                 let pulseScale = 1;
                 if (p.isPulsing) {
@@ -2386,14 +2323,12 @@
                     if (t < 0.6) { const phase = t / 0.6;
                         pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
                 }
-                const finalRadius = displayRadius * pulseScale * dieScale;
+                const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
                 const px = (p.renderX ?? p.x) * s,
                     py = (p.renderY ?? p.y) * s;
 
                 ctx.save();
-                ctx.globalAlpha = dieAlpha;
-
                 // clip to circle
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
@@ -2416,9 +2351,8 @@
                 ctx.restore();
 
                 // border — gold for the #1 leaderboard player, silver for #2, otherwise the
-                // usual subtle white ring (brighter/thicker if it's you)
+                // usual subtle white ring (brighter/thicker if it's you). Static (no pulse).
                 ctx.save();
-                ctx.globalAlpha = dieAlpha;
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
@@ -2442,7 +2376,7 @@
 
                 if (p.crownRank === 1 || p.crownRank === 2) {
                     drawCrown(ctx, px, py - finalRadius, Math.max(finalRadius * 0.6, 10),
-                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', dieAlpha);
+                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', 1);
                 }
             });
         }
@@ -2527,26 +2461,9 @@
             if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
         }
 
-        const FROG_GIFS = [
-            'https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif',
-            'https://i.postimg.cc/mgsrh051/ezgif-17faae1511028747.gif',
-        ];
-        let lastFrogGif = null;
-        let frogWasVisible = false;
-        function pickRandomFrogGif() {
-            if (FROG_GIFS.length <= 1) return FROG_GIFS[0];
-            let choice;
-            do { choice = FROG_GIFS[Math.floor(Math.random() * FROG_GIFS.length)]; }
-            while (choice === lastFrogGif);
-            lastFrogGif = choice;
-            return choice;
-        }
-
         function updateFrogVisibility() {
             const alive = getAlive();
             const showFrog = alive.length < 2 && state.gameState === 'idle';
-            if (showFrog && !frogWasVisible) frogGif.src = pickRandomFrogGif();
-            frogWasVisible = showFrog;
             frogGif.classList.toggle('show', showFrog);
             waitingText.style.display = showFrog ? 'none' : 'block';
         }
@@ -2611,17 +2528,16 @@
             const rest = players.slice(3);
             if (rest.length === 0) { topList.innerHTML = ''; return; }
             let listHtml = '';
-            rest.forEach((p, idx) => {
+            rest.forEach(p => {
                 const rank = p.rank;
                 let rClass = 'rank';
-                let rowAccent = '';
-                if (rank === 4) { rClass += ' gold'; rowAccent = ' rank-gold'; }
-                else if (rank === 5) { rClass += ' silver'; rowAccent = ' rank-silver'; }
-                else if (rank === 6) { rClass += ' bronze'; rowAccent = ' rank-bronze'; }
+                if (rank === 4) rClass += ' gold';
+                else if (rank === 5) rClass += ' silver';
+                else if (rank === 6) rClass += ' bronze';
                 const prize = getPrizeForRank(rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
-                listHtml += `<div class="top-entry${rowAccent}" style="animation-delay:${Math.min(idx * 0.04, 0.4)}s">
+                listHtml += `<div class="top-entry">
                             <div class="${rClass}">#${rank}</div>
                             <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="t-name">${p.name}</div>
@@ -2751,8 +2667,8 @@
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
         // The server only broadcasts ~30 times/sec. Drawing raw server positions directly
-        // means most 60fps frames would just redraw the same spot, then jump — visually
-        // choppy, and any network hiccup reads as a "freeze". Instead we ease each
+        // means most 60fps+ frames would just redraw the same spot, then jump — visually
+        // choppy/laggy, and any network hiccup reads as a "freeze". Instead we ease each
         // player's renderX/Y/Radius toward the latest server values every frame, using a
         // time-based (not frame-count-based) smoothing constant so it looks the same at
         // 30fps or 120fps and can't compound into a stutter if a frame is dropped.
@@ -2777,13 +2693,17 @@
             updateRenderSmoothing(dt);
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
+                const totalCountdown = 10.0;
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
+                const remaining = Math.max(0, totalCountdown - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                const pct = Math.min(100, Math.max(0, (elapsed / totalCountdown) * 100));
+                countdownProgressFill.style.width = pct + '%';
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
+                countdownProgressFill.style.width = '100%';
             }
 
             render();
