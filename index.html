@@ -341,6 +341,7 @@
             margin-top: 2px;
         }
 
+        /* ─── BET OVERLAY (Compact & Centered) ─── */
         #bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -363,12 +364,12 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 12px 16px 16px;
+            border-radius: 12px;
+            padding: 8px 12px 10px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 6px;
             transition: 0.3s;
             position: relative;
         }
@@ -447,59 +448,61 @@
             display: inline;
         }
 
-        /* New bet UI layout */
+        /* Compact row */
         .bet-row {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-top: 4px;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 2px;
         }
         #bet-input {
             flex: 1;
-            padding: 10px 12px;
-            border-radius: 10px;
+            max-width: 120px;
+            padding: 6px 8px;
+            height: 36px;
+            border-radius: 8px;
             border: 1px solid var(--border);
             background: var(--surface3);
             color: var(--text);
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 600;
             text-align: center;
             outline: none;
             font-variant-numeric: tabular-nums;
-            min-width: 0;
-            height: 48px;
         }
         #bet-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 24px var(--primary-glow);
         }
         #all-in-btn {
-            flex-shrink: 0;
-            padding: 0 14px;
-            height: 48px;
-            border-radius: 10px;
+            height: 36px;
+            padding: 0 12px;
+            border-radius: 8px;
             border: none;
             background: var(--gold);
             color: #000;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: 0.2s;
             white-space: nowrap;
             box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
+            flex-shrink: 0;
         }
         #all-in-btn:active {
             transform: scale(0.94);
             opacity: 0.8;
         }
         #bet-btn {
-            padding: 12px 0;
-            border-radius: 12px;
+            padding: 8px 0;
+            height: 38px;
+            border-radius: 8px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 18px;
+            font-size: 15px;
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 0 24px var(--primary-glow);
@@ -507,7 +510,6 @@
             width: 100%;
             text-align: center;
             margin-top: 2px;
-            height: 50px;
         }
         #bet-btn:active {
             transform: scale(0.96);
@@ -520,11 +522,11 @@
         }
         #current-bet-display {
             color: var(--text2);
-            font-size: 13px;
+            font-size: 12px;
             text-align: center;
             margin-top: 2px;
             border-top: 1px solid var(--border);
-            padding-top: 6px;
+            padding-top: 4px;
         }
         #current-bet-display span {
             color: var(--gold);
@@ -533,11 +535,6 @@
         #bet-overlay.collapsed #current-bet-display,
         #bet-overlay.collapsed .bet-row,
         #bet-overlay.collapsed #bet-btn {
-            display: none;
-        }
-
-        /* Remove old bet-info */
-        #bet-info {
             display: none;
         }
 
@@ -1359,21 +1356,22 @@
                 width: 96%;
             }
             #bet-overlay {
-                padding: 10px 12px 14px;
+                padding: 6px 10px 8px;
             }
             #bet-input {
-                font-size: 16px;
-                height: 42px;
-                padding: 8px 10px;
+                max-width: 100px;
+                height: 32px;
+                font-size: 14px;
+                padding: 4px 6px;
             }
             #all-in-btn {
-                height: 42px;
-                font-size: 13px;
-                padding: 0 10px;
+                height: 32px;
+                font-size: 12px;
+                padding: 0 8px;
             }
             #bet-btn {
-                height: 44px;
-                font-size: 16px;
+                height: 34px;
+                font-size: 14px;
             }
             #bet-overlay.collapsed {
                 padding: 4px 8px;
@@ -1574,7 +1572,7 @@
                         <div id="bet-overlay">
                             <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
                             <div class="bet-row">
-                                <input type="number" id="bet-input" value="10" min="10" max="9999" />
+                                <input type="number" id="bet-input" placeholder="10" min="10" max="9999" />
                                 <button id="all-in-btn">All In</button>
                             </div>
                             <button id="bet-btn">join</button>
@@ -1666,7 +1664,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // CONFIG — point this at your deployed backend
+        // CONFIG
         // ═══════════════════════════════════════════════════════════════
         const SERVER_URL = 'https://dllump-production.up.railway.app';
 
@@ -1709,6 +1707,7 @@
             maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
+            topPlayerIds: new Map(), // id -> { rank }
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -2006,7 +2005,7 @@
                         spawnProgress: 0,
                         isSpawning: true,
                         spawnStartTime: performance.now(),
-                        spawnDuration: 500 + Math.random() * 300,
+                        spawnDuration: 2000,
                         x: sp.x,
                         y: sp.y,
                     };
@@ -2017,15 +2016,17 @@
                     local.homeY = sp.y;
 
                     if (isCountdown) {
+                        // Start the slide-in animation if not already spawning
                         if (!local.isSpawning) {
-                            local.spawnStartX = local.x || sp.x;
-                            local.spawnStartY = local.y || sp.y;
+                            local.spawnStartX = local.x;
+                            local.spawnStartY = local.y;
                             local.spawnStartTime = performance.now();
-                            local.spawnDuration = 2000;
+                            local.spawnDuration = 2000; // 2 seconds to slide
                             local.isSpawning = true;
                             local.spawnProgress = 0;
                         }
                     } else {
+                        // Not in countdown: set position directly
                         if (!local.isSpawning) {
                             local.x = sp.x;
                             local.y = sp.y;
@@ -2046,6 +2047,7 @@
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
+            // Once the game starts playing, finalise the positions
             if (state.gameState === 'playing' || state.gameState === 'finished') {
                 state.players.forEach(p => {
                     p.isSpawning = false;
@@ -2140,6 +2142,11 @@
                     score: u.balance,
                     rank: i + 1,
                 }));
+                // Update the map for quick lookups in the render loop
+                state.topPlayerIds.clear();
+                state.topPlayers.forEach(p => {
+                    state.topPlayerIds.set(p.id, { rank: p.rank });
+                });
                 updateTopUI();
             });
         }
@@ -2159,9 +2166,15 @@
             alive.forEach(p => {
                 const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
                 const isYou = p.id === state.userId;
+                const topInfo = state.topPlayerIds.get(p.id);
+                let crown = '';
+                if (topInfo) {
+                    if (topInfo.rank === 1) crown = '👑';
+                    else if (topInfo.rank === 2) crown = '👑';
+                }
                 html += `<div class="pl-entry ${isYou ? 'you' : ''}">
                             <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${p.name}</span>
+                            <span class="pl-name">${crown} ${p.name}</span>
                             <span class="pl-bet">${p.bet}</span>
                             <span class="pl-chance">${chance}%</span>
                         </div>`;
@@ -2199,6 +2212,7 @@
                         p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
 
+                // Slide-in animation (spawning)
                 if (p.isSpawning && p.homeX !== undefined) {
                     const elapsed = now - p.spawnStartTime;
                     const progress = Math.min(elapsed / p.spawnDuration, 1);
@@ -2281,11 +2295,56 @@
             haptic('light');
         });
 
-        // ─── All In button ────────────────────────────────────────────
+        // ─── All In button (two-tap) ────────────────────────────────
+        let allInConfirming = false;
+        let allInTimeout = null;
+
         allInBtn.addEventListener('click', () => {
-            betInput.value = state.balance;
-            betInput.dispatchEvent(new Event('input'));
-            haptic('medium');
+            if (allInConfirming) {
+                // Second click: confirm and set all in
+                betInput.value = state.balance;
+                betInput.dispatchEvent(new Event('input'));
+                allInConfirming = false;
+                allInBtn.textContent = 'All In';
+                if (allInTimeout) clearTimeout(allInTimeout);
+                haptic('medium');
+            } else {
+                // First click: ask for confirmation
+                allInConfirming = true;
+                allInBtn.textContent = 'Sure?';
+                if (allInTimeout) clearTimeout(allInTimeout);
+                allInTimeout = setTimeout(() => {
+                    allInConfirming = false;
+                    allInBtn.textContent = 'All In';
+                }, 2000);
+                haptic('light');
+            }
+        });
+
+        // ─── Input handling (allow empty, default to 10 on blur) ────
+        betInput.addEventListener('input', () => {
+            const raw = betInput.value;
+            if (raw === '') {
+                betInput.dataset.empty = 'true';
+                return;
+            }
+            delete betInput.dataset.empty;
+            const val = parseInt(raw);
+            if (!isNaN(val) && val > state.balance) {
+                betInput.value = state.balance;
+            }
+        });
+
+        betInput.addEventListener('blur', () => {
+            if (betInput.dataset.empty === 'true' || betInput.value === '') {
+                betInput.value = 10;
+                delete betInput.dataset.empty;
+            }
+            let val = parseInt(betInput.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > state.balance) val = state.balance;
+            betInput.value = val;
+            updateBetUI();
         });
 
         // ═══════════════════════════════════════════════════════════════
@@ -2385,6 +2444,7 @@
             }
             ctx.restore();
 
+            // ─── Draw players ──────────────────────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
 
@@ -2403,6 +2463,28 @@
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
 
+                // ─── Check for top rank (gold / silver outline) ───
+                const topInfo = state.topPlayerIds.get(p.id);
+                let borderColor = 'rgba(255,255,255,0.35)';
+                let borderWidth = 1.5;
+                let shadowColor = 'transparent';
+                let shadowBlur = 0;
+
+                if (topInfo) {
+                    if (topInfo.rank === 1) {
+                        borderColor = '#FFD700';
+                        borderWidth = 3.5;
+                        shadowColor = 'rgba(255,215,0,0.6)';
+                        shadowBlur = 18;
+                    } else if (topInfo.rank === 2) {
+                        borderColor = '#C0C0C0';
+                        borderWidth = 3.0;
+                        shadowColor = 'rgba(192,192,192,0.5)';
+                        shadowBlur = 14;
+                    }
+                }
+
+                // ─── Draw circle ──────────────────────────────────
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
@@ -2423,19 +2505,12 @@
                 }
                 ctx.restore();
 
+                // ─── Border ──────────────────────────────────────
                 ctx.save();
-                ctx.shadowBlur = 0;
+                ctx.shadowBlur = shadowBlur;
+                ctx.shadowColor = shadowColor;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
-
-                let borderColor = 'rgba(255,255,255,0.35)';
-                let borderWidth = 1.5;
-                const isYou = p.id === state.userId;
-                if (isYou) {
-                    borderColor = 'rgba(255,255,255,1.0)';
-                    borderWidth = 2.5;
-                }
-
                 ctx.strokeStyle = borderColor;
                 ctx.lineWidth = borderWidth;
                 ctx.stroke();
@@ -2492,11 +2567,13 @@
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
-            // Update input display
-            let val = parseInt(betInput.value);
-            if (isNaN(val) || val < 10) val = 10;
-            if (val > state.balance) val = state.balance;
-            betInput.value = val;
+            // Refresh input display without overriding user interaction
+            if (!betInput.dataset.empty) {
+                let val = parseInt(betInput.value);
+                if (isNaN(val) || val < 10) val = 10;
+                if (val > state.balance) val = state.balance;
+                betInput.value = val;
+            }
         }
 
         function updateFrogVisibility() {
@@ -2747,33 +2824,6 @@
             betInput.value = 10;
             updateBetUI();
         });
-
-        betInput.addEventListener('input', () => {
-            const raw = betInput.value;
-            const val = parseInt(raw);
-            // Allow empty input so user can fully delete the number
-            // We'll handle clamping on blur and on submit
-            if (raw === '') {
-                // Show placeholder or keep empty
-                betInput.dataset.empty = 'true';
-            } else {
-                delete betInput.dataset.empty;
-                if (!isNaN(val) && val > state.balance) {
-                    betInput.value = state.balance;
-                }
-            }
-        });
-
-        betInput.addEventListener('blur', () => {
-            let val = parseInt(betInput.value);
-            if (isNaN(val) || val < 10) val = 10;
-            if (val > state.balance) val = state.balance;
-            betInput.value = val;
-            delete betInput.dataset.empty;
-            updateBetUI(); // refresh display
-        });
-
-        betInput.value = 10;
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
