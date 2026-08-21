@@ -341,7 +341,7 @@
             margin-top: 2px;
         }
 
-        /* ─── BET OVERLAY (Compact & Centered) ─── */
+        /* ─── BET OVERLAY (Compact) ─── */
         #bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -495,18 +495,18 @@
             opacity: 0.8;
         }
         #bet-btn {
-            padding: 8px 0;
-            height: 38px;
+            padding: 6px 0;
+            height: 34px;
             border-radius: 8px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 0 24px var(--primary-glow);
-            letter-spacing: 0.3px;
+            letter-spacing: 0.2px;
             width: 100%;
             text-align: center;
             margin-top: 2px;
@@ -536,6 +536,121 @@
         #bet-overlay.collapsed .bet-row,
         #bet-overlay.collapsed #bet-btn {
             display: none;
+        }
+
+        /* ─── Auto‑bet button (bottom‑right corner) ─── */
+        #auto-bet-container {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 6;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        #auto-bet-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(26, 26, 30, 0.85);
+            backdrop-filter: blur(12px);
+            color: var(--text);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+        }
+        #auto-bet-toggle.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 24px var(--primary-glow);
+        }
+        #auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
+        #auto-bet-panel {
+            background: rgba(18, 18, 20, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            width: 160px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+        }
+        #auto-bet-panel.open {
+            display: flex;
+        }
+        #auto-bet-panel .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        #auto-bet-panel .row label {
+            font-size: 12px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+        #auto-bet-panel .row input {
+            width: 70px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text);
+            font-size: 13px;
+            text-align: center;
+            outline: none;
+        }
+        #auto-bet-panel .row input:focus {
+            border-color: var(--primary);
+        }
+        #auto-bet-panel .switch-sm {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        #auto-bet-panel .switch-sm input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        #auto-bet-panel .switch-sm .slider-sm {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            transition: 0.2s;
+        }
+        #auto-bet-panel .switch-sm .slider-sm::before {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            left: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        #auto-bet-panel .switch-sm input:checked + .slider-sm {
+            background: var(--primary);
+        }
+        #auto-bet-panel .switch-sm input:checked + .slider-sm::before {
+            transform: translateY(-50%) translateX(16px);
         }
 
         #player-list-container {
@@ -1359,7 +1474,7 @@
                 padding: 6px 10px 8px;
             }
             #bet-input {
-                max-width: 100px;
+                max-width: 90px;
                 height: 32px;
                 font-size: 14px;
                 padding: 4px 6px;
@@ -1370,11 +1485,20 @@
                 padding: 0 8px;
             }
             #bet-btn {
-                height: 34px;
-                font-size: 14px;
+                height: 30px;
+                font-size: 13px;
             }
             #bet-overlay.collapsed {
                 padding: 4px 8px;
+            }
+            #auto-bet-toggle {
+                width: 34px;
+                height: 34px;
+                font-size: 16px;
+            }
+            #auto-bet-panel {
+                width: 140px;
+                padding: 10px 12px;
             }
             .profile-card {
                 padding: 16px 14px 20px;
@@ -1572,11 +1696,29 @@
                         <div id="bet-overlay">
                             <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
                             <div class="bet-row">
-                                <input type="number" id="bet-input" placeholder="10" min="10" max="9999" />
+                                <input type="text" id="bet-input" placeholder="10" inputmode="numeric" />
                                 <button id="all-in-btn">All In</button>
                             </div>
                             <button id="bet-btn">join</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Auto‑bet button (bottom‑right) -->
+                    <div id="auto-bet-container">
+                        <button id="auto-bet-toggle">⏱</button>
+                        <div id="auto-bet-panel">
+                            <div class="row">
+                                <label>Amount</label>
+                                <input type="number" id="auto-bet-amount" value="10" min="10" step="1" />
+                            </div>
+                            <div class="row">
+                                <label>Auto</label>
+                                <div class="switch-sm">
+                                    <input type="checkbox" id="auto-bet-switch" />
+                                    <span class="slider-sm"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1767,6 +1909,12 @@
         const promoMsg = document.getElementById('promo-msg');
         const promoSub = document.getElementById('promo-sub');
         const promoContinueBtn = document.getElementById('promo-continue-btn');
+
+        // Auto‑bet elements
+        const autoToggle = document.getElementById('auto-bet-toggle');
+        const autoPanel = document.getElementById('auto-bet-panel');
+        const autoSwitch = document.getElementById('auto-bet-switch');
+        const autoAmount = document.getElementById('auto-bet-amount');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -2021,7 +2169,7 @@
                             local.spawnStartX = local.x;
                             local.spawnStartY = local.y;
                             local.spawnStartTime = performance.now();
-                            local.spawnDuration = 2000; // 2 seconds to slide
+                            local.spawnDuration = 2000;
                             local.isSpawning = true;
                             local.spawnProgress = 0;
                         }
@@ -2142,7 +2290,6 @@
                     score: u.balance,
                     rank: i + 1,
                 }));
-                // Update the map for quick lookups in the render loop
                 state.topPlayerIds.clear();
                 state.topPlayers.forEach(p => {
                     state.topPlayerIds.set(p.id, { rank: p.rank });
@@ -2295,15 +2442,21 @@
             haptic('light');
         });
 
-        // ─── All In button (two-tap) ────────────────────────────────
+        // ─── All In button (two‑tap, then place bet) ──────────────
         let allInConfirming = false;
         let allInTimeout = null;
 
         allInBtn.addEventListener('click', () => {
             if (allInConfirming) {
-                // Second click: confirm and set all in
-                betInput.value = state.balance;
-                betInput.dispatchEvent(new Event('input'));
+                // Second click: place the bet with full balance
+                const fullAmount = state.balance;
+                if (fullAmount < 10) {
+                    haptic('light');
+                    return;
+                }
+                // Fill input and trigger bet
+                betInput.value = fullAmount;
+                betBtn.click(); // simulate click on bet button
                 allInConfirming = false;
                 allInBtn.textContent = 'All In';
                 if (allInTimeout) clearTimeout(allInTimeout);
@@ -2321,7 +2474,7 @@
             }
         });
 
-        // ─── Input handling (allow empty, default to 10 on blur) ────
+        // ─── Input handling (allow empty, default to 10 on blur) ──
         betInput.addEventListener('input', () => {
             const raw = betInput.value;
             if (raw === '') {
@@ -2346,6 +2499,60 @@
             betInput.value = val;
             updateBetUI();
         });
+
+        // ─── Auto‑bet logic ──────────────────────────────────────────
+        let autoBetInterval = null;
+        let autoBetEnabled = false;
+
+        function toggleAutoBet(enable) {
+            if (enable && !autoBetEnabled) {
+                autoBetEnabled = true;
+                autoToggle.classList.add('active');
+                autoToggle.textContent = '▶';
+                // Start interval
+                if (autoBetInterval) clearInterval(autoBetInterval);
+                autoBetInterval = setInterval(() => {
+                    // Only place bet if we are in a state where betting is allowed
+                    const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
+                    if (!canBet) return;
+                    const existing = getPlayer(state.userId);
+                    // If we are already in the game, skip (or you could increase?)
+                    // For simplicity, we only bet if not already in the round.
+                    if (existing) return;
+                    const amount = parseInt(autoAmount.value) || 10;
+                    if (amount < 10 || amount > state.balance) return;
+                    // Place the bet
+                    socket.emit('placeBet', { amount }, (res) => {
+                        if (res?.ok) {
+                            state.balance = res.balance;
+                            updateBalance();
+                            updateProfile();
+                            haptic('medium');
+                        }
+                    });
+                }, 2000); // every 2 seconds
+            } else if (!enable && autoBetEnabled) {
+                autoBetEnabled = false;
+                autoToggle.classList.remove('active');
+                autoToggle.textContent = '⏱';
+                if (autoBetInterval) {
+                    clearInterval(autoBetInterval);
+                    autoBetInterval = null;
+                }
+            }
+        }
+
+        autoToggle.addEventListener('click', () => {
+            // Toggle panel open/close
+            autoPanel.classList.toggle('open');
+            // If the switch is on and we close the panel, keep running
+        });
+
+        autoSwitch.addEventListener('change', () => {
+            toggleAutoBet(autoSwitch.checked);
+        });
+
+        // Stop auto-bet when disconnected or round ends? We'll let it run, but it will only bet when allowed.
 
         // ═══════════════════════════════════════════════════════════════
         // RENDER
