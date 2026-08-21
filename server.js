@@ -120,16 +120,28 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
+const MIN_RADIUS = 11;
+const MAX_RADIUS = 52;
+
 function speedForRadius(radius) {
-  const minR = 14, maxR = 52;
-  const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  const speed = 8.0 - norm * 5.5;
-  return Math.max(2.5, Math.min(8.0, speed));
+  // Exact same shape as the original single-player physics: small circles top out at
+  // 6.0, big circles bottom out at 3.0. (Radius bounds adapted to MIN_RADIUS/MAX_RADIUS
+  // since the size formula itself was intentionally changed in an earlier request —
+  // this only restores the speed curve, not the sizing.)
+  const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
+  const speed = 6.0 - norm * 3.0;
+  return Math.max(3.0, Math.min(6.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
 const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
 const MAX_PLAYERS = 8;
+
+// ─── Reactions ──────────────────────────────────────────────────
+const REACTION_EMOJIS = ['😂', '😮', '🔥', '💀', '👍', '❤️'];
+const REACTION_GIF_URL = 'https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif';
+const REACTION_COOLDOWN_MS = 1500;
+const reactionCooldowns = new Map(); // userId -> last reaction timestamp (ms)
 
 function createRoom(id) {
   return {
@@ -155,15 +167,18 @@ function computeRadii() {
   if (totalBet === 0) return;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    const r = 18 + ratio * 34;
-    p.targetRadius = Math.min(Math.max(r, 14), 52);
+    // exponent > 1 compresses small shares toward the floor (way smaller for a tiny
+    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS
+    const scaled = Math.pow(ratio, 1.3);
+    const r = MIN_RADIUS + scaled * (MAX_RADIUS - MIN_RADIUS);
+    p.targetRadius = Math.min(Math.max(r, MIN_RADIUS), MAX_RADIUS);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
     // Immediately update displayRadius so sizes change during countdown
     p.displayRadius = p.targetRadius;
   });
 }
 
-function makePlayer(id, bet, name, pfp) {
+function makePlayer(id, bet, name, pfp, crownRank) {
   const half = ARENA_SIZE / 2;
   const radius = 18;
   let x, y, attempts = 0, overlap = true;
@@ -181,6 +196,7 @@ function makePlayer(id, bet, name, pfp) {
     mass: radius * radius * 1.2,
     x: x ?? half, y: y ?? half, vx: 0, vy: 0,
     alive: true,
+    crownRank: crownRank || null, // 1 = gold crown/outline, 2 = silver crown/outline, null = none
   };
   room.players.push(p);
   computeRadii();
@@ -308,13 +324,13 @@ function updatePhysics(dt) {
     return;
   }
   const half = ARENA_SIZE / 2;
-  const totalPts = PERIMETER.length;
+  const pts = PERIMETER;
+  const totalPts = pts.length;
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
     if (!room.opening) {
       const gameTime = room.gameTime;
-      // Openings start small-to-medium and grow larger as the round goes on,
-      // so early game has tighter escape windows and it opens up later.
+      // Openings start small-to-medium and grow larger as the round goes on
       let minGap, maxGap;
       if (gameTime < 5) { [minGap, maxGap] = [0.05, 0.16]; }
       else if (gameTime < 12) { [minGap, maxGap] = [0.12, 0.26]; }
@@ -322,13 +338,12 @@ function updatePhysics(dt) {
       const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
       const startIdx = Math.floor(Math.random() * totalPts);
       const endIdx = (startIdx + gapSize) % totalPts;
-      // slightly randomized blink speed each opening (a bit faster or slower than before)
-      const flashInterval = 0.18 + Math.random() * 0.14; // was fixed at 0.25
+      const flashInterval = 0.18 + Math.random() * 0.14; // slight per-opening variation in blink speed
       room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, flashInterval, state: 'flashing' };
-      room.openingTimer = 3.0 + Math.random() * 3.5; // was 3.5–6.0, now 3.0–6.5
+      room.openingTimer = 3.0 + Math.random() * 3.5;
     } else {
       room.opening = null;
-      room.openingTimer = 1.2 + Math.random() * 2.6; // was 1.5–3.5, now 1.2–3.8
+      room.openingTimer = 1.2 + Math.random() * 2.6;
     }
   }
   const opening = room.opening;
@@ -340,19 +355,27 @@ function updatePhysics(dt) {
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
+
+  // ─── From here down this is a direct, faithful port of the original physics —
+  // same subSteps, same single-pass wall check (first match wins, then break), same
+  // 50/50 position split and 0.6 damping factor on player-vs-player hits, same
+  // per-substep speed clamp. This is deliberately NOT "improved" — it's restored to
+  // match the reference exactly, since that's what felt right.
   const subSteps = 6;
   const subDt = dt / subSteps;
+
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
       if (!p.alive) return;
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
+
       const radius = p.displayRadius || p.radius;
       for (let i = 0; i < totalPts; i++) {
         const j = (i + 1) % totalPts;
         if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-        const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
-        const bx = PERIMETER[j].x, by = PERIMETER[j].y;
+        const ax = pts[i].x, ay = pts[i].y;
+        const bx = pts[j].x, by = pts[j].y;
         const dx = bx - ax, dy = by - ay;
         const lenSq = dx * dx + dy * dy;
         if (lenSq === 0) continue;
@@ -371,6 +394,7 @@ function updatePhysics(dt) {
           break;
         }
       }
+
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
@@ -380,13 +404,13 @@ function updatePhysics(dt) {
           let nearestGapIdx = -1, minDist = Infinity;
           for (let i = 0; i < totalPts; i++) {
             if (isInGap(i)) {
-              const d = (p.x - PERIMETER[i].x) ** 2 + (p.y - PERIMETER[i].y) ** 2;
+              const d = (p.x - pts[i].x) ** 2 + (p.y - pts[i].y) ** 2;
               if (d < minDist) { minDist = d; nearestGapIdx = i; }
             }
           }
           if (nearestGapIdx >= 0) {
             const angle = Math.atan2(dy, dx);
-            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
+            const gapAngle = Math.atan2(pts[nearestGapIdx].y - cy, pts[nearestGapIdx].x - cx);
             let diff = Math.abs(angle - gapAngle);
             diff = Math.min(diff, 2 * Math.PI - diff);
             const vOut = p.vx * dx + p.vy * dy;
@@ -395,10 +419,11 @@ function updatePhysics(dt) {
         }
       }
     });
-    const stillAlive = alive.filter(p => p.alive);
-    for (let i = 0; i < stillAlive.length; i++) {
-      for (let j = i + 1; j < stillAlive.length; j++) {
-        const a = stillAlive[i], b = stillAlive[j];
+
+    for (let i = 0; i < alive.length; i++) {
+      for (let j = i + 1; j < alive.length; j++) {
+        const a = alive[i], b = alive[j];
+        if (!a.alive || !b.alive) continue;
         const dx = b.x - a.x, dy = b.y - a.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const rA = a.displayRadius || a.radius, rB = b.displayRadius || b.radius;
@@ -408,6 +433,7 @@ function updatePhysics(dt) {
           const overlap = (minDist - dist) * 0.5;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
+
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
@@ -423,7 +449,9 @@ function updatePhysics(dt) {
         }
       }
     }
-    stillAlive.forEach(p => {
+
+    alive.forEach(p => {
+      if (!p.alive) return;
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
       if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
@@ -431,6 +459,7 @@ function updatePhysics(dt) {
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
+
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
@@ -469,6 +498,7 @@ function broadcastState() {
     players: room.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
+      crownRank: p.crownRank || null,
     })),
     opening: room.opening,
   });
@@ -503,6 +533,7 @@ io.on('connection', (socket) => {
         user: {
           ...user,
           winHistory: user.winHistory || [],
+          anonymous: !!user.anonymous,
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         recentWinners: room.recentWinners,
@@ -531,7 +562,17 @@ io.on('connection', (socket) => {
       await saveUser(user);
       const existing = getPlayer(userId);
       if (existing) { existing.bet += amt; computeRadii(); }
-      else { makePlayer(userId, amt, user.username, user.pfp); }
+      else {
+        let crownRank = null;
+        try {
+          const top2 = await topPlayers(2);
+          if (top2[0] && String(top2[0].id) === String(userId)) crownRank = 1;
+          else if (top2[1] && String(top2[1].id) === String(userId)) crownRank = 2;
+        } catch (err) {
+          console.error('crownRank lookup failed:', err);
+        }
+        makePlayer(userId, amt, user.username, user.anonymous ? '' : user.pfp, crownRank);
+      }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
@@ -541,11 +582,65 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('setAnonymous', async ({ enabled }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      const user = await getUser(userId);
+      if (!user) return ack?.({ ok: false, error: 'User not found.' });
+      user.anonymous = !!enabled;
+      await saveUser(user);
+
+      // if they're already sitting in an active round, update their live avatar
+      // immediately instead of waiting for the next round to pick it up
+      const livePlayer = getPlayer(userId);
+      if (livePlayer) {
+        livePlayer.pfp = user.anonymous ? '' : user.pfp;
+        broadcastState();
+      }
+      ack?.({ ok: true, anonymous: user.anonymous });
+    } catch (err) {
+      console.error('setAnonymous error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
   socket.on('leaderboard', async (_, ack) => {
     try {
-      ack?.({ ok: true, top: await topPlayers(20) });
+      const top = await topPlayers(20);
+      const masked = top.map(u => (u.anonymous ? { ...u, pfp: '' } : u));
+      ack?.({ ok: true, top: masked });
     } catch (err) {
       console.error('Leaderboard error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
+  // ─── Reactions ────────────────────────────────────────────────
+  // Server enforces the cooldown and whitelist itself — a modified client could try to
+  // spam or send arbitrary content otherwise, since this just gets relayed to everyone.
+  socket.on('reaction', ({ type, value }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      const now = Date.now();
+      const last = reactionCooldowns.get(userId) || 0;
+      if (now - last < REACTION_COOLDOWN_MS) {
+        return ack?.({ ok: false, error: 'Too soon.' });
+      }
+
+      let payload;
+      if (type === 'gif') {
+        payload = { type: 'gif', value: REACTION_GIF_URL };
+      } else if (type === 'emoji' && REACTION_EMOJIS.includes(value)) {
+        payload = { type: 'emoji', value };
+      } else {
+        return ack?.({ ok: false, error: 'Invalid reaction.' });
+      }
+
+      reactionCooldowns.set(userId, now);
+      io.to(room.id).emit('reaction', { userId, ...payload });
+      ack?.({ ok: true });
+    } catch (err) {
+      console.error('reaction error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
@@ -832,14 +927,35 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
 });
 
 // ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
+// store.js's redeemPromoCode already enforces the code's overall maxUses, but that's
+// a global counter — it doesn't stop the SAME person from redeeming a multi-use code
+// more than once. We track that separately here, on the user's own record, so it
+// works regardless of how store.js's promo-code bookkeeping is structured.
+async function handleRedeem(code, userId) {
+  const normalizedCode = String(code).trim().toUpperCase();
+  const user = await getUser(userId);
+  if (!user) return { ok: false, error: 'User not found' };
+
+  user.redeemedCodes = user.redeemedCodes || [];
+  if (user.redeemedCodes.includes(normalizedCode)) {
+    return { ok: false, error: 'You already redeemed this code.' };
+  }
+
+  const result = await redeemPromoCode(code, userId);
+  if (result && result.ok) {
+    user.redeemedCodes.push(normalizedCode);
+    await saveUser(user);
+  }
+  return result;
+}
+
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
     if (!code || !userId) {
       return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
+    res.json(await handleRedeem(code, userId));
   } catch (err) {
     console.error('Redeem promo error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
@@ -852,8 +968,7 @@ app.get('/redeem', async (req, res) => {
     if (!code || !userId) {
       return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
+    res.json(await handleRedeem(code, userId));
   } catch (err) {
     console.error('Redeem promo (GET) error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
@@ -866,7 +981,8 @@ app.get('/health', (req, res) => {
 });
 app.get('/leaderboard', async (req, res) => {
   try {
-    res.json({ top: await topPlayers(20) });
+    const top = await topPlayers(20);
+    res.json({ top: top.map(u => (u.anonymous ? { ...u, pfp: '' } : u)) });
   } catch (err) {
     console.error('Leaderboard error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
