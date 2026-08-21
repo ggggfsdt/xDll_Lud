@@ -120,17 +120,14 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// Floor raised from 11 → 16, and the compression exponent below eased from 1.3 → 1.15,
-// so a player with a modest/average-sized bet isn't squashed down to a barely-visible
-// dot — everyone stays reasonably sized, only a truly tiny bet against a huge pot gets
-// close to the floor.
-const MIN_RADIUS = 16;
+const MIN_RADIUS = 11;
 const MAX_RADIUS = 52;
 
 function speedForRadius(radius) {
-  // Matches the speed curve that was actually verified together with the restored
-  // physics above (small circles top out at 6.0, big ones bottom out at 3.0) — the
-  // 6.5/3.5 curve that was here belonged to the other, glitchy physics variant.
+  // Exact same shape as the original single-player physics: small circles top out at
+  // 6.0, big circles bottom out at 3.0. (Radius bounds adapted to MIN_RADIUS/MAX_RADIUS
+  // since the size formula itself was intentionally changed in an earlier request —
+  // this only restores the speed curve, not the sizing.)
   const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
   const speed = 6.0 - norm * 3.0;
   return Math.max(3.0, Math.min(6.0, speed));
@@ -139,6 +136,12 @@ function speedForRadius(radius) {
 // ─── Room ──────────────────────────────────────────────────────
 const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
 const MAX_PLAYERS = 8;
+
+// ─── Reactions ──────────────────────────────────────────────────
+const REACTION_EMOJIS = ['😂', '😮', '🔥', '💀', '👍', '❤️'];
+const REACTION_GIF_URL = 'https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif';
+const REACTION_COOLDOWN_MS = 1500;
+const reactionCooldowns = new Map(); // userId -> last reaction timestamp (ms)
 
 function createRoom(id) {
   return {
@@ -165,11 +168,8 @@ function computeRadii() {
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
     // exponent > 1 compresses small shares toward the floor (way smaller for a tiny
-    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS.
-    // Lowered from 1.3 → 1.15 (paired with the higher MIN_RADIUS above) so an average
-    // bet in an 8-player game lands noticeably bigger than the floor instead of
-    // hugging it.
-    const scaled = Math.pow(ratio, 1.15);
+    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS
+    const scaled = Math.pow(ratio, 1.3);
     const r = MIN_RADIUS + scaled * (MAX_RADIUS - MIN_RADIUS);
     p.targetRadius = Math.min(Math.max(r, MIN_RADIUS), MAX_RADIUS);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
@@ -324,13 +324,13 @@ function updatePhysics(dt) {
     return;
   }
   const half = ARENA_SIZE / 2;
-  const totalPts = PERIMETER.length;
+  const pts = PERIMETER;
+  const totalPts = pts.length;
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
     if (!room.opening) {
       const gameTime = room.gameTime;
-      // Openings start small-to-medium and grow larger as the round goes on,
-      // so early game has tighter escape windows and it opens up later.
+      // Openings start small-to-medium and grow larger as the round goes on
       let minGap, maxGap;
       if (gameTime < 5) { [minGap, maxGap] = [0.05, 0.16]; }
       else if (gameTime < 12) { [minGap, maxGap] = [0.12, 0.26]; }
@@ -338,13 +338,12 @@ function updatePhysics(dt) {
       const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
       const startIdx = Math.floor(Math.random() * totalPts);
       const endIdx = (startIdx + gapSize) % totalPts;
-      // slightly randomized blink speed each opening (a bit faster or slower than before)
-      const flashInterval = 0.18 + Math.random() * 0.14; // was fixed at 0.25
+      const flashInterval = 0.18 + Math.random() * 0.14; // slight per-opening variation in blink speed
       room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, flashInterval, state: 'flashing' };
-      room.openingTimer = 3.0 + Math.random() * 3.5; // was 3.5–6.0, now 3.0–6.5
+      room.openingTimer = 3.0 + Math.random() * 3.5;
     } else {
       room.opening = null;
-      room.openingTimer = 1.2 + Math.random() * 2.6; // was 1.5–3.5, now 1.2–3.8
+      room.openingTimer = 1.2 + Math.random() * 2.6;
     }
   }
   const opening = room.opening;
@@ -357,14 +356,11 @@ function updatePhysics(dt) {
     }
   }
 
-  // ─── Restored, known-good physics — same 6 substeps, single-pass wall check (first
-  // match wins, then break), 50/50 position split with 0.6 damping on player-vs-player
-  // hits, same per-substep speed clamp, and the angle-aware gap-escape check (only
-  // eliminates you if you're actually near the open gap's direction and moving outward
-  // through it — not just far from the arena center for any reason). This replaces the
-  // 10-substep / mass-weighted-push version that was causing the "glitchy as hell"
-  // physics — that version was never actually confirmed good, it just looked different.
-  const pts = PERIMETER;
+  // ─── From here down this is a direct, faithful port of the original physics —
+  // same subSteps, same single-pass wall check (first match wins, then break), same
+  // 50/50 position split and 0.6 damping factor on player-vs-player hits, same
+  // per-substep speed clamp. This is deliberately NOT "improved" — it's restored to
+  // match the reference exactly, since that's what felt right.
   const subSteps = 6;
   const subDt = dt / subSteps;
 
@@ -615,6 +611,36 @@ io.on('connection', (socket) => {
       ack?.({ ok: true, top: masked });
     } catch (err) {
       console.error('Leaderboard error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
+  // ─── Reactions ────────────────────────────────────────────────
+  // Server enforces the cooldown and whitelist itself — a modified client could try to
+  // spam or send arbitrary content otherwise, since this just gets relayed to everyone.
+  socket.on('reaction', ({ type, value }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      const now = Date.now();
+      const last = reactionCooldowns.get(userId) || 0;
+      if (now - last < REACTION_COOLDOWN_MS) {
+        return ack?.({ ok: false, error: 'Too soon.' });
+      }
+
+      let payload;
+      if (type === 'gif') {
+        payload = { type: 'gif', value: REACTION_GIF_URL };
+      } else if (type === 'emoji' && REACTION_EMOJIS.includes(value)) {
+        payload = { type: 'emoji', value };
+      } else {
+        return ack?.({ ok: false, error: 'Invalid reaction.' });
+      }
+
+      reactionCooldowns.set(userId, now);
+      io.to(room.id).emit('reaction', { userId, ...payload });
+      ack?.({ ok: true });
+    } catch (err) {
+      console.error('reaction error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
