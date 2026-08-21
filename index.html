@@ -42,7 +42,6 @@
             color: var(--text);
             touch-action: none;
         }
-        /* ─── BLACK BACKGROUND IMAGE ─── */
         #app {
             display: flex;
             flex-direction: column;
@@ -57,7 +56,6 @@
             overflow: hidden;
             position: relative;
         }
-        /* dark overlay to keep readability */
         #app::before {
             content: '';
             position: absolute;
@@ -238,24 +236,52 @@
             display: block;
         }
 
-        #countdown-timer {
+        /* ─── Countdown timer + progress line ─── */
+        #timer-wrap {
             position: absolute;
             top: 16px;
             right: 16px;
+            z-index: 4;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            pointer-events: none;
+            background: transparent;
+            min-width: 70px;
+        }
+        #countdown-timer {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
-            z-index: 3;
-            pointer-events: none;
-            display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
+            line-height: 1;
+            display: none;
             background: transparent;
             border: none;
-            backdrop-filter: none;
             padding: 0;
-            line-height: 1;
+        }
+        #timer-progress-wrap {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+        }
+        #timer-progress-wrap.visible {
+            display: block;
+        }
+        #timer-progress {
+            width: 0%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 4px;
+            transition: width 0.08s linear;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
         }
 
         #win-history {
@@ -768,10 +794,10 @@
             border-radius: 50%;
             transition: transform 0.2s ease;
         }
-        .switch input:checked + .slider {
+        .switch input:checked+.slider {
             background: var(--primary);
         }
-        .switch input:checked + .slider::before {
+        .switch input:checked+.slider::before {
             transform: translateY(-50%) translateX(20px);
         }
 
@@ -1356,6 +1382,14 @@
                 top: 12px;
                 right: 12px;
             }
+            #timer-wrap {
+                top: 12px;
+                right: 12px;
+                min-width: 56px;
+            }
+            #timer-progress-wrap {
+                height: 2px;
+            }
             #stats-bar {
                 font-size: 12px;
                 padding: 4px 10px;
@@ -1500,7 +1534,12 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">10.00</div>
+
+                    <div id="timer-wrap">
+                        <div id="countdown-timer">10.00</div>
+                        <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
+                    </div>
+
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
@@ -1651,6 +1690,7 @@
             maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
+            topPlayerIds: new Map(), // id -> { rank, isGold, isSilver }
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -1671,6 +1711,8 @@
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
         const countdownTimer = document.getElementById('countdown-timer');
+        const timerProgressWrap = document.getElementById('timer-progress-wrap');
+        const timerProgress = document.getElementById('timer-progress');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -1708,13 +1750,18 @@
         const promoSub = document.getElementById('promo-sub');
         const promoContinueBtn = document.getElementById('promo-continue-btn');
 
+        // ─── WIN GIFS (added new ones) ───
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
             'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
             'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif',
+            // NEW:
+            'https://i.postimg.cc/TYZkzX3F/ezgif-3f0e907be807d1cc.gif',
+            'https://i.postimg.cc/CK4mnBsB/ezgif-3cacf477150edf7a.gif',
+            'https://i.postimg.cc/054ZSqD7/pepe.gif',
         ];
         const PRIZE_GIFS = {
             first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
@@ -1802,6 +1849,68 @@
             doLoad();
         }
 
+        // ─── Draw crown on canvas ──────────────────────────────────
+        function drawCrown(ctx, x, y, size, isGold) {
+            const s = size * 0.55;
+            const color = isGold ? '#FFD700' : '#C0C0C0';
+            const strokeColor = isGold ? '#DAA520' : '#A0A0A0';
+            const gemColor = isGold ? '#FF6B6B' : '#6B6BFF';
+            const highlightColor = isGold ? '#FFF8DC' : '#E8E8E8';
+
+            ctx.save();
+            ctx.translate(x, y - s * 0.7);
+
+            // Crown body
+            ctx.beginPath();
+            ctx.moveTo(-s * 0.65, s * 0.35);
+            ctx.lineTo(-s * 0.65, -s * 0.05);
+            ctx.quadraticCurveTo(-s * 0.7, -s * 0.2, -s * 0.5, -s * 0.35);
+            ctx.quadraticCurveTo(-s * 0.38, -s * 0.25, -s * 0.22, -s * 0.45);
+            ctx.quadraticCurveTo(-s * 0.12, -s * 0.65, 0, -s * 0.75);
+            ctx.quadraticCurveTo(s * 0.12, -s * 0.65, s * 0.22, -s * 0.45);
+            ctx.quadraticCurveTo(s * 0.38, -s * 0.25, s * 0.5, -s * 0.35);
+            ctx.quadraticCurveTo(s * 0.7, -s * 0.2, s * 0.65, -s * 0.05);
+            ctx.lineTo(s * 0.65, s * 0.35);
+            ctx.closePath();
+
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = s * 0.06;
+            ctx.stroke();
+
+            // Center gem
+            ctx.fillStyle = gemColor;
+            ctx.shadowColor = isGold ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,255,0.4)';
+            ctx.shadowBlur = s * 0.15;
+            ctx.beginPath();
+            ctx.arc(0, -s * 0.28, s * 0.09, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Side gems
+            ctx.fillStyle = isGold ? '#FFB347' : '#B0B0FF';
+            ctx.beginPath();
+            ctx.arc(-s * 0.3, -s * 0.08, s * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(s * 0.3, -s * 0.08, s * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight dots
+            ctx.fillStyle = highlightColor;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            ctx.arc(-s * 0.15, -s * 0.5, s * 0.04, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(s * 0.15, -s * 0.5, s * 0.04, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+
+            ctx.restore();
+        }
+
         // ═══════════════════════════════════════════════════════════════
         // ARENA
         // ═══════════════════════════════════════════════════════════════
@@ -1868,6 +1977,9 @@
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
+                    // also refresh periodically
+                    if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
+                    window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
                 });
             });
 
@@ -1884,14 +1996,8 @@
         }
 
         // ─── BUMP HAPTICS ────────────────────────────────────────────
-        // The server doesn't send explicit "these two players collided" events, but it
-        // does send everyone's live x/y/radius every tick — enough to detect a bump
-        // locally by checking distance vs. combined radius, same as the server's own
-        // collision check. We only care about collisions involving the local player
-        // (buzzing for every collision in an 8-player arena would be constant noise),
-        // and we only vibrate on the moment contact *starts*, not every frame while
-        // two circles are still overlapping.
         let touchingIds = new Set();
+
         function detectBumpsForHaptics() {
             if (state.gameState !== 'playing') { touchingIds = new Set(); return; }
             const me = getPlayer(state.userId);
@@ -1900,7 +2006,8 @@
             const nowTouching = new Set();
             state.players.forEach(p => {
                 if (p.id === me.id || !p.alive) return;
-                const dx = p.x - me.x, dy = p.y - me.y;
+                const dx = p.x - me.x,
+                    dy = p.y - me.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
                 if (dist < minDist) nowTouching.add(p.id);
@@ -1960,10 +2067,16 @@
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
                 countdownTimer.style.display = 'none';
+                timerProgressWrap.classList.remove('visible');
             }
-            if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
-                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+            if (state.gameState === 'countdown') {
+                countdownTimer.style.display = 'block';
+                timerProgressWrap.classList.add('visible');
+            }
+            if (state.gameState === 'playing' || state.gameState === 'finished') {
+                countdownTimer.style.display = state.gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+                if (state.gameState === 'playing') timerProgressWrap.classList.remove('visible');
+            }
 
             updateStatsBar();
             updateBetUI();
@@ -1999,6 +2112,7 @@
             winPanel.classList.add('show');
             haptic('heavy');
             countdownTimer.style.display = 'none';
+            timerProgressWrap.classList.remove('visible');
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2012,6 +2126,7 @@
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
             countdownTimer.style.display = 'none';
+            timerProgressWrap.classList.remove('visible');
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2026,12 +2141,19 @@
             socket.emit('leaderboard', {}, (res) => {
                 if (!res?.ok) return;
                 state.topPlayers = res.top.map((u, i) => ({
+                    id: u.id,
                     name: u.username,
                     pfp: u.pfp || state.defaultAvatar,
                     wins: u.wins,
                     score: u.balance,
                     rank: i + 1,
                 }));
+                // Build quick lookup for top 1 & 2
+                state.topPlayerIds.clear();
+                state.topPlayers.forEach(p => {
+                    if (p.rank === 1) state.topPlayerIds.set(p.id, { rank: 1, isGold: true, isSilver: false });
+                    else if (p.rank === 2) state.topPlayerIds.set(p.id, { rank: 2, isGold: false, isSilver: true });
+                });
                 updateTopUI();
             });
         }
@@ -2051,9 +2173,15 @@
             alive.forEach(p => {
                 const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
                 const isYou = p.id === state.userId;
+                const topInfo = state.topPlayerIds.get(p.id);
+                let crownEmoji = '';
+                if (topInfo) {
+                    if (topInfo.isGold) crownEmoji = '👑';
+                    else if (topInfo.isSilver) crownEmoji = '👑';
+                }
                 html += `<div class="pl-entry ${isYou ? 'you' : ''}">
                             <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${p.name}</span>
+                            <span class="pl-name">${crownEmoji} ${p.name}</span>
                             <span class="pl-bet">${p.bet}</span>
                             <span class="pl-chance">${chance}%</span>
                         </div>`;
@@ -2255,9 +2383,10 @@
             }
             ctx.restore();
 
-            // ─── DRAW PLAYERS WITH PFP ──────────────────────────────
+            // ─── DRAW PLAYERS WITH PFP + CROWNS ──────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
+
                 const popScale = getPopScale(p);
                 const radius = (p.displayRadius || 18) * s;
                 const displayRadius = radius * popScale;
@@ -2272,8 +2401,14 @@
                 const px = p.x * s,
                     py = p.y * s;
 
+                // ─── Check if player is top 1 or top 2 ───
+                const topInfo = state.topPlayerIds.get(p.id);
+                const isGold = topInfo && topInfo.isGold;
+                const isSilver = topInfo && topInfo.isSilver;
+                const hasCrown = isGold || isSilver;
+
+                // ─── Draw player circle with clip ────────────────────
                 ctx.save();
-                // clip to circle
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
                 ctx.closePath();
@@ -2283,7 +2418,6 @@
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
                 } else {
-                    // fallback color + initial
                     ctx.fillStyle = p.color || '#555';
                     ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
                     ctx.fillStyle = '#fff';
@@ -2294,16 +2428,42 @@
                 }
                 ctx.restore();
 
-                // border
+                // ─── Border ──────────────────────────────────────────
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
+
+                let borderColor = 'rgba(255,255,255,0.35)';
+                let borderWidth = 1.5;
                 const isYou = p.id === state.userId;
-                ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
-                ctx.lineWidth = isYou ? 2.5 : 1.5;
+
+                if (isGold) {
+                    borderColor = '#FFD700';
+                    borderWidth = 3.5;
+                    ctx.shadowColor = 'rgba(255,215,0,0.7)';
+                    ctx.shadowBlur = 18;
+                } else if (isSilver) {
+                    borderColor = '#C0C0C0';
+                    borderWidth = 3.0;
+                    ctx.shadowColor = 'rgba(192,192,192,0.5)';
+                    ctx.shadowBlur = 14;
+                } else if (isYou) {
+                    borderColor = 'rgba(255,255,255,1.0)';
+                    borderWidth = 2.5;
+                }
+
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = borderWidth;
                 ctx.stroke();
+                ctx.shadowBlur = 0;
                 ctx.restore();
+
+                // ─── Crown ──────────────────────────────────────────
+                if (hasCrown) {
+                    const crownSize = drawRadius * 0.55;
+                    drawCrown(ctx, px, py, drawRadius, isGold);
+                }
             });
         }
 
@@ -2496,7 +2656,7 @@
             socket.emit('setAnonymous', { enabled }, (res) => {
                 anonToggle.disabled = false;
                 if (!res?.ok) {
-                    anonToggle.checked = state.anonymous; // revert on failure
+                    anonToggle.checked = state.anonymous;
                     console.warn('setAnonymous failed:', res?.error);
                     return;
                 }
@@ -2563,14 +2723,24 @@
         function renderLoop() {
             updatePlayerAnimations();
 
+            // ─── Update countdown timer + progress line ────────────
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                // progress: 0% at start, 100% at end
+                const progress = Math.min(1, elapsed / 10.0) * 100;
+                timerProgress.style.width = progress + '%';
+                timerProgressWrap.classList.add('visible');
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
+                timerProgress.style.width = '100%';
+                timerProgressWrap.classList.add('visible');
+            } else if (state.gameState === 'idle') {
+                // hide progress line when idle
+                timerProgressWrap.classList.remove('visible');
             }
 
             render();
@@ -2601,10 +2771,6 @@
         });
 
         betInput.addEventListener('input', () => {
-            // Don't force a value while the user is actively typing — that's what was
-            // making it impossible to clear "10" and type a new number (every keystroke
-            // that produced something below 10, including an empty field, was instantly
-            // snapped back to "10"). Clamping now only happens on blur / on submit.
             const raw = betInput.value;
             const val = parseInt(raw);
             betAmountDisplay.textContent = (raw === '' || isNaN(val)) ? '10' : Math.min(val, state.balance);
