@@ -238,17 +238,22 @@
             display: block;
         }
 
-        #countdown-timer {
+        #countdown-wrap {
             position: absolute;
             top: 16px;
             right: 16px;
+            z-index: 3;
+            pointer-events: none;
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        #countdown-timer {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
-            z-index: 3;
-            pointer-events: none;
-            display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
             background: transparent;
@@ -256,6 +261,20 @@
             backdrop-filter: none;
             padding: 0;
             line-height: 1;
+        }
+        #countdown-progress-track {
+            width: 46px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.18);
+            overflow: hidden;
+        }
+        #countdown-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            background: #fff;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
         }
 
         #win-history {
@@ -481,6 +500,28 @@
             transform: none;
             pointer-events: none;
         }
+        #allin-btn {
+            padding: 6px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--gold);
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+        #allin-btn:active {
+            transform: scale(0.94);
+            background: rgba(212, 175, 55, 0.25);
+        }
+        #allin-btn:disabled {
+            opacity: 0.4;
+            transform: none;
+            pointer-events: none;
+        }
         #current-bet-display {
             color: var(--text2);
             font-size: 12px;
@@ -494,11 +535,89 @@
             color: var(--gold);
             font-weight: 700;
         }
+        #reactions-bar {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .reaction-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            font-size: 15px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.12s ease, background 0.12s ease;
+        }
+        .reaction-btn:active {
+            transform: scale(0.85);
+            background: var(--surface3);
+        }
+        .reaction-btn:disabled {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .reaction-btn.reaction-gif-btn {
+            overflow: hidden;
+            padding: 0;
+        }
+        .reaction-btn.reaction-gif-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
         #bet-overlay.collapsed #current-bet-display,
         #bet-overlay.collapsed #bet-info,
         #bet-overlay.collapsed #bet-input,
-        #bet-overlay.collapsed #bet-btn {
+        #bet-overlay.collapsed #bet-btn,
+        #bet-overlay.collapsed #allin-btn,
+        #bet-overlay.collapsed #reactions-bar {
             display: none;
+        }
+
+        #reaction-layer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+            overflow: visible;
+            z-index: 6;
+        }
+        .reaction-pop {
+            position: absolute;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 26px;
+            line-height: 1;
+            animation: reactionPop 1.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+        }
+        .reaction-pop img {
+            width: 34px;
+            height: 34px;
+            display: block;
+            border-radius: 8px;
+        }
+        @keyframes reactionPop {
+            0% { transform: translate(-50%, -50%) scale(0) translateY(0); opacity: 0; }
+            18% { transform: translate(-50%, -50%) scale(1.25) translateY(-8px); opacity: 1; }
+            35% { transform: translate(-50%, -50%) scale(1) translateY(-10px); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(0.85) translateY(-46px); opacity: 0; }
         }
 
         #player-list-container {
@@ -902,6 +1021,36 @@
             justify-content: flex-start;
             background: transparent;
         }
+        .top-header {
+            text-align: center;
+            margin-bottom: 4px;
+            animation: topFadeDown 0.4s ease both;
+        }
+        .top-header-title {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(90deg, #ffe9a8, var(--gold), #ffe9a8);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: goldShimmerText 3.5s linear infinite;
+            letter-spacing: 0.3px;
+        }
+        .top-header-sub {
+            font-size: 12px;
+            color: var(--text2);
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+        @keyframes goldShimmerText {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes topFadeDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
         #podium {
             display: flex;
             align-items: flex-end;
@@ -921,6 +1070,29 @@
             min-width: 70px;
             max-width: 110px;
             transition: 0.2s;
+            animation: podiumRise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .podium-col.p1 { animation-delay: 0.05s; }
+        .podium-col.p2 { animation-delay: 0.15s; }
+        .podium-col.p3 { animation-delay: 0.25s; }
+        @keyframes podiumRise {
+            from { opacity: 0; transform: translateY(18px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .podium-crown {
+            font-size: 20px;
+            line-height: 1;
+            margin-bottom: -2px;
+            filter: drop-shadow(0 0 6px rgba(255, 212, 71, 0.7));
+            animation: crownFloat 2.2s ease-in-out infinite;
+        }
+        .podium-col.p2 .podium-crown {
+            font-size: 15px;
+            filter: grayscale(1) brightness(1.5) drop-shadow(0 0 5px rgba(216, 221, 227, 0.7));
+        }
+        @keyframes crownFloat {
+            0%, 100% { transform: translateY(0) rotate(-3deg); }
+            50% { transform: translateY(-3px) rotate(3deg); }
         }
         .podium-col .rank-badge {
             font-size: 14px;
@@ -955,12 +1127,19 @@
             transition: 0.2s;
         }
         .podium-col .podium-pfp.gold {
+            width: 64px;
+            height: 64px;
             border-color: var(--gold);
             box-shadow: 0 0 30px var(--gold-dim);
+            animation: goldPulse 2.2s ease-in-out infinite;
+        }
+        @keyframes goldPulse {
+            0%, 100% { box-shadow: 0 0 22px var(--gold-dim); }
+            50% { box-shadow: 0 0 40px var(--gold); }
         }
         .podium-col .podium-pfp.silver {
             border-color: #b8b8c8;
-            box-shadow: 0 0 20px rgba(184, 184, 200, 0.2);
+            box-shadow: 0 0 20px rgba(184, 184, 200, 0.25);
         }
         .podium-col .podium-pfp.bronze {
             border-color: #cd8a5a;
@@ -975,6 +1154,10 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        .podium-col.p1 .podium-name {
+            font-size: 13px;
+            font-weight: 800;
         }
         .podium-col .podium-prize {
             display: flex;
@@ -1003,12 +1186,26 @@
             background: var(--border);
             margin-top: 2px;
             min-height: 6px;
+            position: relative;
+            overflow: hidden;
         }
         .podium-col .podium-base.gold {
             background: linear-gradient(180deg, #f0d080, var(--gold));
             height: 100px;
             min-height: 100px;
             box-shadow: 0 -4px 40px rgba(200, 168, 78, 0.4);
+        }
+        .podium-col .podium-base.gold::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+            background-size: 220% 100%;
+            animation: goldSweep 2.8s ease-in-out infinite;
+        }
+        @keyframes goldSweep {
+            0% { background-position: 120% 0; }
+            60%, 100% { background-position: -20% 0; }
         }
         .podium-col .podium-base.silver {
             background: linear-gradient(180deg, #d0d0e0, #b8b8c8);
@@ -1035,7 +1232,7 @@
         #top-list {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             max-width: 400px;
             margin: 10px auto 0;
             width: 100%;
@@ -1048,9 +1245,19 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             border-radius: 12px;
-            padding: 6px 14px;
+            padding: 8px 14px;
             border: 1px solid var(--border);
-            transition: 0.2s;
+            border-left: 3px solid transparent;
+            transition: transform 0.15s ease, background 0.15s ease;
+            animation: rowFadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        }
+        .top-entry:active {
+            transform: scale(0.98);
+            background: rgba(28, 28, 32, 0.85);
+        }
+        @keyframes rowFadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
         }
         .top-entry .rank {
             font-size: 14px;
@@ -1062,15 +1269,18 @@
         .top-entry .rank.gold {
             color: var(--gold);
         }
+        .top-entry.rank-gold { border-left-color: var(--gold); }
         .top-entry .rank.silver {
             color: #b8b8c8;
         }
+        .top-entry.rank-silver { border-left-color: #b8b8c8; }
         .top-entry .rank.bronze {
             color: #cd8a5a;
         }
+        .top-entry.rank-bronze { border-left-color: #cd8a5a; }
         .top-entry .t-pfp {
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             background: var(--surface2);
             border: 1px solid var(--border);
@@ -1351,10 +1561,12 @@
                 max-width: 60px;
                 font-size: 11px;
             }
-            #countdown-timer {
-                font-size: 18px;
+            #countdown-wrap {
                 top: 12px;
                 right: 12px;
+            }
+            #countdown-timer {
+                font-size: 18px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -1499,8 +1711,14 @@
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
+                    <div id="reaction-layer"></div>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-timer">10.00</div>
+                    <div id="countdown-wrap">
+                        <div id="countdown-timer">10.00</div>
+                        <div id="countdown-progress-track">
+                            <div id="countdown-progress-fill"></div>
+                        </div>
+                    </div>
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
@@ -1520,7 +1738,19 @@
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
                             <input type="number" id="bet-input" value="10" min="10" max="9999" />
                             <button id="bet-btn">join</button>
+                            <button id="allin-btn" title="Bet your entire balance">all in</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                            <div id="reactions-bar">
+                                <button class="reaction-btn" data-emoji="😂">😂</button>
+                                <button class="reaction-btn" data-emoji="😮">😮</button>
+                                <button class="reaction-btn" data-emoji="🔥">🔥</button>
+                                <button class="reaction-btn" data-emoji="💀">💀</button>
+                                <button class="reaction-btn" data-emoji="👍">👍</button>
+                                <button class="reaction-btn" data-emoji="❤️">❤️</button>
+                                <button class="reaction-btn reaction-gif-btn" id="reaction-gif-btn" title="Send gif reaction">
+                                    <img src="https://i.postimg.cc/Z5G1xdN9/ezgif-20d222277768f496.gif" alt="gif reaction" />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1572,6 +1802,10 @@
             </div>
 
             <div id="top-page" class="tab-page">
+                <div class="top-header">
+                    <div class="top-header-title">🏆 Leaderboard</div>
+                    <div class="top-header-sub">the best bumpers, ranked</div>
+                </div>
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
@@ -1668,9 +1902,15 @@
         const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
+        const allinBtn = document.getElementById('allin-btn');
+        const reactionsBar = document.getElementById('reactions-bar');
+        const reactionGifBtn = document.getElementById('reaction-gif-btn');
+        const reactionLayer = document.getElementById('reaction-layer');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
         const countdownTimer = document.getElementById('countdown-timer');
+        const countdownWrap = document.getElementById('countdown-wrap');
+        const countdownProgressFill = document.getElementById('countdown-progress-fill');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -1714,7 +1954,10 @@
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
             'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
             'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif',
+            'https://i.postimg.cc/TYZkzX3F/ezgif-3f0e907be807d1cc.gif',
+            'https://i.postimg.cc/CK4mnBsB/ezgif-3cacf477150edf7a.gif',
+            'https://i.postimg.cc/054ZSqD7/pepe.gif'
         ];
         const PRIZE_GIFS = {
             first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
@@ -1815,6 +2058,13 @@
             canvas.style.height = size + 'px';
             state.arenaSize = size;
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            // reaction-layer sits exactly on top of the canvas so reaction popups can be
+            // positioned using the same arena-space -> pixel math as the canvas drawing
+            reactionLayer.style.left = canvas.offsetLeft + 'px';
+            reactionLayer.style.top = canvas.offsetTop + 'px';
+            reactionLayer.style.width = size + 'px';
+            reactionLayer.style.height = size + 'px';
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
@@ -1881,6 +2131,10 @@
             socket.on('roundEnd', (payload) => {
                 handleRoundEnd(payload);
             });
+
+            socket.on('reaction', ({ userId: fromId, type, value }) => {
+                spawnReaction(fromId, type, value);
+            });
         }
 
         // ─── BUMP HAPTICS ────────────────────────────────────────────
@@ -1937,6 +2191,13 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
+                        isDying: false,
+                        dieStartTime: 0,
+                        // renderX/Y/Radius are the smoothed values actually drawn on screen —
+                        // they ease toward x/y/displayRadius (the raw server truth) every
+                        // animation frame instead of snapping straight to it, so motion looks
+                        // continuous even though the server only updates ~30x/sec.
+                        renderX: sp.x, renderY: sp.y, renderRadius: sp.displayRadius,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
@@ -1945,6 +2206,12 @@
                     local.pulseStartTime = performance.now();
                     local.pulseTime = 0;
                 }
+                if (local.alive && !sp.alive) {
+                    // just got eliminated this tick — play a shrink/fade instead of vanishing instantly
+                    local.isDying = true;
+                    local.dieStartTime = performance.now();
+                    local.dieDuration = 450;
+                }
                 local.name = sp.name;
                 local.bet = sp.bet;
                 local.color = sp.color;
@@ -1952,6 +2219,7 @@
                 local.y = sp.y;
                 local.displayRadius = sp.displayRadius;
                 local.alive = sp.alive;
+                local.crownRank = sp.crownRank || null;
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
@@ -1959,11 +2227,11 @@
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
-                countdownTimer.style.display = 'none';
+                countdownWrap.style.display = 'none';
             }
-            if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
-                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+            if (state.gameState === 'countdown') countdownWrap.style.display = 'flex';
+            if (state.gameState === 'playing' || state.gameState === 'finished') countdownWrap.style.display = state
+                .gameState === 'countdown' ? 'flex' : countdownWrap.style.display;
 
             updateStatsBar();
             updateBetUI();
@@ -1998,7 +2266,7 @@
             winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             winPanel.classList.add('show');
             haptic('heavy');
-            countdownTimer.style.display = 'none';
+            countdownWrap.style.display = 'none';
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2011,7 +2279,7 @@
             if (window.winTimeout) { clearTimeout(window.winTimeout);
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
+            countdownWrap.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2257,9 +2525,19 @@
 
             // ─── DRAW PLAYERS WITH PFP ──────────────────────────────
             state.players.forEach(p => {
-                if (!p.alive) return;
+                if (!p.alive && !p.isDying) return;
+
+                let dieScale = 1, dieAlpha = 1;
+                if (p.isDying) {
+                    const elapsed = performance.now() - p.dieStartTime;
+                    const t = Math.min(1, elapsed / (p.dieDuration || 450));
+                    dieScale = 1 - t; // shrink to nothing
+                    dieAlpha = 1 - t; // fade out
+                    if (t >= 1) { p.isDying = false; return; } // animation finished, stop drawing
+                }
+
                 const popScale = getPopScale(p);
-                const radius = (p.displayRadius || 18) * s;
+                const radius = (p.renderRadius || 18) * s;
                 const displayRadius = radius * popScale;
                 let pulseScale = 1;
                 if (p.isPulsing) {
@@ -2267,12 +2545,14 @@
                     if (t < 0.6) { const phase = t / 0.6;
                         pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
                 }
-                const finalRadius = displayRadius * pulseScale;
+                const finalRadius = displayRadius * pulseScale * dieScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-                const px = p.x * s,
-                    py = p.y * s;
+                const px = (p.renderX ?? p.x) * s,
+                    py = (p.renderY ?? p.y) * s;
 
                 ctx.save();
+                ctx.globalAlpha = dieAlpha;
+
                 // clip to circle
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
@@ -2294,17 +2574,65 @@
                 }
                 ctx.restore();
 
-                // border
+                // border — gold for the #1 leaderboard player, silver for #2, otherwise the
+                // usual subtle white ring (brighter/thicker if it's you)
                 ctx.save();
+                ctx.globalAlpha = dieAlpha;
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
                 const isYou = p.id === state.userId;
-                ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
-                ctx.lineWidth = isYou ? 2.5 : 1.5;
+                if (p.crownRank === 1) {
+                    ctx.strokeStyle = '#ffd447';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = 'rgba(255,212,71,0.7)';
+                    ctx.shadowBlur = 8;
+                } else if (p.crownRank === 2) {
+                    ctx.strokeStyle = '#d8dde3';
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = 'rgba(216,221,227,0.6)';
+                    ctx.shadowBlur = 8;
+                } else {
+                    ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
+                    ctx.lineWidth = isYou ? 2.5 : 1.5;
+                }
                 ctx.stroke();
                 ctx.restore();
+
+                if (p.crownRank === 1 || p.crownRank === 2) {
+                    drawCrown(ctx, px, py - finalRadius, Math.max(finalRadius * 0.6, 10),
+                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', dieAlpha);
+                }
             });
+        }
+
+        // small procedural crown icon (not an emoji, so we can color it gold/silver reliably)
+        function drawCrown(ctx, cx, topY, size, color, alpha = 1) {
+            const w = size, h = size * 0.62;
+            const baseY = topY - h * 0.15;
+            const topPointY = baseY - h;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.moveTo(cx - w / 2, baseY);
+            ctx.lineTo(cx - w / 2, baseY - h * 0.45);
+            ctx.lineTo(cx - w / 3, baseY - h * 0.15);
+            ctx.lineTo(cx - w / 6, topPointY);
+            ctx.lineTo(cx, baseY - h * 0.25);
+            ctx.lineTo(cx + w / 6, topPointY);
+            ctx.lineTo(cx + w / 3, baseY - h * 0.15);
+            ctx.lineTo(cx + w / 2, baseY - h * 0.45);
+            ctx.lineTo(cx + w / 2, baseY);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 6;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+            ctx.restore();
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2358,9 +2686,26 @@
             if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
         }
 
+        const FROG_GIFS = [
+            'https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif',
+            'https://i.postimg.cc/mgsrh051/ezgif-17faae1511028747.gif',
+        ];
+        let lastFrogGif = null;
+        let frogWasVisible = false;
+        function pickRandomFrogGif() {
+            if (FROG_GIFS.length <= 1) return FROG_GIFS[0];
+            let choice;
+            do { choice = FROG_GIFS[Math.floor(Math.random() * FROG_GIFS.length)]; }
+            while (choice === lastFrogGif);
+            lastFrogGif = choice;
+            return choice;
+        }
+
         function updateFrogVisibility() {
             const alive = getAlive();
             const showFrog = alive.length < 2 && state.gameState === 'idle';
+            if (showFrog && !frogWasVisible) frogGif.src = pickRandomFrogGif();
+            frogWasVisible = showFrog;
             frogGif.classList.toggle('show', showFrog);
             waitingText.style.display = showFrog ? 'none' : 'block';
         }
@@ -2408,7 +2753,10 @@
                 const prize = getPrizeForRank(p.rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
+                const crownHtml = info.cls === 'gold' ? '<div class="podium-crown">👑</div>'
+                    : info.cls === 'silver' ? '<div class="podium-crown">👑</div>' : '';
                 podiumHtml += `<div class="podium-col ${info.colClass}">
+                            ${crownHtml}
                             <div class="rank-badge ${info.cls}">${info.label}</div>
                             <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="podium-name">${p.name}</div>
@@ -2422,16 +2770,17 @@
             const rest = players.slice(3);
             if (rest.length === 0) { topList.innerHTML = ''; return; }
             let listHtml = '';
-            rest.forEach(p => {
+            rest.forEach((p, idx) => {
                 const rank = p.rank;
                 let rClass = 'rank';
-                if (rank === 4) rClass += ' gold';
-                else if (rank === 5) rClass += ' silver';
-                else if (rank === 6) rClass += ' bronze';
+                let rowAccent = '';
+                if (rank === 4) { rClass += ' gold'; rowAccent = ' rank-gold'; }
+                else if (rank === 5) { rClass += ' silver'; rowAccent = ' rank-silver'; }
+                else if (rank === 6) { rClass += ' bronze'; rowAccent = ' rank-bronze'; }
                 const prize = getPrizeForRank(rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
-                listHtml += `<div class="top-entry">
+                listHtml += `<div class="top-entry${rowAccent}" style="animation-delay:${Math.min(idx * 0.04, 0.4)}s">
                             <div class="${rClass}">#${rank}</div>
                             <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="t-name">${p.name}</div>
@@ -2470,6 +2819,74 @@
                 e.stopPropagation();
                 switchTab(this.dataset.tab);
             });
+        });
+
+        // ─── Reactions ───────────────────────────────────────────────
+        // Renders a floating emoji/gif at the sender's current circle position (or the
+        // arena center if they don't have a live circle right now), then removes itself.
+        function spawnReaction(fromUserId, type, value) {
+            const p = getPlayer(fromUserId);
+            const s = scaleFactor();
+            let x, y;
+            if (p) {
+                x = (p.renderX ?? p.x) * s;
+                y = (p.renderY ?? p.y) * s;
+            } else {
+                x = state.arenaSize / 2;
+                y = state.arenaSize / 2;
+            }
+            const el = document.createElement('div');
+            el.className = 'reaction-pop';
+            if (type === 'gif') {
+                const img = document.createElement('img');
+                img.src = value;
+                el.appendChild(img);
+            } else {
+                el.textContent = value;
+            }
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            reactionLayer.appendChild(el);
+            setTimeout(() => el.remove(), 1350);
+        }
+
+        const REACTION_COOLDOWN_MS = 1500;
+        let lastReactionAt = 0;
+
+        function sendReaction(type, value) {
+            if (!socket || !socket.connected) return;
+            const now = Date.now();
+            if (now - lastReactionAt < REACTION_COOLDOWN_MS) { haptic('light'); return; }
+            lastReactionAt = now;
+
+            // show it immediately for the sender too — don't wait on a server round-trip
+            if (state.userId) spawnReaction(state.userId, type, value);
+            haptic('light');
+
+            // brief visual cooldown on the buttons so it's obvious a reaction was just sent
+            document.querySelectorAll('.reaction-btn').forEach(b => b.disabled = true);
+            setTimeout(() => {
+                document.querySelectorAll('.reaction-btn').forEach(b => b.disabled = false);
+            }, REACTION_COOLDOWN_MS);
+
+            socket.emit('reaction', { type, value }, (res) => {
+                if (!res?.ok) console.warn('reaction rejected:', res?.error);
+            });
+        }
+
+        document.querySelectorAll('.reaction-btn[data-emoji]').forEach(btn => {
+            btn.addEventListener('click', () => sendReaction('emoji', btn.dataset.emoji));
+        });
+        reactionGifBtn.addEventListener('click', () => {
+            sendReaction('gif', reactionGifBtn.querySelector('img').src);
+        });
+
+        // ─── All In ──────────────────────────────────────────────────
+        allinBtn.addEventListener('click', () => {
+            if (state.balance < 10) { haptic('light'); return; }
+            betInput.value = Math.floor(state.balance);
+            betAmountDisplay.textContent = betInput.value;
+            betBtn.click();
         });
 
         // ─── Reload PFP ──────────────────────────────────────────────
@@ -2560,17 +2977,44 @@
         });
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
+        // The server only broadcasts ~30 times/sec. Drawing raw server positions directly
+        // means most 60fps frames would just redraw the same spot, then jump — visually
+        // choppy, and any network hiccup reads as a "freeze". Instead we ease each
+        // player's renderX/Y/Radius toward the latest server values every frame, using a
+        // time-based (not frame-count-based) smoothing constant so it looks the same at
+        // 30fps or 120fps and can't compound into a stutter if a frame is dropped.
+        let lastFrameTime = performance.now();
+        function updateRenderSmoothing(dt) {
+            const halfLife = 0.05; // seconds for the render position to close half the gap to target
+            const factor = 1 - Math.pow(0.5, dt / halfLife);
+            state.players.forEach(p => {
+                if (p.renderX === undefined) { p.renderX = p.x; p.renderY = p.y; p.renderRadius = p.displayRadius; return; }
+                p.renderX += (p.x - p.renderX) * factor;
+                p.renderY += (p.y - p.renderY) * factor;
+                p.renderRadius += ((p.displayRadius || p.renderRadius) - p.renderRadius) * factor;
+            });
+        }
+
         function renderLoop() {
+            const now = performance.now();
+            const dt = Math.min(0.1, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
             updatePlayerAnimations();
+            updateRenderSmoothing(dt);
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
+                const totalCountdown = 10.0;
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
+                const remaining = Math.max(0, totalCountdown - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                const pct = Math.min(100, Math.max(0, (elapsed / totalCountdown) * 100));
+                countdownProgressFill.style.width = pct + '%';
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
+                countdownProgressFill.style.width = '100%';
             }
 
             render();
