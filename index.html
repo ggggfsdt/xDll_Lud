@@ -1987,11 +1987,6 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
-                        // renderX/Y/Radius are the smoothed values actually drawn on screen —
-                        // they ease toward x/y/displayRadius (the raw server truth) every
-                        // animation frame instead of snapping straight to it, so motion looks
-                        // continuous even though the server only updates ~30x/sec.
-                        renderX: sp.x, renderY: sp.y, renderRadius: sp.displayRadius,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
@@ -2315,7 +2310,7 @@
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const popScale = getPopScale(p);
-                const radius = (p.renderRadius || p.displayRadius || 18) * s;
+                const radius = (p.displayRadius || 18) * s;
                 const displayRadius = radius * popScale;
                 let pulseScale = 1;
                 if (p.isPulsing) {
@@ -2325,8 +2320,8 @@
                 }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-                const px = (p.renderX ?? p.x) * s,
-                    py = (p.renderY ?? p.y) * s;
+                const px = p.x * s,
+                    py = p.y * s;
 
                 ctx.save();
                 // clip to circle
@@ -2351,22 +2346,26 @@
                 ctx.restore();
 
                 // border — gold for the #1 leaderboard player, silver for #2, otherwise the
-                // usual subtle white ring (brighter/thicker if it's you). Static (no pulse).
+                // usual subtle white ring (brighter/thicker if it's you). The gold/silver
+                // ring breathes gently (shadowBlur oscillation) so it reads as "alive".
+                const animT = performance.now() / 1000;
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
                 const isYou = p.id === state.userId;
                 if (p.crownRank === 1) {
+                    const glow = 7 + Math.sin(animT * 3.0) * 3.5;
                     ctx.strokeStyle = '#ffd447';
                     ctx.lineWidth = 3;
                     ctx.shadowColor = 'rgba(255,212,71,0.7)';
-                    ctx.shadowBlur = 8;
+                    ctx.shadowBlur = glow;
                 } else if (p.crownRank === 2) {
+                    const glow = 7 + Math.sin(animT * 3.0 + 1.4) * 3.5;
                     ctx.strokeStyle = '#d8dde3';
                     ctx.lineWidth = 3;
                     ctx.shadowColor = 'rgba(216,221,227,0.6)';
-                    ctx.shadowBlur = 8;
+                    ctx.shadowBlur = glow;
                 } else {
                     ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
                     ctx.lineWidth = isYou ? 2.5 : 1.5;
@@ -2375,19 +2374,29 @@
                 ctx.restore();
 
                 if (p.crownRank === 1 || p.crownRank === 2) {
-                    drawCrown(ctx, px, py - finalRadius, Math.max(finalRadius * 0.6, 10),
-                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', 1);
+                    // gentle floating bob + tilt, phase-offset per rank so gold and silver
+                    // crowns don't move in lockstep
+                    const phase = p.crownRank === 2 ? 1.6 : 0;
+                    const bob = Math.sin(animT * 2.4 + phase) * Math.max(finalRadius * 0.10, 2);
+                    const tilt = Math.sin(animT * 1.7 + phase) * 0.14;
+                    drawCrown(ctx, px, py - finalRadius + bob, Math.max(finalRadius * 0.6, 10),
+                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', 1, tilt);
                 }
             });
         }
 
-        // small procedural crown icon (not an emoji, so we can color it gold/silver reliably)
-        function drawCrown(ctx, cx, topY, size, color, alpha = 1) {
+        // small procedural crown icon (not an emoji, so we can color it gold/silver reliably).
+        // `rotation` (radians) lets the caller give it a slow, smooth wobble.
+        function drawCrown(ctx, cx, topY, size, color, alpha = 1, rotation = 0) {
             const w = size, h = size * 0.62;
             const baseY = topY - h * 0.15;
             const topPointY = baseY - h;
+            const pivotY = topY; // rotate around the point resting on the head, not the tips
             ctx.save();
             ctx.globalAlpha = alpha;
+            ctx.translate(cx, pivotY);
+            ctx.rotate(rotation);
+            ctx.translate(-cx, -pivotY);
             ctx.beginPath();
             ctx.moveTo(cx - w / 2, baseY);
             ctx.lineTo(cx - w / 2, baseY - h * 0.45);
@@ -2666,31 +2675,8 @@
         });
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
-        // The server only broadcasts ~30 times/sec. Drawing raw server positions directly
-        // means most 60fps+ frames would just redraw the same spot, then jump — visually
-        // choppy/laggy, and any network hiccup reads as a "freeze". Instead we ease each
-        // player's renderX/Y/Radius toward the latest server values every frame, using a
-        // time-based (not frame-count-based) smoothing constant so it looks the same at
-        // 30fps or 120fps and can't compound into a stutter if a frame is dropped.
-        let lastFrameTime = performance.now();
-        function updateRenderSmoothing(dt) {
-            const halfLife = 0.05; // seconds for the render position to close half the gap to target
-            const factor = 1 - Math.pow(0.5, dt / halfLife);
-            state.players.forEach(p => {
-                if (p.renderX === undefined) { p.renderX = p.x; p.renderY = p.y; p.renderRadius = p.displayRadius; return; }
-                p.renderX += (p.x - p.renderX) * factor;
-                p.renderY += (p.y - p.renderY) * factor;
-                p.renderRadius += ((p.displayRadius || p.renderRadius) - p.renderRadius) * factor;
-            });
-        }
-
         function renderLoop() {
-            const now = performance.now();
-            const dt = Math.min(0.1, (now - lastFrameTime) / 1000);
-            lastFrameTime = now;
-
             updatePlayerAnimations();
-            updateRenderSmoothing(dt);
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const totalCountdown = 10.0;
