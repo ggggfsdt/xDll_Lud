@@ -123,10 +123,8 @@ const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 function speedForRadius(radius) {
   const minR = 14, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // smallest circle → fastest, largest circle → slowest. Kept moderate (not extreme)
-  // so it reads as "small ones are a bit quicker", not a huge speed gap.
-  const speed = 7.0 - norm * 3.5;
-  return Math.max(3.5, Math.min(7.0, speed));
+  const speed = 8.0 - norm * 5.5;
+  return Math.max(2.5, Math.min(8.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -165,7 +163,7 @@ function computeRadii() {
   });
 }
 
-function makePlayer(id, bet, name, pfp, crownRank) {
+function makePlayer(id, bet, name, pfp) {
   const half = ARENA_SIZE / 2;
   const radius = 18;
   let x, y, attempts = 0, overlap = true;
@@ -183,7 +181,6 @@ function makePlayer(id, bet, name, pfp, crownRank) {
     mass: radius * radius * 1.2,
     x: x ?? half, y: y ?? half, vx: 0, vy: 0,
     alive: true,
-    crownRank: crownRank || null, // 1 = gold crown/outline, 2 = silver crown/outline, null = none
   };
   room.players.push(p);
   computeRadii();
@@ -198,42 +195,9 @@ function startCountdown() {
   room.countdownEndTime = Date.now() + 10000; // 10 seconds
 }
 
-const PRESTART_DURATION = 2.0;
-
-function easeInOutCubic(t) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
 function startPrestart() {
   room.gameState = 'prestart';
-  room.prestartTimer = PRESTART_DURATION;
-  // Compute where each player will launch from and remember where they currently are —
-  // the game loop eases x/y from launchStartX/Y to launchTargetX/Y over the prestart
-  // window below, so instead of teleporting at the moment "GO!" fires, circles glide
-  // smoothly into position during the 2s we already have free after the countdown.
-  const alive = getAlive();
-  const half = ARENA_SIZE / 2;
-  alive.forEach((p, i) => {
-    const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
-    p.launchAngle = angle;
-    p.launchStartX = p.x;
-    p.launchStartY = p.y;
-    p.launchTargetX = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
-    p.launchTargetY = half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
-  });
-}
-
-function updatePrestart(dt) {
-  room.prestartTimer -= dt;
-  const alive = getAlive();
-  const t = Math.min(1, Math.max(0, 1 - room.prestartTimer / PRESTART_DURATION));
-  const eased = easeInOutCubic(t);
-  alive.forEach(p => {
-    if (p.launchTargetX === undefined) return;
-    p.x = p.launchStartX + (p.launchTargetX - p.launchStartX) * eased;
-    p.y = p.launchStartY + (p.launchTargetY - p.launchStartY) * eased;
-  });
-  if (room.prestartTimer <= 0) startGame();
+  room.prestartTimer = 2.0;
 }
 
 function startGame() {
@@ -244,15 +208,13 @@ function startGame() {
   const alive = getAlive();
   const half = ARENA_SIZE / 2;
   alive.forEach((p, i) => {
-    const angle = p.launchAngle !== undefined ? p.launchAngle : (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
+    const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
     const speed = baseSpeed * (0.9 + Math.random() * 0.2);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
-    // snap precisely to the intended launch spot in case of any float drift from the
-    // eased glide during prestart, instead of the old instant teleport
-    p.x = p.launchTargetX !== undefined ? p.launchTargetX : half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
-    p.y = p.launchTargetY !== undefined ? p.launchTargetY : half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
+    p.x = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
+    p.y = half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
     p.alive = true;
   });
   room.openingTimer = 3.0 + Math.random() * 3.5; // time before the first opening appears
@@ -465,11 +427,7 @@ function updatePhysics(dt) {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
       if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
-      // the floor was previously a flat 3.0 for every player, which could exceed a big
-      // circle's own max speed (as low as ~3.5, and lower before this fix) and silently
-      // undo the size-based slowdown on every collision. Scale the floor off each
-      // player's own max instead so big circles actually stay slower than small ones.
-      const minSp = maxSp * 0.55;
+      const minSp = 3.0;
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
@@ -492,7 +450,8 @@ setInterval(() => {
       const elapsed = (now - room.countdownStartTime) / 1000;
       if (elapsed >= 10.0) startPrestart();
     } else if (room.gameState === 'prestart') {
-      updatePrestart(dt);
+      room.prestartTimer -= dt;
+      if (room.prestartTimer <= 0) startGame();
     } else if (room.gameState === 'idle') {
       if (getAlive().length >= 2) startCountdown();
     }
@@ -510,7 +469,6 @@ function broadcastState() {
     players: room.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
-      crownRank: p.crownRank || null,
     })),
     opening: room.opening,
   });
@@ -573,17 +531,7 @@ io.on('connection', (socket) => {
       await saveUser(user);
       const existing = getPlayer(userId);
       if (existing) { existing.bet += amt; computeRadii(); }
-      else {
-        let crownRank = null;
-        try {
-          const top2 = await topPlayers(2);
-          if (top2[0] && String(top2[0].id) === String(userId)) crownRank = 1;
-          else if (top2[1] && String(top2[1].id) === String(userId)) crownRank = 2;
-        } catch (err) {
-          console.error('crownRank lookup failed:', err);
-        }
-        makePlayer(userId, amt, user.username, user.pfp, crownRank);
-      }
+      else { makePlayer(userId, amt, user.username, user.pfp); }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
