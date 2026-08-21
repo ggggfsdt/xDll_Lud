@@ -1692,11 +1692,6 @@
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
             topPlayerIds: new Map(), // id -> { rank, isGold, isSilver }
-            // animation smoothing
-            animFrame: null,
-            lastRenderTime: 0,
-            // spawn animation
-            spawnProgress: 1, // 1 = fully at home position
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -1854,7 +1849,7 @@
             doLoad();
         }
 
-        // ─── Draw crown on canvas (improved) ────────────────────────
+        // ─── Draw crown on canvas (improved, higher) ────────────────
         function drawCrown(ctx, x, y, radius, isGold) {
             const baseSize = radius * 0.60;
             const color = isGold ? '#FFD700' : '#E8E8E8';
@@ -1864,7 +1859,7 @@
             const glowColor = isGold ? 'rgba(255,215,0,0.4)' : 'rgba(200,200,200,0.3)';
 
             // Position crown higher above the circle
-            const crownY = y - radius * 1.15;
+            const crownY = y - radius * 1.25; // moved up
 
             ctx.save();
             ctx.translate(x, crownY);
@@ -1913,7 +1908,6 @@
                 const gx = Math.cos(angle) * s * 0.7;
                 const gy = Math.sin(angle) * s * 0.6;
 
-                // Gem glow
                 ctx.shadowColor = isGold ? 'rgba(255,0,0,0.5)' : 'rgba(100,100,255,0.5)';
                 ctx.shadowBlur = s * 0.15;
 
@@ -1922,14 +1916,12 @@
                 ctx.fillStyle = (i % 2 === 0) ? gemColor : gemColor2;
                 ctx.fill();
 
-                // Highlight on gem
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(gx - gemR * 0.25, gy - gemR * 0.25 + s * 0.06, gemR * 0.3, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255,255,255,0.4)';
                 ctx.fill();
 
-                // Small dot on top of gem
                 ctx.beginPath();
                 ctx.arc(gx, gy - gemR * 0.5 + s * 0.06, gemR * 0.15, 0, Math.PI * 2);
                 ctx.fillStyle = 'rgba(255,255,255,0.6)';
@@ -1948,7 +1940,7 @@
                 ctx.fill();
             }
 
-            // Center jewel (larger)
+            // Center jewel
             ctx.shadowColor = isGold ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,255,0.4)';
             ctx.shadowBlur = s * 0.2;
             ctx.beginPath();
@@ -1956,7 +1948,6 @@
             ctx.fillStyle = isGold ? '#FF3333' : '#5555FF';
             ctx.fill();
             ctx.shadowBlur = 0;
-            // Highlight on center jewel
             ctx.beginPath();
             ctx.arc(-s * 0.04, s * 0.22, s * 0.04, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -1984,8 +1975,6 @@
 
         // ─── Smooth easing ──────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-        function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
         // ═══════════════════════════════════════════════════════════════
         // NETWORKING
@@ -2086,8 +2075,7 @@
             state.opening = snapshot.opening;
 
             const seen = new Set();
-            // Track if we're in countdown to animate spawn
-            const isCountdown = state.gameState === 'countdown' || state.gameState === 'prestart';
+            const isCountdown = (state.gameState === 'countdown' || state.gameState === 'prestart');
 
             snapshot.players.forEach(sp => {
                 seen.add(sp.id);
@@ -2114,33 +2102,36 @@
                         isSpawning: true,
                         spawnStartTime: performance.now(),
                         spawnDuration: 500 + Math.random() * 300,
+                        x: sp.x,
+                        y: sp.y,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
                 } else {
-                    // Check if this player's position changed significantly (new round)
-                    const dx = sp.x - local.homeX || 0;
-                    const dy = sp.y - local.homeY || 0;
-                    if (Math.sqrt(dx * dx + dy * dy) > 10 && isCountdown) {
-                        // Re-trigger spawn animation
-                        local.homeX = sp.x;
-                        local.homeY = sp.y;
-                        local.spawnStartX = local.x || sp.x + (Math.random() - 0.5) * 80;
-                        local.spawnStartY = local.y || sp.y + (Math.random() - 0.5) * 80;
-                        local.spawnProgress = 0;
-                        local.isSpawning = true;
-                        local.spawnStartTime = performance.now();
-                        local.spawnDuration = 450 + Math.random() * 250;
-                    } else {
-                        local.homeX = sp.x;
-                        local.homeY = sp.y;
-                        // If not spawning, keep it smooth
+                    // Update home positions from server
+                    local.homeX = sp.x;
+                    local.homeY = sp.y;
+
+                    // If the game is playing, we should not be spawning; set positions directly
+                    if (state.gameState === 'playing' || state.gameState === 'finished') {
+                        local.isSpawning = false;
+                        local.x = sp.x;
+                        local.y = sp.y;
+                    } else if (isCountdown) {
+                        // During countdown, we might be spawning or moving to home
+                        // If we were already spawned, keep moving to home
                         if (!local.isSpawning) {
-                            // Use lerp for smooth following
-                            local.x = local.x || sp.x;
-                            local.y = local.y || sp.y;
+                            // If not spawning, we can still lerp towards home for smoothness
+                            // But we set x,y to home directly to avoid jitter
+                            local.x = sp.x;
+                            local.y = sp.y;
                         }
+                    } else {
+                        // idle: just set
+                        local.x = sp.x;
+                        local.y = sp.y;
                     }
+
                     if (sp.bet > local.bet) {
                         local.isPulsing = true;
                         local.pulseStartTime = performance.now();
@@ -2154,6 +2145,15 @@
                 local.alive = sp.alive;
             });
             state.players = state.players.filter(p => seen.has(p.id));
+
+            // If game becomes playing, ensure all players stop spawning and set positions
+            if (state.gameState === 'playing' || state.gameState === 'finished') {
+                state.players.forEach(p => {
+                    p.isSpawning = false;
+                    p.x = p.homeX;
+                    p.y = p.homeY;
+                });
+            }
 
             detectBumpsForHaptics();
 
@@ -2311,7 +2311,7 @@
                         p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
 
-                // Spawn animation: smoothly move from spawnStart to home
+                // Spawn animation: smoothly move from spawnStart to home (only if still spawning)
                 if (p.isSpawning && p.homeX !== undefined) {
                     const elapsed = now - p.spawnStartTime;
                     const progress = Math.min(elapsed / p.spawnDuration, 1);
@@ -2495,13 +2495,9 @@
             state.players.forEach(p => {
                 if (!p.alive) return;
 
-                // Use animated position if spawning, otherwise use stored
-                let drawX = p.x;
-                let drawY = p.y;
-                if (p.isSpawning && p.homeX !== undefined) {
-                    drawX = p.spawnStartX + (p.homeX - p.spawnStartX) * easeOutCubic(p.spawnProgress || 0);
-                    drawY = p.spawnStartY + (p.homeY - p.spawnStartY) * easeOutCubic(p.spawnProgress || 0);
-                }
+                // Use current x,y (which may be animated or server-driven)
+                const px = p.x * s;
+                const py = p.y * s;
 
                 const popScale = getPopScale(p);
                 const radius = (p.displayRadius || 18) * s;
@@ -2514,8 +2510,6 @@
                 }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-                const px = drawX * s,
-                    py = drawY * s;
 
                 const topInfo = state.topPlayerIds.get(p.id);
                 const isGold = topInfo && topInfo.isGold;
@@ -2574,7 +2568,7 @@
                 ctx.shadowBlur = 0;
                 ctx.restore();
 
-                // ─── Crown (improved, higher) ─────────────────────
+                // ─── Crown ─────────────────────────────────────────
                 if (hasCrown) {
                     drawCrown(ctx, px, py, drawRadius, isGold);
                 }
