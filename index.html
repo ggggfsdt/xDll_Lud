@@ -248,7 +248,7 @@
             gap: 3px;
             pointer-events: none;
             background: transparent;
-            min-width: 60px;
+            min-width: 50px;
         }
         #countdown-timer {
             font-size: 22px;
@@ -264,7 +264,7 @@
             padding: 0;
         }
         #timer-progress-wrap {
-            width: 56px;
+            width: 44px;  /* shorter */
             height: 3px;
             background: rgba(255, 255, 255, 0.12);
             border-radius: 4px;
@@ -1385,10 +1385,10 @@
             #timer-wrap {
                 top: 12px;
                 right: 12px;
-                min-width: 50px;
+                min-width: 44px;
             }
             #timer-progress-wrap {
-                width: 44px;
+                width: 36px;
                 height: 2px;
             }
             #stats-bar {
@@ -1689,11 +1689,10 @@
             maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
-            // Track which player IDs are rank 1 or 2
-            topPlayerIds: new Map(), // id -> { rank, isGold, isSilver }
         };
 
         let SERVER_ARENA_SIZE = 400;
+        const VISUAL_RADIUS_SCALE = 0.85; // make circles slightly smaller overall
 
         // DOM refs
         const canvas = document.getElementById('game-canvas');
@@ -1844,64 +1843,7 @@
             doLoad();
         }
 
-        // ─── Draw small crown on canvas ──────────────────────────────
-        function drawCrown(ctx, x, y, radius, isGold) {
-            const s = radius * 0.45;
-            const color = isGold ? '#FFD700' : '#C0C0C0';
-            const strokeColor = isGold ? '#DAA520' : '#A0A0A0';
-            const gemColor = isGold ? '#FF6B6B' : '#6B6BFF';
-
-            ctx.save();
-            ctx.translate(x, y - radius * 0.9);
-
-            // Crown body
-            ctx.beginPath();
-            ctx.moveTo(-s * 0.6, s * 0.3);
-            ctx.lineTo(-s * 0.6, -s * 0.05);
-            ctx.quadraticCurveTo(-s * 0.65, -s * 0.2, -s * 0.45, -s * 0.35);
-            ctx.quadraticCurveTo(-s * 0.32, -s * 0.25, -s * 0.18, -s * 0.45);
-            ctx.quadraticCurveTo(-s * 0.08, -s * 0.65, 0, -s * 0.75);
-            ctx.quadraticCurveTo(s * 0.08, -s * 0.65, s * 0.18, -s * 0.45);
-            ctx.quadraticCurveTo(s * 0.32, -s * 0.25, s * 0.45, -s * 0.35);
-            ctx.quadraticCurveTo(s * 0.65, -s * 0.2, s * 0.6, -s * 0.05);
-            ctx.lineTo(s * 0.6, s * 0.3);
-            ctx.closePath();
-
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = s * 0.06;
-            ctx.stroke();
-
-            // Center gem
-            ctx.shadowColor = isGold ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,255,0.4)';
-            ctx.shadowBlur = s * 0.15;
-            ctx.beginPath();
-            ctx.arc(0, -s * 0.28, s * 0.09, 0, Math.PI * 2);
-            ctx.fillStyle = gemColor;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // Side gems
-            ctx.fillStyle = isGold ? '#FFB347' : '#B0B0FF';
-            ctx.beginPath();
-            ctx.arc(-s * 0.28, -s * 0.08, s * 0.055, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(s * 0.28, -s * 0.08, s * 0.055, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Highlight dots
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
-            ctx.beginPath();
-            ctx.arc(-s * 0.12, -s * 0.5, s * 0.035, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(s * 0.12, -s * 0.5, s * 0.035, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
+        // ─── No crown drawing ────────────────────────────────────────
 
         // ═══════════════════════════════════════════════════════════════
         // ARENA
@@ -2058,18 +2000,24 @@
                     local.homeX = sp.x;
                     local.homeY = sp.y;
 
-                    if (state.gameState === 'playing' || state.gameState === 'finished') {
-                        local.isSpawning = false;
-                        local.x = sp.x;
-                        local.y = sp.y;
-                    } else if (isCountdown) {
+                    // During countdown/prestart, smoothly interpolate to home positions
+                    if (isCountdown) {
+                        // If not already spawning, start spawn animation
+                        if (!local.isSpawning) {
+                            local.spawnStartX = local.x || sp.x;
+                            local.spawnStartY = local.y || sp.y;
+                            local.spawnStartTime = performance.now();
+                            local.spawnDuration = 2000; // 2 seconds (matches prestart timer)
+                            local.isSpawning = true;
+                            local.spawnProgress = 0;
+                        }
+                        // We'll update x/y in the animation loop
+                    } else {
+                        // Not in countdown: set position directly if not spawning
                         if (!local.isSpawning) {
                             local.x = sp.x;
                             local.y = sp.y;
                         }
-                    } else {
-                        local.x = sp.x;
-                        local.y = sp.y;
                     }
 
                     if (sp.bet > local.bet) {
@@ -2181,12 +2129,6 @@
                     score: u.balance,
                     rank: i + 1,
                 }));
-                // Update top player IDs for crown rendering
-                state.topPlayerIds.clear();
-                state.topPlayers.forEach(p => {
-                    if (p.rank === 1) state.topPlayerIds.set(p.id, { rank: 1, isGold: true, isSilver: false });
-                    else if (p.rank === 2) state.topPlayerIds.set(p.id, { rank: 2, isGold: false, isSilver: true });
-                });
                 updateTopUI();
             });
         }
@@ -2206,14 +2148,9 @@
             alive.forEach(p => {
                 const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
                 const isYou = p.id === state.userId;
-                const topInfo = state.topPlayerIds.get(p.id);
-                let crownIcon = '';
-                if (topInfo) {
-                    crownIcon = topInfo.isGold ? '👑' : '👑';
-                }
                 html += `<div class="pl-entry ${isYou ? 'you' : ''}">
                             <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${crownIcon} ${p.name}</span>
+                            <span class="pl-name">${p.name}</span>
                             <span class="pl-bet">${p.bet}</span>
                             <span class="pl-chance">${chance}%</span>
                         </div>`;
@@ -2432,7 +2369,7 @@
             }
             ctx.restore();
 
-            // ─── DRAW PLAYERS WITH PFP + CROWN ──────────────────────
+            // ─── DRAW PLAYERS (no crowns) ──────────────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
 
@@ -2440,7 +2377,7 @@
                 const py = p.y * s;
 
                 const popScale = getPopScale(p);
-                const radius = (p.displayRadius || 18) * s;
+                const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
                 const displayRadius = radius * popScale;
                 let pulseScale = 1;
                 if (p.isPulsing) {
@@ -2450,12 +2387,6 @@
                 }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-
-                // Check if player is top 1 or top 2
-                const topInfo = state.topPlayerIds.get(p.id);
-                const isGold = topInfo && topInfo.isGold;
-                const isSilver = topInfo && topInfo.isSilver;
-                const hasCrown = isGold || isSilver;
 
                 // ─── Draw player circle ────────────────────────────
                 ctx.save();
@@ -2487,18 +2418,7 @@
                 let borderColor = 'rgba(255,255,255,0.35)';
                 let borderWidth = 1.5;
                 const isYou = p.id === state.userId;
-
-                if (isGold) {
-                    borderColor = '#FFD700';
-                    borderWidth = 3.0;
-                    ctx.shadowColor = 'rgba(255,215,0,0.6)';
-                    ctx.shadowBlur = 16;
-                } else if (isSilver) {
-                    borderColor = '#C0C0C0';
-                    borderWidth = 2.5;
-                    ctx.shadowColor = 'rgba(192,192,192,0.4)';
-                    ctx.shadowBlur = 12;
-                } else if (isYou) {
+                if (isYou) {
                     borderColor = 'rgba(255,255,255,1.0)';
                     borderWidth = 2.5;
                 }
@@ -2508,11 +2428,6 @@
                 ctx.stroke();
                 ctx.shadowBlur = 0;
                 ctx.restore();
-
-                // ─── Crown ──────────────────────────────────────────
-                if (hasCrown) {
-                    drawCrown(ctx, px, py, drawRadius, isGold);
-                }
             });
         }
 
