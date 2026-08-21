@@ -236,7 +236,7 @@
             display: block;
         }
 
-        /* ─── Countdown timer + progress line ─── */
+        /* ─── Timer + progress line ─── */
         #timer-wrap {
             position: absolute;
             top: 14px;
@@ -245,7 +245,7 @@
             display: flex;
             flex-direction: column;
             align-items: flex-end;
-            gap: 4px;
+            gap: 3px;
             pointer-events: none;
             background: transparent;
             min-width: 60px;
@@ -1535,12 +1535,10 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-
                     <div id="timer-wrap">
                         <div id="countdown-timer">10.00</div>
                         <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
                     </div>
-
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
@@ -1691,6 +1689,7 @@
             maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
+            // Track which player IDs are rank 1 or 2
             topPlayerIds: new Map(), // id -> { rank, isGold, isSilver }
         };
 
@@ -1751,17 +1750,13 @@
         const promoSub = document.getElementById('promo-sub');
         const promoContinueBtn = document.getElementById('promo-continue-btn');
 
-        // ─── WIN GIFS ───
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
             'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
             'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif',
-            'https://i.postimg.cc/TYZkzX3F/ezgif-3f0e907be807d1cc.gif',
-            'https://i.postimg.cc/CK4mnBsB/ezgif-3cacf477150edf7a.gif',
-            'https://i.postimg.cc/054ZSqD7/pepe.gif',
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
         ];
         const PRIZE_GIFS = {
             first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
@@ -1849,108 +1844,60 @@
             doLoad();
         }
 
-        // ─── Draw crown on canvas (improved, higher) ────────────────
+        // ─── Draw small crown on canvas ──────────────────────────────
         function drawCrown(ctx, x, y, radius, isGold) {
-            const baseSize = radius * 0.60;
-            const color = isGold ? '#FFD700' : '#E8E8E8';
-            const accent = isGold ? '#DAA520' : '#B0B0B0';
-            const gemColor = isGold ? '#FF4D4D' : '#6B6BFF';
-            const gemColor2 = isGold ? '#FFB347' : '#8A8AFF';
-            const glowColor = isGold ? 'rgba(255,215,0,0.4)' : 'rgba(200,200,200,0.3)';
-
-            // Position crown higher above the circle
-            const crownY = y - radius * 1.25; // moved up
+            const s = radius * 0.45;
+            const color = isGold ? '#FFD700' : '#C0C0C0';
+            const strokeColor = isGold ? '#DAA520' : '#A0A0A0';
+            const gemColor = isGold ? '#FF6B6B' : '#6B6BFF';
 
             ctx.save();
-            ctx.translate(x, crownY);
+            ctx.translate(x, y - radius * 0.9);
 
-            const s = baseSize;
-
-            // Glow
-            ctx.shadowColor = glowColor;
-            ctx.shadowBlur = s * 0.5;
-
-            // Main crown shape - more ornate with 5 points
+            // Crown body
             ctx.beginPath();
-            const points = 5;
-            const innerRadius = s * 0.42;
-            const outerRadius = s * 0.9;
-
-            for (let i = 0; i < points * 2; i++) {
-                const r = i % 2 === 0 ? outerRadius : innerRadius;
-                const angle = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-                const px = Math.cos(angle) * r;
-                const py = Math.sin(angle) * r * 0.85;
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
-            }
+            ctx.moveTo(-s * 0.6, s * 0.3);
+            ctx.lineTo(-s * 0.6, -s * 0.05);
+            ctx.quadraticCurveTo(-s * 0.65, -s * 0.2, -s * 0.45, -s * 0.35);
+            ctx.quadraticCurveTo(-s * 0.32, -s * 0.25, -s * 0.18, -s * 0.45);
+            ctx.quadraticCurveTo(-s * 0.08, -s * 0.65, 0, -s * 0.75);
+            ctx.quadraticCurveTo(s * 0.08, -s * 0.65, s * 0.18, -s * 0.45);
+            ctx.quadraticCurveTo(s * 0.32, -s * 0.25, s * 0.45, -s * 0.35);
+            ctx.quadraticCurveTo(s * 0.65, -s * 0.2, s * 0.6, -s * 0.05);
+            ctx.lineTo(s * 0.6, s * 0.3);
             ctx.closePath();
 
             ctx.fillStyle = color;
             ctx.fill();
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = accent;
+            ctx.strokeStyle = strokeColor;
             ctx.lineWidth = s * 0.06;
             ctx.stroke();
 
-            // Inner band
-            ctx.beginPath();
-            ctx.arc(0, s * 0.08, s * 0.48, 0, Math.PI * 2);
-            ctx.fillStyle = accent;
-            ctx.globalAlpha = 0.3;
-            ctx.fill();
-            ctx.globalAlpha = 1;
-
-            // Gems on each point
-            for (let i = 0; i < points; i++) {
-                const angle = (i / points) * Math.PI * 2 - Math.PI / 2;
-                const gemR = s * 0.14;
-                const gx = Math.cos(angle) * s * 0.7;
-                const gy = Math.sin(angle) * s * 0.6;
-
-                ctx.shadowColor = isGold ? 'rgba(255,0,0,0.5)' : 'rgba(100,100,255,0.5)';
-                ctx.shadowBlur = s * 0.15;
-
-                ctx.beginPath();
-                ctx.arc(gx, gy + s * 0.06, gemR, 0, Math.PI * 2);
-                ctx.fillStyle = (i % 2 === 0) ? gemColor : gemColor2;
-                ctx.fill();
-
-                ctx.shadowBlur = 0;
-                ctx.beginPath();
-                ctx.arc(gx - gemR * 0.25, gy - gemR * 0.25 + s * 0.06, gemR * 0.3, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.arc(gx, gy - gemR * 0.5 + s * 0.06, gemR * 0.15, 0, Math.PI * 2);
-                ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                ctx.fill();
-            }
-
-            // Bottom band with dots
-            ctx.shadowBlur = 0;
-            for (let i = 0; i < 8; i++) {
-                const angle = (i / 8) * Math.PI * 2;
-                const bx = Math.cos(angle) * s * 0.50;
-                const by = Math.sin(angle) * s * 0.45 + s * 0.1;
-                ctx.beginPath();
-                ctx.arc(bx, by, s * 0.04, 0, Math.PI * 2);
-                ctx.fillStyle = isGold ? '#FFD700' : '#D0D0D0';
-                ctx.fill();
-            }
-
-            // Center jewel
+            // Center gem
             ctx.shadowColor = isGold ? 'rgba(255,0,0,0.4)' : 'rgba(0,0,255,0.4)';
-            ctx.shadowBlur = s * 0.2;
+            ctx.shadowBlur = s * 0.15;
             ctx.beginPath();
-            ctx.arc(0, s * 0.3, s * 0.12, 0, Math.PI * 2);
-            ctx.fillStyle = isGold ? '#FF3333' : '#5555FF';
+            ctx.arc(0, -s * 0.28, s * 0.09, 0, Math.PI * 2);
+            ctx.fillStyle = gemColor;
             ctx.fill();
             ctx.shadowBlur = 0;
+
+            // Side gems
+            ctx.fillStyle = isGold ? '#FFB347' : '#B0B0FF';
             ctx.beginPath();
-            ctx.arc(-s * 0.04, s * 0.22, s * 0.04, 0, Math.PI * 2);
+            ctx.arc(-s * 0.28, -s * 0.08, s * 0.055, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(s * 0.28, -s * 0.08, s * 0.055, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight dots
             ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.beginPath();
+            ctx.arc(-s * 0.12, -s * 0.5, s * 0.035, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(s * 0.12, -s * 0.5, s * 0.035, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.restore();
@@ -2093,7 +2040,7 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
-                        // spawn animation
+                        // Spawn animation properties
                         homeX: sp.x,
                         homeY: sp.y,
                         spawnStartX: sp.x + (Math.random() - 0.5) * 80,
@@ -2108,26 +2055,19 @@
                     state.players.push(local);
                     loadPlayerPFP(local);
                 } else {
-                    // Update home positions from server
                     local.homeX = sp.x;
                     local.homeY = sp.y;
 
-                    // If the game is playing, we should not be spawning; set positions directly
                     if (state.gameState === 'playing' || state.gameState === 'finished') {
                         local.isSpawning = false;
                         local.x = sp.x;
                         local.y = sp.y;
                     } else if (isCountdown) {
-                        // During countdown, we might be spawning or moving to home
-                        // If we were already spawned, keep moving to home
                         if (!local.isSpawning) {
-                            // If not spawning, we can still lerp towards home for smoothness
-                            // But we set x,y to home directly to avoid jitter
                             local.x = sp.x;
                             local.y = sp.y;
                         }
                     } else {
-                        // idle: just set
                         local.x = sp.x;
                         local.y = sp.y;
                     }
@@ -2241,6 +2181,7 @@
                     score: u.balance,
                     rank: i + 1,
                 }));
+                // Update top player IDs for crown rendering
                 state.topPlayerIds.clear();
                 state.topPlayers.forEach(p => {
                     if (p.rank === 1) state.topPlayerIds.set(p.id, { rank: 1, isGold: true, isSilver: false });
@@ -2311,7 +2252,7 @@
                         p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
 
-                // Spawn animation: smoothly move from spawnStart to home (only if still spawning)
+                // Spawn animation: smoothly move from spawnStart to home
                 if (p.isSpawning && p.homeX !== undefined) {
                     const elapsed = now - p.spawnStartTime;
                     const progress = Math.min(elapsed / p.spawnDuration, 1);
@@ -2491,11 +2432,10 @@
             }
             ctx.restore();
 
-            // ─── DRAW PLAYERS ──────────────────────────────────────
+            // ─── DRAW PLAYERS WITH PFP + CROWN ──────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
 
-                // Use current x,y (which may be animated or server-driven)
                 const px = p.x * s;
                 const py = p.y * s;
 
@@ -2511,12 +2451,13 @@
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
 
+                // Check if player is top 1 or top 2
                 const topInfo = state.topPlayerIds.get(p.id);
                 const isGold = topInfo && topInfo.isGold;
                 const isSilver = topInfo && topInfo.isSilver;
                 const hasCrown = isGold || isSilver;
 
-                // Draw player circle with clip
+                // ─── Draw player circle ────────────────────────────
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
@@ -2537,7 +2478,7 @@
                 }
                 ctx.restore();
 
-                // Border
+                // ─── Border ──────────────────────────────────────────
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
@@ -2549,14 +2490,14 @@
 
                 if (isGold) {
                     borderColor = '#FFD700';
-                    borderWidth = 3.5;
-                    ctx.shadowColor = 'rgba(255,215,0,0.7)';
-                    ctx.shadowBlur = 18;
+                    borderWidth = 3.0;
+                    ctx.shadowColor = 'rgba(255,215,0,0.6)';
+                    ctx.shadowBlur = 16;
                 } else if (isSilver) {
                     borderColor = '#C0C0C0';
-                    borderWidth = 3.0;
-                    ctx.shadowColor = 'rgba(192,192,192,0.5)';
-                    ctx.shadowBlur = 14;
+                    borderWidth = 2.5;
+                    ctx.shadowColor = 'rgba(192,192,192,0.4)';
+                    ctx.shadowBlur = 12;
                 } else if (isYou) {
                     borderColor = 'rgba(255,255,255,1.0)';
                     borderWidth = 2.5;
@@ -2568,7 +2509,7 @@
                 ctx.shadowBlur = 0;
                 ctx.restore();
 
-                // ─── Crown ─────────────────────────────────────────
+                // ─── Crown ──────────────────────────────────────────
                 if (hasCrown) {
                     drawCrown(ctx, px, py, drawRadius, isGold);
                 }
@@ -2665,9 +2606,9 @@
 
             const top3 = players.slice(0, 3);
             const podiumOrder = [
-                { player: top3[2] || top3[0], cls: 'bronze', label: '3rd', base: 'bronze', colClass: 'p3' },
-                { player: top3[0] || top3[1], cls: 'gold', label: '1st', base: 'gold', colClass: 'p1' },
-                { player: top3[1] || top3[2], cls: 'silver', label: '2nd', base: 'silver', colClass: 'p2' }
+                { player: top3[2] || top3[0], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
+                { player: top3[0] || top3[1], cls: 'gold', label: '🥇', base: 'gold', colClass: 'p1' },
+                { player: top3[1] || top3[2], cls: 'silver', label: '🥈', base: 'silver', colClass: 'p2' }
             ];
             let podiumHtml = '';
             podiumOrder.forEach((info) => {
@@ -2828,7 +2769,7 @@
         });
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
-        function renderLoop(timestamp) {
+        function renderLoop() {
             updatePlayerAnimations();
 
             // ─── Update countdown timer + progress line ────────────
