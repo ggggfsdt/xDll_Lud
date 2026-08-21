@@ -120,17 +120,13 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// Floor raised from 11 → 16, and the compression exponent below eased from 1.3 → 1.15,
-// so a player with a modest/average-sized bet isn't squashed down to a barely-visible
-// dot — everyone stays reasonably sized, only a truly tiny bet against a huge pot gets
-// close to the floor.
-const MIN_RADIUS = 16;
-const MAX_RADIUS = 52;
-
 function speedForRadius(radius) {
-  const norm = Math.min(1, Math.max(0, (radius - MIN_RADIUS) / (MAX_RADIUS - MIN_RADIUS)));
-  const speed = 6.5 - norm * 3.5;
-  return Math.max(3.0, Math.min(6.5, speed));
+  const minR = 14, maxR = 52;
+  const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
+  // smallest circle → fastest, largest circle → slowest. Kept moderate (not extreme)
+  // so it reads as "small ones are a bit quicker", not a huge speed gap.
+  const speed = 7.0 - norm * 3.5;
+  return Math.max(3.5, Math.min(7.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -161,14 +157,8 @@ function computeRadii() {
   if (totalBet === 0) return;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    // exponent > 1 compresses small shares toward the floor (way smaller for a tiny
-    // bet against a big pot) while ratio=1 (sole bettor) still reaches MAX_RADIUS.
-    // Lowered from 1.3 → 1.15 (paired with the higher MIN_RADIUS above) so an average
-    // bet in an 8-player game lands noticeably bigger than the floor instead of
-    // hugging it.
-    const scaled = Math.pow(ratio, 1.15);
-    const r = MIN_RADIUS + scaled * (MAX_RADIUS - MIN_RADIUS);
-    p.targetRadius = Math.min(Math.max(r, MIN_RADIUS), MAX_RADIUS);
+    const r = 18 + ratio * 34;
+    p.targetRadius = Math.min(Math.max(r, 14), 52);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
     // Immediately update displayRadius so sizes change during countdown
     p.displayRadius = p.targetRadius;
@@ -208,9 +198,42 @@ function startCountdown() {
   room.countdownEndTime = Date.now() + 10000; // 10 seconds
 }
 
+const PRESTART_DURATION = 2.0;
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
 function startPrestart() {
   room.gameState = 'prestart';
-  room.prestartTimer = 2.0;
+  room.prestartTimer = PRESTART_DURATION;
+  // Compute where each player will launch from and remember where they currently are —
+  // the game loop eases x/y from launchStartX/Y to launchTargetX/Y over the prestart
+  // window below, so instead of teleporting at the moment "GO!" fires, circles glide
+  // smoothly into position during the 2s we already have free after the countdown.
+  const alive = getAlive();
+  const half = ARENA_SIZE / 2;
+  alive.forEach((p, i) => {
+    const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
+    p.launchAngle = angle;
+    p.launchStartX = p.x;
+    p.launchStartY = p.y;
+    p.launchTargetX = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
+    p.launchTargetY = half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
+  });
+}
+
+function updatePrestart(dt) {
+  room.prestartTimer -= dt;
+  const alive = getAlive();
+  const t = Math.min(1, Math.max(0, 1 - room.prestartTimer / PRESTART_DURATION));
+  const eased = easeInOutCubic(t);
+  alive.forEach(p => {
+    if (p.launchTargetX === undefined) return;
+    p.x = p.launchStartX + (p.launchTargetX - p.launchStartX) * eased;
+    p.y = p.launchStartY + (p.launchTargetY - p.launchStartY) * eased;
+  });
+  if (room.prestartTimer <= 0) startGame();
 }
 
 function startGame() {
@@ -221,13 +244,15 @@ function startGame() {
   const alive = getAlive();
   const half = ARENA_SIZE / 2;
   alive.forEach((p, i) => {
-    const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
+    const angle = p.launchAngle !== undefined ? p.launchAngle : (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
     const speed = baseSpeed * (0.9 + Math.random() * 0.2);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
-    p.x = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
-    p.y = half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
+    // snap precisely to the intended launch spot in case of any float drift from the
+    // eased glide during prestart, instead of the old instant teleport
+    p.x = p.launchTargetX !== undefined ? p.launchTargetX : half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
+    p.y = p.launchTargetY !== undefined ? p.launchTargetY : half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
     p.alive = true;
   });
   room.openingTimer = 3.0 + Math.random() * 3.5; // time before the first opening appears
@@ -353,50 +378,7 @@ function updatePhysics(dt) {
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
-
-  // Finds the closest solid-wall segment to p (skipping segments inside an open gap)
-  // and, if p is overlapping it, pushes p back out and reflects its velocity.
-  // Returns true if a solid wall was actually hit this call.
-  //
-  // Correction magnitude is capped at 1.5x the circle's own radius — even in a rare
-  // deep-overlap edge case, this guarantees no single correction can violently
-  // "teleport" a circle across the arena; any leftover overlap just gets finished off
-  // over the next substep or two instead of snapping instantly.
-  function resolveWallCollision(p, radius) {
-    let bestDist = Infinity, bestNx = 0, bestNy = 0;
-    for (let i = 0; i < totalPts; i++) {
-      const j = (i + 1) % totalPts;
-      if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-      const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
-      const bx = PERIMETER[j].x, by = PERIMETER[j].y;
-      const dx = bx - ax, dy = by - ay;
-      const lenSq = dx * dx + dy * dy;
-      if (lenSq === 0) continue;
-      let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-      const nearX = ax + t * dx, nearY = ay + t * dy;
-      const distX = p.x - nearX, distY = p.y - nearY;
-      const dist = Math.sqrt(distX * distX + distY * distY);
-      if (dist < radius && dist < bestDist) {
-        bestDist = dist;
-        bestNx = distX / dist;
-        bestNy = distY / dist;
-      }
-    }
-    if (bestDist === Infinity) return false;
-    let overlap = radius - bestDist;
-    overlap = Math.min(overlap, radius * 1.5);
-    p.x += bestNx * overlap;
-    p.y += bestNy * overlap;
-    const vn = p.vx * bestNx + p.vy * bestNy;
-    if (vn < 0) { p.vx -= 2 * vn * bestNx; p.vy -= 2 * vn * bestNy; }
-    return true;
-  }
-
-  const subSteps = 10; // was 6 — smaller circles move faster (see speedForRadius) and the
-  // extra substeps keep their per-step travel distance small enough that they can't tunnel
-  // deep into a wall/another circle before a collision is caught, which is what was causing
-  // the "glitchy" snap-corrections on small circles.
+  const subSteps = 6;
   const subDt = dt / subSteps;
   for (let step = 0; step < subSteps; step++) {
     alive.forEach(p => {
@@ -404,26 +386,53 @@ function updatePhysics(dt) {
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
       const radius = p.displayRadius || p.radius;
-
-      const hitWall = resolveWallCollision(p, radius);
-
-      if (!hitWall && opening && opening.state === 'open') {
+      for (let i = 0; i < totalPts; i++) {
+        const j = (i + 1) % totalPts;
+        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
+        const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
+        const bx = PERIMETER[j].x, by = PERIMETER[j].y;
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq === 0) continue;
+        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const nearX = ax + t * dx, nearY = ay + t * dy;
+        const distX = p.x - nearX, distY = p.y - nearY;
+        const dist = Math.sqrt(distX * distX + distY * distY);
+        if (dist < radius) {
+          const nx = distX / dist, ny = distY / dist;
+          const overlap = radius - dist;
+          p.x += nx * overlap;
+          p.y += ny * overlap;
+          const vn = p.vx * nx + p.vy * ny;
+          if (vn < 0) { p.vx -= 2 * vn * nx; p.vy -= 2 * vn * ny; }
+          break;
+        }
+      }
+      if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
         const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-        // No solid wall caught them this frame while the gap is open — the only way to
-        // be out here without hitting a wall is having passed through the gap. Eliminate
-        // right away (small buffer past the boundary) instead of waiting for them to
-        // travel far out: that old, distant threshold left a window where the gap could
-        // close and reform a solid wall UNDER a player who hadn't been marked eliminated
-        // yet, which is what caused the "catapulted out but doesn't even lose" bug.
-        if (distFromCenter > half * 1.0 + radius * 0.4) {
-          p.alive = false;
-          return;
+        const escapeThreshold = half * 1.12 + radius;
+        if (distFromCenter > escapeThreshold) {
+          let nearestGapIdx = -1, minDist = Infinity;
+          for (let i = 0; i < totalPts; i++) {
+            if (isInGap(i)) {
+              const d = (p.x - PERIMETER[i].x) ** 2 + (p.y - PERIMETER[i].y) ** 2;
+              if (d < minDist) { minDist = d; nearestGapIdx = i; }
+            }
+          }
+          if (nearestGapIdx >= 0) {
+            const angle = Math.atan2(dy, dx);
+            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
+            let diff = Math.abs(angle - gapAngle);
+            diff = Math.min(diff, 2 * Math.PI - diff);
+            const vOut = p.vx * dx + p.vy * dy;
+            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
+          }
         }
       }
     });
-
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -452,21 +461,15 @@ function updatePhysics(dt) {
         }
       }
     }
-
-    // Second wall pass: the player-vs-player separation above can shove someone
-    // straight into (or through) a wall if they were pinned against it — this catches
-    // that and corrects it in the same substep, instead of letting it compound across
-    // several substeps into a big, visible glitch.
-    stillAlive.forEach(p => {
-      const radius = p.displayRadius || p.radius;
-      resolveWallCollision(p, radius);
-    });
-
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
       if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
-      const minSp = 3.0;
+      // the floor was previously a flat 3.0 for every player, which could exceed a big
+      // circle's own max speed (as low as ~3.5, and lower before this fix) and silently
+      // undo the size-based slowdown on every collision. Scale the floor off each
+      // player's own max instead so big circles actually stay slower than small ones.
+      const minSp = maxSp * 0.55;
       if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
     });
   }
@@ -489,8 +492,7 @@ setInterval(() => {
       const elapsed = (now - room.countdownStartTime) / 1000;
       if (elapsed >= 10.0) startPrestart();
     } else if (room.gameState === 'prestart') {
-      room.prestartTimer -= dt;
-      if (room.prestartTimer <= 0) startGame();
+      updatePrestart(dt);
     } else if (room.gameState === 'idle') {
       if (getAlive().length >= 2) startCountdown();
     }
@@ -543,7 +545,6 @@ io.on('connection', (socket) => {
         user: {
           ...user,
           winHistory: user.winHistory || [],
-          anonymous: !!user.anonymous,
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         recentWinners: room.recentWinners,
@@ -581,7 +582,7 @@ io.on('connection', (socket) => {
         } catch (err) {
           console.error('crownRank lookup failed:', err);
         }
-        makePlayer(userId, amt, user.username, user.anonymous ? '' : user.pfp, crownRank);
+        makePlayer(userId, amt, user.username, user.pfp, crownRank);
       }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
@@ -592,33 +593,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('setAnonymous', async ({ enabled }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      user.anonymous = !!enabled;
-      await saveUser(user);
-
-      // if they're already sitting in an active round, update their live avatar
-      // immediately instead of waiting for the next round to pick it up
-      const livePlayer = getPlayer(userId);
-      if (livePlayer) {
-        livePlayer.pfp = user.anonymous ? '' : user.pfp;
-        broadcastState();
-      }
-      ack?.({ ok: true, anonymous: user.anonymous });
-    } catch (err) {
-      console.error('setAnonymous error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
   socket.on('leaderboard', async (_, ack) => {
     try {
-      const top = await topPlayers(20);
-      const masked = top.map(u => (u.anonymous ? { ...u, pfp: '' } : u));
-      ack?.({ ok: true, top: masked });
+      ack?.({ ok: true, top: await topPlayers(20) });
     } catch (err) {
       console.error('Leaderboard error:', err);
       ack?.({ ok: false, error: 'Internal error' });
@@ -907,35 +884,14 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
 });
 
 // ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
-// store.js's redeemPromoCode already enforces the code's overall maxUses, but that's
-// a global counter — it doesn't stop the SAME person from redeeming a multi-use code
-// more than once. We track that separately here, on the user's own record, so it
-// works regardless of how store.js's promo-code bookkeeping is structured.
-async function handleRedeem(code, userId) {
-  const normalizedCode = String(code).trim().toUpperCase();
-  const user = await getUser(userId);
-  if (!user) return { ok: false, error: 'User not found' };
-
-  user.redeemedCodes = user.redeemedCodes || [];
-  if (user.redeemedCodes.includes(normalizedCode)) {
-    return { ok: false, error: 'You already redeemed this code.' };
-  }
-
-  const result = await redeemPromoCode(code, userId);
-  if (result && result.ok) {
-    user.redeemedCodes.push(normalizedCode);
-    await saveUser(user);
-  }
-  return result;
-}
-
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
     if (!code || !userId) {
       return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     }
-    res.json(await handleRedeem(code, userId));
+    const result = await redeemPromoCode(code, userId);
+    res.json(result);
   } catch (err) {
     console.error('Redeem promo error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
@@ -948,7 +904,8 @@ app.get('/redeem', async (req, res) => {
     if (!code || !userId) {
       return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     }
-    res.json(await handleRedeem(code, userId));
+    const result = await redeemPromoCode(code, userId);
+    res.json(result);
   } catch (err) {
     console.error('Redeem promo (GET) error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
@@ -961,8 +918,7 @@ app.get('/health', (req, res) => {
 });
 app.get('/leaderboard', async (req, res) => {
   try {
-    const top = await topPlayers(20);
-    res.json({ top: top.map(u => (u.anonymous ? { ...u, pfp: '' } : u)) });
+    res.json({ top: await topPlayers(20) });
   } catch (err) {
     console.error('Leaderboard error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
