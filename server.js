@@ -163,7 +163,7 @@ function computeRadii() {
   });
 }
 
-function makePlayer(id, bet, name, pfp) {
+function makePlayer(id, bet, name, pfp, crownRank) {
   const half = ARENA_SIZE / 2;
   const radius = 18;
   let x, y, attempts = 0, overlap = true;
@@ -181,6 +181,7 @@ function makePlayer(id, bet, name, pfp) {
     mass: radius * radius * 1.2,
     x: x ?? half, y: y ?? half, vx: 0, vy: 0,
     alive: true,
+    crownRank: crownRank || null, // 1 = gold crown/outline, 2 = silver crown/outline, null = none
   };
   room.players.push(p);
   computeRadii();
@@ -469,6 +470,7 @@ function broadcastState() {
     players: room.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
+      crownRank: p.crownRank || null,
     })),
     opening: room.opening,
   });
@@ -531,7 +533,17 @@ io.on('connection', (socket) => {
       await saveUser(user);
       const existing = getPlayer(userId);
       if (existing) { existing.bet += amt; computeRadii(); }
-      else { makePlayer(userId, amt, user.username, user.pfp); }
+      else {
+        let crownRank = null;
+        try {
+          const top2 = await topPlayers(2);
+          if (top2[0] && String(top2[0].id) === String(userId)) crownRank = 1;
+          else if (top2[1] && String(top2[1].id) === String(userId)) crownRank = 2;
+        } catch (err) {
+          console.error('crownRank lookup failed:', err);
+        }
+        makePlayer(userId, amt, user.username, user.pfp, crownRank);
+      }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
