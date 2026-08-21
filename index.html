@@ -238,22 +238,17 @@
             display: block;
         }
 
-        #countdown-wrap {
+        #countdown-timer {
             position: absolute;
             top: 16px;
             right: 16px;
-            z-index: 3;
-            pointer-events: none;
-            display: none;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 5px;
-        }
-        #countdown-timer {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
+            z-index: 3;
+            pointer-events: none;
+            display: none;
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.5px;
             background: transparent;
@@ -261,20 +256,6 @@
             backdrop-filter: none;
             padding: 0;
             line-height: 1;
-        }
-        #countdown-progress-track {
-            width: 46px;
-            height: 3px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.18);
-            overflow: hidden;
-        }
-        #countdown-progress-fill {
-            height: 100%;
-            width: 0%;
-            border-radius: 3px;
-            background: #fff;
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
         }
 
         #win-history {
@@ -461,52 +442,22 @@
             font-size: 14px;
         }
         #bet-input {
-            width: 100%;
-            min-width: 0;
-            padding: 5px 0;
-            border: none;
-            background: transparent;
+            width: 60px;
+            padding: 6px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
             color: var(--text);
             font-size: 15px;
-            font-weight: 700;
+            font-weight: 600;
             text-align: center;
             outline: none;
             font-variant-numeric: tabular-nums;
         }
-        .bet-input-wrap {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            height: 38px;
-            min-width: 106px;
-            padding: 0 10px;
-            border-radius: 11px;
-            border: 1px solid var(--border);
-            background: var(--surface3);
-            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-        }
-        .bet-input-wrap:focus-within {
+        #bet-input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 24px var(--primary-glow);
-            transform: translateY(-1px);
         }
-        .bet-input-prefix { font-size: 14px; opacity: 0.9; flex: 0 0 auto; }
-        #bet-input::placeholder { color: var(--text2); }
-        #all-in-btn {
-            min-height: 38px;
-            padding: 0 12px;
-            border-radius: 11px;
-            border: 1px solid rgba(200, 168, 78, 0.45);
-            background: var(--gold-dim);
-            color: var(--gold);
-            font-weight: 800;
-            font-size: 11px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-        }
-        #all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
-        #all-in-btn:disabled { opacity: 0.35; pointer-events: none; }
         #bet-btn {
             padding: 6px 18px;
             border-radius: 12px;
@@ -971,21 +922,6 @@
             max-width: 110px;
             transition: 0.2s;
         }
-        .podium-crown {
-            font-size: 20px;
-            line-height: 1;
-            margin-bottom: -2px;
-            filter: drop-shadow(0 0 6px rgba(255, 212, 71, 0.7));
-            animation: crownFloat 2.2s ease-in-out infinite;
-        }
-        .podium-col.p2 .podium-crown {
-            font-size: 15px;
-            filter: grayscale(1) brightness(1.5) drop-shadow(0 0 5px rgba(216, 221, 227, 0.7));
-        }
-        @keyframes crownFloat {
-            0%, 100% { transform: translateY(0) rotate(-3deg); }
-            50% { transform: translateY(-3px) rotate(3deg); }
-        }
         .podium-col .rank-badge {
             font-size: 14px;
             font-weight: 800;
@@ -1019,15 +955,8 @@
             transition: 0.2s;
         }
         .podium-col .podium-pfp.gold {
-            width: 64px;
-            height: 64px;
             border-color: var(--gold);
             box-shadow: 0 0 30px var(--gold-dim);
-            animation: goldPulse 2.2s ease-in-out infinite;
-        }
-        @keyframes goldPulse {
-            0%, 100% { box-shadow: 0 0 22px var(--gold-dim); }
-            50% { box-shadow: 0 0 40px var(--gold); }
         }
         .podium-col .podium-pfp.silver {
             border-color: #b8b8c8;
@@ -1393,16 +1322,10 @@
                 padding: 8px 12px;
                 gap: 6px;
             }
-            .bet-input-wrap {
-                min-width: 88px;
-                height: 34px;
-                padding: 0 7px;
-            }
-            #bet-input { font-size: 13px; }
-            #all-in-btn {
-                min-height: 34px;
-                padding: 0 9px;
-                font-size: 10px;
+            #bet-input {
+                width: 48px;
+                font-size: 13px;
+                padding: 4px 4px;
             }
             #bet-btn {
                 padding: 4px 12px;
@@ -1428,12 +1351,10 @@
                 max-width: 60px;
                 font-size: 11px;
             }
-            #countdown-wrap {
-                top: 12px;
-                right: 12px;
-            }
             #countdown-timer {
                 font-size: 18px;
+                top: 12px;
+                right: 12px;
             }
             #stats-bar {
                 font-size: 12px;
@@ -1579,12 +1500,7 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-                    <div id="countdown-wrap">
-                        <div id="countdown-timer">10.00</div>
-                        <div id="countdown-progress-track">
-                            <div id="countdown-progress-fill"></div>
-                        </div>
-                    </div>
+                    <div id="countdown-timer">10.00</div>
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
 
@@ -1602,13 +1518,8 @@
                         <div id="bet-overlay">
                             <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
                             <div id="bet-info"><span class="label">add</span><span class="value" id="bet-amount-display">10</span></div>
-                            <div class="bet-input-wrap">
-                                <span class="bet-input-prefix">💎</span>
-                                <input type="text" id="bet-input" value="10" inputmode="numeric" autocomplete="off"
-                                    autocapitalize="off" spellcheck="false" aria-label="Bet amount" />
-                            </div>
-                            <button id="all-in-btn" type="button">ALL IN</button>
-                            <button id="bet-btn" type="button">join</button>
+                            <input type="number" id="bet-input" value="10" min="10" max="9999" />
+                            <button id="bet-btn">join</button>
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                         </div>
                     </div>
@@ -1757,12 +1668,9 @@
         const betToggleBtn = document.getElementById('bet-toggle-btn');
         const betInput = document.getElementById('bet-input');
         const betBtn = document.getElementById('bet-btn');
-        const allInBtn = document.getElementById('all-in-btn');
         const betAmountDisplay = document.getElementById('bet-amount-display');
         const currentBetDisplay = document.getElementById('current-bet-value');
-        const countdownWrap = document.getElementById('countdown-wrap');
         const countdownTimer = document.getElementById('countdown-timer');
-        const countdownProgressFill = document.getElementById('countdown-progress-fill');
         const statsPlayers = document.getElementById('stats-players');
         const statsPot = document.getElementById('stats-pot');
         const profilePfp = document.getElementById('profile-pfp');
@@ -2029,16 +1937,6 @@
                         isPulsing: false,
                         pulseTime: 0,
                         pulseStartTime: 0,
-                        serverX: sp.x,
-                        serverY: sp.y,
-                        visualX: sp.x,
-                        visualY: sp.y,
-                        launchStartX: sp.x,
-                        launchStartY: sp.y,
-                        launchTargetX: sp.x,
-                        launchTargetY: sp.y,
-                        launchStartTime: 0,
-                        launchDuration: 900,
                     };
                     state.players.push(local);
                     loadPlayerPFP(local);
@@ -2050,34 +1948,10 @@
                 local.name = sp.name;
                 local.bet = sp.bet;
                 local.color = sp.color;
-
-                // Server coordinates stay authoritative; rendering gets a separate
-                // position so the countdown -> launch transition can animate.
-                const previousX = Number.isFinite(local.visualX) ? local.visualX : (local.x ?? sp.x);
-                const previousY = Number.isFinite(local.visualY) ? local.visualY : (local.y ?? sp.y);
-                const isLaunchTransition =
-                    prevGameState !== 'playing' && state.gameState === 'playing';
-
-                local.serverX = sp.x;
-                local.serverY = sp.y;
-
-                if (isLaunchTransition) {
-                    local.launchStartX = previousX;
-                    local.launchStartY = previousY;
-                    local.launchTargetX = sp.x;
-                    local.launchTargetY = sp.y;
-                    local.launchStartTime = performance.now();
-                    local.launchDuration = 900;
-                } else if (state.gameState !== 'playing') {
-                    local.visualX = sp.x;
-                    local.visualY = sp.y;
-                }
-
                 local.x = sp.x;
                 local.y = sp.y;
                 local.displayRadius = sp.displayRadius;
                 local.alive = sp.alive;
-                local.crownRank = sp.crownRank || null;
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
@@ -2085,11 +1959,11 @@
 
             if (prevGameState !== 'idle' && state.gameState === 'idle') {
                 waitingText.style.display = 'block';
-                countdownWrap.style.display = 'none';
+                countdownTimer.style.display = 'none';
             }
-            if (state.gameState === 'countdown') countdownWrap.style.display = 'flex';
-            if (state.gameState === 'playing' || state.gameState === 'finished') countdownWrap.style.display = state
-                .gameState === 'countdown' ? 'flex' : countdownWrap.style.display;
+            if (state.gameState === 'countdown') countdownTimer.style.display = 'block';
+            if (state.gameState === 'playing' || state.gameState === 'finished') countdownTimer.style.display = state
+                .gameState === 'countdown' ? 'block' : countdownTimer.style.display;
 
             updateStatsBar();
             updateBetUI();
@@ -2124,7 +1998,7 @@
             winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             winPanel.classList.add('show');
             haptic('heavy');
-            countdownWrap.style.display = 'none';
+            countdownTimer.style.display = 'none';
             waitingText.style.display = 'none';
 
             if (window.winTimeout) clearTimeout(window.winTimeout);
@@ -2137,7 +2011,7 @@
             if (window.winTimeout) { clearTimeout(window.winTimeout);
                 window.winTimeout = null; }
             waitingText.style.display = 'block';
-            countdownWrap.style.display = 'none';
+            countdownTimer.style.display = 'none';
             updateWaitingText();
             updateBetUI();
             updateStatsBar();
@@ -2208,44 +2082,12 @@
             return easePopBounce(progress);
         }
 
-        function easeOutCubic(t) {
-            t = Math.max(0, Math.min(1, t));
-            return 1 - Math.pow(1 - t, 3);
-        }
-
         function updatePlayerAnimations() {
-            const now = performance.now();
-
             state.players.forEach(p => {
                 if (p.isPulsing) {
-                    const elapsed = (now - p.pulseStartTime) / 1000;
-                    if (elapsed > 0.6) {
-                        p.isPulsing = false;
-                        p.pulseTime = 0;
-                    } else {
-                        p.pulseTime = elapsed;
-                    }
-                }
-
-                if (p.launchStartTime) {
-                    const progress = Math.min(1, (now - p.launchStartTime) / p.launchDuration);
-                    const eased = easeOutCubic(progress);
-                    p.visualX = p.launchStartX + (p.launchTargetX - p.launchStartX) * eased;
-                    p.visualY = p.launchStartY + (p.launchTargetY - p.launchStartY) * eased;
-
-                    if (progress >= 1) {
-                        p.launchStartTime = 0;
-                        p.visualX = p.serverX;
-                        p.visualY = p.serverY;
-                    }
-                } else if (state.gameState === 'playing') {
-                    // Smooth the 30 Hz authoritative snapshots between packets.
-                    const follow = 0.32;
-                    p.visualX += (p.serverX - p.visualX) * follow;
-                    p.visualY += (p.serverY - p.visualY) * follow;
-                } else {
-                    p.visualX = p.serverX;
-                    p.visualY = p.serverY;
+                    const elapsed = (performance.now() - p.pulseStartTime) / 1000;
+                    if (elapsed > 0.6) { p.isPulsing = false;
+                        p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
             });
         }
@@ -2427,8 +2269,8 @@
                 }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
-                const px = (Number.isFinite(p.visualX) ? p.visualX : p.x) * s,
-                    py = (Number.isFinite(p.visualY) ? p.visualY : p.y) * s;
+                const px = p.x * s,
+                    py = p.y * s;
 
                 ctx.save();
                 // clip to circle
@@ -2452,74 +2294,17 @@
                 }
                 ctx.restore();
 
-                // border — gold for the #1 leaderboard player, silver for #2, otherwise the
-                // usual subtle white ring (brighter/thicker if it's you). The gold/silver
-                // ring breathes gently (shadowBlur oscillation) so it reads as "alive".
-                const animT = performance.now() / 1000;
+                // border
                 ctx.save();
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
                 const isYou = p.id === state.userId;
-                if (p.crownRank === 1) {
-                    const glow = 7 + Math.sin(animT * 3.0) * 3.5;
-                    ctx.strokeStyle = '#ffd447';
-                    ctx.lineWidth = 3;
-                    ctx.shadowColor = 'rgba(255,212,71,0.7)';
-                    ctx.shadowBlur = glow;
-                } else if (p.crownRank === 2) {
-                    const glow = 7 + Math.sin(animT * 3.0 + 1.4) * 3.5;
-                    ctx.strokeStyle = '#d8dde3';
-                    ctx.lineWidth = 3;
-                    ctx.shadowColor = 'rgba(216,221,227,0.6)';
-                    ctx.shadowBlur = glow;
-                } else {
-                    ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
-                    ctx.lineWidth = isYou ? 2.5 : 1.5;
-                }
+                ctx.strokeStyle = isYou ? 'rgba(255,255,255,1.0)' : 'rgba(255,255,255,0.35)';
+                ctx.lineWidth = isYou ? 2.5 : 1.5;
                 ctx.stroke();
                 ctx.restore();
-
-                if (p.crownRank === 1 || p.crownRank === 2) {
-                    // Static crown: fixed above the circle, no bob or wobble.
-                    drawCrown(ctx, px, py - finalRadius, Math.max(finalRadius * 0.6, 10),
-                        p.crownRank === 1 ? '#ffd447' : '#d8dde3', 1, 0);
-                }
             });
-        }
-
-        // small procedural crown icon (not an emoji, so we can color it gold/silver reliably).
-        // `rotation` (radians) lets the caller give it a slow, smooth wobble.
-        function drawCrown(ctx, cx, topY, size, color, alpha = 1, rotation = 0) {
-            const w = size, h = size * 0.62;
-            const baseY = topY - h * 0.15;
-            const topPointY = baseY - h;
-            const pivotY = topY; // rotate around the point resting on the head, not the tips
-            ctx.save();
-            ctx.globalAlpha = alpha;
-            ctx.translate(cx, pivotY);
-            ctx.rotate(rotation);
-            ctx.translate(-cx, -pivotY);
-            ctx.beginPath();
-            ctx.moveTo(cx - w / 2, baseY);
-            ctx.lineTo(cx - w / 2, baseY - h * 0.45);
-            ctx.lineTo(cx - w / 3, baseY - h * 0.15);
-            ctx.lineTo(cx - w / 6, topPointY);
-            ctx.lineTo(cx, baseY - h * 0.25);
-            ctx.lineTo(cx + w / 6, topPointY);
-            ctx.lineTo(cx + w / 3, baseY - h * 0.15);
-            ctx.lineTo(cx + w / 2, baseY - h * 0.45);
-            ctx.lineTo(cx + w / 2, baseY);
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.shadowColor = color;
-            ctx.shadowBlur = 6;
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-            ctx.lineWidth = 1;
-            ctx.shadowBlur = 0;
-            ctx.stroke();
-            ctx.restore();
         }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2568,11 +2353,9 @@
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
-            const raw = betInput.value.trim();
-            const val = parseInt(raw, 10);
-            betAmountDisplay.textContent =
-                raw === '' || !Number.isFinite(val) ? '10' : Math.min(Math.max(val, 10), state.balance);
-            allInBtn.disabled = !canBet || state.balance < 10;
+            const val = parseInt(betInput.value) || 10;
+            betAmountDisplay.textContent = Math.min(val, state.balance);
+            if (betInput.value === '' || parseInt(betInput.value) < 10) betInput.value = 10;
         }
 
         function updateFrogVisibility() {
@@ -2625,10 +2408,7 @@
                 const prize = getPrizeForRank(p.rank);
                 let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
                     prize.label) : '';
-                const crownHtml = info.cls === 'gold' ? '<div class="podium-crown">👑</div>'
-                    : info.cls === 'silver' ? '<div class="podium-crown">👑</div>' : '';
                 podiumHtml += `<div class="podium-col ${info.colClass}">
-                            ${crownHtml}
                             <div class="rank-badge ${info.cls}">${info.label}</div>
                             <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="podium-name">${p.name}</div>
@@ -2784,100 +2564,60 @@
             updatePlayerAnimations();
 
             if (state.gameState === 'countdown' && state.countdownStartTime) {
-                const totalCountdown = 10.0;
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, totalCountdown - elapsed);
+                const remaining = Math.max(0, 10.0 - elapsed);
                 const secs = Math.floor(remaining);
                 const ms = Math.floor((remaining - secs) * 100);
                 countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                const pct = Math.min(100, Math.max(0, (elapsed / totalCountdown) * 100));
-                countdownProgressFill.style.width = pct + '%';
             } else if (state.gameState === 'prestart') {
                 countdownTimer.textContent = 'GO!';
-                countdownProgressFill.style.width = '100%';
             }
 
             render();
             requestAnimationFrame(renderLoop);
         }
 
-        // ─── BET CONTROLS ──────────────────────────────────────────────
-        function getBetAmount() {
-            const raw = betInput.value.replace(/[^0-9]/g, '');
-            const parsed = parseInt(raw, 10);
-            if (!Number.isFinite(parsed) || parsed <= 0) return 10;
-            return Math.min(parsed, Math.max(10, state.balance));
-        }
+        // ─── BET BUTTON ──────────────────────────────────────────────
+        betBtn.addEventListener('click', () => {
+            if (!socket || !socket.connected) return;
+            let addAmount = parseInt(betInput.value) || 10;
+            if (addAmount < 10) addAmount = 10;
+            if (addAmount > state.balance) addAmount = state.balance;
+            if (addAmount <= 0) { haptic('light'); return; }
 
-        function submitBet() {
-            if (!socket || !socket.connected || betBtn.disabled) return;
-
-            const addAmount = getBetAmount();
-            if (addAmount < 10 || state.balance < addAmount) {
-                haptic('light');
-                return;
-            }
-
-            betBtn.disabled = true;
             socket.emit('placeBet', { amount: addAmount }, (res) => {
                 if (!res?.ok) {
                     haptic('light');
                     console.warn('Bet rejected:', res?.error);
-                    updateBetUI();
                     return;
                 }
-
                 state.balance = res.balance;
-                betInput.value = '10';
                 updateBalance();
                 updateProfile();
-                updateBetUI();
                 haptic('medium');
             });
-        }
-
-        betBtn.addEventListener('click', submitBet);
-
-        allInBtn.addEventListener('click', () => {
-            if (allInBtn.disabled) return;
-            betInput.value = String(Math.floor(state.balance));
-            betAmountDisplay.textContent = betInput.value;
-            betInput.focus();
-            betInput.select();
-            haptic('light');
-        });
-
-        betInput.addEventListener('focus', () => {
-            if (betInput.value === '10') betInput.select();
-        });
-
-        betInput.addEventListener('input', () => {
-            // Never rewrite the field while typing. This fixes the old mobile
-            // keyboard issue where "10" could not be cleared.
-            const raw = betInput.value.replace(/[^0-9]/g, '');
-            if (raw !== betInput.value) betInput.value = raw;
-
-            const val = parseInt(raw, 10);
-            betAmountDisplay.textContent =
-                raw === '' || !Number.isFinite(val) ? '10' : Math.min(val, state.balance);
-        });
-
-        betInput.addEventListener('blur', () => {
-            const val = parseInt(betInput.value, 10);
-            if (!Number.isFinite(val) || val < 10) betInput.value = '10';
-            else betInput.value = String(Math.min(val, Math.max(10, state.balance)));
+            betInput.value = 10;
             updateBetUI();
         });
 
-        betInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                submitBet();
-                betInput.blur();
-            }
+        betInput.addEventListener('input', () => {
+            // Don't force a value while the user is actively typing — that's what was
+            // making it impossible to clear "10" and type a new number (every keystroke
+            // that produced something below 10, including an empty field, was instantly
+            // snapped back to "10"). Clamping now only happens on blur / on submit.
+            const raw = betInput.value;
+            const val = parseInt(raw);
+            betAmountDisplay.textContent = (raw === '' || isNaN(val)) ? '10' : Math.min(val, state.balance);
         });
 
-        betInput.value = '10';
+        betInput.addEventListener('blur', () => {
+            let val = parseInt(betInput.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > state.balance) val = state.balance;
+            betInput.value = val;
+            betAmountDisplay.textContent = val;
+        });
+        betInput.value = 10;
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
