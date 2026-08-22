@@ -120,6 +120,7 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
+// ─── Speed adjusted for new min/max radii ──────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
@@ -155,7 +156,8 @@ function getPlayer(id) { return room.players.find(p => p.id === id); }
 // ICE ARENA
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
-const ICE_PERIMETER = PERIMETER;
+const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
+const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
 const PUCK_RADIUS = 10;
 
 function createIceRoom(id) {
@@ -210,13 +212,13 @@ function startIceCountdown() {
 function startIceSpin() {
   iceRoom.gameState = 'spinning';
   iceRoom.spinStartTime = Date.now();
-  iceRoom.spinDuration = 2.6 + Math.random() * 1.2;
+  iceRoom.spinDuration = 2.6 + Math.random() * 1.6;
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 12;
+  const speed = 11;
   iceRoom.puck.x = ICE_SIZE / 2;
   iceRoom.puck.y = ICE_SIZE / 2;
   iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
@@ -316,7 +318,7 @@ function updateIcePhysics(dt) {
         puck.y += ny * overlap;
         const vn = puck.vx * nx + puck.vy * ny;
         if (vn < 0) {
-          const restitution = 0.88;
+          const restitution = 0.95;
           puck.vx -= (1 + restitution) * vn * nx;
           puck.vy -= (1 + restitution) * vn * ny;
         }
@@ -324,15 +326,15 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // Faster stop: friction per second 0.80
-    const frictionPerSecond = 0.80;
+    // ─── FASTER STOP: friction per second 0.75 ────────────────
+    const frictionPerSecond = 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (speed < 0.30) endIceGame();
+  if (speed < 0.12) endIceGame();
 }
 
 function broadcastIceState() {
@@ -707,6 +709,7 @@ io.on('connection', (socket) => {
           winHistory: user.winHistory || [],
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
+        iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
       });
