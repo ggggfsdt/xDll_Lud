@@ -152,6 +152,221 @@ const room = createRoom('main');
 function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
+// ═══════════════════════════════════════════════════════════════
+// ICE ARENA — a second, independent game mode.
+//
+// Instead of circles bumping each other, each player owns a slice
+// ("field") of a square rink, sized proportional to their bet — the
+// whole rink if they're first in, shrinking as others join. After
+// the countdown, a puck spins up in the center, launches in a random
+// direction, and slides/bounces around the rink (losing speed to
+// friction) until it stops. Whoever's field it lands on wins the pot.
+//
+// This reuses the exact same rounded-square geometry (ARENA_SIZE /
+// PERIMETER) as the bump arena, and the exact same wall-reflection
+// math from updatePhysics — the puck just has no other puck to
+// collide with, so its physics loop is simpler.
+// ═══════════════════════════════════════════════════════════════
+const ICE_SIZE = ARENA_SIZE;
+const ICE_PERIMETER = PERIMETER;
+const PUCK_RADIUS = 10;
+
+function createIceRoom(id) {
+  return {
+    id,
+    gameState: 'idle', // idle -> countdown -> spinning -> sliding -> finished -> idle
+    players: [],        // { id, name, pfp, bet, color, segStart, segEnd }
+    pot: 0,
+    countdownStartTime: 0,
+    spinStartTime: 0,
+    spinDuration: 0,
+    spinFinalAngle: 0,
+    puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
+    recentWinners: [],
+  };
+}
+const iceRoom = createIceRoom('ice');
+
+function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
+
+function computeIceSegments() {
+  const totalBet = iceRoom.players.reduce((s, p) => s + p.bet, 0);
+  if (totalBet === 0) return;
+  let cursor = 0;
+  iceRoom.players.forEach(p => {
+    const width = (p.bet / totalBet) * ICE_SIZE;
+    p.segStart = cursor;
+    p.segEnd = cursor + width;
+    cursor += width;
+  });
+  // guard against float drift leaving a sliver gap after the last segment
+  iceRoom.players[iceRoom.players.length - 1].segEnd = ICE_SIZE;
+}
+
+function makeIcePlayer(id, bet, name, pfp) {
+  const colorIdx = iceRoom.players.length % COLORS.length;
+  const p = {
+    id, bet, name: name || 'player', pfp: pfp || '',
+    color: COLORS[colorIdx], segStart: 0, segEnd: ICE_SIZE,
+  };
+  iceRoom.players.push(p);
+  computeIceSegments();
+  return p;
+}
+
+function startIceCountdown() {
+  if (iceRoom.gameState !== 'idle') return;
+  if (iceRoom.players.length < 2) return;
+  iceRoom.gameState = 'countdown';
+  iceRoom.countdownStartTime = Date.now();
+}
+
+function startIceSpin() {
+  iceRoom.gameState = 'spinning';
+  iceRoom.spinStartTime = Date.now();
+  iceRoom.spinDuration = 2.6 + Math.random() * 1.6; // ~2.6–4.2s of spin-and-slow-down
+  iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
+}
+
+function launchIcePuck() {
+  iceRoom.gameState = 'sliding';
+  const speed = 11; // fast launch
+  iceRoom.puck.x = ICE_SIZE / 2;
+  iceRoom.puck.y = ICE_SIZE / 2;
+  iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
+  iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
+}
+
+async function endIceGame() {
+  if (iceRoom.gameState === 'finished') return;
+  iceRoom.gameState = 'finished';
+
+  const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
+  let winner = iceRoom.players.find(p => px >= p.segStart && px < p.segEnd);
+  if (!winner) winner = iceRoom.players[iceRoom.players.length - 1]; // edge-case fallback
+
+  let payload = null;
+  if (winner) {
+    const totalPot = iceRoom.pot;
+    const winnerBet = winner.bet;
+    const losersBets = totalPot - winnerBet;
+    const commission = Math.floor(losersBets * 0.02);
+    const winnings = totalPot - commission;
+    payload = {
+      winnerId: winner.id,
+      winnerName: winner.name,
+      winnerPfp: winner.pfp,
+      winnings,
+      multiplier: +(winnings / winnerBet).toFixed(2),
+    };
+
+    iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
+    if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
+
+    try {
+      const winnerUser = await getUser(winner.id);
+      if (winnerUser) {
+        winnerUser.balance += winnings;
+        winnerUser.wins += 1;
+        await saveUser(winnerUser);
+      }
+    } catch (err) {
+      console.error('endIceGame: failed to credit winner balance:', err);
+    }
+
+    for (const p of iceRoom.players) {
+      if (p.id === winner.id) continue;
+      try {
+        const u = await getUser(p.id);
+        if (u) { u.losses += 1; await saveUser(u); }
+      } catch (err) {
+        console.error('endIceGame: failed to update loser stats for', p.id, err);
+      }
+    }
+
+    try {
+      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
+    } catch (err) {
+      console.error('endIceGame: failed to write win history:', err);
+    }
+  }
+
+  io.emit('iceRoundEnd', payload);
+  setTimeout(() => {
+    iceRoom.players = [];
+    iceRoom.pot = 0;
+    iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
+    iceRoom.gameState = 'idle';
+  }, 3000);
+}
+
+function updateIcePhysics(dt) {
+  if (iceRoom.gameState !== 'sliding') return;
+  const totalPts = ICE_PERIMETER.length;
+  const subSteps = 6;
+  const subDt = dt / subSteps;
+  const puck = iceRoom.puck;
+
+  for (let step = 0; step < subSteps; step++) {
+    puck.x += puck.vx * subDt * 60;
+    puck.y += puck.vy * subDt * 60;
+
+    // bounce off the rounded-square wall — same nearest-segment reflection
+    // technique the bump arena uses for player-vs-wall collisions
+    for (let i = 0; i < totalPts; i++) {
+      const j = (i + 1) % totalPts;
+      const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
+      const bx = ICE_PERIMETER[j].x, by = ICE_PERIMETER[j].y;
+      const dx = bx - ax, dy = by - ay;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq === 0) continue;
+      let t = ((puck.x - ax) * dx + (puck.y - ay) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+      const nearX = ax + t * dx, nearY = ay + t * dy;
+      const distX = puck.x - nearX, distY = puck.y - nearY;
+      const dist = Math.sqrt(distX * distX + distY * distY);
+      if (dist < PUCK_RADIUS) {
+        const nx = distX / dist, ny = distY / dist;
+        const overlap = PUCK_RADIUS - dist;
+        puck.x += nx * overlap;
+        puck.y += ny * overlap;
+        const vn = puck.vx * nx + puck.vy * ny;
+        if (vn < 0) {
+          const restitution = 0.88; // small energy loss per bounce off the boards
+          puck.vx -= (1 + restitution) * vn * nx;
+          puck.vy -= (1 + restitution) * vn * ny;
+        }
+        break;
+      }
+    }
+
+    // ice friction: exponential decay, so it's fast at first and eases to a stop
+    const frictionPerSecond = 0.45; // fraction of speed retained per second
+    const decay = Math.pow(frictionPerSecond, subDt);
+    puck.vx *= decay;
+    puck.vy *= decay;
+  }
+
+  const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+  if (speed < 0.25) endIceGame();
+}
+
+function broadcastIceState() {
+  io.emit('iceState', {
+    gameState: iceRoom.gameState,
+    pot: iceRoom.pot,
+    countdownStartTime: iceRoom.countdownStartTime,
+    spinStartTime: iceRoom.spinStartTime,
+    spinDuration: iceRoom.spinDuration,
+    spinFinalAngle: iceRoom.spinFinalAngle,
+    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
+    players: iceRoom.players.map(p => ({
+      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+      segStart: p.segStart, segEnd: p.segEnd,
+    })),
+  });
+}
+
 // ─── Radius scaling – min 18, exponent 1.8 ──────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
@@ -448,6 +663,18 @@ setInterval(() => {
       if (getAlive().length >= 2) startCountdown();
     }
     broadcastState();
+
+    if (iceRoom.gameState === 'sliding') updateIcePhysics(dt);
+    else if (iceRoom.gameState === 'countdown') {
+      const elapsed = (now - iceRoom.countdownStartTime) / 1000;
+      if (elapsed >= 10.0) startIceSpin();
+    } else if (iceRoom.gameState === 'spinning') {
+      const elapsed = (now - iceRoom.spinStartTime) / 1000;
+      if (elapsed >= iceRoom.spinDuration) launchIcePuck();
+    } else if (iceRoom.gameState === 'idle') {
+      if (iceRoom.players.length >= 2) startIceCountdown();
+    }
+    broadcastIceState();
   } catch (err) {
     console.error('Game loop error:', err);
   }
@@ -498,6 +725,7 @@ io.on('connection', (socket) => {
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         recentWinners: room.recentWinners,
+        iceRecentWinners: iceRoom.recentWinners,
       });
       broadcastState();
     } catch (err) {
@@ -538,6 +766,33 @@ io.on('connection', (socket) => {
       ack?.({ ok: true, top: await topPlayers(20) });
     } catch (err) {
       console.error('Leaderboard error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
+  socket.on('icePlaceBet', async ({ amount }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      if (!['idle', 'countdown'].includes(iceRoom.gameState)) {
+        return ack?.({ ok: false, error: 'Round already in progress.' });
+      }
+      const amt = Math.max(10, Math.floor(Number(amount) || 0));
+      const user = await getUser(userId);
+      if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
+      if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
+      if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
+        return ack?.({ ok: false, error: 'Rink is full.' });
+      }
+      user.balance -= amt;
+      await saveUser(user);
+      const existing = getIcePlayer(userId);
+      if (existing) { existing.bet += amt; computeIceSegments(); }
+      else { makeIcePlayer(userId, amt, user.username, user.pfp); }
+      iceRoom.pot += amt;
+      ack?.({ ok: true, balance: user.balance });
+      broadcastIceState();
+    } catch (err) {
+      console.error('Ice bet error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
