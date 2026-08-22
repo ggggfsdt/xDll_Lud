@@ -154,27 +154,9 @@ function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
 // ICE ARENA — a second, independent game mode.
-//
-// Instead of circles bumping each other, each player owns a slice
-// ("field") of a square rink, sized proportional to their bet — the
-// whole rink if they're first in, shrinking as others join. After
-// the countdown, a puck spins up in the center, launches in a random
-// direction, and slides/bounces around the rink (losing speed to
-// friction) until it stops. Whoever's field it lands on wins the pot.
-//
-// This used to reuse the bump arena's rounded-square geometry (ARENA_SIZE /
-// PERIMETER); it now has its own slightly-more-square perimeter (see
-// ICE_CORNER_RADIUS below), but still reuses the same wall-reflection math
-// from updatePhysics — the puck just has no other puck to collide with, so
-// its physics loop is simpler.
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
-// A distinct rink shape from the bump arena — bump arena uses CORNER_RADIUS
-// (ARENA_SIZE * 0.15, quite rounded). The ice rink wants "slightly rounded"
-// corners instead, so it gets its own smaller corner radius and its own
-// perimeter point set rather than reusing the bump arena's.
-const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
-const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
+const ICE_PERIMETER = PERIMETER;
 const PUCK_RADIUS = 10;
 
 function createIceRoom(id) {
@@ -230,13 +212,13 @@ function startIceCountdown() {
 function startIceSpin() {
   iceRoom.gameState = 'spinning';
   iceRoom.spinStartTime = Date.now();
-  iceRoom.spinDuration = 2.6 + Math.random() * 1.6; // ~2.6–4.2s of spin-and-slow-down
+  iceRoom.spinDuration = 3.0 + Math.random() * 1.8; // 3–4.8s of spinning
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 11; // fast launch — the long, slow glide comes from the friction tuning below
+  const speed = 12;
   iceRoom.puck.x = ICE_SIZE / 2;
   iceRoom.puck.y = ICE_SIZE / 2;
   iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
@@ -249,7 +231,7 @@ async function endIceGame() {
 
   const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
   let winner = iceRoom.players.find(p => px >= p.segStart && px < p.segEnd);
-  if (!winner) winner = iceRoom.players[iceRoom.players.length - 1]; // edge-case fallback
+  if (!winner) winner = iceRoom.players[iceRoom.players.length - 1];
 
   let payload = null;
   if (winner) {
@@ -317,8 +299,7 @@ function updateIcePhysics(dt) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // bounce off the rounded-square wall — same nearest-segment reflection
-    // technique the bump arena uses for player-vs-wall collisions
+    // bounce off the rounded-square wall
     for (let i = 0; i < totalPts; i++) {
       const j = (i + 1) % totalPts;
       const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
@@ -338,8 +319,7 @@ function updateIcePhysics(dt) {
         puck.y += ny * overlap;
         const vn = puck.vx * nx + puck.vy * ny;
         if (vn < 0) {
-          const restitution = 0.95; // bouncy boards — keeps most of its speed per bounce, so the
-                                     // early flurry of wall hits doesn't cut the glide short
+          const restitution = 0.88;
           puck.vx -= (1 + restitution) * vn * nx;
           puck.vy -= (1 + restitution) * vn * ny;
         }
@@ -347,18 +327,15 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ice friction: exponential decay, so it's fast at first and eases to a stop.
-    // Raised from 0.45 (which decayed to a near-stop in under a second, reading as
-    // "instantly stops") to 0.90 — the puck now visibly glides and only gradually
-    // loses speed over several seconds before coming to rest.
-    const frictionPerSecond = 0.90; // fraction of speed retained per second
+    // ─── Longer slide: friction per second 0.92 (was 0.45) ───
+    const frictionPerSecond = 0.92;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (speed < 0.12) endIceGame();
+  if (speed < 0.25) endIceGame();
 }
 
 function broadcastIceState() {
@@ -385,7 +362,6 @@ function computeRadii() {
   const maxR = 52;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    // Power 1.8 gives a smooth curve: equal bets get ~30, more players share smaller size
     const adjustedRatio = Math.pow(ratio, 1.8);
     const r = minR + adjustedRatio * (maxR - minR);
     p.targetRadius = Math.min(Math.max(r, minR), maxR);
@@ -396,7 +372,7 @@ function computeRadii() {
 
 function makePlayer(id, bet, name, pfp) {
   const half = ARENA_SIZE / 2;
-  const radius = 18; // placeholder
+  const radius = 18;
   let x, y, attempts = 0, overlap = true;
   while (overlap && attempts < 100) {
     x = half + (Math.random() - 0.5) * (ARENA_SIZE * 0.6);
@@ -734,7 +710,6 @@ io.on('connection', (socket) => {
           winHistory: user.winHistory || [],
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
-        iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
       });
