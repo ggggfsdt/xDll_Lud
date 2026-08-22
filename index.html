@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── all styles unchanged ─── */
+        /* ─── all styles unchanged (same as previous) ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -491,7 +491,7 @@
 
     <script>
     // ═══════════════════════════════════════════════════════════════════
-    // FULL CLIENT LOGIC (unchanged except for the ice arena rendering)
+    // FULL CLIENT LOGIC (with fixed ice arena)
     // ═══════════════════════════════════════════════════════════════════
 
     // ─── CONFIG ──────────────────────────────────────────────────────
@@ -645,10 +645,12 @@
         puck: { x: 200, y: 200 },
         winnerId: null,
         winHistory: [],
-        // New for pop‑up animation:
+        // Puck pop animation
         puckScale: 0,
         puckPopStart: 0,
-        // For speed tracking & zoom:
+        puckVisible: false,        // becomes true when spinning starts
+        // For speed tracking & zoom
+        slideStartTime: 0,
         lastPuckPos: null,
         lastPuckTime: 0,
         puckSpeed: 0,
@@ -1034,17 +1036,31 @@
         iceState.spinStartTime = snapshot.spinStartTime;
         iceState.spinDuration = snapshot.spinDuration;
         iceState.spinFinalAngle = snapshot.spinFinalAngle;
-        // Detect launch: gameState becomes 'sliding' from 'spinning'
-        if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
-            iceState.puckPopStart = performance.now();
-            iceState.puckScale = 0;
-            iceState.zoomStartTime = 0;
-            iceState.zoom = 1;
-            iceState.zooming = false;
-        }
         iceState.puck.x = snapshot.puck.x;
         iceState.puck.y = snapshot.puck.y;
 
+        // When spinning starts: show the puck with pop animation
+        if (snapshot.gameState === 'spinning' && prevGameState !== 'spinning') {
+            iceState.puckVisible = true;
+            iceState.puckPopStart = performance.now();
+            iceState.puckScale = 0;
+            iceState.zooming = false;
+            iceState.zoom = 1;
+        }
+
+        // When sliding starts: record start time and reset zoom
+        if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
+            iceState.slideStartTime = performance.now();
+            iceState.zooming = false;
+            iceState.zoom = 1;
+        }
+
+        // When game is finished, keep zoom if already zoomed
+        if (snapshot.gameState === 'finished') {
+            // keep last zoom state
+        }
+
+        // Update players
         const seen = new Set();
         snapshot.players.forEach(sp => {
             seen.add(sp.id);
@@ -1068,6 +1084,8 @@
 
         if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
             iceState.winnerId = null;
+            iceState.puckVisible = false;
+            iceState.puckScale = 0;
             iceWaitingText.style.display = 'block';
             iceTimerWrap.style.display = 'none';
             iceTimerProgressWrap.classList.remove('visible');
@@ -1890,7 +1908,7 @@
         });
     }
 
-    // ─── RENDER ICE (FIXED VERSION) ──────────────────────────────
+    // ─── RENDER ICE (FIXED) ─────────────────────────────────────────
     function renderIce() {
         const w = iceState.arenaSize;
         if (!w || !iceState.perimeterPoints.length) return;
@@ -1912,33 +1930,38 @@
         for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
         perimeterPath.closePath();
 
-        // ─── ZOOM & TRACK (only during sliding with low speed) ────
+        // ─── ZOOM & TRACK (only during sliding after a delay and low speed) ────
         let zoomTx = 0, zoomTy = 0, zoomSc = 1;
         const puck = iceState.puck;
-        if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-            // Compute speed
-            const now = performance.now();
-            if (iceState.lastPuckPos && iceState.lastPuckTime) {
-                const dt = (now - iceState.lastPuckTime) / 1000;
-                if (dt > 0) {
-                    const dx = puck.x - iceState.lastPuckPos.x;
-                    const dy = puck.y - iceState.lastPuckPos.y;
-                    iceState.puckSpeed = Math.sqrt(dx*dx + dy*dy) / dt;
-                }
-            }
-            iceState.lastPuckPos = { x: puck.x, y: puck.y };
-            iceState.lastPuckTime = now;
+        const now = performance.now();
 
-            // If speed below threshold, start zooming
-            if (iceState.gameState === 'sliding' && iceState.puckSpeed < 0.6) {
+        // Compute speed from last frame (if available)
+        if (iceState.lastPuckPos && iceState.lastPuckTime) {
+            const dt = (now - iceState.lastPuckTime) / 1000;
+            if (dt > 0) {
+                const dx = puck.x - iceState.lastPuckPos.x;
+                const dy = puck.y - iceState.lastPuckPos.y;
+                iceState.puckSpeed = Math.sqrt(dx*dx + dy*dy) / dt;
+            }
+        }
+        iceState.lastPuckPos = { x: puck.x, y: puck.y };
+        iceState.lastPuckTime = now;
+
+        // Decide zoom: only if sliding for at least 1.5 seconds and speed below threshold
+        const minSlideTime = 1.5; // seconds
+        const speedThreshold = 0.8;
+        if (iceState.gameState === 'sliding' && iceState.slideStartTime) {
+            const slideElapsed = (now - iceState.slideStartTime) / 1000;
+            if (slideElapsed > minSlideTime && iceState.puckSpeed < speedThreshold) {
+                // Start zoom if not already
                 if (!iceState.zooming) {
                     iceState.zooming = true;
-                    iceState.zoomStartTime = performance.now();
+                    iceState.zoomStartTime = now;
                     iceState.zoom = 1;
                     iceState.zoomTarget = 1.8;
                 }
-                const elapsed = (performance.now() - iceState.zoomStartTime) / 1000;
-                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const elapsedZoom = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsedZoom / iceState.zoomDuration, 1);
                 const eased = easeOutCubic(progress);
                 iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
                 // Center on puck
@@ -1949,13 +1972,11 @@
                 zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
             } else {
-                // Reset zoom when speed is high or game ended
-                if (iceState.zooming && iceState.gameState === 'finished') {
-                    // keep zoom if finished
-                } else {
+                // If speed goes above threshold, reset zoom (or keep zoom if already zoomed?)
+                // We'll keep zoom if already zoomed and speed is still below a higher threshold
+                if (iceState.zooming && iceState.puckSpeed > speedThreshold * 1.5) {
                     iceState.zooming = false;
                     iceState.zoom = 1;
-                    zoomSc = 1;
                 }
             }
         }
@@ -2077,13 +2098,14 @@
         }
 
         // ─── PUCK ────────────────────────────────────────────────────
-        if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+        // Show puck only if visible (spinning or sliding/finished)
+        if (iceState.puckVisible) {
             // Compute pop scale
             let scale = 1;
             if (iceState.puckPopStart) {
-                const elapsed = (performance.now() - iceState.puckPopStart) / 1000;
+                const elapsedPop = (performance.now() - iceState.puckPopStart) / 1000;
                 const duration = 0.6;
-                const progress = Math.min(elapsed / duration, 1);
+                const progress = Math.min(elapsedPop / duration, 1);
                 const pop = easeOutBack(progress);
                 scale = Math.max(0, pop);
                 if (progress >= 1) {
@@ -2091,7 +2113,15 @@
                     iceState.puckPopStart = 0;
                 }
             }
-            const px = puck.x * s, py = puck.y * s;
+            // Position: center during spinning, puck position otherwise
+            let px, py;
+            if (iceState.gameState === 'spinning') {
+                px = half;
+                py = half;
+            } else {
+                px = puck.x * s;
+                py = puck.y * s;
+            }
             const r = PUCK_RENDER_RADIUS * s * scale;
 
             iceCtx.save();
