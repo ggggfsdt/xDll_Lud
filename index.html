@@ -341,7 +341,7 @@
             margin-top: 2px;
         }
 
-        /* ─── BET OVERLAY with background image ─── */
+        /* ─── BET OVERLAY with background image (lighter) ─── */
         #bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -379,7 +379,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(0, 0, 0, 0.30); /* lighter overlay */
             border-radius: 12px;
             z-index: 0;
             pointer-events: none;
@@ -475,11 +475,11 @@
         #bet-input {
             flex: 1;
             max-width: 120px;
-            padding: 6px 8px;
-            height: 36px;
+            padding: 4px 6px;
+            height: 32px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            background: rgba(18, 18, 22, 0.85);
+            background: rgba(255, 255, 255, 0.10);
             color: var(--text);
             font-size: 15px;
             font-weight: 600;
@@ -492,8 +492,8 @@
             box-shadow: 0 0 24px var(--primary-glow);
         }
         #all-in-btn {
-            height: 36px;
-            padding: 0 12px;
+            height: 32px;
+            padding: 0 10px;
             border-radius: 8px;
             border: none;
             background: var(--gold);
@@ -511,8 +511,8 @@
             opacity: 0.8;
         }
         #bet-btn {
-            padding: 6px 0;
-            height: 34px;
+            padding: 4px 0;
+            height: 30px;
             border-radius: 8px;
             border: none;
             background: var(--primary);
@@ -1492,17 +1492,17 @@
             }
             #bet-input {
                 max-width: 90px;
-                height: 32px;
+                height: 28px;
                 font-size: 14px;
-                padding: 4px 6px;
+                padding: 3px 4px;
             }
             #all-in-btn {
-                height: 32px;
+                height: 28px;
                 font-size: 12px;
-                padding: 0 8px;
+                padding: 0 6px;
             }
             #bet-btn {
-                height: 30px;
+                height: 28px;
                 font-size: 13px;
             }
             #bet-overlay.collapsed {
@@ -2486,6 +2486,7 @@
         });
 
         // ─── Input handling (allow empty, default to 10 on blur) ──
+        // This function is used for both bet input and auto amount input
         function setupInputWithClear(inputEl, defaultVal = 10) {
             inputEl.addEventListener('input', () => {
                 const raw = inputEl.value;
@@ -2798,6 +2799,7 @@
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
+            // Only update input if not empty (so user can type freely)
             if (!betInput.dataset.empty) {
                 let val = parseInt(betInput.value);
                 if (isNaN(val) || val < 10) val = 10;
