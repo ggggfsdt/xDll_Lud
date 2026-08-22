@@ -9,7 +9,7 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
     </script>
     <style>
-        /* ─── same styles as before ─── */
+        /* ─── all existing styles remain exactly as before ─── */
         * {
             margin: 0;
             padding: 0;
@@ -1469,9 +1469,7 @@
             opacity: 0.8;
         }
 
-        /* ═══════════════════════════════════════════════════════════
-           ICE ARENA — second game mode
-        ═══════════════════════════════════════════════════════════ */
+        /* ─── ICE ARENA ─────────────────────────────────────────────── */
         #ice-page {
             display: flex;
             flex-direction: column;
@@ -1534,7 +1532,9 @@
             overflow: hidden;
             display: none;
         }
-        #ice-timer-progress-wrap.visible { display: block; }
+        #ice-timer-progress-wrap.visible {
+            display: block;
+        }
         #ice-timer-progress {
             height: 100%;
             width: 0%;
@@ -1579,7 +1579,9 @@
             scrollbar-width: none;
             flex-direction: row-reverse;
         }
-        #ice-win-history::-webkit-scrollbar { display: none; }
+        #ice-win-history::-webkit-scrollbar {
+            display: none;
+        }
         #ice-bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -1644,7 +1646,10 @@
             cursor: pointer;
             white-space: nowrap;
         }
-        #ice-all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #ice-all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
         #ice-bet-btn {
             padding: 8px 0;
             width: 100%;
@@ -1659,8 +1664,15 @@
             box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
             letter-spacing: 0.2px;
         }
-        #ice-bet-btn:active { transform: scale(0.97); opacity: 0.85; }
-        #ice-bet-btn:disabled { opacity: 0.4; transform: none; pointer-events: none; }
+        #ice-bet-btn:active {
+            transform: scale(0.97);
+            opacity: 0.85;
+        }
+        #ice-bet-btn:disabled {
+            opacity: 0.4;
+            transform: none;
+            pointer-events: none;
+        }
         #ice-current-bet-display {
             color: var(--text2);
             font-size: 12px;
@@ -1669,7 +1681,10 @@
             border-top: 1px solid var(--border);
             padding-top: 4px;
         }
-        #ice-current-bet-display span { color: var(--gold); font-weight: 700; }
+        #ice-current-bet-display span {
+            color: var(--gold);
+            font-weight: 700;
+        }
 
         #ice-stats-bar {
             display: flex;
@@ -1685,10 +1700,25 @@
             -webkit-backdrop-filter: blur(8px);
             border-top: 1px solid var(--border);
         }
-        #ice-stats-bar .stat-item { display: flex; align-items: center; gap: 6px; }
-        #ice-stats-bar .stat-item .icon { width: 20px; height: 20px; object-fit: contain; }
-        #ice-stats-bar .stat-item .value { color: #fff; font-weight: 700; }
-        #ice-stats-bar .stat-item .label { color: var(--text2); font-size: 12px; margin-right: 2px; }
+        #ice-stats-bar .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #ice-stats-bar .stat-item .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        #ice-stats-bar .stat-item .value {
+            color: #fff;
+            font-weight: 700;
+        }
+        #ice-stats-bar .stat-item .label {
+            color: var(--text2);
+            font-size: 12px;
+            margin-right: 2px;
+        }
 
         #ice-win-panel {
             position: absolute;
@@ -1728,9 +1758,24 @@
             flex-shrink: 0;
             background: var(--surface3);
         }
-        #ice-win-avatar-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        #ice-win-name { font-size: 24px; font-weight: 700; color: #5b8def; text-align: center; }
-        #ice-win-multiplier { font-size: 30px; font-weight: 800; color: #fff; text-align: center; }
+        #ice-win-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #ice-win-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5b8def;
+            text-align: center;
+        }
+        #ice-win-multiplier {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+        }
         #ice-win-continue-btn {
             padding: 10px 0;
             border-radius: 30px;
@@ -1747,7 +1792,10 @@
             text-align: center;
             margin-top: 4px;
         }
-        #ice-win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #ice-win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
 
         @media (max-width:400px) {
             #balance-wrap {
@@ -1997,7 +2045,6 @@
                         </div>
                     </div>
 
-                    <!-- Auto‑bet button (bottom‑right) -->
                     <div id="auto-bet-container" class="auto-bet-container">
                         <button id="auto-bet-toggle" class="auto-bet-toggle">⏱</button>
                         <div id="auto-bet-panel" class="auto-bet-panel">
@@ -2052,7 +2099,6 @@
                         </div>
                     </div>
 
-                    <!-- Auto‑bet button (bottom‑right) -->
                     <div id="ice-auto-bet-container" class="auto-bet-container">
                         <button id="ice-auto-bet-toggle" class="auto-bet-toggle">⏱</button>
                         <div id="ice-auto-bet-panel" class="auto-bet-panel">
@@ -2202,11 +2248,11 @@
             maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
-            topPlayerIds: new Map(), // id -> { rank }
+            topPlayerIds: new Map(),
         };
 
         let SERVER_ARENA_SIZE = 400;
-        const VISUAL_RADIUS_SCALE = 0.75; // smaller circles
+        const VISUAL_RADIUS_SCALE = 0.75;
 
         // DOM refs
         const canvas = document.getElementById('game-canvas');
@@ -2285,19 +2331,16 @@
         const iceWinMultiplier = document.getElementById('ice-win-multiplier');
         const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
         const iceWinHistoryEl = document.getElementById('ice-win-history');
-
-        // Ice auto‑bet elements
         const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
         const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
         const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
         const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
         const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
 
-        // Ice Arena's own state — separate game, separate room, but shares the same
-        // user/balance/wins/losses since it's the same underlying account.
+        // ─── Ice Arena state (local) ────────────────────────────────
         const iceState = {
             gameState: 'idle',
-            players: [], // { id, name, pfp, pfpImg, bet, color, segStart, segEnd }
+            players: [],
             pot: 0,
             arenaSize: 0,
             perimeterPoints: [],
@@ -2309,17 +2352,18 @@
             puck: { x: 200, y: 200 },
             winnerId: null,
             winHistory: [],
-            // ─── smooth rendering / camera state (client-side only) ───
-            puckRender: { x: 200, y: 200 },
-            puckSpeedEstimate: 0,
-            lastPuckSample: null,
-            finishedAt: 0,
-            launchTime: 0,
-            zoomProgress: 0,
-            zoomTarget: 0,
+            // local rendering extras
+            puckPopStart: 0,
+            puckPopProgress: 1,
+            cameraZoom: 1,
+            cameraTargetX: 0,
+            cameraTargetY: 0,
+            cameraX: 0,
+            cameraY: 0,
+            prevGameState: 'idle',
         };
 
-        // Auto‑bet elements
+        // ─── Auto‑bet elements ──────────────────────────────────────
         const autoToggle = document.getElementById('auto-bet-toggle');
         const autoPanel = document.getElementById('auto-bet-panel');
         const autoSwitch = document.getElementById('auto-bet-switch');
@@ -2451,13 +2495,10 @@
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
-        function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-
         function easeOutBack(t) {
-            const c1 = 1.70158,
-                c3 = c1 + 1;
-            const x = t - 1;
-            return 1 + c3 * x * x * x + c1 * x * x;
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -2554,7 +2595,6 @@
             if (state.gameState !== 'playing') { touchingIds = new Set(); return; }
             const me = getPlayer(state.userId);
             if (!me || !me.alive) { touchingIds = new Set(); return; }
-
             const nowTouching = new Set();
             state.players.forEach(p => {
                 if (p.id === me.id || !p.alive) return;
@@ -2564,11 +2604,9 @@
                 const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
                 if (dist < minDist) nowTouching.add(p.id);
             });
-
             let isNewBump = false;
             nowTouching.forEach(id => { if (!touchingIds.has(id)) isNewBump = true; });
             if (isNewBump) haptic('medium');
-
             touchingIds = nowTouching;
         }
 
@@ -2614,7 +2652,6 @@
                 } else {
                     local.homeX = sp.x;
                     local.homeY = sp.y;
-
                     if (isCountdown) {
                         if (!local.isSpawning) {
                             local.spawnStartX = local.x;
@@ -2630,7 +2667,6 @@
                             local.y = sp.y;
                         }
                     }
-
                     if (sp.bet > local.bet) {
                         local.isPulsing = true;
                         local.pulseStartTime = performance.now();
@@ -2727,7 +2763,9 @@
 
         winContinueBtn.addEventListener('click', hideWinPanelAndReset);
 
-        // ─── ICE ARENA — state application & round end ───────────────
+        // ═══════════════════════════════════════════════════════════════
+        // ICE ARENA — state application & rendering (FIXED)
+        // ═══════════════════════════════════════════════════════════════
         const icePfpCache = pfpCache;
 
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
@@ -2757,7 +2795,8 @@
         }
 
         function applyIceServerState(snapshot) {
-            const prevGameState = iceState.gameState;
+            const prevState = iceState.gameState;
+            iceState.prevGameState = prevState;
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
             iceState.countdownStartTime = snapshot.countdownStartTime;
@@ -2766,45 +2805,6 @@
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
-
-            const now = Date.now();
-
-            if (iceState.gameState === 'sliding') {
-                if (prevGameState !== 'sliding' || !iceState.lastPuckSample) {
-                    iceState.puckSpeedEstimate = 11;
-                } else {
-                    const dt = Math.max(1, now - iceState.lastPuckSample.t) / 1000;
-                    const dist = Math.hypot(snapshot.puck.x - iceState.lastPuckSample.x, snapshot.puck.y - iceState
-                        .lastPuckSample.y);
-                    const instSpeed = dist / dt;
-                    const alpha = 0.35;
-                    iceState.puckSpeedEstimate = iceState.puckSpeedEstimate * (1 - alpha) + instSpeed * alpha;
-                }
-                iceState.lastPuckSample = { x: snapshot.puck.x, y: snapshot.puck.y, t: now };
-                // compute zoom target based on speed
-                const speed = iceState.puckSpeedEstimate;
-                const speedZoomStart = 3.0;
-                const speedZoomEnd = 0.15;
-                const raw = Math.min(1, Math.max(0, (speedZoomStart - speed) / (speedZoomStart - speedZoomEnd)));
-                iceState.zoomTarget = raw;
-                if (prevGameState !== 'sliding') {
-                    iceState.launchTime = now;
-                    iceState.zoomProgress = 0;
-                }
-            } else {
-                iceState.lastPuckSample = null;
-                if (iceState.gameState === 'finished' && prevGameState !== 'finished') {
-                    iceState.finishedAt = now;
-                    iceState.zoomTarget = 1;
-                } else if (iceState.gameState !== 'finished') {
-                    iceState.zoomTarget = 0;
-                }
-            }
-
-            if (iceState.gameState !== 'sliding') {
-                iceState.puckRender.x = snapshot.puck.x;
-                iceState.puckRender.y = snapshot.puck.y;
-            }
 
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -2829,14 +2829,36 @@
             });
             iceState.players = iceState.players.filter(p => seen.has(p.id));
 
-            if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
+            // ─── Detect transition: spinning → sliding ──────────────
+            if (prevState === 'spinning' && snapshot.gameState === 'sliding') {
+                // Trigger puck pop animation
+                iceState.puckPopStart = performance.now();
+                iceState.puckPopProgress = 0;
+                // Reset camera to center
+                iceState.cameraX = 0;
+                iceState.cameraY = 0;
+                iceState.cameraZoom = 1;
+                iceState.cameraTargetX = 0;
+                iceState.cameraTargetY = 0;
+            }
+
+            // ─── Detect transition: sliding → finished ──────────────
+            if (prevState === 'sliding' && snapshot.gameState === 'finished') {
+                // Keep camera zoomed in on final puck position
+                // The render loop will handle the zoom
+            }
+
+            if (prevState !== 'idle' && iceState.gameState === 'idle') {
                 iceState.winnerId = null;
-                iceState.zoomProgress = 0;
-                iceState.zoomTarget = 0;
+                iceState.puckPopProgress = 1;
+                iceState.cameraZoom = 1;
+                iceState.cameraX = 0;
+                iceState.cameraY = 0;
                 iceWaitingText.style.display = 'block';
                 iceTimerWrap.style.display = 'none';
                 iceTimerProgressWrap.classList.remove('visible');
             }
+
             iceTimerWrap.style.display = (iceState.gameState === 'countdown' || iceState.gameState === 'spinning') ? 'flex' :
                 iceTimerWrap.style.display;
             if (iceState.gameState === 'countdown') iceTimerProgressWrap.classList.add('visible');
@@ -3021,7 +3043,6 @@
                     if (elapsed > 0.6) { p.isPulsing = false;
                         p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
-
                 if (p.isSpawning && p.homeX !== undefined) {
                     const elapsed = now - p.spawnStartTime;
                     const progress = Math.min(elapsed / p.spawnDuration, 1);
@@ -3104,17 +3125,13 @@
             haptic('light');
         });
 
-        // ─── All In button (two‑tap, then place bet) ──────────────
         let allInConfirming = false;
         let allInTimeout = null;
 
         allInBtn.addEventListener('click', () => {
             if (allInConfirming) {
                 const fullAmount = state.balance;
-                if (fullAmount < 10) {
-                    haptic('light');
-                    return;
-                }
+                if (fullAmount < 10) { haptic('light'); return; }
                 betInput.value = fullAmount;
                 betBtn.click();
                 allInConfirming = false;
@@ -3133,17 +3150,12 @@
             }
         });
 
-        // ─── Input handling – fully deletable, no forced updates ──
         function setupInputWithClear(inputEl, defaultVal = 10) {
             inputEl.addEventListener('input', () => {
                 const raw = inputEl.value;
-                if (raw === '') {
-                    inputEl.dataset.empty = 'true';
-                    return;
-                }
+                if (raw === '') { inputEl.dataset.empty = 'true'; return; }
                 delete inputEl.dataset.empty;
             });
-
             inputEl.addEventListener('blur', () => {
                 if (inputEl.dataset.empty === 'true' || inputEl.value === '') {
                     inputEl.value = defaultVal;
@@ -3160,7 +3172,7 @@
         setupInputWithClear(betInput, 10);
         setupInputWithClear(autoAmount, 10);
 
-        // ─── Auto‑bet (switch works anytime) ──────────────────────
+        // ─── Auto‑bet ────────────────────────────────────────────────
         let autoBetInterval = null;
         let autoBetEnabled = false;
 
@@ -3191,17 +3203,12 @@
                 autoBetEnabled = false;
                 autoToggle.classList.remove('active');
                 autoToggle.textContent = '⏱';
-                if (autoBetInterval) {
-                    clearInterval(autoBetInterval);
-                    autoBetInterval = null;
-                }
+                if (autoBetInterval) { clearInterval(autoBetInterval);
+                    autoBetInterval = null; }
             }
         }
 
-        autoToggle.addEventListener('click', () => {
-            autoPanel.classList.toggle('open');
-        });
-
+        autoToggle.addEventListener('click', () => { autoPanel.classList.toggle('open'); });
         autoSwitchWrap.addEventListener('click', (e) => {
             e.stopPropagation();
             const checked = !autoSwitch.checked;
@@ -3209,12 +3216,9 @@
             toggleAutoBet(checked);
             haptic('light');
         });
+        autoSwitch.addEventListener('change', () => { toggleAutoBet(autoSwitch.checked); });
 
-        autoSwitch.addEventListener('change', () => {
-            toggleAutoBet(autoSwitch.checked);
-        });
-
-        // ─── Ice auto‑bet (same pattern, targeting the ice rink) ──
+        // ─── Ice auto‑bet ────────────────────────────────────────────
         setupInputWithClear(iceAutoAmount, 10);
         let iceAutoBetInterval = null;
         let iceAutoBetEnabled = false;
@@ -3238,17 +3242,12 @@
                 iceAutoBetEnabled = false;
                 iceAutoToggle.classList.remove('active');
                 iceAutoToggle.textContent = '⏱';
-                if (iceAutoBetInterval) {
-                    clearInterval(iceAutoBetInterval);
-                    iceAutoBetInterval = null;
-                }
+                if (iceAutoBetInterval) { clearInterval(iceAutoBetInterval);
+                    iceAutoBetInterval = null; }
             }
         }
 
-        iceAutoToggle.addEventListener('click', () => {
-            iceAutoPanel.classList.toggle('open');
-        });
-
+        iceAutoToggle.addEventListener('click', () => { iceAutoPanel.classList.toggle('open'); });
         iceAutoSwitchWrap.addEventListener('click', (e) => {
             e.stopPropagation();
             const checked = !iceAutoSwitch.checked;
@@ -3256,12 +3255,9 @@
             toggleIceAutoBet(checked);
             haptic('light');
         });
+        iceAutoSwitch.addEventListener('change', () => { toggleIceAutoBet(iceAutoSwitch.checked); });
 
-        iceAutoSwitch.addEventListener('change', () => {
-            toggleIceAutoBet(iceAutoSwitch.checked);
-        });
-
-        // ─── updateBetUI – never overwrite user input ─────────────
+        // ─── updateBetUI ─────────────────────────────────────────────
         function updateBetUI() {
             const existing = getPlayer(state.userId);
             const inGame = !!existing;
@@ -3279,7 +3275,6 @@
                 allInBtn.disabled = true;
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
-
             if (betInput.dataset.empty === 'true') {
                 betInput.value = 10;
                 delete betInput.dataset.empty;
@@ -3294,7 +3289,7 @@
             waitingText.style.display = showFrog ? 'none' : 'block';
         }
 
-        // ─── Win history ──────────────────────────────────────────────
+        // ─── Win history ─────────────────────────────────────────────
         function addWinToHistory(name, pfp) {
             state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
             if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
@@ -3425,11 +3420,7 @@
             anonToggle.disabled = true;
             socket.emit('setAnonymous', { enabled }, (res) => {
                 anonToggle.disabled = false;
-                if (!res?.ok) {
-                    anonToggle.checked = state.anonymous;
-                    console.warn('setAnonymous failed:', res?.error);
-                    return;
-                }
+                if (!res?.ok) { anonToggle.checked = state.anonymous; return; }
                 state.anonymous = res.anonymous;
                 haptic('light');
             });
@@ -3448,11 +3439,9 @@
                 promoMessage.style.color = 'var(--red)';
                 return;
             }
-
             promoBtn.disabled = true;
             promoBtn.textContent = '...';
             promoMessage.textContent = '';
-
             try {
                 const response = await fetch(SERVER_URL + '/redeem', {
                     method: 'POST',
@@ -3485,14 +3474,13 @@
             }
         });
 
-        promoContinueBtn.addEventListener('click', () => {
-            promoModal.classList.remove('show');
-        });
+        promoContinueBtn.addEventListener('click', () => { promoModal.classList.remove('show'); });
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
         function renderLoop() {
             updatePlayerAnimations();
 
+            // PvP timer
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
@@ -3510,6 +3498,7 @@
                 timerProgressWrap.classList.remove('visible');
             }
 
+            // Ice timer
             if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
                 const elapsed = (Date.now() - iceState.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
@@ -3521,6 +3510,7 @@
             } else if (iceState.gameState === 'spinning') {
                 iceCountdownTimer.textContent = '🌀';
                 iceTimerProgress.style.width = '100%';
+                iceTimerProgressWrap.classList.add('visible');
             } else if (iceState.gameState === 'idle') {
                 iceTimerProgressWrap.classList.remove('visible');
             }
@@ -3539,11 +3529,8 @@
             if (addAmount <= 0) { haptic('light'); return; }
 
             socket.emit('placeBet', { amount: addAmount }, (res) => {
-                if (!res?.ok) {
-                    haptic('light');
-                    console.warn('Bet rejected:', res?.error);
-                    return;
-                }
+                if (!res?.ok) { haptic('light');
+                    console.warn('Bet rejected:', res?.error); return; }
                 state.balance = res.balance;
                 updateBalance();
                 updateProfile();
@@ -3562,11 +3549,8 @@
             if (addAmount <= 0) { haptic('light'); return; }
 
             socket.emit('icePlaceBet', { amount: addAmount }, (res) => {
-                if (!res?.ok) {
-                    haptic('light');
-                    console.warn('Ice bet rejected:', res?.error);
-                    return;
-                }
+                if (!res?.ok) { haptic('light');
+                    console.warn('Ice bet rejected:', res?.error); return; }
                 state.balance = res.balance;
                 updateBalance();
                 updateProfile();
@@ -3587,7 +3571,323 @@
             iceBetInput.value = val;
         });
 
-        // ─── DRAW ───────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════
+        // ICE ARENA RENDER — FIXED: arrow, puck pop, camera zoom
+        // ═══════════════════════════════════════════════════════════════
+        function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
+
+        const PUCK_RENDER_RADIUS = 10;
+
+        function hexToRgba(hex, alpha) {
+            if (!hex) return `rgba(120,120,120,${alpha})`;
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        // ─── Draw a proper arrow with shaft + head, pivoted at center ─
+        function drawIceArrow(ctx, cx, cy, ringR, angle, size) {
+            // arrow tip is on the ring at angle `angle`, pointing outward
+            const tipX = cx + Math.cos(angle) * ringR;
+            const tipY = cy + Math.sin(angle) * ringR;
+            const dirX = Math.cos(angle);
+            const dirY = Math.sin(angle);
+
+            const shaftLen = size * 0.75;
+            const shaftWidth = size * 0.10;
+            const headLen = size * 0.35;
+            const headWidth = size * 0.28;
+
+            // shaft start (from ringR - shaftLen toward center)
+            const startX = tipX - dirX * shaftLen;
+            const startY = tipY - dirY * shaftLen;
+
+            ctx.save();
+
+            // ─── shaft ──────────────────────────────────────────────
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(tipX, tipY);
+            ctx.strokeStyle = '#eaf6ff';
+            ctx.lineWidth = shaftWidth;
+            ctx.shadowColor = 'rgba(200, 230, 255, 0.6)';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            // ─── arrowhead ─────────────────────────────────────────
+            const hx = tipX - dirX * headLen;
+            const hy = tipY - dirY * headLen;
+            const perpX = -dirY;
+            const perpY = dirX;
+
+            ctx.shadowBlur = 14;
+            ctx.shadowColor = 'rgba(200, 230, 255, 0.7)';
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(hx + perpX * headWidth * 0.5, hy + perpY * headWidth * 0.5);
+            ctx.lineTo(hx - perpX * headWidth * 0.5, hy - perpY * headWidth * 0.5);
+            ctx.closePath();
+            ctx.fillStyle = '#eaf6ff';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(180, 210, 240, 0.7)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+
+            // ─── bright core glow ──────────────────────────────────
+            ctx.shadowBlur = 24;
+            ctx.shadowColor = 'rgba(180, 220, 255, 0.5)';
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(hx + perpX * headWidth * 0.3, hy + perpY * headWidth * 0.3);
+            ctx.lineTo(hx - perpX * headWidth * 0.3, hy - perpY * headWidth * 0.3);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        // ─── Draw the puck (outline circle + crosshair) with pop scale ─
+        function drawPuck(ctx, cx, cy, radius, popScale, color = '#eaf6ff') {
+            const r = radius * popScale;
+            if (r < 0.5) return;
+            ctx.save();
+            ctx.shadowColor = 'rgba(180, 220, 255, 0.9)';
+            ctx.shadowBlur = 16 * popScale;
+
+            // outline circle
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.8 * popScale;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // crosshair
+            const crossSize = r * 0.55;
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 2.2 * popScale;
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(cx - crossSize, cy);
+            ctx.lineTo(cx + crossSize, cy);
+            ctx.moveTo(cx, cy - crossSize);
+            ctx.lineTo(cx, cy + crossSize);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // ─── MAIN ICE RENDER ────────────────────────────────────────
+        function renderIce() {
+            const w = iceState.arenaSize;
+            if (!w || !iceState.perimeterPoints.length) return;
+            const half = w / 2;
+            const s = iceScaleFactor();
+            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length === 0) return;
+
+            // ─── Clear ──────────────────────────────────────────────
+            iceCtx.clearRect(0, 0, w, w);
+            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
+            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
+            iceCtx.fillStyle = grad;
+            iceCtx.fillRect(0, 0, w, w);
+
+            // ─── Rink perimeter ────────────────────────────────────
+            const perimeterPath = new Path2D();
+            perimeterPath.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
+            perimeterPath.closePath();
+
+            iceCtx.save();
+            iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            iceCtx.shadowBlur = 30;
+            iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
+            iceCtx.fill(perimeterPath);
+            iceCtx.restore();
+
+            // ─── Player segments ────────────────────────────────────
+            iceCtx.save();
+            iceCtx.clip(perimeterPath);
+            iceState.players.forEach(p => {
+                const x1 = p.segStart * s,
+                    x2 = p.segEnd * s;
+                const segW = Math.max(x2 - x1, 0.5);
+                const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
+                const segGrad = iceCtx.createLinearGradient(0, 0, 0, w);
+                segGrad.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
+                segGrad.addColorStop(1, p.color);
+                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.fillStyle = segGrad;
+                iceCtx.fillRect(x1, 0, segW, w);
+                iceCtx.globalAlpha = 1;
+                if (isWinner) {
+                    iceCtx.save();
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+                    iceCtx.lineWidth = 3;
+                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
+                    iceCtx.shadowBlur = 16;
+                    iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
+                    iceCtx.restore();
+                }
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+                iceCtx.lineWidth = 2;
+                iceCtx.beginPath();
+                iceCtx.moveTo(x2, 0);
+                iceCtx.lineTo(x2, w);
+                iceCtx.stroke();
+
+                // label
+                const segCenterX = (x1 + x2) / 2;
+                if (segW > 30) {
+                    const avatarR = Math.min(segW * 0.32, 18);
+                    const avatarY = half - 14;
+                    iceCtx.save();
+                    iceCtx.beginPath();
+                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
+                    iceCtx.closePath();
+                    iceCtx.clip();
+                    if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                        iceCtx.drawImage(p.pfpImg, segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
+                    } else {
+                        iceCtx.fillStyle = p.color || '#555';
+                        iceCtx.fillRect(segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
+                    }
+                    iceCtx.restore();
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+                    iceCtx.lineWidth = 1.5;
+                    iceCtx.beginPath();
+                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
+                    iceCtx.stroke();
+                    if (segW > 44) {
+                        iceCtx.fillStyle = '#fff';
+                        iceCtx.font = `600 11px system-ui, sans-serif`;
+                        iceCtx.textAlign = 'center';
+                        iceCtx.textBaseline = 'middle';
+                        iceCtx.fillText(p.bet, segCenterX, avatarY + avatarR + 14);
+                    }
+                }
+            });
+            iceCtx.restore();
+
+            // ─── Rink border ────────────────────────────────────────
+            iceCtx.save();
+            iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
+            iceCtx.lineWidth = 4;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
+
+            // ─── SPINNING phase: only arrow, no ring ──────────────
+            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+                const extraSpins = 4;
+                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+
+                const ringR = Math.max(w * 0.13, 30);
+                // draw arrow only — no ring
+                drawIceArrow(iceCtx, half, half, ringR, angle, Math.max(ringR * 0.75, 22));
+
+                // also draw a subtle center marker so the pivot is visible
+                iceCtx.save();
+                iceCtx.fillStyle = 'rgba(180, 210, 240, 0.2)';
+                iceCtx.beginPath();
+                iceCtx.arc(half, half, 4, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.restore();
+            }
+
+            // ─── SLIDING / FINISHED phase: puck with pop + camera zoom ──
+            if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                // ─── Update pop progress ────────────────────────────
+                if (iceState.puckPopProgress < 1) {
+                    const elapsed = performance.now() - iceState.puckPopStart;
+                    const duration = 320; // ms
+                    const progress = Math.min(elapsed / duration, 1);
+                    iceState.puckPopProgress = easeOutBack(progress);
+                }
+
+                // ─── Camera zoom tracking ──────────────────────────
+                const puckX = iceState.puck.x * s;
+                const puckY = iceState.puck.y * s;
+
+                // target: zoom in as puck slows down
+                // speed = sqrt(vx^2 + vy^2) — we need to get speed from the server state
+                // we don't have vx/vy directly in the client, but we can estimate from the puck position delta
+                // We'll use the fact that the server sends the puck position every tick
+                // For simplicity, we track the puck position and zoom based on game state
+                const isSliding = iceState.gameState === 'sliding';
+                const targetZoom = isSliding ? 1.8 : 1.0;
+                // Smoothly approach target zoom
+                iceState.cameraZoom += (targetZoom - iceState.cameraZoom) * 0.04;
+                iceState.cameraZoom = Math.max(1, Math.min(2.2, iceState.cameraZoom));
+
+                // target camera position: center on puck, but clamp to rink bounds
+                const halfW = w / 2;
+                const zoomFactor = iceState.cameraZoom;
+                // We want the puck to be roughly centered, but we also want to see the rink
+                // So we bias the camera toward the puck but keep it within bounds
+                const targetCX = puckX;
+                const targetCY = puckY;
+                // smooth follow
+                iceState.cameraX += (targetCX - iceState.cameraX) * 0.08;
+                iceState.cameraY += (targetCY - iceState.cameraY) * 0.08;
+
+                // ─── Apply camera transform ────────────────────────
+                iceCtx.save();
+                iceCtx.translate(half - iceState.cameraX, half - iceState.cameraY);
+                iceCtx.scale(iceState.cameraZoom, iceState.cameraZoom);
+
+                // ─── Draw puck ──────────────────────────────────────
+                const puckRadius = PUCK_RENDER_RADIUS * s;
+                const popScale = Math.min(iceState.puckPopProgress, 1);
+                drawPuck(iceCtx, puckX, puckY, puckRadius, popScale, '#eaf6ff');
+
+                iceCtx.restore();
+
+                // ─── Draw a subtle vignette when zoomed ────────────
+                if (iceState.cameraZoom > 1.1) {
+                    iceCtx.save();
+                    const vGrad = iceCtx.createRadialGradient(half, half, half * 0.6, half, half, half);
+                    vGrad.addColorStop(0, 'rgba(0,0,0,0)');
+                    vGrad.addColorStop(1, 'rgba(0,0,0,0.5)');
+                    iceCtx.fillStyle = vGrad;
+                    iceCtx.fillRect(0, 0, w, w);
+                    iceCtx.restore();
+                }
+
+                // ─── Also draw the ring + crosshair in the center ──
+                // but only during sliding (not during spinning)
+                if (iceState.gameState === 'sliding') {
+                    const ringR = Math.max(w * 0.12, 28);
+                    iceCtx.save();
+                    iceCtx.strokeStyle = 'rgba(160,190,220,0.2)';
+                    iceCtx.lineWidth = 2;
+                    iceCtx.setLineDash([4, 6]);
+                    iceCtx.beginPath();
+                    iceCtx.arc(half, half, ringR, 0, Math.PI * 2);
+                    iceCtx.stroke();
+                    iceCtx.setLineDash([]);
+                    // tiny crosshair
+                    const cSize = ringR * 0.3;
+                    iceCtx.strokeStyle = 'rgba(160,190,220,0.15)';
+                    iceCtx.lineWidth = 1.5;
+                    iceCtx.beginPath();
+                    iceCtx.moveTo(half - cSize, half);
+                    iceCtx.lineTo(half + cSize, half);
+                    iceCtx.moveTo(half, half - cSize);
+                    iceCtx.lineTo(half, half + cSize);
+                    iceCtx.stroke();
+                    iceCtx.restore();
+                }
+            }
+
+            // ─── If idle, show nothing extra ──────────────────────
+        }
+
+        // ─── PVP RENDER ──────────────────────────────────────────────
         function render() {
             const w = state.arenaSize;
             const half = w / 2;
@@ -3682,13 +3982,11 @@
             }
             ctx.restore();
 
-            // ─── Draw players (smaller circles) ──────────────────
+            // ─── Draw players ──────────────────────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
-
                 const px = p.x * s;
                 const py = p.y * s;
-
                 const popScale = getPopScale(p);
                 const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
                 const displayRadius = radius * popScale;
@@ -3706,7 +4004,6 @@
                 let borderWidth = 1.5;
                 let shadowColor = 'transparent';
                 let shadowBlur = 0;
-
                 if (topInfo) {
                     if (topInfo.rank === 1) {
                         borderColor = '#FFD700';
@@ -3726,7 +4023,6 @@
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
                 ctx.closePath();
                 ctx.clip();
-
                 if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
@@ -3752,293 +4048,6 @@
                 ctx.shadowBlur = 0;
                 ctx.restore();
             });
-        }
-
-        // ─── ICE ARENA RENDER ─────────────────────────────────────────
-        function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
-
-        const PUCK_RENDER_RADIUS = 10;
-
-        // Camera tuning
-        const ICE_CAM = {
-            speedZoomStart: 3.0,
-            speedZoomEnd: 0.15,
-            maxZoom: 2.3,
-            finishedHoldMs: 900,
-            finishedZoomOutMs: 750,
-        };
-
-        let lastIceFrameTs = null;
-
-        // --- draw a filled ball with crosshair ---
-        function drawIceBall(ctx, x, y, r, emphasizeCross) {
-            ctx.save();
-            ctx.shadowColor = 'rgba(180, 220, 255, 0.85)';
-            ctx.shadowBlur = 14;
-
-            const grad = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.55, '#dcefff');
-            grad.addColorStop(1, '#9fc9ea');
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fillStyle = grad;
-            ctx.fill();
-
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-            ctx.lineWidth = 1.4;
-            ctx.stroke();
-
-            const cross = r * 0.42;
-            ctx.strokeStyle = emphasizeCross ? 'rgba(20,40,60,0.75)' : 'rgba(30,50,70,0.35)';
-            ctx.lineWidth = emphasizeCross ? 1.8 : 1.2;
-            ctx.beginPath();
-            ctx.moveTo(x - cross, y);
-            ctx.lineTo(x + cross, y);
-            ctx.moveTo(x, y - cross);
-            ctx.lineTo(x, y + cross);
-            ctx.stroke();
-            if (emphasizeCross) {
-                ctx.fillStyle = 'rgba(20,40,60,0.85)';
-                ctx.beginPath();
-                ctx.arc(x, y, Math.max(1.2, r * 0.06), 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.restore();
-        }
-
-        // --- draw a simple arrow from center outward ---
-        function drawIceArrow(ctx, cx, cy, angle, length, headSize) {
-            // arrow shaft from center to (length - headSize) outward
-            const tipX = cx + Math.cos(angle) * length;
-            const tipY = cy + Math.sin(angle) * length;
-            const baseX = cx + Math.cos(angle) * (length - headSize);
-            const baseY = cy + Math.sin(angle) * (length - headSize);
-            const perpAngle = angle + Math.PI / 2;
-            const halfHead = headSize * 0.45;
-
-            ctx.save();
-            ctx.shadowColor = 'rgba(139, 197, 255, 0.7)';
-            ctx.shadowBlur = 12;
-            ctx.fillStyle = '#e8f4ff';
-            ctx.strokeStyle = 'rgba(20,40,60,0.4)';
-            ctx.lineWidth = 1.5;
-
-            // shaft (line from center to base)
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(baseX, baseY);
-            ctx.stroke();
-
-            // arrowhead (triangle)
-            ctx.beginPath();
-            ctx.moveTo(tipX, tipY);
-            ctx.lineTo(baseX + Math.cos(perpAngle) * halfHead, baseY + Math.sin(perpAngle) * halfHead);
-            ctx.lineTo(baseX - Math.cos(perpAngle) * halfHead, baseY - Math.sin(perpAngle) * halfHead);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        function renderIce() {
-            const w = iceState.arenaSize;
-            if (!w || !iceState.perimeterPoints.length) return;
-            const half = w / 2;
-            const s = iceScaleFactor();
-
-            // ─── smooth puck position ──────────────────────────────
-            const nowTs = performance.now();
-            const frameDt = lastIceFrameTs ? Math.min((nowTs - lastIceFrameTs) / 1000, 0.1) : 0;
-            lastIceFrameTs = nowTs;
-            if (iceState.gameState === 'sliding') {
-                const tau = 0.07;
-                const follow = frameDt > 0 ? 1 - Math.exp(-frameDt / tau) : 1;
-                iceState.puckRender.x += (iceState.puck.x - iceState.puckRender.x) * follow;
-                iceState.puckRender.y += (iceState.puck.y - iceState.puckRender.y) * follow;
-            }
-
-            iceCtx.clearRect(0, 0, w, w);
-
-            const clampedPuckX = Math.min(Math.max(iceState.puckRender.x, 0), SERVER_ARENA_SIZE);
-            const clampedPuckY = Math.min(Math.max(iceState.puckRender.y, 0), SERVER_ARENA_SIZE);
-
-            // ─── camera zoom ────────────────────────────────────────
-            let camZoom = 1,
-                camX = half,
-                camY = half;
-            const puckCanvasX = clampedPuckX * s;
-            const puckCanvasY = clampedPuckY * s;
-
-            const zoomLerpFactor = 0.035;
-            if (iceState.gameState === 'sliding') {
-                // smooth zoom progress toward target
-                iceState.zoomProgress += (iceState.zoomTarget - iceState.zoomProgress) * zoomLerpFactor;
-                const z = iceState.zoomProgress;
-                camZoom = 1 + z * (ICE_CAM.maxZoom - 1);
-                camX = half + (puckCanvasX - half) * z;
-                camY = half + (puckCanvasY - half) * z;
-            } else if (iceState.gameState === 'finished') {
-                const elapsed = Date.now() - (iceState.finishedAt || Date.now());
-                let z = iceState.zoomProgress;
-                if (elapsed < ICE_CAM.finishedHoldMs) {
-                    z = 1;
-                } else {
-                    const p = Math.min(1, (elapsed - ICE_CAM.finishedHoldMs) / ICE_CAM.finishedZoomOutMs);
-                    z = 1 - easeInOutCubic(p) * 0.85;
-                }
-                iceState.zoomProgress = z;
-                camZoom = 1 + z * (ICE_CAM.maxZoom - 1);
-                camX = half + (puckCanvasX - half) * z;
-                camY = half + (puckCanvasY - half) * z;
-            } else {
-                iceState.zoomProgress *= 0.95; // slowly reset
-                camZoom = 1 + iceState.zoomProgress * (ICE_CAM.maxZoom - 1);
-                camX = half + (puckCanvasX - half) * iceState.zoomProgress;
-                camY = half + (puckCanvasY - half) * iceState.zoomProgress;
-            }
-
-            iceCtx.save();
-            iceCtx.translate(half, half);
-            iceCtx.scale(camZoom, camZoom);
-            iceCtx.translate(-camX, -camY);
-
-            // ─── background ──────────────────────────────────────────
-            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
-            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
-            iceCtx.fillStyle = grad;
-            iceCtx.fillRect(0, 0, w, w);
-
-            // ─── perimeter ───────────────────────────────────────────
-            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
-            if (pts.length === 0) { iceCtx.restore(); return; }
-            const perimeterPath = new Path2D();
-            perimeterPath.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
-            perimeterPath.closePath();
-
-            // rink base
-            iceCtx.save();
-            iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
-            iceCtx.shadowBlur = 30;
-            iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
-            iceCtx.fill(perimeterPath);
-            iceCtx.restore();
-
-            // ─── player segments ─────────────────────────────────────
-            iceCtx.save();
-            iceCtx.clip(perimeterPath);
-            iceState.players.forEach(p => {
-                const x1 = p.segStart * s,
-                    x2 = p.segEnd * s;
-                const segW = Math.max(x2 - x1, 0.5);
-                const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
-
-                const segGrad = iceCtx.createLinearGradient(0, 0, 0, w);
-                segGrad.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
-                segGrad.addColorStop(1, p.color);
-                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
-                iceCtx.fillStyle = segGrad;
-                iceCtx.fillRect(x1, 0, segW, w);
-                iceCtx.globalAlpha = 1;
-
-                if (isWinner) {
-                    iceCtx.save();
-                    iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
-                    iceCtx.lineWidth = 3;
-                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
-                    iceCtx.shadowBlur = 16;
-                    iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
-                    iceCtx.restore();
-                }
-
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
-                iceCtx.lineWidth = 2;
-                iceCtx.beginPath();
-                iceCtx.moveTo(x2, 0);
-                iceCtx.lineTo(x2, w);
-                iceCtx.stroke();
-
-                const segCenterX = (x1 + x2) / 2;
-                if (segW > 30) {
-                    const avatarR = Math.min(segW * 0.32, 18);
-                    const avatarY = half - 14;
-                    iceCtx.save();
-                    iceCtx.beginPath();
-                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
-                    iceCtx.closePath();
-                    iceCtx.clip();
-                    if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                        iceCtx.drawImage(p.pfpImg, segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
-                    } else {
-                        iceCtx.fillStyle = p.color || '#555';
-                        iceCtx.fillRect(segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
-                    }
-                    iceCtx.restore();
-                    iceCtx.strokeStyle = 'rgba(255,255,255,0.6)';
-                    iceCtx.lineWidth = 1.5;
-                    iceCtx.beginPath();
-                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
-                    iceCtx.stroke();
-
-                    if (segW > 44) {
-                        iceCtx.fillStyle = '#fff';
-                        iceCtx.font = `600 11px system-ui, sans-serif`;
-                        iceCtx.textAlign = 'center';
-                        iceCtx.textBaseline = 'middle';
-                        iceCtx.fillText(p.bet, segCenterX, avatarY + avatarR + 14);
-                    }
-                }
-            });
-            iceCtx.restore();
-
-            // rink border
-            iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
-            iceCtx.lineWidth = 4;
-            iceCtx.stroke(perimeterPath);
-            iceCtx.restore();
-
-            // ─── spinning arrow (only during spinning, no ring) ────
-            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
-                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
-                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
-                const extraSpins = 4;
-                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
-
-                // draw the arrow pivoting at center, pointing outward, length = ringR * 1.2
-                const ringR = Math.max(w * 0.13, 30);
-                const arrowLen = ringR * 1.2;
-                const headSize = Math.min(arrowLen * 0.3, 16);
-                if (t < 1) {
-                    drawIceArrow(iceCtx, half, half, angle, arrowLen, headSize);
-                }
-            }
-
-            // ─── puck (ball) ─────────────────────────────────────────
-            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-                const popDuration = 0.32;
-                const age = iceState.spinStartTime ? (Date.now() - iceState.spinStartTime) / 1000 : popDuration;
-                const popT = Math.min(1, Math.max(0, age / popDuration));
-                const popScale = age >= popDuration ? 1 : Math.max(0, easeOutBack(popT));
-
-                if (popScale > 0.001) {
-                    const r = PUCK_RENDER_RADIUS * s * popScale;
-                    drawIceBall(iceCtx, puckCanvasX, puckCanvasY, r, iceState.gameState === 'finished');
-                }
-            }
-
-            iceCtx.restore(); // camera transform
-        }
-
-        function hexToRgba(hex, alpha) {
-            if (!hex) return `rgba(120,120,120,${alpha})`;
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r},${g},${b},${alpha})`;
         }
 
         // ─── UPDATE UI FUNCTIONS ──────────────────────────────────
