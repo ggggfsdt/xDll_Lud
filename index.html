@@ -461,6 +461,7 @@
         #bet-overlay.collapsed .bet-toggle-text {
             display: inline;
         }
+
         .bet-row {
             display: flex;
             align-items: center;
@@ -1501,7 +1502,6 @@
             box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(91, 141, 239, 0.06);
             flex-shrink: 0;
             border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: transform 0.15s ease-out;
         }
         #ice-timer-wrap {
             position: absolute;
@@ -2338,6 +2338,7 @@
         const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
         const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
 
+        // Ice Arena state
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -2352,21 +2353,18 @@
             puck: { x: 200, y: 200, vx: 0, vy: 0 },
             winnerId: null,
             winHistory: [],
-            // camera zoom state
+            // zoom
             zoomFactor: 1,
             zoomTarget: 1,
-            zoomOffsetX: 0,
-            zoomOffsetY: 0,
             zoomSmooth: 1,
+            // puck pop
             puckPopProgress: 0,
             puckPopStart: 0,
             isPuckPopping: false,
-            arrowAngle: 0,
-            arrowSpeed: 0,
+            // arrow spinner
             isArrowSpinning: false,
-            arrowDecelStart: 0,
-            arrowDecelDuration: 0,
-            arrowFinalAngle: 0,
+            arrowAngle: 0,
+            arrowStartAngle: 0,
         };
 
         // Auto‑bet elements (PvP)
@@ -2495,19 +2493,11 @@
             iceCanvas.style.height = size + 'px';
             iceState.arenaSize = size;
             iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            // reset zoom
-            iceState.zoomFactor = 1;
-            iceState.zoomTarget = 1;
-            iceState.zoomOffsetX = 0;
-            iceState.zoomOffsetY = 0;
-            iceState.zoomSmooth = 1;
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-        function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
         // ═══════════════════════════════════════════════════════════════
         // NETWORKING
@@ -2808,32 +2798,9 @@
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
-
-            // When spinning starts, initialize arrow animation
-            if (iceState.gameState === 'spinning' && prevGameState !== 'spinning') {
-                iceState.isArrowSpinning = true;
-                iceState.arrowAngle = 0;
-                iceState.arrowSpeed = 7.0 + Math.random() * 2.0;
-                iceState.arrowDecelStart = 0;
-                iceState.arrowDecelDuration = 0;
-                iceState.arrowFinalAngle = iceState.spinFinalAngle || 0;
-                // puck pop: show puck at center with pop animation
-                iceState.isPuckPopping = true;
-                iceState.puckPopStart = performance.now();
-                iceState.puckPopProgress = 0;
-                // reset zoom
-                iceState.zoomFactor = 1;
-                iceState.zoomTarget = 1;
-                iceState.zoomOffsetX = 0;
-                iceState.zoomOffsetY = 0;
-                iceState.zoomSmooth = 1;
-            }
-
-            // When sliding starts, pop animation should be complete
-            if (iceState.gameState === 'sliding' && prevGameState !== 'sliding') {
-                iceState.isPuckPopping = false;
-                iceState.puckPopProgress = 1;
-            }
+            // copy velocity if provided (server should send vx, vy)
+            if (snapshot.puck.vx !== undefined) iceState.puck.vx = snapshot.puck.vx;
+            if (snapshot.puck.vy !== undefined) iceState.puck.vy = snapshot.puck.vy;
 
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -2860,18 +2827,29 @@
 
             if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
                 iceState.winnerId = null;
-                iceWaitingText.style.display = 'block';
-                iceTimerWrap.style.display = 'none';
-                iceTimerProgressWrap.classList.remove('visible');
-                // reset zoom
                 iceState.zoomFactor = 1;
                 iceState.zoomTarget = 1;
-                iceState.zoomOffsetX = 0;
-                iceState.zoomOffsetY = 0;
                 iceState.zoomSmooth = 1;
                 iceState.isArrowSpinning = false;
                 iceState.isPuckPopping = false;
+                iceWaitingText.style.display = 'block';
+                iceTimerWrap.style.display = 'none';
+                iceTimerProgressWrap.classList.remove('visible');
             }
+
+            // When spinning starts, initialize arrow and puck pop
+            if (iceState.gameState === 'spinning' && prevGameState !== 'spinning') {
+                iceState.isArrowSpinning = true;
+                iceState.isPuckPopping = true;
+                iceState.puckPopStart = Date.now();
+                iceState.puckPopProgress = 0;
+                // We'll compute arrow angle directly in render
+                // Reset zoom
+                iceState.zoomFactor = 1;
+                iceState.zoomTarget = 1;
+                iceState.zoomSmooth = 1;
+            }
+
             iceTimerWrap.style.display = (iceState.gameState === 'countdown' || iceState.gameState === 'spinning') ? 'flex' :
                 iceTimerWrap.style.display;
             if (iceState.gameState === 'countdown') iceTimerProgressWrap.classList.add('visible');
@@ -2967,16 +2945,13 @@
             if (window.iceWinTimeout) { clearTimeout(window.iceWinTimeout);
                 window.iceWinTimeout = null; }
             iceState.winnerId = null;
+            iceState.zoomFactor = 1;
+            iceState.zoomTarget = 1;
+            iceState.zoomSmooth = 1;
             updateIceWaitingText();
             updateIceBetUI();
             updateIceStatsBar();
             updateIceBetOverlayVisibility();
-            // reset zoom
-            iceState.zoomFactor = 1;
-            iceState.zoomTarget = 1;
-            iceState.zoomOffsetX = 0;
-            iceState.zoomOffsetY = 0;
-            iceState.zoomSmooth = 1;
         }
 
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
@@ -3493,6 +3468,7 @@
         function renderLoop() {
             updatePlayerAnimations();
 
+            // PvP timer
             if (state.gameState === 'countdown' && state.countdownStartTime) {
                 const elapsed = (Date.now() - state.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
@@ -3510,7 +3486,7 @@
                 timerProgressWrap.classList.remove('visible');
             }
 
-            // ─── Ice Arena timer & arrow animation ──────────────────
+            // Ice Arena timer and zoom logic
             if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
                 const elapsed = (Date.now() - iceState.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
@@ -3522,28 +3498,8 @@
             } else if (iceState.gameState === 'spinning') {
                 iceCountdownTimer.textContent = '🎯';
                 iceTimerProgress.style.width = '100%';
-                // update arrow spin
-                if (iceState.isArrowSpinning) {
-                    const now = Date.now();
-                    const elapsed = (now - iceState.spinStartTime) / 1000;
-                    const totalDuration = iceState.spinDuration || 3.5;
-                    // decelerate over the last 60% of the spin
-                    const decelStart = totalDuration * 0.35;
-                    if (elapsed < decelStart) {
-                        // constant speed
-                        iceState.arrowAngle += iceState.arrowSpeed * 0.016;
-                    } else if (elapsed < totalDuration) {
-                        const decelProgress = (elapsed - decelStart) / (totalDuration - decelStart);
-                        const eased = 1 - Math.pow(1 - decelProgress, 2);
-                        const currentSpeed = iceState.arrowSpeed * (1 - eased * 0.95);
-                        iceState.arrowAngle += currentSpeed * 0.016;
-                    } else {
-                        // stopped
-                        iceState.isArrowSpinning = false;
-                        iceState.arrowAngle = iceState.spinFinalAngle || 0;
-                    }
-                }
-                // puck pop animation
+
+                // Update puck pop progress
                 if (iceState.isPuckPopping) {
                     const elapsed = (Date.now() - iceState.puckPopStart) / 1000;
                     const duration = 0.7;
@@ -3555,41 +3511,24 @@
                     }
                 }
             } else if (iceState.gameState === 'sliding') {
-                // camera zoom: zoom in when puck slows down
+                // Zoom logic: zoom in when puck slows down
                 const speed = Math.sqrt(iceState.puck.vx * iceState.puck.vx + iceState.puck.vy * iceState.puck.vy);
-                // zoom threshold: when speed drops below 1.0, start zooming in
                 if (speed < 1.2 && speed > 0.05) {
                     const zoomFactor = 1 + (1.2 - speed) * 1.8;
                     iceState.zoomTarget = Math.min(zoomFactor, 3.0);
-                    // track puck position
-                    const w = iceState.arenaSize;
-                    const s = iceScaleFactor();
-                    const px = iceState.puck.x * s;
-                    const py = iceState.puck.y * s;
-                    const cx = w / 2;
-                    const cy = w / 2;
-                    iceState.zoomOffsetX = (cx - px) * (iceState.zoomTarget - 1);
-                    iceState.zoomOffsetY = (cy - py) * (iceState.zoomTarget - 1);
                 } else {
                     iceState.zoomTarget = 1;
-                    iceState.zoomOffsetX = 0;
-                    iceState.zoomOffsetY = 0;
                 }
-                // smooth zoom
+                // Smoothly interpolate zoom
                 iceState.zoomFactor += (iceState.zoomTarget - iceState.zoomFactor) * 0.08;
                 iceState.zoomSmooth = iceState.zoomFactor;
             } else if (iceState.gameState === 'finished') {
-                // zoom out after win
                 iceState.zoomTarget = 1;
-                iceState.zoomOffsetX = 0;
-                iceState.zoomOffsetY = 0;
                 iceState.zoomFactor += (1 - iceState.zoomFactor) * 0.05;
                 iceState.zoomSmooth = iceState.zoomFactor;
             } else if (iceState.gameState === 'idle') {
                 iceState.zoomFactor = 1;
                 iceState.zoomTarget = 1;
-                iceState.zoomOffsetX = 0;
-                iceState.zoomOffsetY = 0;
                 iceState.zoomSmooth = 1;
                 iceState.isArrowSpinning = false;
                 iceState.isPuckPopping = false;
@@ -3802,8 +3741,8 @@
         // ─── ICE ARENA RENDER ─────────────────────────────────────────
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
+        // Draw a triangular arrow spinner with pivot at (cx, cy), pointing at `angle`
         function drawIceArrowSpinner(ctx, cx, cy, angle, length, width) {
-            // Draw a triangular arrow with pivot at (cx, cy), pointing at `angle`
             const tipX = cx + Math.cos(angle) * length;
             const tipY = cy + Math.sin(angle) * length;
             const backX = cx - Math.cos(angle) * length * 0.25;
@@ -3833,8 +3772,6 @@
             ctx.strokeStyle = 'rgba(255,255,255,0.7)';
             ctx.lineWidth = 1.5;
             ctx.stroke();
-
-            // small glow circle at pivot
             ctx.shadowBlur = 30;
             ctx.shadowColor = 'rgba(180,210,255,0.8)';
             ctx.beginPath();
@@ -3845,7 +3782,6 @@
         }
 
         function drawPuckWithPop(ctx, x, y, radius, popProgress, isSliding) {
-            // popProgress: 0 = hidden, 1 = full size
             const scale = isSliding ? 1 : Math.max(0.05, popProgress);
             const r = radius * scale;
             if (r < 0.5) return;
@@ -3861,10 +3797,8 @@
             ctx.arc(x, y, r * 2.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // puck body
             ctx.shadowColor = 'rgba(180,220,255,0.9)';
             ctx.shadowBlur = 18;
-
             const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
             grad.addColorStop(0, '#f0f8ff');
             grad.addColorStop(0.5, '#c8e4ff');
@@ -3873,16 +3807,12 @@
             ctx.beginPath();
             ctx.arc(x, y, r, 0, Math.PI * 2);
             ctx.fill();
-
-            // border
             ctx.shadowBlur = 0;
             ctx.strokeStyle = 'rgba(100,180,240,0.6)';
             ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.arc(x, y, r, 0, Math.PI * 2);
             ctx.stroke();
-
-            // crosshair
             const crossSize = r * 0.5;
             ctx.strokeStyle = 'rgba(100,180,240,0.5)';
             ctx.lineWidth = 1.2;
@@ -3892,13 +3822,10 @@
             ctx.moveTo(x, y - crossSize);
             ctx.lineTo(x, y + crossSize);
             ctx.stroke();
-
-            // small center dot
             ctx.beginPath();
             ctx.arc(x, y, r * 0.08, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(100,180,240,0.6)';
             ctx.fill();
-
             ctx.restore();
         }
 
@@ -3908,10 +3835,10 @@
             const half = w / 2;
             const s = iceScaleFactor();
 
-            // ─── Apply zoom transform ──────────────────────────────
             const zoom = iceState.zoomSmooth || 1;
-            const ox = iceState.zoomOffsetX || 0;
-            const oy = iceState.zoomOffsetY || 0;
+            // Compute puck position in canvas coords
+            const px = iceState.puck.x * s;
+            const py = iceState.puck.y * s;
 
             iceCtx.save();
             iceCtx.clearRect(0, 0, w, w);
@@ -3923,15 +3850,13 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            // Apply zoom transform
+            // Apply zoom transform: we want the puck to stay at center
             if (zoom > 1.01) {
-                const cx = half + ox * 0.5;
-                const cy = half + oy * 0.5;
-                iceCtx.translate(cx, cy);
+                // Translate so that (px, py) maps to (half, half) after scaling
+                const tx = half - zoom * px;
+                const ty = half - zoom * py;
+                iceCtx.translate(tx, ty);
                 iceCtx.scale(zoom, zoom);
-                iceCtx.translate(-cx, -cy);
-                // also offset for tracking
-                iceCtx.translate(ox * 0.5, oy * 0.5);
             }
 
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
@@ -4037,7 +3962,6 @@
                 iceCtx.arc(half, half, ringR, 0, Math.PI * 2);
                 iceCtx.stroke();
 
-                // crosshair inside ring
                 iceCtx.lineWidth = 2.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
@@ -4049,9 +3973,18 @@
                 iceCtx.restore();
 
                 // ─── Arrow spinner ──────────────────────────────────
+                // Compute arrow angle based on time and final angle
+                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                const totalDuration = iceState.spinDuration || 3.5;
+                const t = Math.min(elapsed / totalDuration, 1);
+                const extraSpins = 4;
+                const eased = easeOutCubic(t);
+                // Start angle: final angle - extra spins, so that after full duration it reaches final angle
+                const startAngle = iceState.spinFinalAngle - extraSpins * 2 * Math.PI;
+                const angle = startAngle + (iceState.spinFinalAngle - startAngle) * eased;
+
                 const arrowLen = ringR * 1.7;
                 const arrowW = ringR * 0.45;
-                const angle = iceState.isArrowSpinning ? iceState.arrowAngle : (iceState.spinFinalAngle || 0);
                 drawIceArrowSpinner(iceCtx, half, half, angle, arrowLen, arrowW);
 
                 // ─── Puck at center (with pop animation) ──────────
@@ -4062,8 +3995,6 @@
 
             // ─── Sliding puck ──────────────────────────────────────
             if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-                const px = iceState.puck.x * s,
-                    py = iceState.puck.y * s;
                 const puckR = Math.max(iceState.arenaSize * 0.045, 10);
                 drawPuckWithPop(iceCtx, px, py, puckR, 1, true);
             }
