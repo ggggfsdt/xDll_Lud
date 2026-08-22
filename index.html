@@ -341,7 +341,7 @@
             margin-top: 2px;
         }
 
-        /* ─── BET OVERLAY (Compact) ─── */
+        /* ─── BET OVERLAY with background image ─── */
         #bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -360,9 +360,7 @@
             transform: translateX(-50%) translateY(20px);
         }
         #bet-overlay {
-            background: rgba(26, 26, 30, 0.92);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(18, 18, 22, 0.92);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 8px 12px 10px;
@@ -372,6 +370,23 @@
             gap: 6px;
             transition: 0.3s;
             position: relative;
+            background-image: url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg');
+            background-size: cover;
+            background-position: center;
+            background-blend-mode: overlay;
+        }
+        #bet-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 12px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #bet-overlay>* {
+            position: relative;
+            z-index: 1;
         }
         #bet-overlay.collapsed {
             padding: 6px 12px;
@@ -419,6 +434,7 @@
             opacity: 0.6;
             padding: 2px;
             transform: rotate(0deg);
+            z-index: 2;
         }
         #bet-overlay:not(.collapsed) .bet-toggle::before {
             content: '>';
@@ -463,7 +479,7 @@
             height: 36px;
             border-radius: 8px;
             border: 1px solid var(--border);
-            background: var(--surface3);
+            background: rgba(18, 18, 22, 0.85);
             color: var(--text);
             font-size: 15px;
             font-weight: 600;
@@ -521,11 +537,11 @@
             pointer-events: none;
         }
         #current-bet-display {
-            color: var(--text2);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 12px;
             text-align: center;
             margin-top: 2px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
             padding-top: 4px;
         }
         #current-bet-display span {
@@ -538,7 +554,7 @@
             display: none;
         }
 
-        /* ─── Auto‑bet button (bottom‑right corner) ─── */
+        /* ─── Auto‑bet ─── */
         #auto-bet-container {
             position: absolute;
             bottom: 16px;
@@ -563,7 +579,7 @@
             justify-content: center;
             cursor: pointer;
             transition: 0.2s;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
         }
         #auto-bet-toggle.active {
             border-color: var(--primary);
@@ -575,7 +591,7 @@
             transform: scale(0.9);
         }
         #auto-bet-panel {
-            background: rgba(18, 18, 20, 0.95);
+            background: rgba(18, 18, 22, 0.95);
             backdrop-filter: blur(16px);
             border: 1px solid var(--border);
             border-radius: 12px;
@@ -584,7 +600,7 @@
             display: none;
             flex-direction: column;
             gap: 8px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
         }
         #auto-bet-panel.open {
             display: flex;
@@ -619,6 +635,7 @@
             width: 34px;
             height: 18px;
             flex-shrink: 0;
+            cursor: pointer;
         }
         #auto-bet-panel .switch-sm input {
             opacity: 0;
@@ -646,10 +663,10 @@
             border-radius: 50%;
             transition: 0.2s;
         }
-        #auto-bet-panel .switch-sm input:checked + .slider-sm {
+        #auto-bet-panel .switch-sm input:checked+.slider-sm {
             background: var(--primary);
         }
-        #auto-bet-panel .switch-sm input:checked + .slider-sm::before {
+        #auto-bet-panel .switch-sm input:checked+.slider-sm::before {
             transform: translateY(-50%) translateX(16px);
         }
 
@@ -1710,11 +1727,11 @@
                         <div id="auto-bet-panel">
                             <div class="row">
                                 <label>Amount</label>
-                                <input type="number" id="auto-bet-amount" value="10" min="10" step="1" />
+                                <input type="text" id="auto-bet-amount" placeholder="10" inputmode="numeric" />
                             </div>
                             <div class="row">
                                 <label>Auto</label>
-                                <div class="switch-sm">
+                                <div class="switch-sm" id="auto-switch-wrap">
                                     <input type="checkbox" id="auto-bet-switch" />
                                     <span class="slider-sm"></span>
                                 </div>
@@ -1915,6 +1932,7 @@
         const autoPanel = document.getElementById('auto-bet-panel');
         const autoSwitch = document.getElementById('auto-bet-switch');
         const autoAmount = document.getElementById('auto-bet-amount');
+        const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -2164,7 +2182,6 @@
                     local.homeY = sp.y;
 
                     if (isCountdown) {
-                        // Start the slide-in animation if not already spawning
                         if (!local.isSpawning) {
                             local.spawnStartX = local.x;
                             local.spawnStartY = local.y;
@@ -2174,7 +2191,6 @@
                             local.spawnProgress = 0;
                         }
                     } else {
-                        // Not in countdown: set position directly
                         if (!local.isSpawning) {
                             local.x = sp.x;
                             local.y = sp.y;
@@ -2195,7 +2211,6 @@
             });
             state.players = state.players.filter(p => seen.has(p.id));
 
-            // Once the game starts playing, finalise the positions
             if (state.gameState === 'playing' || state.gameState === 'finished') {
                 state.players.forEach(p => {
                     p.isSpawning = false;
@@ -2359,7 +2374,6 @@
                         p.pulseTime = 0; } else p.pulseTime = elapsed;
                 }
 
-                // Slide-in animation (spawning)
                 if (p.isSpawning && p.homeX !== undefined) {
                     const elapsed = now - p.spawnStartTime;
                     const progress = Math.min(elapsed / p.spawnDuration, 1);
@@ -2448,21 +2462,18 @@
 
         allInBtn.addEventListener('click', () => {
             if (allInConfirming) {
-                // Second click: place the bet with full balance
                 const fullAmount = state.balance;
                 if (fullAmount < 10) {
                     haptic('light');
                     return;
                 }
-                // Fill input and trigger bet
                 betInput.value = fullAmount;
-                betBtn.click(); // simulate click on bet button
+                betBtn.click();
                 allInConfirming = false;
                 allInBtn.textContent = 'All In';
                 if (allInTimeout) clearTimeout(allInTimeout);
                 haptic('medium');
             } else {
-                // First click: ask for confirmation
                 allInConfirming = true;
                 allInBtn.textContent = 'Sure?';
                 if (allInTimeout) clearTimeout(allInTimeout);
@@ -2475,32 +2486,37 @@
         });
 
         // ─── Input handling (allow empty, default to 10 on blur) ──
-        betInput.addEventListener('input', () => {
-            const raw = betInput.value;
-            if (raw === '') {
-                betInput.dataset.empty = 'true';
-                return;
-            }
-            delete betInput.dataset.empty;
-            const val = parseInt(raw);
-            if (!isNaN(val) && val > state.balance) {
-                betInput.value = state.balance;
-            }
-        });
+        function setupInputWithClear(inputEl, defaultVal = 10) {
+            inputEl.addEventListener('input', () => {
+                const raw = inputEl.value;
+                if (raw === '') {
+                    inputEl.dataset.empty = 'true';
+                    return;
+                }
+                delete inputEl.dataset.empty;
+                const val = parseInt(raw);
+                if (!isNaN(val) && val > state.balance) {
+                    inputEl.value = state.balance;
+                }
+            });
 
-        betInput.addEventListener('blur', () => {
-            if (betInput.dataset.empty === 'true' || betInput.value === '') {
-                betInput.value = 10;
-                delete betInput.dataset.empty;
-            }
-            let val = parseInt(betInput.value);
-            if (isNaN(val) || val < 10) val = 10;
-            if (val > state.balance) val = state.balance;
-            betInput.value = val;
-            updateBetUI();
-        });
+            inputEl.addEventListener('blur', () => {
+                if (inputEl.dataset.empty === 'true' || inputEl.value === '') {
+                    inputEl.value = defaultVal;
+                    delete inputEl.dataset.empty;
+                }
+                let val = parseInt(inputEl.value);
+                if (isNaN(val) || val < defaultVal) val = defaultVal;
+                if (val > state.balance) val = state.balance;
+                inputEl.value = val;
+                updateBetUI();
+            });
+        }
 
-        // ─── Auto‑bet logic ──────────────────────────────────────────
+        setupInputWithClear(betInput, 10);
+        setupInputWithClear(autoAmount, 10);
+
+        // ─── Auto‑bet (fix: click on switch label works anytime) ──
         let autoBetInterval = null;
         let autoBetEnabled = false;
 
@@ -2509,19 +2525,15 @@
                 autoBetEnabled = true;
                 autoToggle.classList.add('active');
                 autoToggle.textContent = '▶';
-                // Start interval
                 if (autoBetInterval) clearInterval(autoBetInterval);
                 autoBetInterval = setInterval(() => {
-                    // Only place bet if we are in a state where betting is allowed
-                    const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
+                    const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState ===
+                        'prestart');
                     if (!canBet) return;
                     const existing = getPlayer(state.userId);
-                    // If we are already in the game, skip (or you could increase?)
-                    // For simplicity, we only bet if not already in the round.
                     if (existing) return;
                     const amount = parseInt(autoAmount.value) || 10;
                     if (amount < 10 || amount > state.balance) return;
-                    // Place the bet
                     socket.emit('placeBet', { amount }, (res) => {
                         if (res?.ok) {
                             state.balance = res.balance;
@@ -2530,7 +2542,7 @@
                             haptic('medium');
                         }
                     });
-                }, 2000); // every 2 seconds
+                }, 2000);
             } else if (!enable && autoBetEnabled) {
                 autoBetEnabled = false;
                 autoToggle.classList.remove('active');
@@ -2542,17 +2554,32 @@
             }
         }
 
+        // Click on the toggle button opens/closes the panel
         autoToggle.addEventListener('click', () => {
-            // Toggle panel open/close
             autoPanel.classList.toggle('open');
-            // If the switch is on and we close the panel, keep running
         });
 
+        // Click on the switch wrapper toggles the checkbox (works anytime)
+        autoSwitchWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const checked = !autoSwitch.checked;
+            autoSwitch.checked = checked;
+            toggleAutoBet(checked);
+            haptic('light');
+        });
+
+        // Also listen to the switch change event
         autoSwitch.addEventListener('change', () => {
             toggleAutoBet(autoSwitch.checked);
         });
 
-        // Stop auto-bet when disconnected or round ends? We'll let it run, but it will only bet when allowed.
+        // Stop auto-bet on disconnect (cleanup)
+        socket?.on('disconnect', () => {
+            if (autoBetEnabled) {
+                toggleAutoBet(false);
+                autoSwitch.checked = false;
+            }
+        });
 
         // ═══════════════════════════════════════════════════════════════
         // RENDER
@@ -2670,7 +2697,6 @@
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
 
-                // ─── Check for top rank (gold / silver outline) ───
                 const topInfo = state.topPlayerIds.get(p.id);
                 let borderColor = 'rgba(255,255,255,0.35)';
                 let borderWidth = 1.5;
@@ -2691,7 +2717,6 @@
                     }
                 }
 
-                // ─── Draw circle ──────────────────────────────────
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
@@ -2712,7 +2737,6 @@
                 }
                 ctx.restore();
 
-                // ─── Border ──────────────────────────────────────
                 ctx.save();
                 ctx.shadowBlur = shadowBlur;
                 ctx.shadowColor = shadowColor;
@@ -2774,7 +2798,6 @@
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
-            // Refresh input display without overriding user interaction
             if (!betInput.dataset.empty) {
                 let val = parseInt(betInput.value);
                 if (isNaN(val) || val < 10) val = 10;
