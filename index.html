@@ -1534,9 +1534,7 @@
             overflow: hidden;
             display: none;
         }
-        #ice-timer-progress-wrap.visible {
-            display: block;
-        }
+        #ice-timer-progress-wrap.visible { display: block; }
         #ice-timer-progress {
             height: 100%;
             width: 0%;
@@ -1581,9 +1579,7 @@
             scrollbar-width: none;
             flex-direction: row-reverse;
         }
-        #ice-win-history::-webkit-scrollbar {
-            display: none;
-        }
+        #ice-win-history::-webkit-scrollbar { display: none; }
         #ice-bet-overlay-wrap {
             position: absolute;
             bottom: 12px;
@@ -1648,10 +1644,7 @@
             cursor: pointer;
             white-space: nowrap;
         }
-        #ice-all-in-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
+        #ice-all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
         #ice-bet-btn {
             padding: 8px 0;
             width: 100%;
@@ -1666,15 +1659,8 @@
             box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
             letter-spacing: 0.2px;
         }
-        #ice-bet-btn:active {
-            transform: scale(0.97);
-            opacity: 0.85;
-        }
-        #ice-bet-btn:disabled {
-            opacity: 0.4;
-            transform: none;
-            pointer-events: none;
-        }
+        #ice-bet-btn:active { transform: scale(0.97); opacity: 0.85; }
+        #ice-bet-btn:disabled { opacity: 0.4; transform: none; pointer-events: none; }
         #ice-current-bet-display {
             color: var(--text2);
             font-size: 12px;
@@ -1683,10 +1669,7 @@
             border-top: 1px solid var(--border);
             padding-top: 4px;
         }
-        #ice-current-bet-display span {
-            color: var(--gold);
-            font-weight: 700;
-        }
+        #ice-current-bet-display span { color: var(--gold); font-weight: 700; }
 
         #ice-stats-bar {
             display: flex;
@@ -1702,25 +1685,10 @@
             -webkit-backdrop-filter: blur(8px);
             border-top: 1px solid var(--border);
         }
-        #ice-stats-bar .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        #ice-stats-bar .stat-item .icon {
-            width: 20px;
-            height: 20px;
-            object-fit: contain;
-        }
-        #ice-stats-bar .stat-item .value {
-            color: #fff;
-            font-weight: 700;
-        }
-        #ice-stats-bar .stat-item .label {
-            color: var(--text2);
-            font-size: 12px;
-            margin-right: 2px;
-        }
+        #ice-stats-bar .stat-item { display: flex; align-items: center; gap: 6px; }
+        #ice-stats-bar .stat-item .icon { width: 20px; height: 20px; object-fit: contain; }
+        #ice-stats-bar .stat-item .value { color: #fff; font-weight: 700; }
+        #ice-stats-bar .stat-item .label { color: var(--text2); font-size: 12px; margin-right: 2px; }
 
         #ice-win-panel {
             position: absolute;
@@ -1760,24 +1728,9 @@
             flex-shrink: 0;
             background: var(--surface3);
         }
-        #ice-win-avatar-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #ice-win-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: #5b8def;
-            text-align: center;
-        }
-        #ice-win-multiplier {
-            font-size: 30px;
-            font-weight: 800;
-            color: #fff;
-            text-align: center;
-        }
+        #ice-win-avatar-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #ice-win-name { font-size: 24px; font-weight: 700; color: #5b8def; text-align: center; }
+        #ice-win-multiplier { font-size: 30px; font-weight: 800; color: #fff; text-align: center; }
         #ice-win-continue-btn {
             padding: 10px 0;
             border-radius: 30px;
@@ -1794,10 +1747,7 @@
             text-align: center;
             margin-top: 4px;
         }
-        #ice-win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
+        #ice-win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
 
         @media (max-width:400px) {
             #balance-wrap {
@@ -2047,6 +1997,7 @@
                         </div>
                     </div>
 
+                    <!-- Auto‑bet button (bottom‑right) -->
                     <div id="auto-bet-container" class="auto-bet-container">
                         <button id="auto-bet-toggle" class="auto-bet-toggle">⏱</button>
                         <div id="auto-bet-panel" class="auto-bet-panel">
@@ -2101,6 +2052,7 @@
                         </div>
                     </div>
 
+                    <!-- Auto‑bet button (bottom‑right) -->
                     <div id="ice-auto-bet-container" class="auto-bet-container">
                         <button id="ice-auto-bet-toggle" class="auto-bet-toggle">⏱</button>
                         <div id="ice-auto-bet-panel" class="auto-bet-panel">
@@ -2250,11 +2202,11 @@
             maxHistory: 8,
             topPlayers: [],
             colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
-            topPlayerIds: new Map(),
+            topPlayerIds: new Map(), // id -> { rank }
         };
 
         let SERVER_ARENA_SIZE = 400;
-        const VISUAL_RADIUS_SCALE = 0.75;
+        const VISUAL_RADIUS_SCALE = 0.75; // smaller circles
 
         // DOM refs
         const canvas = document.getElementById('game-canvas');
@@ -2334,19 +2286,21 @@
         const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
         const iceWinHistoryEl = document.getElementById('ice-win-history');
 
+        // Ice auto‑bet elements
         const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
         const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
         const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
         const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
         const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
 
-        // Ice Arena's own state
+        // Ice Arena's own state — separate game, separate room, but shares the same
+        // user/balance/wins/losses since it's the same underlying account.
         const iceState = {
             gameState: 'idle',
-            players: [],
+            players: [],       // { id, name, pfp, pfpImg, bet, color, segStart, segEnd }
             pot: 0,
             arenaSize: 0,
-            perimeterPoints: [],
+            perimeterPoints: [], // the rink's own (slightly-rounded) perimeter — separate from the bump arena's
             cornerRadius: 0,
             countdownStartTime: 0,
             spinStartTime: 0,
@@ -2355,11 +2309,12 @@
             puck: { x: 200, y: 200 },
             winnerId: null,
             winHistory: [],
-            puckRender: { x: 200, y: 200 },
-            puckSpeedEstimate: 0,
-            lastPuckSample: null,
-            finishedAt: 0,
-            perimeterPathCache: null,
+            // ─── smooth rendering / camera state (client-side only) ───
+            puckRender: { x: 200, y: 200 },   // eased/interpolated puck position actually drawn
+            puckSpeedEstimate: 0,             // smoothed server-units/sec, used to trigger the zoom-in
+            lastPuckSample: null,             // { x, y, t } of the previous snapshot, for speed estimation
+            finishedAt: 0,                    // Date.now() when we first saw gameState === 'finished'
+            perimeterPathCache: null,         // cached Path2D so we don't rebuild 300 points every frame
             perimeterPathCacheKey: '',
         };
 
@@ -2488,16 +2443,14 @@
             iceCanvas.style.width = size + 'px';
             iceCanvas.style.height = size + 'px';
             iceState.arenaSize = size;
-            iceState.perimeterPathCache = null;
+            iceState.perimeterPathCache = null; // rebuild at the new scale
             iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-
         function easeOutBack(t) {
             const c1 = 1.70158,
                 c3 = c1 + 1;
@@ -2545,16 +2498,13 @@
 
                     if (Array.isArray(res.recentWinners) && res.recentWinners.length) {
                         state.winHistory = res.recentWinners.slice(0, state.maxHistory).map(w => ({
-                            name: w.name,
-                            pfp: w.pfp,
-                            timestamp: Date.now(),
+                            name: w.name, pfp: w.pfp, timestamp: Date.now(),
                         }));
                         updateWinHistoryUI();
                     }
                     if (Array.isArray(res.iceRecentWinners) && res.iceRecentWinners.length) {
                         iceState.winHistory = res.iceRecentWinners.slice(0, 8).map(w => ({
-                            name: w.name,
-                            pfp: w.pfp,
+                            name: w.name, pfp: w.pfp,
                         }));
                         updateIceWinHistoryUI();
                     }
@@ -2773,7 +2723,7 @@
         winContinueBtn.addEventListener('click', hideWinPanelAndReset);
 
         // ─── ICE ARENA — state application & round end ───────────────
-        const icePfpCache = pfpCache;
+        const icePfpCache = pfpCache; // share the same image cache — pfp URLs are the same person either way
 
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
@@ -2786,8 +2736,7 @@
             const img = new Image();
             let attempts = 0;
             const maxAttempts = 3;
-            img.onload = () => { icePfpCache.set(src, { img, loaded: true });
-                player.pfpImg = img; };
+            img.onload = () => { icePfpCache.set(src, { img, loaded: true }); player.pfpImg = img; };
             img.onerror = () => {
                 attempts++;
                 if (attempts < maxAttempts) {
@@ -2815,12 +2764,13 @@
             const now = Date.now();
 
             if (iceState.gameState === 'sliding') {
+                // Smooth (EMA) speed estimate in server-units/sec, purely so the camera
+                // knows when the puck is "about to stop" — never used for physics.
                 if (prevGameState !== 'sliding' || !iceState.lastPuckSample) {
-                    iceState.puckSpeedEstimate = 11;
+                    iceState.puckSpeedEstimate = 11; // matches the server's launch speed
                 } else {
                     const dt = Math.max(1, now - iceState.lastPuckSample.t) / 1000;
-                    const dist = Math.hypot(snapshot.puck.x - iceState.lastPuckSample.x, snapshot.puck.y - iceState
-                        .lastPuckSample.y);
+                    const dist = Math.hypot(snapshot.puck.x - iceState.lastPuckSample.x, snapshot.puck.y - iceState.lastPuckSample.y);
                     const instSpeed = dist / dt;
                     const alpha = 0.35;
                     iceState.puckSpeedEstimate = iceState.puckSpeedEstimate * (1 - alpha) + instSpeed * alpha;
@@ -2834,6 +2784,9 @@
                 iceState.finishedAt = now;
             }
 
+            // Outside the sliding phase the puck is stationary (center pivot during the
+            // spin, held still after the round ends) — snap straight to it instead of
+            // easing, so a new round never starts by trailing in from last round's spot.
             if (iceState.gameState !== 'sliding') {
                 iceState.puckRender.x = snapshot.puck.x;
                 iceState.puckRender.y = snapshot.puck.y;
@@ -2846,9 +2799,7 @@
                 if (!local) {
                     const colorIdx = iceState.players.length % state.colors.length;
                     local = {
-                        id: sp.id,
-                        name: sp.name,
-                        pfp: sp.pfp,
+                        id: sp.id, name: sp.name, pfp: sp.pfp,
                         pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
                     };
                     iceState.players.push(local);
@@ -2868,8 +2819,7 @@
                 iceTimerWrap.style.display = 'none';
                 iceTimerProgressWrap.classList.remove('visible');
             }
-            iceTimerWrap.style.display = (iceState.gameState === 'countdown' || iceState.gameState === 'spinning') ? 'flex' :
-                iceTimerWrap.style.display;
+            iceTimerWrap.style.display = (iceState.gameState === 'countdown' || iceState.gameState === 'spinning') ? 'flex' : iceTimerWrap.style.display;
             if (iceState.gameState === 'countdown') iceTimerProgressWrap.classList.add('visible');
 
             updateIceStatsBar();
@@ -2879,8 +2829,7 @@
         }
 
         function updateIceBetOverlayVisibility() {
-            const shouldHide = iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState ===
-                'finished';
+            const shouldHide = iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished';
             iceBetOverlayWrap.classList.toggle('hidden', shouldHide);
         }
 
@@ -2961,8 +2910,7 @@
 
         function hideIceWinPanelAndReset() {
             iceWinPanel.classList.remove('show');
-            if (window.iceWinTimeout) { clearTimeout(window.iceWinTimeout);
-                window.iceWinTimeout = null; }
+            if (window.iceWinTimeout) { clearTimeout(window.iceWinTimeout); window.iceWinTimeout = null; }
             iceState.winnerId = null;
             updateIceWaitingText();
             updateIceBetUI();
@@ -3135,6 +3083,7 @@
             haptic('light');
         });
 
+        // ─── All In button (two‑tap, then place bet) ──────────────
         let allInConfirming = false;
         let allInTimeout = null;
 
@@ -3163,6 +3112,7 @@
             }
         });
 
+        // ─── Input handling – fully deletable, no forced updates ──
         function setupInputWithClear(inputEl, defaultVal = 10) {
             inputEl.addEventListener('input', () => {
                 const raw = inputEl.value;
@@ -3171,6 +3121,7 @@
                     return;
                 }
                 delete inputEl.dataset.empty;
+                // Do NOT clamp here – let the user type freely
             });
 
             inputEl.addEventListener('blur', () => {
@@ -3189,6 +3140,7 @@
         setupInputWithClear(betInput, 10);
         setupInputWithClear(autoAmount, 10);
 
+        // ─── Auto‑bet (switch works anytime) ──────────────────────
         let autoBetInterval = null;
         let autoBetEnabled = false;
 
@@ -3242,6 +3194,7 @@
             toggleAutoBet(autoSwitch.checked);
         });
 
+        // ─── Ice auto‑bet (same pattern, targeting the ice rink) ──
         setupInputWithClear(iceAutoAmount, 10);
         let iceAutoBetInterval = null;
         let iceAutoBetEnabled = false;
@@ -3288,6 +3241,7 @@
             toggleIceAutoBet(iceAutoSwitch.checked);
         });
 
+        // ─── updateBetUI – never overwrite user input ─────────────
         function updateBetUI() {
             const existing = getPlayer(state.userId);
             const inGame = !!existing;
@@ -3306,12 +3260,15 @@
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
+            // Only update input value if it's empty or invalid
             if (betInput.dataset.empty === 'true') {
                 betInput.value = 10;
                 delete betInput.dataset.empty;
             }
+            // Otherwise, leave the user's typed value alone.
         }
 
+        // ─── Frog visibility ─────────────────────────────────────────
         function updateFrogVisibility() {
             const alive = getAlive();
             const showFrog = alive.length < 2 && state.gameState === 'idle';
@@ -3319,6 +3276,7 @@
             waitingText.style.display = showFrog ? 'none' : 'block';
         }
 
+        // ─── Win history ──────────────────────────────────────────────
         function addWinToHistory(name, pfp) {
             state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
             if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
@@ -3335,6 +3293,7 @@
             winHistoryEl.innerHTML = html;
         }
 
+        // ─── Top UI ──────────────────────────────────────────────────
         function getPrizeForRank(rank) {
             if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
             if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
@@ -3345,8 +3304,7 @@
 
         function updateTopUI() {
             const players = state.topPlayers;
-            if (players.length === 0) { podiumEl.innerHTML = '';
-                topList.innerHTML = ''; return; }
+            if (players.length === 0) { podiumEl.innerHTML = ''; topList.innerHTML = ''; return; }
 
             const top3 = players.slice(0, 3);
             const podiumOrder = [
@@ -3396,6 +3354,7 @@
             topList.innerHTML = listHtml;
         }
 
+        // ─── Tab switching ──────────────────────────────────────────
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
@@ -3424,6 +3383,7 @@
             });
         });
 
+        // ─── Reload PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
             const user = getPlayer(state.userId);
             if (user) { pfpCache.delete(user.pfp);
@@ -3439,6 +3399,7 @@
             }
         });
 
+        // ─── Anonymous mode ─────────────────────────────────────────
         anonToggle.addEventListener('change', () => {
             if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
             const enabled = anonToggle.checked;
@@ -3455,6 +3416,7 @@
             });
         });
 
+        // ─── Promo ──────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
             const code = promoInput.value.trim().toUpperCase();
             if (!code) {
@@ -3568,6 +3530,7 @@
                 updateProfile();
                 haptic('medium');
             });
+            // Reset input to 10 after placing bet
             betInput.value = 10;
             updateBetUI();
         });
@@ -3701,6 +3664,7 @@
             }
             ctx.restore();
 
+            // ─── Draw players (smaller circles) ──────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
 
@@ -3777,6 +3741,9 @@
 
         const PUCK_RENDER_RADIUS = 10;
 
+        // Camera tuning — when the puck's smoothed speed drops into this range the
+        // view eases in and starts tracking it; below SPEED_ZOOM_END it's basically
+        // stopped. Numbers are in the same server-units/sec as the physics tick.
         const ICE_CAM = {
             speedZoomStart: 3.0,
             speedZoomEnd: 0.15,
@@ -3787,34 +3754,11 @@
 
         let lastIceFrameTs = null;
 
-        function drawIceRing(ctx, x, y, r, color, lineWidth, emphasize) {
-            ctx.save();
-            ctx.shadowColor = emphasize ? 'rgba(255,255,255,0.8)' : 'rgba(180,220,255,0.6)';
-            ctx.shadowBlur = emphasize ? 20 : 12;
-            ctx.strokeStyle = color || '#dcefff';
-            ctx.lineWidth = lineWidth || 5;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            // + crosshair inside (unfilled)
-            const cross = r * 0.42;
-            ctx.strokeStyle = emphasize ? 'rgba(255,255,255,0.95)' : 'rgba(200,225,255,0.7)';
-            ctx.lineWidth = Math.max(2, lineWidth * 0.45);
-            ctx.beginPath();
-            ctx.moveTo(x - cross, y);
-            ctx.lineTo(x + cross, y);
-            ctx.moveTo(x, y - cross);
-            ctx.lineTo(x, y + cross);
-            ctx.stroke();
-            ctx.restore();
-        }
-
-        function drawIceBall(ctx, x, y, r, emphasize) {
-            // Solid ball with glow — used for the sliding puck after launch
+        function drawIceBall(ctx, x, y, r, emphasizeCross) {
             ctx.save();
             ctx.shadowColor = 'rgba(180, 220, 255, 0.85)';
             ctx.shadowBlur = 14;
+
             const grad = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
             grad.addColorStop(0, '#ffffff');
             grad.addColorStop(0.55, '#dcefff');
@@ -3823,21 +3767,28 @@
             ctx.arc(x, y, r, 0, Math.PI * 2);
             ctx.fillStyle = grad;
             ctx.fill();
+
             ctx.shadowBlur = 0;
             ctx.strokeStyle = 'rgba(255,255,255,0.9)';
             ctx.lineWidth = 1.4;
             ctx.stroke();
-            // center marker (tiny cross)
-            const cross = r * 0.3;
-            ctx.strokeStyle = emphasize ? 'rgba(20,40,60,0.75)' : 'rgba(30,50,70,0.35)';
-            ctx.lineWidth = emphasize ? 1.8 : 1.2;
+
+            // crosshair marks the ball's exact center — this is the single point the
+            // server uses to decide the winning strip, so it stays true and visible
+            // even when the ball is resting right on a boundary line. Once the round
+            // is decided it's drawn brighter so it reads clearly under the zoom-in,
+            // proving the win came from this precise spot and not from which color
+            // the ball's edge happens to overlap most (keeps thin, low-bet strips fair).
+            const cross = r * 0.42;
+            ctx.strokeStyle = emphasizeCross ? 'rgba(20,40,60,0.75)' : 'rgba(30,50,70,0.35)';
+            ctx.lineWidth = emphasizeCross ? 1.8 : 1.2;
             ctx.beginPath();
             ctx.moveTo(x - cross, y);
             ctx.lineTo(x + cross, y);
             ctx.moveTo(x, y - cross);
             ctx.lineTo(x, y + cross);
             ctx.stroke();
-            if (emphasize) {
+            if (emphasizeCross) {
                 ctx.fillStyle = 'rgba(20,40,60,0.85)';
                 ctx.beginPath();
                 ctx.arc(x, y, Math.max(1.2, r * 0.06), 0, Math.PI * 2);
@@ -3847,6 +3798,12 @@
         }
 
         function drawIceNeedle(ctx, cx, cy, angle, innerR, outerR) {
+            // Pivots exactly at the ring's center (cx,cy) — like a clock hand, not a
+            // marker travelling around the rim. `angle` is the true direction the ball
+            // will launch in, and the needle points straight along it (tip = outerR,
+            // away from center), so it visibly "aims" rather than just decorating the
+            // rim. innerR keeps a gap around the ball sitting at the pivot so the two
+            // don't visually collide.
             const len = outerR - innerR;
             const headLen = len * 0.34;
             ctx.save();
@@ -3878,6 +3835,11 @@
             const half = w / 2;
             const s = iceScaleFactor();
 
+            // ─── frame-rate independent smoothing of the puck's drawn position ───
+            // The server only broadcasts a new puck sample ~30x/sec; drawing that
+            // raw value directly is what caused the slide to look jittery/laggy.
+            // Here we ease iceState.puckRender toward iceState.puck every animation
+            // frame instead, so motion stays smooth between snapshots and never pops.
             const nowTs = performance.now();
             const frameDt = lastIceFrameTs ? Math.min((nowTs - lastIceFrameTs) / 1000, 0.1) : 0;
             lastIceFrameTs = nowTs;
@@ -3888,18 +3850,23 @@
                 iceState.puckRender.y += (iceState.puck.y - iceState.puckRender.y) * follow;
             }
 
+            iceCtx.clearRect(0, 0, w, w);
+
+            // Clamp to the exact same bounds the server uses in its winner check
+            // (Math.min(Math.max(puck.x,0),ICE_SIZE)) — so the ball, its crosshair,
+            // and the camera focus can never drift a pixel from the coordinate that
+            // actually decided the round, on any strip width.
             const clampedPuckX = Math.min(Math.max(iceState.puckRender.x, 0), SERVER_ARENA_SIZE);
             const clampedPuckY = Math.min(Math.max(iceState.puckRender.y, 0), SERVER_ARENA_SIZE);
 
-            let camZoom = 1,
-                camX = half,
-                camY = half;
+            // ─── camera: zooms in on the puck as it slows to a stop, holds on the
+            // result, then eases back out to the full rink ───
+            let camZoom = 1, camX = half, camY = half;
             const puckCanvasX = clampedPuckX * s;
             const puckCanvasY = clampedPuckY * s;
             if (iceState.gameState === 'sliding') {
                 const speed = iceState.puckSpeedEstimate;
-                const t = Math.min(1, Math.max(0, (ICE_CAM.speedZoomStart - speed) / (ICE_CAM.speedZoomStart - ICE_CAM
-                    .speedZoomEnd)));
+                const t = Math.min(1, Math.max(0, (ICE_CAM.speedZoomStart - speed) / (ICE_CAM.speedZoomStart - ICE_CAM.speedZoomEnd)));
                 const e = easeInOutCubic(t);
                 camZoom = 1 + e * (ICE_CAM.maxZoom - 1);
                 camX = half + (puckCanvasX - half) * e;
@@ -3930,6 +3897,8 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
+            // Perimeter is fixed in server coordinates and only changes on resize —
+            // cache the built Path2D instead of re-walking 300 points every frame.
             const cacheKey = w + ':' + iceState.perimeterPoints.length;
             if (!iceState.perimeterPathCache || iceState.perimeterPathCacheKey !== cacheKey) {
                 const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
@@ -3942,6 +3911,7 @@
             }
             const perimeterPath = iceState.perimeterPathCache;
 
+            // rink base
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -3949,11 +3919,14 @@
             iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
+            // player fields — vertical strips clipped to the rounded square, sized
+            // proportional to each player's bet share of the pot. Filled with a solid
+            // (near-opaque) top-to-bottom gradient of the player's own color so each
+            // field reads as a clean block of color rather than a washed-out tint.
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
-                const x1 = p.segStart * s,
-                    x2 = p.segEnd * s;
+                const x1 = p.segStart * s, x2 = p.segEnd * s;
                 const segW = Math.max(x2 - x1, 0.5);
                 const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
 
@@ -3975,6 +3948,7 @@
                     iceCtx.restore();
                 }
 
+                // divider
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
                 iceCtx.lineWidth = 2;
                 iceCtx.beginPath();
@@ -3982,6 +3956,7 @@
                 iceCtx.lineTo(x2, w);
                 iceCtx.stroke();
 
+                // label (avatar + name/bet) — only if the segment is wide enough
                 const segCenterX = (x1 + x2) / 2;
                 if (segW > 30) {
                     const avatarR = Math.min(segW * 0.32, 18);
@@ -4015,49 +3990,61 @@
             });
             iceCtx.restore();
 
+            // rink border
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
             iceCtx.lineWidth = 4;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── SPIN PHASE: ring + needle ─────────────────────────
+            // center ring (during the "spinning" phase only) — kept as a plain
+            // outline circle with an unfilled "+" inside; nothing rides on its rim.
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
                 const extraSpins = 4;
+                // decelerating from several extra full turns down to the exact final angle
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
                 const ringR = Math.max(w * 0.13, 30);
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(220,235,255,0.85)';
+                iceCtx.lineWidth = 4;
+                iceCtx.beginPath();
+                iceCtx.arc(half, half, ringR, 0, Math.PI * 2);
+                iceCtx.stroke();
+                // "+" crosshair, interior left unfilled
+                iceCtx.lineWidth = 2.5;
+                iceCtx.beginPath();
+                iceCtx.moveTo(half - ringR * 0.35, half);
+                iceCtx.lineTo(half + ringR * 0.35, half);
+                iceCtx.moveTo(half, half - ringR * 0.35);
+                iceCtx.lineTo(half, half + ringR * 0.35);
+                iceCtx.stroke();
+                iceCtx.restore();
 
-                // Wide outline ring with crosshair — the "circle" the user described
-                const ringColor = t >= 1 ? 'rgba(255,215,0,0.9)' : 'rgba(200,225,255,0.85)';
-                const ringWidth = t >= 1 ? 6 : 4.5;
-                drawIceRing(iceCtx, half, half, ringR, ringColor, ringWidth, t >= 1);
-
-                // Needle (arrow) — spins at a distance from center
+                // needle — pivots exactly at the ring's center, points radially in the
+                // real launch direction (not tangent to the ring), tip trailing off
+                // toward the ring but not touching it or the ball at the pivot.
                 if (t < 1) {
                     const ballR = PUCK_RENDER_RADIUS * s;
-                    drawIceNeedle(iceCtx, half, half, angle, ballR * 1.8, ringR * 0.88);
-                }
-
-                // The ball sits at the center during spin — pops up with animation
-                const popDuration = 0.34;
-                const age = (Date.now() - iceState.spinStartTime) / 1000;
-                const popT = Math.min(1, Math.max(0, age / popDuration));
-                const popScale = age >= popDuration ? 1 : Math.max(0, easeOutBack(popT));
-                if (popScale > 0.001) {
-                    const r = PUCK_RENDER_RADIUS * s * popScale;
-                    // During spin, the ball is drawn as a solid ball (it will launch)
-                    drawIceBall(iceCtx, half, half, r, false);
+                    drawIceNeedle(iceCtx, half, half, angle, ballR * 1.6, ringR * 0.92);
                 }
             }
 
-            // ─── SLIDING / FINISHED: puck slides or is stopped ────
-            if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-                const r = PUCK_RENDER_RADIUS * s;
-                const isFinished = iceState.gameState === 'finished';
-                drawIceBall(iceCtx, puckCanvasX, puckCanvasY, r, isFinished);
+            // ─── THE BALL — same object throughout: pops in at the center pivot
+            // when the spin starts, sits still while the arrow orbits, then IS what
+            // launches and slides once the arrow stops and disappears. ───
+            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                const popDuration = 0.32;
+                const age = iceState.spinStartTime ? (Date.now() - iceState.spinStartTime) / 1000 : popDuration;
+                const popT = Math.min(1, Math.max(0, age / popDuration));
+                const popScale = age >= popDuration ? 1 : Math.max(0, easeOutBack(popT));
+
+                if (popScale > 0.001) {
+                    const r = PUCK_RENDER_RADIUS * s * popScale;
+                    drawIceBall(iceCtx, puckCanvasX, puckCanvasY, r, iceState.gameState === 'finished');
+                }
             }
 
             iceCtx.restore(); // camera transform
@@ -4115,8 +4102,7 @@
 
             resizeCanvas();
             resizeIceCanvas();
-            window.addEventListener('resize', () => { resizeCanvas();
-                resizeIceCanvas(); });
+            window.addEventListener('resize', () => { resizeCanvas(); resizeIceCanvas(); });
             Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
