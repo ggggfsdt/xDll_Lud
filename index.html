@@ -2313,6 +2313,13 @@
             puck: { x: 200, y: 200 },
             winnerId: null,
             winHistory: [],
+            // ─── smooth rendering / camera state (client-side only) ───
+            puckRender: { x: 200, y: 200 },   // eased/interpolated puck position actually drawn
+            puckSpeedEstimate: 0,             // smoothed server-units/sec, used to trigger the zoom-in
+            lastPuckSample: null,             // { x, y, t } of the previous snapshot, for speed estimation
+            finishedAt: 0,                    // Date.now() when we first saw gameState === 'finished'
+            perimeterPathCache: null,         // cached Path2D so we don't rebuild 300 points every frame
+            perimeterPathCacheKey: '',
         };
 
         // Auto‑bet elements
@@ -2440,12 +2447,19 @@
             iceCanvas.style.width = size + 'px';
             iceCanvas.style.height = size + 'px';
             iceState.arenaSize = size;
+            iceState.perimeterPathCache = null; // rebuild at the new scale
             iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+        function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+        function easeOutBack(t) {
+            const c1 = 1.70158, c3 = c1 + 1;
+            const x = t - 1;
+            return 1 + c3 * x * x * x + c1 * x * x;
+        }
 
         // ═══════════════════════════════════════════════════════════════
         // NETWORKING
@@ -2749,6 +2763,37 @@
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
+
+            const now = Date.now();
+
+            if (iceState.gameState === 'sliding') {
+                // Smooth (EMA) speed estimate in server-units/sec, purely so the camera
+                // knows when the puck is "about to stop" — never used for physics.
+                if (prevGameState !== 'sliding' || !iceState.lastPuckSample) {
+                    iceState.puckSpeedEstimate = 11; // matches the server's launch speed
+                } else {
+                    const dt = Math.max(1, now - iceState.lastPuckSample.t) / 1000;
+                    const dist = Math.hypot(snapshot.puck.x - iceState.lastPuckSample.x, snapshot.puck.y - iceState.lastPuckSample.y);
+                    const instSpeed = dist / dt;
+                    const alpha = 0.35;
+                    iceState.puckSpeedEstimate = iceState.puckSpeedEstimate * (1 - alpha) + instSpeed * alpha;
+                }
+                iceState.lastPuckSample = { x: snapshot.puck.x, y: snapshot.puck.y, t: now };
+            } else {
+                iceState.lastPuckSample = null;
+            }
+
+            if (iceState.gameState === 'finished' && prevGameState !== 'finished') {
+                iceState.finishedAt = now;
+            }
+
+            // Outside the sliding phase the puck is stationary (center pivot during the
+            // spin, held still after the round ends) — snap straight to it instead of
+            // easing, so a new round never starts by trailing in from last round's spot.
+            if (iceState.gameState !== 'sliding') {
+                iceState.puckRender.x = snapshot.puck.x;
+                iceState.puckRender.y = snapshot.puck.y;
+            }
 
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -3697,6 +3742,53 @@
         // ─── ICE ARENA RENDER ─────────────────────────────────────────
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
+        const PUCK_RENDER_RADIUS = 10;
+
+        // Camera tuning — when the puck's smoothed speed drops into this range the
+        // view eases in and starts tracking it; below SPEED_ZOOM_END it's basically
+        // stopped. Numbers are in the same server-units/sec as the physics tick.
+        const ICE_CAM = {
+            speedZoomStart: 3.0,
+            speedZoomEnd: 0.15,
+            maxZoom: 2.3,
+            finishedHoldMs: 900,
+            finishedZoomOutMs: 750,
+        };
+
+        let lastIceFrameTs = null;
+
+        function drawIceBall(ctx, x, y, r) {
+            ctx.save();
+            ctx.shadowColor = 'rgba(180, 220, 255, 0.85)';
+            ctx.shadowBlur = 14;
+
+            const grad = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.55, '#dcefff');
+            grad.addColorStop(1, '#9fc9ea');
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+
+            // tiny crosshair so it still reads as "the ball" from the original ring motif
+            const cross = r * 0.42;
+            ctx.strokeStyle = 'rgba(30,50,70,0.35)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(x - cross, y);
+            ctx.lineTo(x + cross, y);
+            ctx.moveTo(x, y - cross);
+            ctx.lineTo(x, y + cross);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         function drawIceOrbitArrow(ctx, cx, cy, ringR, angle, size) {
             // Positioned ON the ring (at radius ringR, angle `angle`) instead of pivoting
             // in place at the center — so as `angle` advances over time this reads as an
@@ -3730,7 +3822,55 @@
             if (!w || !iceState.perimeterPoints.length) return;
             const half = w / 2;
             const s = iceScaleFactor();
+
+            // ─── frame-rate independent smoothing of the puck's drawn position ───
+            // The server only broadcasts a new puck sample ~30x/sec; drawing that
+            // raw value directly is what caused the slide to look jittery/laggy.
+            // Here we ease iceState.puckRender toward iceState.puck every animation
+            // frame instead, so motion stays smooth between snapshots and never pops.
+            const nowTs = performance.now();
+            const frameDt = lastIceFrameTs ? Math.min((nowTs - lastIceFrameTs) / 1000, 0.1) : 0;
+            lastIceFrameTs = nowTs;
+            if (iceState.gameState === 'sliding') {
+                const tau = 0.07;
+                const follow = frameDt > 0 ? 1 - Math.exp(-frameDt / tau) : 1;
+                iceState.puckRender.x += (iceState.puck.x - iceState.puckRender.x) * follow;
+                iceState.puckRender.y += (iceState.puck.y - iceState.puckRender.y) * follow;
+            }
+
             iceCtx.clearRect(0, 0, w, w);
+
+            // ─── camera: zooms in on the puck as it slows to a stop, holds on the
+            // result, then eases back out to the full rink ───
+            let camZoom = 1, camX = half, camY = half;
+            const puckCanvasX = iceState.puckRender.x * s;
+            const puckCanvasY = iceState.puckRender.y * s;
+            if (iceState.gameState === 'sliding') {
+                const speed = iceState.puckSpeedEstimate;
+                const t = Math.min(1, Math.max(0, (ICE_CAM.speedZoomStart - speed) / (ICE_CAM.speedZoomStart - ICE_CAM.speedZoomEnd)));
+                const e = easeInOutCubic(t);
+                camZoom = 1 + e * (ICE_CAM.maxZoom - 1);
+                camX = half + (puckCanvasX - half) * e;
+                camY = half + (puckCanvasY - half) * e;
+            } else if (iceState.gameState === 'finished') {
+                const elapsed = Date.now() - (iceState.finishedAt || Date.now());
+                if (elapsed < ICE_CAM.finishedHoldMs) {
+                    camZoom = ICE_CAM.maxZoom;
+                    camX = puckCanvasX;
+                    camY = puckCanvasY;
+                } else {
+                    const p = Math.min(1, (elapsed - ICE_CAM.finishedHoldMs) / ICE_CAM.finishedZoomOutMs);
+                    const e = easeInOutCubic(p);
+                    camZoom = ICE_CAM.maxZoom + (1 - ICE_CAM.maxZoom) * e;
+                    camX = puckCanvasX + (half - puckCanvasX) * e;
+                    camY = puckCanvasY + (half - puckCanvasY) * e;
+                }
+            }
+
+            iceCtx.save();
+            iceCtx.translate(half, half);
+            iceCtx.scale(camZoom, camZoom);
+            iceCtx.translate(-camX, -camY);
 
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(12,16,22,0.85)');
@@ -3738,13 +3878,19 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
-            if (pts.length === 0) return;
-
-            const perimeterPath = new Path2D();
-            perimeterPath.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
-            perimeterPath.closePath();
+            // Perimeter is fixed in server coordinates and only changes on resize —
+            // cache the built Path2D instead of re-walking 300 points every frame.
+            const cacheKey = w + ':' + iceState.perimeterPoints.length;
+            if (!iceState.perimeterPathCache || iceState.perimeterPathCacheKey !== cacheKey) {
+                const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+                const path = new Path2D();
+                path.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) path.lineTo(pts[i].x, pts[i].y);
+                path.closePath();
+                iceState.perimeterPathCache = path;
+                iceState.perimeterPathCacheKey = cacheKey;
+            }
+            const perimeterPath = iceState.perimeterPathCache;
 
             // rink base
             iceCtx.save();
@@ -3860,35 +4006,22 @@
                 if (t < 1) drawIceOrbitArrow(iceCtx, half, half, ringR, angle, Math.max(ringR * 0.85, 22));
             }
 
-            // ─── PUCK: outline circle with crosshair (no fill) ─────
-            if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-                const px = iceState.puck.x * s, py = iceState.puck.y * s;
-                const r = PUCK_RENDER_RADIUS * s;
-                iceCtx.save();
-                iceCtx.shadowColor = 'rgba(180, 220, 255, 0.9)';
-                iceCtx.shadowBlur = 14;
+            // ─── THE BALL — same object throughout: pops in at the center pivot
+            // when the spin starts, sits still while the arrow orbits, then IS what
+            // launches and slides once the arrow stops and disappears. ───
+            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                const popDuration = 0.32;
+                const age = iceState.spinStartTime ? (Date.now() - iceState.spinStartTime) / 1000 : popDuration;
+                const popT = Math.min(1, Math.max(0, age / popDuration));
+                const popScale = age >= popDuration ? 1 : Math.max(0, easeOutBack(popT));
 
-                // Outline circle (no fill)
-                iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.lineWidth = 2.5;
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, r, 0, Math.PI * 2);
-                iceCtx.stroke();
-
-                // Crosshair (plus sign)
-                const crossSize = r * 0.6;
-                iceCtx.lineWidth = 2;
-                iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.shadowBlur = 0;
-                iceCtx.beginPath();
-                iceCtx.moveTo(px - crossSize, py);
-                iceCtx.lineTo(px + crossSize, py);
-                iceCtx.moveTo(px, py - crossSize);
-                iceCtx.lineTo(px, py + crossSize);
-                iceCtx.stroke();
-
-                iceCtx.restore();
+                if (popScale > 0.001) {
+                    const r = PUCK_RENDER_RADIUS * s * popScale;
+                    drawIceBall(iceCtx, puckCanvasX, puckCanvasY, r);
+                }
             }
+
+            iceCtx.restore(); // camera transform
         }
 
         function hexToRgba(hex, alpha) {
@@ -3898,7 +4031,6 @@
             const b = parseInt(hex.slice(5, 7), 16);
             return `rgba(${r},${g},${b},${alpha})`;
         }
-        const PUCK_RENDER_RADIUS = 10;
 
         // ─── UPDATE UI FUNCTIONS ──────────────────────────────────
         function updateProfile() {
