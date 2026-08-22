@@ -120,7 +120,6 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── Speed adjusted for new min/max radii ──────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
@@ -326,7 +325,7 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── FASTER STOP: friction per second 0.75 ────────────────
+    // ─── FASTER STOP: friction per second 0.75 (was 0.90) ────
     const frictionPerSecond = 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
