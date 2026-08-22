@@ -120,7 +120,6 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── Speed adjusted for new min/max radii ──────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
@@ -153,7 +152,7 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — a second, independent game mode.
+// ICE ARENA
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_PERIMETER = PERIMETER;
@@ -162,8 +161,8 @@ const PUCK_RADIUS = 10;
 function createIceRoom(id) {
   return {
     id,
-    gameState: 'idle', // idle -> countdown -> spinning -> sliding -> finished -> idle
-    players: [],        // { id, name, pfp, bet, color, segStart, segEnd }
+    gameState: 'idle',
+    players: [],
     pot: 0,
     countdownStartTime: 0,
     spinStartTime: 0,
@@ -187,7 +186,6 @@ function computeIceSegments() {
     p.segEnd = cursor + width;
     cursor += width;
   });
-  // guard against float drift leaving a sliver gap after the last segment
   iceRoom.players[iceRoom.players.length - 1].segEnd = ICE_SIZE;
 }
 
@@ -212,7 +210,7 @@ function startIceCountdown() {
 function startIceSpin() {
   iceRoom.gameState = 'spinning';
   iceRoom.spinStartTime = Date.now();
-  iceRoom.spinDuration = 3.0 + Math.random() * 1.8; // 3–4.8s of spinning
+  iceRoom.spinDuration = 2.6 + Math.random() * 1.2;
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
@@ -299,7 +297,6 @@ function updateIcePhysics(dt) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // bounce off the rounded-square wall
     for (let i = 0; i < totalPts; i++) {
       const j = (i + 1) % totalPts;
       const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
@@ -327,15 +324,15 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── Longer slide: friction per second 0.92 (was 0.45) ───
-    const frictionPerSecond = 0.92;
+    // Faster stop: friction per second 0.80
+    const frictionPerSecond = 0.80;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (speed < 0.25) endIceGame();
+  if (speed < 0.30) endIceGame();
 }
 
 function broadcastIceState() {
@@ -354,7 +351,7 @@ function broadcastIceState() {
   });
 }
 
-// ─── Radius scaling – min 18, exponent 1.8 ──────────────────
+// ─── Radius scaling for bump arena ──────────────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
