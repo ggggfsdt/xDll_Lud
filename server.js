@@ -150,12 +150,15 @@ const room = createRoom('main');
 function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
+// ─── Radius scaling – exaggerated difference ────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    const r = 18 + ratio * 34;
+    // Use power curve to make small bets much smaller and large bets much larger
+    const adjustedRatio = Math.pow(ratio, 1.5);
+    const r = 18 + adjustedRatio * 34;
     p.targetRadius = Math.min(Math.max(r, 14), 52);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
     p.displayRadius = p.targetRadius;
@@ -541,7 +544,127 @@ io.on('connection', (socket) => {
 // ─────────────────────────────────────────────────────────────
 // ADMIN API (unchanged)
 // ─────────────────────────────────────────────────────────────
-const ADMIN_HTML = `<!DOCTYPE html>...`; // (same as original)
+const ADMIN_HTML = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Admin Panel</title>
+<style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+th,td{padding:8px;border:1px solid #333;text-align:left}
+button{padding:6px 12px;margin:2px;border:none;border-radius:6px;cursor:pointer;background:#4CAF50;color:#fff}
+button.danger{background:#e06060}
+button.warning{background:#f0a030}
+input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff}
+.auth{display:flex;gap:10px;margin-bottom:20px}
+.section{border:1px solid #333;padding:15px;margin-top:15px;border-radius:8px}
+</style></head>
+<body>
+<h2>dllump Admin</h2>
+<div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
+<div id="content" style="display:none">
+  <div class="section">
+    <h3>Players</h3>
+    <button onclick="refreshPlayers()">Refresh Players</button>
+    <div id="players"></div>
+  </div>
+  <div class="section">
+    <h3>Actions</h3>
+    <button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button>
+    <button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button>
+    <button class="danger" onclick="wipeAll()">Wipe All Data</button>
+  </div>
+  <div class="section">
+    <h3>Promo Codes</h3>
+    <p>Generate a new code:</p>
+    <input id="promoAmount" placeholder="Amount" value="100"/>
+    <input id="promoCode" placeholder="Custom code (optional)"/>
+    <input id="promoMaxUses" placeholder="Max uses" value="1"/>
+    <button onclick="generatePromo()">Generate Promo</button>
+    <div id="promoCodes"></div>
+  </div>
+  <div class="section">
+    <h3>Individual Player</h3>
+    <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button>
+    <br/>
+    <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
+    <br/>
+    <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
+  </div>
+</div>
+<script>
+const ADMIN_SECRET = '${ADMIN_SECRET}';
+async function fetchAdmin(path, method='GET', body=null) {
+  const headers = {'admin-secret': document.getElementById('secret').value};
+  if(body) headers['Content-Type'] = 'application/json';
+  const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
+  return res.json();
+}
+function auth(){
+  const secret = document.getElementById('secret').value;
+  if(secret === ADMIN_SECRET) {
+    document.getElementById('content').style.display = 'block';
+    refreshPlayers();
+    refreshPromoCodes();
+  } else alert('Wrong secret');
+}
+async function refreshPlayers(){
+  const data = await fetchAdmin('/players');
+  const players = data.players || [];
+  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
+  players.forEach(p => {
+    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
+    <td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`;
+  });
+  html += '</table>';
+  document.getElementById('players').innerHTML = html;
+}
+async function refreshPromoCodes(){
+  const data = await fetchAdmin('/promo-codes');
+  const codes = data.codes || [];
+  let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
+  codes.forEach(c => {
+    html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td>
+    <td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`;
+  });
+  html += '</table>';
+  document.getElementById('promoCodes').innerHTML = html;
+}
+async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
+async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
+async function wipeAll(){ if(confirm('Wipe ALL player data? This cannot be undone!')){ await fetchAdmin('/wipe', 'POST'); refreshPlayers(); } }
+async function addMoney(){
+  const id = document.getElementById('addUserId').value;
+  const amount = parseInt(document.getElementById('addAmount').value);
+  if(!id || !amount) return;
+  await fetchAdmin('/add-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function setMoney(){
+  const id = document.getElementById('setUserId').value;
+  const amount = parseInt(document.getElementById('setAmount').value);
+  if(!id || isNaN(amount)) return;
+  await fetchAdmin('/set-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function banPlayer(id){
+  const userId = id || document.getElementById('banUserId').value;
+  if(!userId) return;
+  await fetchAdmin('/ban', 'POST', {id: userId});
+  refreshPlayers();
+}
+async function generatePromo(){
+  const amount = parseInt(document.getElementById('promoAmount').value) || 100;
+  const code = document.getElementById('promoCode').value || null;
+  const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1;
+  const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses});
+  if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); }
+  else alert('Error: '+data.error);
+}
+async function deletePromo(code){
+  if(!confirm('Delete promo '+code+'?')) return;
+  await fetchAdmin('/delete-promo', 'POST', {code});
+  refreshPromoCodes();
+}
+</script>
+</body></html>`;
 
 function adminAuth(req, res, next) {
   const secret = req.headers['admin-secret'] || req.query.secret;
@@ -555,7 +678,7 @@ app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
-// Admin endpoints (unchanged) ...
+// Admin API endpoints
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
