@@ -120,7 +120,6 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── Speed adjusted for new min/max radii ──────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
@@ -291,7 +290,7 @@ async function endIceGame() {
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 6;
+  const subSteps = 10; // increased for smoother simulation
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
@@ -326,8 +325,8 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── FASTER STOP: friction per second 0.75 ────────────────
-    const frictionPerSecond = 0.75;
+    // ─── FASTER STOP: friction per second 0.70 ────────────────
+    const frictionPerSecond = 0.70;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
