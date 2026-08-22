@@ -554,8 +554,8 @@
             display: none;
         }
 
-        /* ─── Auto‑bet ─── */
-        #auto-bet-container {
+        /* ─── Auto‑bet (shared by both PvP and Ice tabs) ─── */
+        .auto-bet-container {
             position: absolute;
             bottom: 16px;
             right: 16px;
@@ -565,7 +565,7 @@
             align-items: flex-end;
             gap: 6px;
         }
-        #auto-bet-toggle {
+        .auto-bet-toggle {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -581,16 +581,16 @@
             transition: 0.2s;
             box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
         }
-        #auto-bet-toggle.active {
+        .auto-bet-toggle.active {
             border-color: var(--primary);
             background: var(--primary);
             color: #fff;
             box-shadow: 0 0 24px var(--primary-glow);
         }
-        #auto-bet-toggle:active {
+        .auto-bet-toggle:active {
             transform: scale(0.9);
         }
-        #auto-bet-panel {
+        .auto-bet-panel {
             background: rgba(18, 18, 22, 0.95);
             backdrop-filter: blur(16px);
             border: 1px solid var(--border);
@@ -602,21 +602,21 @@
             gap: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
         }
-        #auto-bet-panel.open {
+        .auto-bet-panel.open {
             display: flex;
         }
-        #auto-bet-panel .row {
+        .auto-bet-panel .row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
         }
-        #auto-bet-panel .row label {
+        .auto-bet-panel .row label {
             font-size: 12px;
             color: var(--text2);
             white-space: nowrap;
         }
-        #auto-bet-panel .row input {
+        .auto-bet-panel .row input {
             width: 70px;
             padding: 4px 6px;
             border-radius: 6px;
@@ -627,22 +627,22 @@
             text-align: center;
             outline: none;
         }
-        #auto-bet-panel .row input:focus {
+        .auto-bet-panel .row input:focus {
             border-color: var(--primary);
         }
-        #auto-bet-panel .switch-sm {
+        .auto-bet-panel .switch-sm {
             position: relative;
             width: 34px;
             height: 18px;
             flex-shrink: 0;
             cursor: pointer;
         }
-        #auto-bet-panel .switch-sm input {
+        .auto-bet-panel .switch-sm input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-        #auto-bet-panel .switch-sm .slider-sm {
+        .auto-bet-panel .switch-sm .slider-sm {
             position: absolute;
             cursor: pointer;
             inset: 0;
@@ -651,7 +651,7 @@
             border-radius: 999px;
             transition: 0.2s;
         }
-        #auto-bet-panel .switch-sm .slider-sm::before {
+        .auto-bet-panel .switch-sm .slider-sm::before {
             content: "";
             position: absolute;
             width: 12px;
@@ -663,10 +663,10 @@
             border-radius: 50%;
             transition: 0.2s;
         }
-        #auto-bet-panel .switch-sm input:checked+.slider-sm {
+        .auto-bet-panel .switch-sm input:checked+.slider-sm {
             background: var(--primary);
         }
-        #auto-bet-panel .switch-sm input:checked+.slider-sm::before {
+        .auto-bet-panel .switch-sm input:checked+.slider-sm::before {
             transform: translateY(-50%) translateX(16px);
         }
 
@@ -1788,12 +1788,12 @@
             #bet-overlay.collapsed {
                 padding: 4px 8px;
             }
-            #auto-bet-toggle {
+            .auto-bet-toggle {
                 width: 34px;
                 height: 34px;
                 font-size: 16px;
             }
-            #auto-bet-panel {
+            .auto-bet-panel {
                 width: 140px;
                 padding: 10px 12px;
             }
@@ -2002,9 +2002,9 @@
                     </div>
 
                     <!-- Auto‑bet button (bottom‑right) -->
-                    <div id="auto-bet-container">
-                        <button id="auto-bet-toggle">⏱</button>
-                        <div id="auto-bet-panel">
+                    <div id="auto-bet-container" class="auto-bet-container">
+                        <button id="auto-bet-toggle" class="auto-bet-toggle">⏱</button>
+                        <div id="auto-bet-panel" class="auto-bet-panel">
                             <div class="row">
                                 <label>Amount</label>
                                 <input type="text" id="auto-bet-amount" placeholder="10" inputmode="numeric" />
@@ -2053,6 +2053,24 @@
                             </div>
                             <button id="ice-bet-btn">join</button>
                             <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Auto‑bet button (bottom‑right) -->
+                    <div id="ice-auto-bet-container" class="auto-bet-container">
+                        <button id="ice-auto-bet-toggle" class="auto-bet-toggle">⏱</button>
+                        <div id="ice-auto-bet-panel" class="auto-bet-panel">
+                            <div class="row">
+                                <label>Amount</label>
+                                <input type="text" id="ice-auto-bet-amount" placeholder="10" inputmode="numeric" />
+                            </div>
+                            <div class="row">
+                                <label>Auto</label>
+                                <div class="switch-sm" id="ice-auto-switch-wrap">
+                                    <input type="checkbox" id="ice-auto-bet-switch" />
+                                    <span class="slider-sm"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2272,6 +2290,13 @@
         const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
         const iceWinHistoryEl = document.getElementById('ice-win-history');
 
+        // Ice auto‑bet elements
+        const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
+        const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
+        const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
+        const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
+        const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
+
         // Ice Arena's own state — separate game, separate room, but shares the same
         // user/balance/wins/losses since it's the same underlying account.
         const iceState = {
@@ -2279,6 +2304,8 @@
             players: [],       // { id, name, pfp, pfpImg, bet, color, segStart, segEnd }
             pot: 0,
             arenaSize: 0,
+            perimeterPoints: [], // the rink's own (slightly-rounded) perimeter — separate from the bump arena's
+            cornerRadius: 0,
             countdownStartTime: 0,
             spinStartTime: 0,
             spinDuration: 0,
@@ -2453,6 +2480,10 @@
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
+                    if (res.iceArena) {
+                        iceState.perimeterPoints = res.iceArena.perimeter;
+                        iceState.cornerRadius = res.iceArena.cornerRadius;
+                    }
 
                     if (Array.isArray(res.recentWinners) && res.recentWinners.length) {
                         state.winHistory = res.recentWinners.slice(0, state.maxHistory).map(w => ({
@@ -3121,6 +3152,53 @@
             toggleAutoBet(autoSwitch.checked);
         });
 
+        // ─── Ice auto‑bet (same pattern, targeting the ice rink) ──
+        setupInputWithClear(iceAutoAmount, 10);
+        let iceAutoBetInterval = null;
+        let iceAutoBetEnabled = false;
+
+        function toggleIceAutoBet(enable) {
+            if (enable && !iceAutoBetEnabled) {
+                iceAutoBetEnabled = true;
+                iceAutoToggle.classList.add('active');
+                iceAutoToggle.textContent = '▶';
+                if (iceAutoBetInterval) clearInterval(iceAutoBetInterval);
+                iceAutoBetInterval = setInterval(() => {
+                    const canBet = (iceState.gameState === 'idle' || iceState.gameState === 'countdown');
+                    if (!canBet) return;
+                    const existing = getIcePlayerLocal(state.userId);
+                    if (existing) return;
+                    const amount = parseInt(iceAutoAmount.value) || 10;
+                    if (amount < 10 || amount > state.balance) return;
+                    placeIceBet(amount);
+                }, 2000);
+            } else if (!enable && iceAutoBetEnabled) {
+                iceAutoBetEnabled = false;
+                iceAutoToggle.classList.remove('active');
+                iceAutoToggle.textContent = '⏱';
+                if (iceAutoBetInterval) {
+                    clearInterval(iceAutoBetInterval);
+                    iceAutoBetInterval = null;
+                }
+            }
+        }
+
+        iceAutoToggle.addEventListener('click', () => {
+            iceAutoPanel.classList.toggle('open');
+        });
+
+        iceAutoSwitchWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const checked = !iceAutoSwitch.checked;
+            iceAutoSwitch.checked = checked;
+            toggleIceAutoBet(checked);
+            haptic('light');
+        });
+
+        iceAutoSwitch.addEventListener('change', () => {
+            toggleIceAutoBet(iceAutoSwitch.checked);
+        });
+
         // ─── updateBetUI – never overwrite user input ─────────────
         function updateBetUI() {
             const existing = getPlayer(state.userId);
@@ -3622,29 +3700,37 @@
         // ice rink is geometrically identical, just used differently.
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
-        function drawIceArrow(ctx, cx, cy, angle, length) {
+        function drawIceOrbitArrow(ctx, cx, cy, ringR, angle, size) {
+            // Positioned ON the ring (at radius ringR, angle `angle`) instead of pivoting
+            // in place at the center — so as `angle` advances over time this reads as an
+            // arrow/marker travelling around the ring, like a roulette ball on the rim,
+            // rather than a compass needle spinning in one spot.
+            const ax = cx + Math.cos(angle) * ringR;
+            const ay = cy + Math.sin(angle) * ringR;
+            const travelDir = angle + Math.PI / 2; // tangent to the ring = direction of travel
             ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(angle);
+            ctx.translate(ax, ay);
+            ctx.rotate(travelDir);
             ctx.beginPath();
-            ctx.moveTo(-length * 0.35, 0);
-            ctx.lineTo(length * 0.55, 0);
-            ctx.lineTo(length * 0.30, -length * 0.18);
-            ctx.moveTo(length * 0.55, 0);
-            ctx.lineTo(length * 0.30, length * 0.18);
-            ctx.strokeStyle = '#e8f4ff';
-            ctx.lineWidth = 4;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.shadowColor = 'rgba(139, 197, 255, 0.8)';
-            ctx.shadowBlur = 10;
+            ctx.moveTo(-size * 0.5, size * 0.42);
+            ctx.lineTo(size * 0.55, 0);
+            ctx.lineTo(-size * 0.5, -size * 0.42);
+            ctx.lineTo(-size * 0.28, 0);
+            ctx.closePath();
+            ctx.fillStyle = '#e8f4ff';
+            ctx.shadowColor = 'rgba(139, 197, 255, 0.9)';
+            ctx.shadowBlur = 16;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(20,40,60,0.4)';
+            ctx.lineWidth = 1;
+            ctx.shadowBlur = 0;
             ctx.stroke();
             ctx.restore();
         }
 
         function renderIce() {
             const w = iceState.arenaSize;
-            if (!w || !state.perimeterPoints.length) return;
+            if (!w || !iceState.perimeterPoints.length) return;
             const half = w / 2;
             const s = iceScaleFactor();
             iceCtx.clearRect(0, 0, w, w);
@@ -3655,7 +3741,7 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
 
             const perimeterPath = new Path2D();
@@ -3672,7 +3758,9 @@
             iceCtx.restore();
 
             // player fields — vertical strips clipped to the rounded square, sized
-            // proportional to each player's bet share of the pot
+            // proportional to each player's bet share of the pot. Filled with a solid
+            // (near-opaque) top-to-bottom gradient of the player's own color so each
+            // field reads as a clean block of color rather than a washed-out tint.
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
@@ -3680,12 +3768,22 @@
                 const segW = Math.max(x2 - x1, 0.5);
                 const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
 
-                iceCtx.fillStyle = hexToRgba(p.color, isWinner ? 0.55 : 0.28);
+                const segGrad = iceCtx.createLinearGradient(0, 0, 0, w);
+                segGrad.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
+                segGrad.addColorStop(1, p.color);
+                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.fillStyle = segGrad;
                 iceCtx.fillRect(x1, 0, segW, w);
+                iceCtx.globalAlpha = 1;
 
                 if (isWinner) {
-                    iceCtx.fillStyle = hexToRgba(p.color, 0.18);
-                    iceCtx.fillRect(x1, 0, segW, w);
+                    iceCtx.save();
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+                    iceCtx.lineWidth = 3;
+                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
+                    iceCtx.shadowBlur = 16;
+                    iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
+                    iceCtx.restore();
                 }
 
                 // divider
@@ -3737,7 +3835,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // center ring + spinning arrow (during the "spinning" phase only)
+            // center ring + orbiting arrow (during the "spinning" phase only)
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -3745,7 +3843,7 @@
                 // decelerating from several extra full turns down to the exact final angle
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
-                const ringR = Math.max(w * 0.09, 22);
+                const ringR = Math.max(w * 0.13, 30);
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(220,235,255,0.85)';
                 iceCtx.lineWidth = 4;
@@ -3762,7 +3860,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                if (t < 1) drawIceArrow(iceCtx, half, half, angle, ringR * 1.5);
+                if (t < 1) drawIceOrbitArrow(iceCtx, half, half, ringR, angle, Math.max(ringR * 0.85, 22));
             }
 
             // puck
