@@ -292,7 +292,6 @@
 </head>
 <body>
     <div id="app">
-        <!-- Top bar -->
         <div id="topbar">
             <div id="balance-wrap">
                 <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
@@ -303,7 +302,6 @@
                 <div id="status-dot"></div>
             </div>
         </div>
-        <!-- Main -->
         <div id="main">
             <!-- PvP Page -->
             <div id="pvp-page" class="tab-page active">
@@ -421,7 +419,6 @@
                 <div id="top-list"></div>
             </div>
         </div>
-        <!-- Tabs -->
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
@@ -429,7 +426,6 @@
             <button class="tab-btn" data-tab="top"><span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
         </div>
     </div>
-    <!-- Promo Modal -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -555,14 +551,32 @@
 
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
-            gameState: 'idle', players: [], pot: 0, arenaSize: 0, perimeterPoints: [], cornerRadius: 0,
-            countdownStartTime: 0, spinStartTime: 0, spinDuration: 0, spinFinalAngle: 0,
-            puck: { x: 200, y: 200 }, winnerId: null, winHistory: [],
-            puckScale: 1, puckPopStart: 0, puckVisible: false,
-            segmentPop: new Map(),
+            gameState: 'idle',
+            players: [],
+            pot: 0,
+            arenaSize: 0,
+            perimeterPoints: [],
+            cornerRadius: 0,
+            countdownStartTime: 0,
+            spinStartTime: 0,
+            spinDuration: 0,
+            spinFinalAngle: 0,
+            puck: { x: 200, y: 200 },
+            winnerId: null,
+            winHistory: [],
+            puckScale: 1,
+            puckPopStart: 0,
+            puckVisible: false,
+            pfpPop: new Map(), // playerId -> { startTime, duration }
             slideStartTime: 0,
-            zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 2.0,
-            isZoomingIn: false, isZoomingOut: false, zoomLocked: false, zoomOutTriggered: false,
+            zoom: 1,
+            zoomTarget: 1,
+            zoomStartTime: 0,
+            zoomDuration: 2.0,
+            isZoomingIn: false,
+            isZoomingOut: false,
+            zoomLocked: false,
+            zoomOutTriggered: false,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -893,7 +907,7 @@
             if(snapshot.gameState==='idle' && prevGameState!=='idle'){
                 iceState.puckVisible=false; iceState.puckScale=1;
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
-                iceState.segmentPop.clear();
+                iceState.pfpPop.clear();
             }
 
             const seen=new Set();
@@ -902,13 +916,14 @@
                 let local=iceState.players.find(p=>p.id===sp.id);
                 if(!local){
                     const colorIdx=iceState.players.length%state.colors.length;
-                    local={ id:sp.id, name:sp.name, pfp:sp.pfp, pfpImg:generateDefaultAvatar(sp.name?sp.name.charAt(0):'?',colorIdx), segStart:sp.segStart, segEnd:sp.segEnd, color:sp.color, bet:sp.bet };
+                    const shape = Math.random() < 0.5 ? 'rect' : 'tri';
+                    local={ id:sp.id, name:sp.name, pfp:sp.pfp, pfpImg:generateDefaultAvatar(sp.name?sp.name.charAt(0):'?',colorIdx), segStart:sp.segStart, segEnd:sp.segEnd, color:sp.color, bet:sp.bet, shape:shape };
                     iceState.players.push(local);
                     loadIcePlayerPFP(local);
-                    iceState.segmentPop.set(sp.id,{startTime:performance.now(),duration:300});
+                    iceState.pfpPop.set(sp.id, { startTime: performance.now(), duration: 400 });
                 } else {
-                    if(Math.abs(local.segStart-sp.segStart)>2 || Math.abs(local.segEnd-sp.segEnd)>2){
-                        iceState.segmentPop.set(sp.id,{startTime:performance.now(),duration:300});
+                    if(Math.abs(local.bet - sp.bet) > 5){
+                        iceState.pfpPop.set(sp.id, { startTime: performance.now(), duration: 400 });
                     }
                     local.segStart=sp.segStart; local.segEnd=sp.segEnd; local.color=sp.color; local.bet=sp.bet;
                 }
@@ -1285,7 +1300,7 @@
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
-        // ─── RENDER ────────────────────────────────────────────────────
+        // ─── RENDER PVP ───────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -1438,77 +1453,115 @@
             iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
+            // ─── SEGMENTS (rect or triangle) ─────────────────────────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
-            iceState.players.forEach(p=>{
-                const x1=p.segStart*s; const x2=p.segEnd*s; let segW=Math.max(x2-x1,0.5);
-                const isWinner=(iceState.gameState==='finished'&&iceState.winnerId===p.id);
-                let scaleX=1;
-                const popData=iceState.segmentPop.get(p.id);
-                if(popData){
-                    const elapsed=(now-popData.startTime)/1000;
-                    const progress=Math.min(elapsed/(popData.duration/1000),1);
-                    if(progress<1){
-                        scaleX=0.9+0.1*easeOutCubic(progress);
-                        const center=(x1+x2)/2; const halfWidth=segW/2*scaleX;
-                        iceCtx.save();
-                        iceCtx.translate(center,half);
-                        iceCtx.scale(scaleX,1);
-                        const drawX1=-halfWidth, drawX2=halfWidth;
-                        const segGrad=iceCtx.createLinearGradient(0,0,0,w);
-                        segGrad.addColorStop(0,lightenColor(p.color,isWinner?70:40));
-                        segGrad.addColorStop(1,p.color);
-                        iceCtx.globalAlpha=isWinner?1:0.93;
-                        iceCtx.fillStyle=segGrad;
-                        iceCtx.fillRect(drawX1,-half,drawX2-drawX1,w);
-                        iceCtx.globalAlpha=1;
-                        if(isWinner){
-                            iceCtx.strokeStyle='rgba(255,255,255,0.85)'; iceCtx.lineWidth=3;
-                            iceCtx.shadowColor=hexToRgba(p.color,0.8); iceCtx.shadowBlur=16;
-                            iceCtx.strokeRect(drawX1+1.5,-half+1.5,(drawX2-drawX1)-3,w-3);
-                        }
-                        iceCtx.restore();
-                    } else {
-                        iceState.segmentPop.delete(p.id);
-                    }
+            iceState.players.forEach(p => {
+                const x1 = p.segStart * s;
+                const x2 = p.segEnd * s;
+                const segW = Math.max(x2 - x1, 0.5);
+                const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
+
+                const grad = iceCtx.createLinearGradient(0, 0, 0, w);
+                grad.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
+                grad.addColorStop(1, p.color);
+                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.fillStyle = grad;
+
+                if (p.shape === 'tri') {
+                    // Triangle: base at bottom, apex at top center
+                    const baseY = w;
+                    const topY = 0;
+                    const apexX = (x1 + x2) / 2;
+                    iceCtx.beginPath();
+                    iceCtx.moveTo(x1, baseY);
+                    iceCtx.lineTo(x2, baseY);
+                    iceCtx.lineTo(apexX, topY);
+                    iceCtx.closePath();
+                    iceCtx.fill();
+                } else {
+                    // Rectangle (full vertical strip)
+                    iceCtx.fillRect(x1, 0, segW, w);
                 }
-                if(!popData || (popData && (now-popData.startTime)/1000 >= popData.duration/1000)){
-                    const segGrad=iceCtx.createLinearGradient(0,0,0,w);
-                    segGrad.addColorStop(0,lightenColor(p.color,isWinner?70:40));
-                    segGrad.addColorStop(1,p.color);
-                    iceCtx.globalAlpha=isWinner?1:0.93;
-                    iceCtx.fillStyle=segGrad;
-                    iceCtx.fillRect(x1,0,segW,w);
-                    iceCtx.globalAlpha=1;
-                    if(isWinner){
-                        iceCtx.save();
-                        iceCtx.strokeStyle='rgba(255,255,255,0.85)'; iceCtx.lineWidth=3;
-                        iceCtx.shadowColor=hexToRgba(p.color,0.8); iceCtx.shadowBlur=16;
-                        iceCtx.strokeRect(x1+1.5,1.5,segW-3,w-3);
-                        iceCtx.restore();
-                    }
-                    iceCtx.strokeStyle='rgba(255,255,255,0.15)'; iceCtx.lineWidth=2;
-                    iceCtx.beginPath(); iceCtx.moveTo(x2,0); iceCtx.lineTo(x2,w); iceCtx.stroke();
-                }
-                const segCenterX=(x1+x2)/2;
-                if(segW>30){
-                    const avatarR=Math.min(segW*0.32,18);
-                    const avatarY=half-14;
+                iceCtx.globalAlpha = 1;
+
+                if (isWinner) {
                     iceCtx.save();
-                    iceCtx.beginPath(); iceCtx.arc(segCenterX,avatarY,avatarR,0,Math.PI*2); iceCtx.closePath(); iceCtx.clip();
-                    if(p.pfpImg&&p.pfpImg.complete&&p.pfpImg.naturalWidth>0){
-                        iceCtx.drawImage(p.pfpImg,segCenterX-avatarR,avatarY-avatarR,avatarR*2,avatarR*2);
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+                    iceCtx.lineWidth = 3;
+                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
+                    iceCtx.shadowBlur = 16;
+                    if (p.shape === 'tri') {
+                        const baseY = w;
+                        const topY = 0;
+                        const apexX = (x1 + x2) / 2;
+                        iceCtx.beginPath();
+                        iceCtx.moveTo(x1, baseY);
+                        iceCtx.lineTo(x2, baseY);
+                        iceCtx.lineTo(apexX, topY);
+                        iceCtx.closePath();
+                        iceCtx.stroke();
                     } else {
-                        iceCtx.fillStyle=p.color||'#555';
-                        iceCtx.fillRect(segCenterX-avatarR,avatarY-avatarR,avatarR*2,avatarR*2);
+                        iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
                     }
                     iceCtx.restore();
-                    iceCtx.strokeStyle='rgba(255,255,255,0.6)'; iceCtx.lineWidth=1.5;
-                    iceCtx.beginPath(); iceCtx.arc(segCenterX,avatarY,avatarR,0,Math.PI*2); iceCtx.stroke();
-                    if(segW>44){
-                        iceCtx.fillStyle='#fff'; iceCtx.font='600 11px system-ui, sans-serif';
-                        iceCtx.textAlign='center'; iceCtx.textBaseline='middle';
-                        iceCtx.fillText(p.bet, segCenterX, avatarY+avatarR+14);
+                }
+
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+                iceCtx.lineWidth = 2;
+                iceCtx.beginPath();
+                iceCtx.moveTo(x2, 0);
+                iceCtx.lineTo(x2, w);
+                iceCtx.stroke();
+
+                // ─── PFP (with pop animation) ──────────────────────
+                const segCenterX = (x1 + x2) / 2;
+                if (segW > 30) {
+                    const avatarR = Math.min(segW * 0.32, 18);
+                    const avatarY = half - 14;
+
+                    let pfpScale = 1;
+                    const popData = iceState.pfpPop.get(p.id);
+                    if (popData) {
+                        const elapsed = (now - popData.startTime) / 1000;
+                        const progress = Math.min(elapsed / (popData.duration / 1000), 1);
+                        if (progress < 1) {
+                            pfpScale = easeOutBack(progress);
+                            pfpScale = Math.min(1.2, Math.max(0, pfpScale));
+                        } else {
+                            iceState.pfpPop.delete(p.id);
+                        }
+                    }
+
+                    const drawR = avatarR * pfpScale;
+                    const cx = segCenterX;
+                    const cy = avatarY;
+
+                    iceCtx.save();
+                    iceCtx.beginPath();
+                    iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
+                    iceCtx.closePath();
+                    iceCtx.clip();
+                    if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                        iceCtx.drawImage(p.pfpImg, cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                    } else {
+                        iceCtx.fillStyle = p.color || '#555';
+                        iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                    }
+                    iceCtx.restore();
+
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+                    iceCtx.lineWidth = 1.5;
+                    iceCtx.beginPath();
+                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
+                    iceCtx.stroke();
+
+                    if (segW > 44) {
+                        iceCtx.fillStyle = '#fff';
+                        iceCtx.font = '600 11px system-ui, sans-serif';
+                        iceCtx.textAlign = 'center';
+                        iceCtx.textBaseline = 'middle';
+                        iceCtx.fillText(p.bet, segCenterX, avatarY + avatarR + 14);
                     }
                 }
             });
@@ -1519,6 +1572,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
+            // ─── SPINNING ARROW ─────────────────────────────────────
             if(iceState.gameState==='spinning' && iceState.spinStartTime){
                 const elapsed=(Date.now()-iceState.spinStartTime)/1000;
                 const t=Math.min(1, elapsed/(iceState.spinDuration||1));
@@ -1537,6 +1591,7 @@
                 iceCtx.restore();
             }
 
+            // ─── PUCK ────────────────────────────────────────────────────
             if(iceState.puckVisible){
                 let scale=1;
                 if(iceState.puckPopStart){
@@ -1561,7 +1616,7 @@
                 iceCtx.moveTo(px,py-crossSize); iceCtx.lineTo(px,py+crossSize); iceCtx.stroke();
                 iceCtx.restore();
             }
-            iceCtx.restore();
+            iceCtx.restore(); // zoom transform
         }
 
         // ─── GAME LOOP ───────────────────────────────────────────────
