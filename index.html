@@ -7,14 +7,13 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── all styles unchanged (same as previous) ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
         #app { display:flex; flex-direction:column; height:100%; max-width:440px; margin:0 auto; background:#08080a; background-image:url('https://i.postimg.cc/ncz4Kznn/photo-5202192649983563686-y.jpg'); background-size:cover; background-position:center; background-repeat:no-repeat; overflow:hidden; position:relative; }
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
-        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px 8px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--border); flex-shrink:0; min-height:52px; z-index:10; gap:8px; }
+        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px 8px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); flex-shrink:0; min-height:52px; z-index:10; gap:8px; }
         #balance-wrap { display:flex; align-items:center; gap:6px; background:var(--surface2); padding:3px 14px 3px 6px; border-radius:28px; border:1px solid var(--border); }
         #diamond-icon { width:26px; height:26px; object-fit:contain; flex-shrink:0; display:block; animation:glowDiamond 2.8s ease-in-out infinite; }
         @keyframes glowDiamond { 0%,100% { filter:drop-shadow(0 0 6px rgba(200,168,78,0.3)); } 50% { filter:drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); } }
@@ -29,7 +28,7 @@
         .tab-page.exit { opacity:0; transform:translateX(-30px); z-index:1; transition:transform 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s; }
         #pvp-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
-        #game-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(76,175,80,0.05); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
+        #game-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(76,175,80,0.05); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
         #frog-gif { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:40%; max-width:160px; aspect-ratio:1/1; object-fit:contain; z-index:1; pointer-events:none; opacity:0.9; display:none; }
         #frog-gif.show { display:block; }
         #timer-wrap { position:absolute; top:14px; right:14px; z-index:4; display:flex; flex-direction:column; align-items:flex-end; gap:3px; pointer-events:none; background:transparent; min-width:50px; }
@@ -87,7 +86,7 @@
         .auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .auto-bet-panel .switch-sm input:checked+.slider-sm { background:var(--primary); }
         .auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
-        #player-list-container { width:100%; max-height:100px; overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:2px; padding:2px 4px 2px 4px; flex-shrink:0; scrollbar-width:thin; transition:max-height 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease; margin-top:0; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+        #player-list-container { width:100%; max-height:100px; overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:2px; padding:2px 4px 2px 4px; flex-shrink:0; scrollbar-width:thin; transition:max-height 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease; margin-top:0; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
         #player-list-container.shift-up { max-height:0 !important; padding:0 !important; border:none !important; overflow:hidden !important; opacity:0 !important; pointer-events:none !important; margin-top:0 !important; }
         #player-list-container::-webkit-scrollbar { width:3px; }
         #player-list-container::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
@@ -98,13 +97,13 @@
         .pl-entry .pl-name { font-weight:600; max-width:60px; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
         .pl-entry .pl-bet { color:var(--gold); font-weight:700; font-size:12px; }
         .pl-entry .pl-chance { color:var(--text2); font-size:10px; margin-left:2px; }
-        #stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-top:1px solid var(--border); margin-top:0; }
+        #stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); margin-top:0; }
         #stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
         #stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
         #stats-bar .stat-item .value { color:#fff; font-weight:700; }
         #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
-        .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
+        .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
         .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
         .profile-name { font-size:20px; font-weight:700; margin-top:2px; }
         .profile-username { font-size:14px; color:var(--text2); }
@@ -136,7 +135,7 @@
         .promo-row button:active { transform:scale(0.94); opacity:0.8; }
         .promo-row button:disabled { opacity:0.5; pointer-events:none; }
         .promo-message { font-size:12px; color:var(--text2); text-align:center; min-height:18px; }
-        #promo-modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.8); width:90%; max-width:380px; background:rgba(20,20,30,0.96); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); border-radius:var(--radius); padding:28px 20px 24px; border:1px solid var(--border); box-shadow:0 20px 80px rgba(0,0,0,0.9); z-index:9999; transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:14px; }
+        #promo-modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.8); width:90%; max-width:380px; background:rgba(20,20,30,0.96); backdrop-filter:blur(24px); border-radius:var(--radius); padding:28px 20px 24px; border:1px solid var(--border); box-shadow:0 20px 80px rgba(0,0,0,0.9); z-index:9999; transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:14px; }
         #promo-modal.show { transform:translate(-50%,-50%) scale(1); opacity:1; pointer-events:auto; }
         #promo-modal .promo-gif { width:70%; max-width:160px; aspect-ratio:1/1; object-fit:contain; border-radius:12px; }
         #promo-modal .promo-msg { font-size:20px; font-weight:700; color:var(--gold); text-align:center; }
@@ -166,7 +165,7 @@
         .podium-col.p2 { transform:translateY(0px); }
         .podium-col.p3 { transform:translateY(6px); }
         #top-list { display:flex; flex-direction:column; gap:4px; max-width:400px; margin:10px auto 0; width:100%; }
-        .top-entry { display:flex; align-items:center; gap:10px; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-radius:12px; padding:6px 14px; border:1px solid var(--border); transition:0.2s; }
+        .top-entry { display:flex; align-items:center; gap:10px; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-radius:12px; padding:6px 14px; border:1px solid var(--border); transition:0.2s; }
         .top-entry .rank { font-size:14px; font-weight:700; color:var(--text2); min-width:28px; text-align:center; }
         .top-entry .rank.gold { color:var(--gold); }
         .top-entry .rank.silver { color:#b8b8c8; }
@@ -177,7 +176,7 @@
         .top-entry .t-score { font-weight:700; color:var(--gold); font-size:13px; white-space:nowrap; }
         .top-entry .t-prize { font-size:11px; color:#fff; white-space:nowrap; display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); padding:1px 8px; border-radius:12px; }
         .top-entry .t-prize img { width:18px; height:18px; object-fit:contain; }
-        #tabs { display:flex; flex-shrink:0; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-top:1px solid var(--border); padding-bottom:var(--safe-bottom); padding-top:2px; z-index:9999 !important; position:relative; pointer-events:auto !important; }
+        #tabs { display:flex; flex-shrink:0; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-top:1px solid var(--border); padding-bottom:var(--safe-bottom); padding-top:2px; z-index:9999 !important; position:relative; pointer-events:auto !important; }
         .tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 0 8px; border:none; background:transparent; color:var(--text2); font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; gap:1px; position:relative; letter-spacing:0.4px; text-transform:uppercase; pointer-events:auto !important; touch-action:manipulation; }
         .tab-btn .tab-icon { font-size:20px; line-height:1.2; transition:0.2s; opacity:0.7; pointer-events:none; }
         .tab-btn.active { color:#ffffff !important; }
@@ -187,7 +186,7 @@
         .tab-icon svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
         .tab-btn.active .tab-icon svg { stroke:#ffffff !important; }
         .no-players-msg { text-align:center; color:var(--text2); padding:40px 0; opacity:0.4; font-size:14px; }
-        #win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; max-height:75vh; overflow-y:auto; }
+        #win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; max-height:75vh; overflow-y:auto; }
         #win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
         #win-gif-container { width:70%; max-width:220px; aspect-ratio:16/9; border-radius:12px; overflow:hidden; flex-shrink:0; background:transparent; border:none; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
         #win-gif-container img { width:100%; height:100%; object-fit:contain; display:block; border-radius:8px; }
@@ -198,11 +197,9 @@
         #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-
-        /* ─── ICE ARENA styles ─────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
-        #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
+        #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
         #ice-timer-wrap { position:absolute; top:16px; right:16px; z-index:3; pointer-events:none; display:none; flex-direction:column; align-items:flex-end; gap:5px; }
         #ice-countdown-timer { font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.8); font-variant-numeric:tabular-nums; letter-spacing:0.5px; line-height:1; }
         #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
@@ -214,7 +211,7 @@
         #ice-win-history::-webkit-scrollbar { display:none; }
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
-        #ice-bet-overlay { background:rgba(26,26,30,0.92); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:14px; padding:10px 16px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.8); }
+        #ice-bet-overlay { background:rgba(26,26,30,0.92); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:14px; padding:10px 16px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.8); }
         .ice-bet-row { display:flex; align-items:center; gap:8px; width:100%; }
         #ice-bet-input { flex:1; min-width:0; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:15px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
         #ice-bet-input:focus { border-color:#5b8def; box-shadow:0 0 20px rgba(91,141,239,0.35); }
@@ -225,12 +222,12 @@
         #ice-bet-btn:disabled { opacity:0.4; transform:none; pointer-events:none; }
         #ice-current-bet-display { color:var(--text2); font-size:12px; width:100%; text-align:center; border-top:1px solid var(--border); padding-top:4px; }
         #ice-current-bet-display span { color:var(--gold); font-weight:700; }
-        #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border-top:1px solid var(--border); }
+        #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
         #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
         #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
         #ice-stats-bar .stat-item .value { color:#fff; font-weight:700; }
         #ice-stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
-        #ice-win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        #ice-win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
         #ice-win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
         #ice-win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid #5b8def; flex-shrink:0; background:var(--surface3); }
         #ice-win-avatar-container img { width:100%; height:100%; object-fit:cover; display:block; }
@@ -238,9 +235,7 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-
         @media (max-width:400px) {
-            /* ─── all responsive styles unchanged ─── */
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
             #diamond-icon { width:22px; height:22px; }
@@ -297,7 +292,7 @@
 </head>
 <body>
     <div id="app">
-        <!-- ─── Top bar ───────────────────────────────────────────── -->
+        <!-- Top bar -->
         <div id="topbar">
             <div id="balance-wrap">
                 <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
@@ -308,7 +303,7 @@
                 <div id="status-dot"></div>
             </div>
         </div>
-
+        <!-- Main -->
         <div id="main">
             <!-- PvP Page -->
             <div id="pvp-page" class="tab-page active">
@@ -321,7 +316,6 @@
                     </div>
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
-
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
                         <div id="win-avatar-container"><img id="win-avatar" src="" alt="winner" /></div>
@@ -331,7 +325,6 @@
                         </div>
                         <button id="win-continue-btn">Continue</button>
                     </div>
-
                     <div id="bet-overlay-wrap">
                         <div id="bet-overlay">
                             <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
@@ -343,34 +336,21 @@
                             <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
                         </div>
                     </div>
-
                     <div id="auto-bet-container" class="auto-bet-container">
                         <button id="auto-bet-toggle" class="auto-bet-toggle">⏱</button>
                         <div id="auto-bet-panel" class="auto-bet-panel">
-                            <div class="row">
-                                <label>Amount</label>
-                                <input type="text" id="auto-bet-amount" placeholder="10" inputmode="numeric" />
-                            </div>
-                            <div class="row">
-                                <label>Auto</label>
-                                <div class="switch-sm" id="auto-switch-wrap">
-                                    <input type="checkbox" id="auto-bet-switch" />
-                                    <span class="slider-sm"></span>
-                                </div>
-                            </div>
+                            <div class="row"><label>Amount</label><input type="text" id="auto-bet-amount" placeholder="10" inputmode="numeric" /></div>
+                            <div class="row"><label>Auto</label><div class="switch-sm" id="auto-switch-wrap"><input type="checkbox" id="auto-bet-switch" /><span class="slider-sm"></span></div></div>
                         </div>
                     </div>
                 </div>
-
                 <div id="player-list-container"></div>
-
                 <div id="stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
                 </div>
             </div>
-
-            <!-- ICE ARENA Page -->
+            <!-- Ice Page -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
@@ -380,14 +360,12 @@
                     </div>
                     <div id="ice-win-history"></div>
                     <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
-
                     <div id="ice-win-panel">
                         <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
                         <div id="ice-win-name">Winner</div>
                         <div id="ice-win-multiplier">x2.5</div>
                         <button id="ice-win-continue-btn">Continue</button>
                     </div>
-
                     <div id="ice-bet-overlay-wrap">
                         <div id="ice-bet-overlay">
                             <div class="ice-bet-row">
@@ -398,31 +376,19 @@
                             <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
                         </div>
                     </div>
-
                     <div id="ice-auto-bet-container" class="auto-bet-container">
                         <button id="ice-auto-bet-toggle" class="auto-bet-toggle">⏱</button>
                         <div id="ice-auto-bet-panel" class="auto-bet-panel">
-                            <div class="row">
-                                <label>Amount</label>
-                                <input type="text" id="ice-auto-bet-amount" placeholder="10" inputmode="numeric" />
-                            </div>
-                            <div class="row">
-                                <label>Auto</label>
-                                <div class="switch-sm" id="ice-auto-switch-wrap">
-                                    <input type="checkbox" id="ice-auto-bet-switch" />
-                                    <span class="slider-sm"></span>
-                                </div>
-                            </div>
+                            <div class="row"><label>Amount</label><input type="text" id="ice-auto-bet-amount" placeholder="10" inputmode="numeric" /></div>
+                            <div class="row"><label>Auto</label><div class="switch-sm" id="ice-auto-switch-wrap"><input type="checkbox" id="ice-auto-bet-switch" /><span class="slider-sm"></span></div></div>
                         </div>
                     </div>
                 </div>
-
                 <div id="ice-stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="ice-stats-players">0</span></div>
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="ice-stats-pot">0</span></div>
                 </div>
             </div>
-
             <!-- Profile Page -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
@@ -438,49 +404,31 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
-
                     <div class="anon-row">
-                        <div class="anon-label">
-                            <span class="anon-title">Anonymous mode</span>
-                            <span class="anon-sub">hide your avatar from other players</span>
-                        </div>
-                        <label class="switch">
-                            <input type="checkbox" id="anon-toggle" />
-                            <span class="slider"></span>
-                        </label>
+                        <div class="anon-label"><span class="anon-title">Anonymous mode</span><span class="anon-sub">hide your avatar from other players</span></div>
+                        <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
                     </div>
-
                     <div class="promo-section">
-                        <div class="promo-row">
-                            <input id="promo-input" placeholder="Enter promo code" maxlength="30" />
-                            <button id="promo-btn">Redeem</button>
-                        </div>
+                        <div class="promo-row"><input id="promo-input" placeholder="Enter promo code" maxlength="30" /><button id="promo-btn">Redeem</button></div>
                         <div class="promo-message" id="promo-message"></div>
                     </div>
-
                     <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">⟳ Reload Avatars</button>
                 </div>
             </div>
-
             <!-- Top Page -->
             <div id="top-page" class="tab-page">
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
         </div>
-
+        <!-- Tabs -->
         <div id="tabs">
-            <button class="tab-btn active" data-tab="pvp">
-                <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
-            <button class="tab-btn" data-tab="ice">
-                <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
-            <button class="tab-btn" data-tab="profile">
-                <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5"/><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20"/></svg></span>Profile</button>
-            <button class="tab-btn" data-tab="top">
-                <span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
+            <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
+            <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
+            <button class="tab-btn" data-tab="profile"><span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5"/><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20"/></svg></span>Profile</button>
+            <button class="tab-btn" data-tab="top"><span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
         </div>
     </div>
-
     <!-- Promo Modal -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
@@ -490,1780 +438,1180 @@
     </div>
 
     <script>
-    // ═══════════════════════════════════════════════════════════════════
-    // FULL CLIENT LOGIC (with smoother zoom, segment pop‑up, and dynamic puck radius)
-    // ═══════════════════════════════════════════════════════════════════
-
-    // ─── CONFIG ──────────────────────────────────────────────────────
-    const SERVER_URL = 'https://dllump-production.up.railway.app';
-    const WIN_GIFS = [
-        'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
-        'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
-        'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
-        'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
-        'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
-        'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
-    ];
-    const PRIZE_GIFS = {
-        first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
-        second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-        third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
-    };
-    const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
-
-    // ─── TELEGRAM ──────────────────────────────────────────────────
-    const tg = window.Telegram?.WebApp;
-    if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
-
-    function haptic(style = 'light') {
-        try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style); else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
-    }
-
-    // ─── STATE ──────────────────────────────────────────────────────
-    const state = {
-        balance: 0,
-        username: 'player',
-        userId: null,
-        pfp: '',
-        wins: 0,
-        losses: 0,
-        anonymous: false,
-        gameState: 'idle',
-        players: [],
-        pot: 0,
-        arenaSize: 0,
-        cornerRadius: 0,
-        perimeterPoints: [],
-        opening: null,
-        countdownStartTime: 0,
-        currentTab: 'pvp',
-        defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-        winHistory: [],
-        maxHistory: 8,
-        topPlayers: [],
-        colors: ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'],
-        topPlayerIds: new Map(),
-    };
-    let SERVER_ARENA_SIZE = 400;
-    const VISUAL_RADIUS_SCALE = 0.75;
-
-    // ─── DOM refs ──────────────────────────────────────────────────
-    const canvas = document.getElementById('game-canvas');
-    const ctx = canvas.getContext('2d');
-    const balanceEl = document.getElementById('balance');
-    const usernameDisplay = document.getElementById('username-display');
-    const statusDot = document.getElementById('status-dot');
-    const waitingText = document.getElementById('waiting-text');
-    const frogGif = document.getElementById('frog-gif');
-    const betOverlayWrap = document.getElementById('bet-overlay-wrap');
-    const betOverlay = document.getElementById('bet-overlay');
-    const betToggleBtn = document.getElementById('bet-toggle-btn');
-    const betInput = document.getElementById('bet-input');
-    const betBtn = document.getElementById('bet-btn');
-    const allInBtn = document.getElementById('all-in-btn');
-    const currentBetDisplay = document.getElementById('current-bet-value');
-    const countdownTimer = document.getElementById('countdown-timer');
-    const timerProgressWrap = document.getElementById('timer-progress-wrap');
-    const timerProgress = document.getElementById('timer-progress');
-    const statsPlayers = document.getElementById('stats-players');
-    const statsPot = document.getElementById('stats-pot');
-    const profilePfp = document.getElementById('profile-pfp');
-    const profileName = document.getElementById('profile-name');
-    const profileUsername = document.getElementById('profile-username');
-    const profileStatus = document.getElementById('profile-status');
-    const pWins = document.getElementById('p-wins');
-    const pLosses = document.getElementById('p-losses');
-    const pWinrate = document.getElementById('p-winrate');
-    const pBalance = document.getElementById('p-balance');
-    const topList = document.getElementById('top-list');
-    const podiumEl = document.getElementById('podium');
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabPages = {
-        pvp: document.getElementById('pvp-page'),
-        ice: document.getElementById('ice-page'),
-        profile: document.getElementById('profile-page'),
-        top: document.getElementById('top-page'),
-    };
-    const winPanel = document.getElementById('win-panel');
-    const winGif = document.getElementById('win-gif');
-    const winAvatar = document.getElementById('win-avatar');
-    const winName = document.getElementById('win-name');
-    const winMultiplier = document.getElementById('win-multiplier');
-    const winContinueBtn = document.getElementById('win-continue-btn');
-    const playerListContainer = document.getElementById('player-list-container');
-    const winHistoryEl = document.getElementById('win-history');
-    const reloadPfpBtn = document.getElementById('reload-pfp-btn');
-    const anonToggle = document.getElementById('anon-toggle');
-    const promoInput = document.getElementById('promo-input');
-    const promoBtn = document.getElementById('promo-btn');
-    const promoMessage = document.getElementById('promo-message');
-    const promoModal = document.getElementById('promo-modal');
-    const promoGif = document.getElementById('promo-gif');
-    const promoMsg = document.getElementById('promo-msg');
-    const promoSub = document.getElementById('promo-sub');
-    const promoContinueBtn = document.getElementById('promo-continue-btn');
-
-    // ─── ICE ARENA DOM refs ────────────────────────────────────────
-    const iceCanvas = document.getElementById('ice-canvas');
-    const iceCtx = iceCanvas.getContext('2d');
-    const iceWaitingText = document.getElementById('ice-waiting-text');
-    const iceBetOverlayWrap = document.getElementById('ice-bet-overlay-wrap');
-    const iceBetInput = document.getElementById('ice-bet-input');
-    const iceBetBtn = document.getElementById('ice-bet-btn');
-    const iceAllInBtn = document.getElementById('ice-all-in-btn');
-    const iceCurrentBetDisplay = document.getElementById('ice-current-bet-value');
-    const iceCountdownTimer = document.getElementById('ice-countdown-timer');
-    const iceTimerWrap = document.getElementById('ice-timer-wrap');
-    const iceTimerProgressWrap = document.getElementById('ice-timer-progress-wrap');
-    const iceTimerProgress = document.getElementById('ice-timer-progress');
-    const iceStatsPlayers = document.getElementById('ice-stats-players');
-    const iceStatsPot = document.getElementById('ice-stats-pot');
-    const iceWinPanel = document.getElementById('ice-win-panel');
-    const iceWinAvatar = document.getElementById('ice-win-avatar');
-    const iceWinName = document.getElementById('ice-win-name');
-    const iceWinMultiplier = document.getElementById('ice-win-multiplier');
-    const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
-    const iceWinHistoryEl = document.getElementById('ice-win-history');
-    const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
-    const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
-    const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
-    const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
-    const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
-
-    // ─── ICE STATE (extended) ─────────────────────────────────────
-    const iceState = {
-        gameState: 'idle',
-        players: [],
-        pot: 0,
-        arenaSize: 0,
-        perimeterPoints: [],
-        cornerRadius: 0,
-        countdownStartTime: 0,
-        spinStartTime: 0,
-        spinDuration: 0,
-        spinFinalAngle: 0,
-        puck: { x: 200, y: 200 },
-        winnerId: null,
-        winHistory: [],
-        // Puck pop animation
-        puckScale: 0,
-        puckPopStart: 0,
-        puckVisible: false,
-        // Segment pop animation per player
-        segmentPop: new Map(), // player.id -> { startTime, duration }
-        // Slide timing for zoom
-        slideStartTime: 0,
-        // Zoom state
-        zoom: 1,
-        zoomTarget: 1,
-        zoomStartTime: 0,
-        zoomDuration: 2.0,
-        isZoomingIn: false,
-        isZoomingOut: false,
-        zoomLocked: false,
-    };
-
-    // Auto‑bet elements (PvP)
-    const autoToggle = document.getElementById('auto-bet-toggle');
-    const autoPanel = document.getElementById('auto-bet-panel');
-    const autoSwitch = document.getElementById('auto-bet-switch');
-    const autoAmount = document.getElementById('auto-bet-amount');
-    const autoSwitchWrap = document.getElementById('auto-switch-wrap');
-
-    // ─── SHARED HELPERS ────────────────────────────────────────────
-    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-    function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-    function easeOutBack(t) {
-        const c1 = 1.70158;
-        const c3 = c1 + 1;
-        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-    function lightenColor(hex, amt) {
-        let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
-        let g = parseInt(hex.slice(2, 3), 16) * 17 || parseInt(hex.slice(3, 5), 16);
-        let b = parseInt(hex.slice(3, 4), 16) * 17 || parseInt(hex.slice(5, 7), 16);
-        r = Math.min(255, r + amt);
-        g = Math.min(255, g + amt);
-        b = Math.min(255, b + amt);
-        return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
-    }
-    function hexToRgba(hex, alpha) {
-        if (!hex) return `rgba(120,120,120,${alpha})`;
-        const r = parseInt(hex.slice(1, 3), 16);
-        const g = parseInt(hex.slice(3, 5), 16);
-        const b = parseInt(hex.slice(5, 7), 16);
-        return `rgba(${r},${g},${b},${alpha})`;
-    }
-    const PUCK_RENDER_BASE_RADIUS = 10;
-
-    // ─── PFP CACHE ──────────────────────────────────────────────────
-    const pfpCache = new Map();
-    function generateDefaultAvatar(initial, colorIndex) {
-        const size = 128;
-        const c = document.createElement('canvas');
-        c.width = size; c.height = size;
-        const ctx2 = c.getContext('2d');
-        const colors = state.colors;
-        const col = colors[colorIndex % colors.length];
-        const grad = ctx2.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-        grad.addColorStop(0, lightenColor(col, 60));
-        grad.addColorStop(1, col);
-        ctx2.beginPath();
-        ctx2.arc(size/2, size/2, size/2 - 2, 0, Math.PI*2);
-        ctx2.fillStyle = grad;
-        ctx2.fill();
-        ctx2.beginPath();
-        ctx2.arc(size/2, size/2, size/2 - 2, 0, Math.PI*2);
-        ctx2.strokeStyle = 'rgba(255,255,255,0.2)';
-        ctx2.lineWidth = 2;
-        ctx2.stroke();
-        const letter = (initial || '?').charAt(0).toUpperCase();
-        ctx2.fillStyle = 'rgba(255,255,255,0.95)';
-        ctx2.font = `bold ${size * 0.48}px system-ui, -apple-system, sans-serif`;
-        ctx2.textAlign = 'center';
-        ctx2.textBaseline = 'middle';
-        ctx2.shadowColor = 'rgba(0,0,0,0.15)';
-        ctx2.shadowBlur = 8;
-        ctx2.fillText(letter, size/2, size/2 + 3);
-        ctx2.shadowBlur = 0;
-        const img = new Image();
-        img.src = c.toDataURL('image/png');
-        return img;
-    }
-
-    function loadPlayerPFP(player) {
-        const src = player.pfp || state.defaultAvatar;
-        if (pfpCache.has(src)) {
-            const cached = pfpCache.get(src);
-            if (cached.loaded && cached.img) { player.pfpImg = cached.img; return; }
-        }
-        const img = new Image();
-        let attempts = 0;
-        const maxAttempts = 3;
-        const doLoad = () => {
-            img.onload = () => {
-                pfpCache.set(src, { img, loaded: true });
-                player.pfpImg = img;
-                updatePlayerList();
-            };
-            img.onerror = () => {
-                attempts++;
-                if (attempts < maxAttempts) {
-                    const sep = src.includes('?') ? '&' : '?';
-                    img.src = src + sep + 'retry=' + attempts + 't=' + Date.now();
-                } else {
-                    pfpCache.set(src, { img: null, loaded: false });
-                }
-            };
-            img.src = src;
-        };
-        pfpCache.set(src, { img: null, loaded: false });
-        doLoad();
-    }
-    const icePfpCache = pfpCache;
-    function loadIcePlayerPFP(player) {
-        const src = player.pfp || state.defaultAvatar;
-        if (icePfpCache.has(src)) {
-            const cached = icePfpCache.get(src);
-            if (cached.loaded && cached.img) { player.pfpImg = cached.img; return; }
-        }
-        const img = new Image();
-        let attempts = 0;
-        const maxAttempts = 3;
-        img.onload = () => { icePfpCache.set(src, { img, loaded: true }); player.pfpImg = img; };
-        img.onerror = () => {
-            attempts++;
-            if (attempts < maxAttempts) {
-                const sep = src.includes('?') ? '&' : '?';
-                img.src = src + sep + 'retry=' + attempts + 't=' + Date.now();
-            } else {
-                icePfpCache.set(src, { img: null, loaded: false });
-            }
-        };
-        icePfpCache.set(src, { img: null, loaded: false });
-        img.src = src;
-    }
-
-    // ─── CANVAS RESIZE ─────────────────────────────────────────────
-    function resizeCanvas() {
-        const rect = canvas.parentElement.getBoundingClientRect();
-        const size = Math.min(rect.width - 16, rect.height - 16, 440);
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = size * dpr;
-        canvas.height = size * dpr;
-        canvas.style.width = size + 'px';
-        canvas.style.height = size + 'px';
-        state.arenaSize = size;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    function resizeIceCanvas() {
-        const rect = iceCanvas.parentElement.getBoundingClientRect();
-        const size = Math.min(rect.width - 16, rect.height - 16, 440);
-        const dpr = window.devicePixelRatio || 1;
-        iceCanvas.width = size * dpr;
-        iceCanvas.height = size * dpr;
-        iceCanvas.style.width = size + 'px';
-        iceCanvas.style.height = size + 'px';
-        iceState.arenaSize = size;
-        iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
-    function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
-
-    // ─── SOCKET ─────────────────────────────────────────────────────
-    const socket = (typeof io !== 'undefined') ? io(SERVER_URL, { transports: ['websocket', 'polling'] }) : null;
-    function setOnline(isOnline) { statusDot.classList.toggle('offline', !isOnline); }
-
-    if (!socket) { console.error('Socket.IO failed to load'); setOnline(false); } else {
-        socket.on('connect', () => {
-            setOnline(true);
-            const initData = tg?.initData || '';
-            socket.emit('join', { initData }, (res) => {
-                if (!res?.ok) {
-                    waitingText.innerHTML = `<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error || 'try reopening the app'}</div>`;
-                    return;
-                }
-                state.userId = res.user.id;
-                state.username = res.user.username;
-                state.pfp = res.user.pfp;
-                state.balance = res.user.balance;
-                state.wins = res.user.wins;
-                state.losses = res.user.losses;
-                state.anonymous = !!res.user.anonymous;
-                anonToggle.checked = state.anonymous;
-                SERVER_ARENA_SIZE = res.arena.size;
-                state.perimeterPoints = res.arena.perimeter;
-                state.cornerRadius = res.arena.cornerRadius;
-                if (res.iceArena) {
-                    iceState.perimeterPoints = res.iceArena.perimeter;
-                    iceState.cornerRadius = res.iceArena.cornerRadius;
-                }
-                if (Array.isArray(res.recentWinners) && res.recentWinners.length) {
-                    state.winHistory = res.recentWinners.slice(0, state.maxHistory).map(w => ({ name: w.name, pfp: w.pfp, timestamp: Date.now() }));
-                    updateWinHistoryUI();
-                }
-                if (Array.isArray(res.iceRecentWinners) && res.iceRecentWinners.length) {
-                    iceState.winHistory = res.iceRecentWinners.slice(0, 8).map(w => ({ name: w.name, pfp: w.pfp }));
-                    updateIceWinHistoryUI();
-                }
-                usernameDisplay.textContent = '@' + state.username;
-                profileName.textContent = state.username;
-                profileUsername.textContent = '@' + state.username;
-                profilePfp.src = state.pfp || state.defaultAvatar;
-                updateBalance();
-                updateProfile();
-                refreshLeaderboard();
-                if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
-                window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
-            });
-        });
-        socket.on('disconnect', () => setOnline(false));
-        socket.on('connect_error', () => setOnline(false));
-        socket.on('state', (snapshot) => { applyServerState(snapshot); });
-        socket.on('roundEnd', (payload) => { handleRoundEnd(payload); });
-        socket.on('iceState', (snapshot) => { applyIceServerState(snapshot); });
-        socket.on('iceRoundEnd', (payload) => { handleIceRoundEnd(payload); });
-    }
-
-    // ─── BUMP HAPTICS ──────────────────────────────────────────────
-    let touchingIds = new Set();
-    function detectBumpsForHaptics() {
-        if (state.gameState !== 'playing') { touchingIds = new Set(); return; }
-        const me = getPlayer(state.userId);
-        if (!me || !me.alive) { touchingIds = new Set(); return; }
-        const nowTouching = new Set();
-        state.players.forEach(p => {
-            if (p.id === me.id || !p.alive) return;
-            const dx = p.x - me.x, dy = p.y - me.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
-            if (dist < minDist) nowTouching.add(p.id);
-        });
-        let isNewBump = false;
-        nowTouching.forEach(id => { if (!touchingIds.has(id)) isNewBump = true; });
-        if (isNewBump) haptic('medium');
-        touchingIds = nowTouching;
-    }
-
-    // ─── PVP STATE APPLICATION ──────────────────────────────────────
-    function applyServerState(snapshot) {
-        const prevGameState = state.gameState;
-        state.gameState = snapshot.gameState;
-        state.pot = snapshot.pot;
-        state.countdownStartTime = snapshot.countdownStartTime;
-        state.opening = snapshot.opening;
-
-        const seen = new Set();
-        const isCountdown = (state.gameState === 'countdown' || state.gameState === 'prestart');
-        snapshot.players.forEach(sp => {
-            seen.add(sp.id);
-            let local = state.players.find(p => p.id === sp.id);
-            if (!local) {
-                const colorIdx = state.players.length % state.colors.length;
-                local = {
-                    id: sp.id,
-                    name: sp.name,
-                    pfp: sp.pfp,
-                    pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
-                    isPopping: true,
-                    popStartTime: performance.now(),
-                    popDuration: 550,
-                    isPulsing: false,
-                    pulseTime: 0,
-                    pulseStartTime: 0,
-                    homeX: sp.x,
-                    homeY: sp.y,
-                    spawnStartX: sp.x + (Math.random() - 0.5) * 80,
-                    spawnStartY: sp.y + (Math.random() - 0.5) * 80,
-                    spawnProgress: 0,
-                    isSpawning: true,
-                    spawnStartTime: performance.now(),
-                    spawnDuration: 2000,
-                    x: sp.x,
-                    y: sp.y,
-                };
-                state.players.push(local);
-                loadPlayerPFP(local);
-            } else {
-                local.homeX = sp.x;
-                local.homeY = sp.y;
-                if (isCountdown) {
-                    if (!local.isSpawning) {
-                        local.spawnStartX = local.x;
-                        local.spawnStartY = local.y;
-                        local.spawnStartTime = performance.now();
-                        local.spawnDuration = 2000;
-                        local.isSpawning = true;
-                        local.spawnProgress = 0;
-                    }
-                } else {
-                    if (!local.isSpawning) {
-                        local.x = sp.x;
-                        local.y = sp.y;
-                    }
-                }
-                if (sp.bet > local.bet) {
-                    local.isPulsing = true;
-                    local.pulseStartTime = performance.now();
-                    local.pulseTime = 0;
-                }
-            }
-            local.name = sp.name;
-            local.bet = sp.bet;
-            local.color = sp.color;
-            local.displayRadius = sp.displayRadius;
-            local.alive = sp.alive;
-        });
-        state.players = state.players.filter(p => seen.has(p.id));
-
-        if (state.gameState === 'playing' || state.gameState === 'finished') {
-            state.players.forEach(p => {
-                p.isSpawning = false;
-                p.x = p.homeX;
-                p.y = p.homeY;
-            });
-        }
-        detectBumpsForHaptics();
-
-        if (prevGameState !== 'idle' && state.gameState === 'idle') {
-            waitingText.style.display = 'block';
-            countdownTimer.style.display = 'none';
-            timerProgressWrap.classList.remove('visible');
-        }
-        if (state.gameState === 'countdown') {
-            countdownTimer.style.display = 'block';
-            timerProgressWrap.classList.add('visible');
-        }
-        if (state.gameState === 'playing' || state.gameState === 'finished') {
-            countdownTimer.style.display = state.gameState === 'countdown' ? 'block' : countdownTimer.style.display;
-            if (state.gameState === 'playing') timerProgressWrap.classList.remove('visible');
-        }
-        updateStatsBar();
-        updateBetUI();
-        updateWaitingText();
-        updateBetOverlayVisibility();
-        updatePlayerList();
-        updateFrogVisibility();
-    }
-
-    // ─── WIN SCREEN (PvP) ─────────────────────────────────────────
-    function handleRoundEnd(payload) {
-        if (!payload) { hideWinPanelAndReset(); return; }
-        addWinToHistory(payload.winnerName, payload.winnerPfp);
-        refreshLeaderboard();
-        if (payload.winnerId === state.userId) {
-            state.balance += payload.winnings;
-            state.wins++;
-            playVictorySound();
-        } else {
-            state.losses++;
-        }
-        updateBalance();
-        updateProfile();
-        const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-        winGif.src = randomGif;
-        winAvatar.src = payload.winnerPfp || state.defaultAvatar;
-        winName.textContent = payload.winnerName + ' wins!';
-        winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
-        winPanel.classList.add('show');
-        haptic('heavy');
-        countdownTimer.style.display = 'none';
-        timerProgressWrap.classList.remove('visible');
-        waitingText.style.display = 'none';
-        if (window.winTimeout) clearTimeout(window.winTimeout);
-        window.winTimeout = setTimeout(hideWinPanelAndReset, 5000);
-    }
-    function hideWinPanelAndReset() {
-        winPanel.classList.remove('show');
-        stopVictorySound();
-        if (window.winTimeout) { clearTimeout(window.winTimeout); window.winTimeout = null; }
-        waitingText.style.display = 'block';
-        countdownTimer.style.display = 'none';
-        timerProgressWrap.classList.remove('visible');
-        updateWaitingText();
-        updateBetUI();
-        updateStatsBar();
-        updateBetOverlayVisibility();
-        updateFrogVisibility();
-    }
-    winContinueBtn.addEventListener('click', hideWinPanelAndReset);
-
-    // ─── ICE ARENA ──────────────────────────────────────────────────
-    function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
-
-    function applyIceServerState(snapshot) {
-        const prevGameState = iceState.gameState;
-        iceState.gameState = snapshot.gameState;
-        iceState.pot = snapshot.pot;
-        iceState.countdownStartTime = snapshot.countdownStartTime;
-        iceState.spinStartTime = snapshot.spinStartTime;
-        iceState.spinDuration = snapshot.spinDuration;
-        iceState.spinFinalAngle = snapshot.spinFinalAngle;
-        iceState.puck.x = snapshot.puck.x;
-        iceState.puck.y = snapshot.puck.y;
-
-        // When spinning starts: show puck with pop animation
-        if (snapshot.gameState === 'spinning' && prevGameState !== 'spinning') {
-            iceState.puckVisible = true;
-            iceState.puckPopStart = performance.now();
-            iceState.puckScale = 0;
-            // reset zoom state
-            iceState.zoom = 1;
-            iceState.isZoomingIn = false;
-            iceState.isZoomingOut = false;
-            iceState.zoomLocked = false;
-        }
-
-        // When sliding starts: record launch time and reset zoom state
-        if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
-            iceState.slideStartTime = performance.now();
-            iceState.zoom = 1;
-            iceState.isZoomingIn = false;
-            iceState.isZoomingOut = false;
-            iceState.zoomLocked = false;
-        }
-
-        // When round ends (finished): start zoom out after a short delay
-        if (snapshot.gameState === 'finished' && prevGameState !== 'finished') {
-            if (iceState.zoom > 1.1) {
-                // Start zoom out after 0.5s to let the win panel appear first
-                setTimeout(() => {
-                    iceState.isZoomingOut = true;
-                    iceState.isZoomingIn = false;
-                    iceState.zoomStartTime = performance.now();
-                    iceState.zoomTarget = 1;
-                }, 500);
-            }
-        }
-
-        // When game resets to idle: reset zoom fully
-        if (snapshot.gameState === 'idle' && prevGameState !== 'idle') {
-            iceState.puckVisible = false;
-            iceState.puckScale = 0;
-            iceState.zoom = 1;
-            iceState.isZoomingIn = false;
-            iceState.isZoomingOut = false;
-            iceState.zoomLocked = false;
-        }
-
-        // Update players and trigger segment pop animation for new players
-        const seen = new Set();
-        snapshot.players.forEach(sp => {
-            seen.add(sp.id);
-            let local = getIcePlayerLocal(sp.id);
-            if (!local) {
-                const colorIdx = iceState.players.length % state.colors.length;
-                local = {
-                    id: sp.id, name: sp.name, pfp: sp.pfp,
-                    pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
-                    segStart: sp.segStart,
-                    segEnd: sp.segEnd,
-                    color: sp.color,
-                    bet: sp.bet,
-                };
-                iceState.players.push(local);
-                loadIcePlayerPFP(local);
-                // Start pop animation for this new player
-                iceState.segmentPop.set(sp.id, { startTime: performance.now(), duration: 600 });
-            } else {
-                local.segStart = sp.segStart;
-                local.segEnd = sp.segEnd;
-                local.color = sp.color;
-                local.bet = sp.bet;
-                // If segment bounds changed significantly, restart pop
-                if (Math.abs(local.segStart - sp.segStart) > 5 || Math.abs(local.segEnd - sp.segEnd) > 5) {
-                    iceState.segmentPop.set(sp.id, { startTime: performance.now(), duration: 400 });
-                }
-            }
-            local.name = sp.name;
-        });
-        iceState.players = iceState.players.filter(p => seen.has(p.id));
-
-        if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
-            iceState.winnerId = null;
-            iceWaitingText.style.display = 'block';
-            iceTimerWrap.style.display = 'none';
-            iceTimerProgressWrap.classList.remove('visible');
-        }
-        iceTimerWrap.style.display = (iceState.gameState === 'countdown' || iceState.gameState === 'spinning') ? 'flex' : iceTimerWrap.style.display;
-        if (iceState.gameState === 'countdown') iceTimerProgressWrap.classList.add('visible');
-
-        updateIceStatsBar();
-        updateIceBetUI();
-        updateIceWaitingText();
-        updateIceBetOverlayVisibility();
-    }
-
-    function updateIceBetOverlayVisibility() {
-        const shouldHide = iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished';
-        iceBetOverlayWrap.classList.toggle('hidden', shouldHide);
-    }
-    function updateIceStatsBar() {
-        iceStatsPlayers.textContent = iceState.players.length;
-        iceStatsPot.textContent = iceState.pot;
-    }
-    function updateIceWaitingText() {
-        const n = iceState.players.length;
-        if (n === 0) {
-            iceWaitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to claim the rink</div>';
-            iceWaitingText.style.display = 'block';
-        } else if (iceState.gameState === 'idle' || iceState.gameState === 'countdown') {
-            iceWaitingText.innerHTML = `<span>● ${n} player${n > 1 ? 's' : ''} on the rink</span>`;
-            iceWaitingText.style.display = 'block';
-        } else {
-            iceWaitingText.style.display = 'none';
-        }
-    }
-    function updateIceBetUI() {
-        const existing = getIcePlayerLocal(state.userId);
-        const inGame = !!existing;
-        const canBet = (iceState.gameState === 'idle' || iceState.gameState === 'countdown');
-        iceBetBtn.textContent = canBet ? (inGame ? 'increase' : 'join') : (inGame ? 'in game' : 'waiting');
-        iceBetBtn.disabled = !canBet;
-        iceBetInput.disabled = !canBet;
-        iceAllInBtn.disabled = !canBet;
-        iceCurrentBetDisplay.textContent = existing ? existing.bet : '0';
-    }
-    function addIceWinToHistory(name, pfp) {
-        iceState.winHistory.unshift({ name, pfp });
-        if (iceState.winHistory.length > 8) iceState.winHistory.pop();
-        updateIceWinHistoryUI();
-    }
-    function updateIceWinHistoryUI() {
-        if (iceState.winHistory.length === 0) { iceWinHistoryEl.innerHTML = ''; return; }
-        let html = '';
-        iceState.winHistory.forEach(entry => {
-            const avatarSrc = entry.pfp || state.defaultAvatar;
-            html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-        });
-        iceWinHistoryEl.innerHTML = html;
-    }
-    function handleIceRoundEnd(payload) {
-        if (!payload) { hideIceWinPanelAndReset(); return; }
-        iceState.winnerId = payload.winnerId;
-        addIceWinToHistory(payload.winnerName, payload.winnerPfp);
-        refreshLeaderboard();
-        if (payload.winnerId === state.userId) {
-            state.balance += payload.winnings;
-            state.wins++;
-            playVictorySound();
-        } else {
-            state.losses++;
-        }
-        updateBalance();
-        updateProfile();
-        iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
-        iceWinName.textContent = payload.winnerName + ' wins the rink!';
-        iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
-        iceWinPanel.classList.add('show');
-        haptic('heavy');
-        iceTimerWrap.style.display = 'none';
-        iceTimerProgressWrap.classList.remove('visible');
-        if (window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
-        window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
-    }
-    function hideIceWinPanelAndReset() {
-        iceWinPanel.classList.remove('show');
-        if (window.iceWinTimeout) { clearTimeout(window.iceWinTimeout); window.iceWinTimeout = null; }
-        iceState.winnerId = null;
-        updateIceWaitingText();
-        updateIceBetUI();
-        updateIceStatsBar();
-        updateIceBetOverlayVisibility();
-    }
-    iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
-
-    // ─── LEADERBOARD ──────────────────────────────────────────────
-    function refreshLeaderboard() {
-        if (!socket) return;
-        socket.emit('leaderboard', {}, (res) => {
-            if (!res?.ok) return;
-            state.topPlayers = res.top.map((u, i) => ({
-                id: u.id,
-                name: u.username,
-                pfp: u.pfp || state.defaultAvatar,
-                wins: u.wins,
-                score: u.balance,
-                rank: i + 1,
-            }));
-            state.topPlayerIds.clear();
-            state.topPlayers.forEach(p => { state.topPlayerIds.set(p.id, { rank: p.rank }); });
-            updateTopUI();
-        });
-    }
-
-    // ─── HELPERS (PvP) ─────────────────────────────────────────────
-    function getAlive() { return state.players.filter(p => p.alive); }
-    function getPlayer(id) { return state.players.find(p => p.id === id); }
-
-    function updatePlayerList() {
-        const alive = getAlive();
-        const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
-        if (alive.length === 0) { playerListContainer.innerHTML = ''; return; }
-        let html = '';
-        alive.forEach(p => {
-            const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
-            const isYou = p.id === state.userId;
-            const topInfo = state.topPlayerIds.get(p.id);
-            let crown = '';
-            if (topInfo) {
-                if (topInfo.rank === 1) crown = '👑';
-                else if (topInfo.rank === 2) crown = '👑';
-            }
-            html += `<div class="pl-entry ${isYou ? 'you' : ''}">
-                        <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                        <span class="pl-name">${crown} ${p.name}</span>
-                        <span class="pl-bet">${p.bet}</span>
-                        <span class="pl-chance">${chance}%</span>
-                    </div>`;
-        });
-        playerListContainer.innerHTML = html;
-    }
-
-    function updateBetOverlayVisibility() {
-        const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
-        betOverlayWrap.classList.toggle('hidden', shouldHide);
-        playerListContainer.classList.toggle('shift-up', shouldHide);
-    }
-
-    function easePopBounce(t) {
-        if (t >= 1) return 1;
-        const c1 = 1.70158, c3 = c1 + 1;
-        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-    function getPopScale(player) {
-        if (!player.isPopping) return 1;
-        const elapsed = performance.now() - player.popStartTime;
-        const progress = Math.min(elapsed / player.popDuration, 1);
-        if (progress >= 1) { player.isPopping = false; return 1; }
-        return easePopBounce(progress);
-    }
-    function updatePlayerAnimations() {
-        const now = performance.now();
-        state.players.forEach(p => {
-            if (p.isPulsing) {
-                const elapsed = (now - p.pulseStartTime) / 1000;
-                if (elapsed > 0.6) { p.isPulsing = false; p.pulseTime = 0; } else p.pulseTime = elapsed;
-            }
-            if (p.isSpawning && p.homeX !== undefined) {
-                const elapsed = now - p.spawnStartTime;
-                const progress = Math.min(elapsed / p.spawnDuration, 1);
-                const eased = easeOutCubic(progress);
-                p.x = p.spawnStartX + (p.homeX - p.spawnStartX) * eased;
-                p.y = p.spawnStartY + (p.homeY - p.spawnStartY) * eased;
-                p.spawnProgress = eased;
-                if (progress >= 1) {
-                    p.isSpawning = false;
-                    p.x = p.homeX;
-                    p.y = p.homeY;
-                }
-            }
-        });
-    }
-
-    let balanceAnimInterval = null;
-    function animateBalanceTo(target) {
-        const current = parseInt(balanceEl.textContent) || 0;
-        if (current === target) { balanceEl.textContent = target; return; }
-        const diff = target - current;
-        const steps = Math.min(Math.abs(diff), 40);
-        const stepSize = diff / steps;
-        let step = 0;
-        if (balanceAnimInterval) { clearInterval(balanceAnimInterval); balanceAnimInterval = null; }
-        balanceAnimInterval = setInterval(() => {
-            step++;
-            const newVal = Math.round(current + stepSize * step);
-            if (step >= steps || Math.abs(newVal - target) < 1) {
-                balanceEl.textContent = target;
-                clearInterval(balanceAnimInterval);
-                balanceAnimInterval = null;
-            } else balanceEl.textContent = newVal;
-        }, 25);
-    }
-    function updateBalance() {
-        const target = Math.floor(state.balance);
-        pBalance.textContent = target;
-        animateBalanceTo(target);
-    }
-
-    let audioCtx = null, victorySoundPlaying = false;
-    function playVictorySound() {
-        try {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (victorySoundPlaying) return;
-            victorySoundPlaying = true;
-            const now = audioCtx.currentTime;
-            const notes = [523.25, 659.25, 783.99];
-            const startTimes = [0, 0.08, 0.16];
-            const durations = [0.3, 0.3, 0.5];
-            for (let i = 0; i < notes.length; i++) {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.value = notes[i];
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.18, now + startTimes[i]);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[i] + durations[i]);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(now + startTimes[i]);
-                osc.stop(now + startTimes[i] + durations[i]);
-            }
-            setTimeout(() => { victorySoundPlaying = false; }, 800);
-        } catch (e) { victorySoundPlaying = false; }
-    }
-    function stopVictorySound() { victorySoundPlaying = false; }
-
-    let betCollapsed = false;
-    betToggleBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        betCollapsed = !betCollapsed;
-        betOverlay.classList.toggle('collapsed', betCollapsed);
-        haptic('light');
-    });
-
-    let allInConfirming = false, allInTimeout = null;
-    allInBtn.addEventListener('click', () => {
-        if (allInConfirming) {
-            const fullAmount = state.balance;
-            if (fullAmount < 10) { haptic('light'); return; }
-            betInput.value = fullAmount;
-            betBtn.click();
-            allInConfirming = false;
-            allInBtn.textContent = 'All In';
-            if (allInTimeout) clearTimeout(allInTimeout);
-            haptic('medium');
-        } else {
-            allInConfirming = true;
-            allInBtn.textContent = 'Sure?';
-            if (allInTimeout) clearTimeout(allInTimeout);
-            allInTimeout = setTimeout(() => {
-                allInConfirming = false;
-                allInBtn.textContent = 'All In';
-            }, 2000);
-            haptic('light');
-        }
-    });
-
-    function setupInputWithClear(inputEl, defaultVal = 10) {
-        inputEl.addEventListener('input', () => {
-            const raw = inputEl.value;
-            if (raw === '') { inputEl.dataset.empty = 'true'; return; }
-            delete inputEl.dataset.empty;
-        });
-        inputEl.addEventListener('blur', () => {
-            if (inputEl.dataset.empty === 'true' || inputEl.value === '') {
-                inputEl.value = defaultVal;
-                delete inputEl.dataset.empty;
-            }
-            let val = parseInt(inputEl.value);
-            if (isNaN(val) || val < defaultVal) val = defaultVal;
-            if (val > state.balance) val = state.balance;
-            inputEl.value = val;
-            updateBetUI();
-        });
-    }
-    setupInputWithClear(betInput, 10);
-    setupInputWithClear(autoAmount, 10);
-    setupInputWithClear(iceAutoAmount, 10);
-
-    // ─── AUTO‑BET (PvP) ──────────────────────────────────────────
-    let autoBetInterval = null, autoBetEnabled = false;
-    function toggleAutoBet(enable) {
-        if (enable && !autoBetEnabled) {
-            autoBetEnabled = true;
-            autoToggle.classList.add('active');
-            autoToggle.textContent = '▶';
-            if (autoBetInterval) clearInterval(autoBetInterval);
-            autoBetInterval = setInterval(() => {
-                const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
-                if (!canBet) return;
-                const existing = getPlayer(state.userId);
-                if (existing) return;
-                const amount = parseInt(autoAmount.value) || 10;
-                if (amount < 10 || amount > state.balance) return;
-                socket.emit('placeBet', { amount }, (res) => {
-                    if (res?.ok) {
-                        state.balance = res.balance;
-                        updateBalance();
-                        updateProfile();
-                        haptic('medium');
-                    }
-                });
-            }, 2000);
-        } else if (!enable && autoBetEnabled) {
-            autoBetEnabled = false;
-            autoToggle.classList.remove('active');
-            autoToggle.textContent = '⏱';
-            if (autoBetInterval) { clearInterval(autoBetInterval); autoBetInterval = null; }
-        }
-    }
-    autoToggle.addEventListener('click', () => { autoPanel.classList.toggle('open'); });
-    autoSwitchWrap.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const checked = !autoSwitch.checked;
-        autoSwitch.checked = checked;
-        toggleAutoBet(checked);
-        haptic('light');
-    });
-    autoSwitch.addEventListener('change', () => { toggleAutoBet(autoSwitch.checked); });
-
-    // ─── AUTO‑BET (ICE) ──────────────────────────────────────────
-    let iceAutoBetInterval = null, iceAutoBetEnabled = false;
-    function toggleIceAutoBet(enable) {
-        if (enable && !iceAutoBetEnabled) {
-            iceAutoBetEnabled = true;
-            iceAutoToggle.classList.add('active');
-            iceAutoToggle.textContent = '▶';
-            if (iceAutoBetInterval) clearInterval(iceAutoBetInterval);
-            iceAutoBetInterval = setInterval(() => {
-                const canBet = (iceState.gameState === 'idle' || iceState.gameState === 'countdown');
-                if (!canBet) return;
-                const existing = getIcePlayerLocal(state.userId);
-                if (existing) return;
-                const amount = parseInt(iceAutoAmount.value) || 10;
-                if (amount < 10 || amount > state.balance) return;
-                placeIceBet(amount);
-            }, 2000);
-        } else if (!enable && iceAutoBetEnabled) {
-            iceAutoBetEnabled = false;
-            iceAutoToggle.classList.remove('active');
-            iceAutoToggle.textContent = '⏱';
-            if (iceAutoBetInterval) { clearInterval(iceAutoBetInterval); iceAutoBetInterval = null; }
-        }
-    }
-    iceAutoToggle.addEventListener('click', () => { iceAutoPanel.classList.toggle('open'); });
-    iceAutoSwitchWrap.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const checked = !iceAutoSwitch.checked;
-        iceAutoSwitch.checked = checked;
-        toggleIceAutoBet(checked);
-        haptic('light');
-    });
-    iceAutoSwitch.addEventListener('change', () => { toggleIceAutoBet(iceAutoSwitch.checked); });
-
-    // ─── BET UI ────────────────────────────────────────────────────
-    function updateBetUI() {
-        const existing = getPlayer(state.userId);
-        const inGame = !!existing;
-        const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
-        if (canBet) {
-            betBtn.textContent = inGame ? 'increase' : 'join';
-            betBtn.disabled = false;
-            betInput.disabled = false;
-            allInBtn.disabled = false;
-        } else {
-            betBtn.textContent = inGame ? 'in game' : 'waiting';
-            betBtn.disabled = true;
-            betInput.disabled = true;
-            allInBtn.disabled = true;
-        }
-        currentBetDisplay.textContent = existing ? existing.bet : '0';
-        if (betInput.dataset.empty === 'true') {
-            betInput.value = 10;
-            delete betInput.dataset.empty;
-        }
-    }
-
-    betBtn.addEventListener('click', () => {
-        if (!socket || !socket.connected) return;
-        let addAmount = parseInt(betInput.value) || 10;
-        if (addAmount < 10) addAmount = 10;
-        if (addAmount > state.balance) addAmount = state.balance;
-        if (addAmount <= 0) { haptic('light'); return; }
-        socket.emit('placeBet', { amount: addAmount }, (res) => {
-            if (!res?.ok) { haptic('light'); console.warn('Bet rejected:', res?.error); return; }
-            state.balance = res.balance;
-            updateBalance();
-            updateProfile();
-            haptic('medium');
-        });
-        betInput.value = 10;
-        updateBetUI();
-    });
-
-    // ─── ICE BET ───────────────────────────────────────────────────
-    function placeIceBet(amount) {
-        if (!socket || !socket.connected) return;
-        let addAmount = parseInt(amount) || 10;
-        if (addAmount < 10) addAmount = 10;
-        if (addAmount > state.balance) addAmount = state.balance;
-        if (addAmount <= 0) { haptic('light'); return; }
-        socket.emit('icePlaceBet', { amount: addAmount }, (res) => {
-            if (!res?.ok) { haptic('light'); console.warn('Ice bet rejected:', res?.error); return; }
-            state.balance = res.balance;
-            updateBalance();
-            updateProfile();
-            haptic('medium');
-        });
-        iceBetInput.value = '';
-        updateIceBetUI();
-    }
-    iceBetBtn.addEventListener('click', () => placeIceBet(iceBetInput.value));
-    iceAllInBtn.addEventListener('click', () => {
-        iceBetInput.value = state.balance;
-        placeIceBet(state.balance);
-    });
-    iceBetInput.addEventListener('blur', () => {
-        let val = parseInt(iceBetInput.value);
-        if (isNaN(val) || val < 10) val = 10;
-        if (val > state.balance) val = state.balance;
-        iceBetInput.value = val;
-    });
-
-    // ─── FROG / WAITING ────────────────────────────────────────────
-    function updateFrogVisibility() {
-        const alive = getAlive();
-        const showFrog = alive.length < 2 && state.gameState === 'idle';
-        frogGif.classList.toggle('show', showFrog);
-        waitingText.style.display = showFrog ? 'none' : 'block';
-    }
-    function updateWaitingText() {
-        const alive = getAlive();
-        if (alive.length === 0) {
-            waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
-        } else {
-            waitingText.innerHTML = `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span>`;
-        }
-        updateFrogVisibility();
-    }
-
-    // ─── WIN HISTORY ──────────────────────────────────────────────
-    function addWinToHistory(name, pfp) {
-        state.winHistory.unshift({ name, pfp, timestamp: Date.now() });
-        if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
-        updateWinHistoryUI();
-    }
-    function updateWinHistoryUI() {
-        if (state.winHistory.length === 0) { winHistoryEl.innerHTML = ''; return; }
-        let html = '';
-        state.winHistory.forEach(entry => {
-            const avatarSrc = entry.pfp || state.defaultAvatar;
-            html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-        });
-        winHistoryEl.innerHTML = html;
-    }
-
-    // ─── TOP UI ────────────────────────────────────────────────────
-    function getPrizeForRank(rank) {
-        if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
-        if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
-        if (rank === 4 || rank === 5) return { label: '1500', gif: DIAMOND_GIF };
-        if (rank >= 6 && rank <= 10) return { label: '100', gif: DIAMOND_GIF };
-        return null;
-    }
-    function updateTopUI() {
-        const players = state.topPlayers;
-        if (players.length === 0) { podiumEl.innerHTML = ''; topList.innerHTML = ''; return; }
-        const top3 = players.slice(0, 3);
-        const podiumOrder = [
-            { player: top3[2] || top3[0], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
-            { player: top3[0] || top3[1], cls: 'gold', label: '🥇', base: 'gold', colClass: 'p1' },
-            { player: top3[1] || top3[2], cls: 'silver', label: '🥈', base: 'silver', colClass: 'p2' }
+        // ─── FULL CLIENT LOGIC ────────────────────────────────────────
+        const SERVER_URL = 'https://dllump-production.up.railway.app';
+        const WIN_GIFS = [
+            'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
+            'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
+            'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
+            'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
+            'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
         ];
-        let podiumHtml = '';
-        podiumOrder.forEach((info) => {
-            const p = info.player;
-            if (!p) return;
-            const prize = getPrizeForRank(p.rank);
-            let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` : prize.label) : '';
-            podiumHtml += `<div class="podium-col ${info.colClass}">
-                        <div class="rank-badge ${info.cls}">${info.label}</div>
-                        <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                        <div class="podium-name">${p.name}</div>
-                        <div class="podium-prize">${prizeHtml}</div>
-                        <div class="podium-stats">${p.wins} wins · ${p.score}</div>
-                        <div class="podium-base ${info.base}"></div>
-                    </div>`;
-        });
-        podiumEl.innerHTML = podiumHtml;
+        const PRIZE_GIFS = {
+            first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
+            second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
+            third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
+        };
+        const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
 
-        const rest = players.slice(3);
-        if (rest.length === 0) { topList.innerHTML = ''; return; }
-        let listHtml = '';
-        rest.forEach(p => {
-            const rank = p.rank;
-            let rClass = 'rank';
-            if (rank === 4) rClass += ' gold';
-            else if (rank === 5) rClass += ' silver';
-            else if (rank === 6) rClass += ' bronze';
-            const prize = getPrizeForRank(rank);
-            let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` : prize.label) : '';
-            listHtml += `<div class="top-entry">
-                        <div class="${rClass}">#${rank}</div>
-                        <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                        <div class="t-name">${p.name}</div>
-                        <div class="t-wins">${p.wins} wins</div>
-                        <div class="t-score">${p.score}</div>
-                        <div class="t-prize">${prizeHtml}</div>
-                    </div>`;
-        });
-        topList.innerHTML = listHtml;
-    }
-
-    // ─── TABS ──────────────────────────────────────────────────────
-    function switchTab(tabId) {
-        if (state.currentTab === tabId) return;
-        const oldTab = state.currentTab;
-        state.currentTab = tabId;
-        const oldEl = tabPages[oldTab];
-        if (oldEl) {
-            oldEl.classList.remove('active');
-            oldEl.classList.add('exit');
-            setTimeout(() => { oldEl.classList.remove('exit'); }, 350);
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
+        function haptic(style = 'light') {
+            try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style); else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
         }
-        const newEl = tabPages[tabId];
-        if (newEl) {
-            newEl.classList.add('active');
-            newEl.classList.remove('exit');
-            if (tabId === 'profile') updateProfile();
-            if (tabId === 'top') refreshLeaderboard();
-        }
-        tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
-        haptic('light');
-    }
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            switchTab(this.dataset.tab);
-        });
-    });
 
-    // ─── PROFILE ──────────────────────────────────────────────────
-    function updateProfile() {
-        pWins.textContent = state.wins;
-        pLosses.textContent = state.losses;
-        const total = state.wins + state.losses;
-        pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
-        profileName.textContent = state.username;
-        profileUsername.textContent = '@' + state.username;
-        if (state.pfp) profilePfp.src = state.pfp;
-        updateBalance();
-    }
-    reloadPfpBtn.addEventListener('click', function() {
-        const user = getPlayer(state.userId);
-        if (user) { pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); } else if (state.pfp) {
-            pfpCache.delete(state.pfp);
-            const img = new Image();
-            img.onload = () => { profilePfp.src = state.pfp; haptic('medium'); };
-            img.onerror = () => { profilePfp.src = state.defaultAvatar; haptic('light'); };
-            img.src = state.pfp;
-        }
-    });
-    anonToggle.addEventListener('change', () => {
-        if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
-        const enabled = anonToggle.checked;
-        anonToggle.disabled = true;
-        socket.emit('setAnonymous', { enabled }, (res) => {
-            anonToggle.disabled = false;
-            if (!res?.ok) {
-                anonToggle.checked = state.anonymous;
-                console.warn('setAnonymous failed:', res?.error);
-                return;
-            }
-            state.anonymous = res.anonymous;
-            haptic('light');
-        });
-    });
+        // ─── STATE ──────────────────────────────────────────────────────
+        const state = {
+            balance: 0, username: 'player', userId: null, pfp: '', wins: 0, losses: 0, anonymous: false,
+            gameState: 'idle', players: [], pot: 0, arenaSize: 0, cornerRadius: 0, perimeterPoints: [], opening: null,
+            countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
+            winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#5b8def','#50c890','#e06060','#d4af37','#c084e0','#f0a070','#60c0d0','#e8a0a0'],
+            topPlayerIds: new Map(),
+        };
+        let SERVER_ARENA_SIZE = 400;
+        const VISUAL_RADIUS_SCALE = 0.75;
 
-    // ─── PROMO ─────────────────────────────────────────────────────
-    promoBtn.addEventListener('click', async () => {
-        const code = promoInput.value.trim().toUpperCase();
-        if (!code) { promoMessage.textContent = 'Please enter a code.'; promoMessage.style.color = 'var(--red)'; return; }
-        if (!state.userId) { promoMessage.textContent = 'You are not logged in.'; promoMessage.style.color = 'var(--red)'; return; }
-        promoBtn.disabled = true;
-        promoBtn.textContent = '...';
-        promoMessage.textContent = '';
-        try {
-            const response = await fetch(SERVER_URL + '/redeem', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code, userId: state.userId }),
+        // ─── DOM refs ──────────────────────────────────────────────────
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const balanceEl = document.getElementById('balance');
+        const usernameDisplay = document.getElementById('username-display');
+        const statusDot = document.getElementById('status-dot');
+        const waitingText = document.getElementById('waiting-text');
+        const frogGif = document.getElementById('frog-gif');
+        const betOverlayWrap = document.getElementById('bet-overlay-wrap');
+        const betOverlay = document.getElementById('bet-overlay');
+        const betToggleBtn = document.getElementById('bet-toggle-btn');
+        const betInput = document.getElementById('bet-input');
+        const betBtn = document.getElementById('bet-btn');
+        const allInBtn = document.getElementById('all-in-btn');
+        const currentBetDisplay = document.getElementById('current-bet-value');
+        const countdownTimer = document.getElementById('countdown-timer');
+        const timerProgressWrap = document.getElementById('timer-progress-wrap');
+        const timerProgress = document.getElementById('timer-progress');
+        const statsPlayers = document.getElementById('stats-players');
+        const statsPot = document.getElementById('stats-pot');
+        const profilePfp = document.getElementById('profile-pfp');
+        const profileName = document.getElementById('profile-name');
+        const profileUsername = document.getElementById('profile-username');
+        const profileStatus = document.getElementById('profile-status');
+        const pWins = document.getElementById('p-wins');
+        const pLosses = document.getElementById('p-losses');
+        const pWinrate = document.getElementById('p-winrate');
+        const pBalance = document.getElementById('p-balance');
+        const topList = document.getElementById('top-list');
+        const podiumEl = document.getElementById('podium');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabPages = { pvp: document.getElementById('pvp-page'), ice: document.getElementById('ice-page'), profile: document.getElementById('profile-page'), top: document.getElementById('top-page') };
+        const winPanel = document.getElementById('win-panel');
+        const winGif = document.getElementById('win-gif');
+        const winAvatar = document.getElementById('win-avatar');
+        const winName = document.getElementById('win-name');
+        const winMultiplier = document.getElementById('win-multiplier');
+        const winContinueBtn = document.getElementById('win-continue-btn');
+        const playerListContainer = document.getElementById('player-list-container');
+        const winHistoryEl = document.getElementById('win-history');
+        const reloadPfpBtn = document.getElementById('reload-pfp-btn');
+        const anonToggle = document.getElementById('anon-toggle');
+        const promoInput = document.getElementById('promo-input');
+        const promoBtn = document.getElementById('promo-btn');
+        const promoMessage = document.getElementById('promo-message');
+        const promoModal = document.getElementById('promo-modal');
+        const promoGif = document.getElementById('promo-gif');
+        const promoMsg = document.getElementById('promo-msg');
+        const promoSub = document.getElementById('promo-sub');
+        const promoContinueBtn = document.getElementById('promo-continue-btn');
+        const iceCanvas = document.getElementById('ice-canvas');
+        const iceCtx = iceCanvas.getContext('2d');
+        const iceWaitingText = document.getElementById('ice-waiting-text');
+        const iceBetOverlayWrap = document.getElementById('ice-bet-overlay-wrap');
+        const iceBetInput = document.getElementById('ice-bet-input');
+        const iceBetBtn = document.getElementById('ice-bet-btn');
+        const iceAllInBtn = document.getElementById('ice-all-in-btn');
+        const iceCurrentBetDisplay = document.getElementById('ice-current-bet-value');
+        const iceCountdownTimer = document.getElementById('ice-countdown-timer');
+        const iceTimerWrap = document.getElementById('ice-timer-wrap');
+        const iceTimerProgressWrap = document.getElementById('ice-timer-progress-wrap');
+        const iceTimerProgress = document.getElementById('ice-timer-progress');
+        const iceStatsPlayers = document.getElementById('ice-stats-players');
+        const iceStatsPot = document.getElementById('ice-stats-pot');
+        const iceWinPanel = document.getElementById('ice-win-panel');
+        const iceWinAvatar = document.getElementById('ice-win-avatar');
+        const iceWinName = document.getElementById('ice-win-name');
+        const iceWinMultiplier = document.getElementById('ice-win-multiplier');
+        const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
+        const iceWinHistoryEl = document.getElementById('ice-win-history');
+        const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
+        const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
+        const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
+        const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
+        const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
+        const autoToggle = document.getElementById('auto-bet-toggle');
+        const autoPanel = document.getElementById('auto-bet-panel');
+        const autoSwitch = document.getElementById('auto-bet-switch');
+        const autoAmount = document.getElementById('auto-bet-amount');
+        const autoSwitchWrap = document.getElementById('auto-switch-wrap');
+
+        // ─── ICE STATE ──────────────────────────────────────────────────
+        const iceState = {
+            gameState: 'idle', players: [], pot: 0, arenaSize: 0, perimeterPoints: [], cornerRadius: 0,
+            countdownStartTime: 0, spinStartTime: 0, spinDuration: 0, spinFinalAngle: 0,
+            puck: { x: 200, y: 200 }, winnerId: null, winHistory: [],
+            puckScale: 1, puckPopStart: 0, puckVisible: false,
+            segmentPop: new Map(),
+            slideStartTime: 0,
+            zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 2.0,
+            isZoomingIn: false, isZoomingOut: false, zoomLocked: false, zoomOutTriggered: false,
+        };
+
+        // ─── SHARED HELPERS ────────────────────────────────────────────
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+        function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+        function easeOutBack(t) { const c1=1.70158,c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); }
+        function lightenColor(hex,amt) {
+            let r=parseInt(hex.slice(1,2),16)*17||parseInt(hex.slice(1,3),16);
+            let g=parseInt(hex.slice(2,3),16)*17||parseInt(hex.slice(3,5),16);
+            let b=parseInt(hex.slice(3,4),16)*17||parseInt(hex.slice(5,7),16);
+            r=Math.min(255,r+amt); g=Math.min(255,g+amt); b=Math.min(255,b+amt);
+            return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+        }
+        function hexToRgba(hex,alpha) { if(!hex) return `rgba(120,120,120,${alpha})`; const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${alpha})`; }
+        const PUCK_RENDER_RADIUS = 10;
+
+        // ─── PFP CACHE ──────────────────────────────────────────────────
+        const pfpCache = new Map();
+        function generateDefaultAvatar(initial,colorIndex) {
+            const size=128; const c=document.createElement('canvas'); c.width=size; c.height=size;
+            const ctx2=c.getContext('2d'); const colors=state.colors; const col=colors[colorIndex%colors.length];
+            const grad=ctx2.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2);
+            grad.addColorStop(0,lightenColor(col,60)); grad.addColorStop(1,col);
+            ctx2.beginPath(); ctx2.arc(size/2,size/2,size/2-2,0,Math.PI*2); ctx2.fillStyle=grad; ctx2.fill();
+            ctx2.beginPath(); ctx2.arc(size/2,size/2,size/2-2,0,Math.PI*2);
+            ctx2.strokeStyle='rgba(255,255,255,0.2)'; ctx2.lineWidth=2; ctx2.stroke();
+            const letter=(initial||'?').charAt(0).toUpperCase();
+            ctx2.fillStyle='rgba(255,255,255,0.95)'; ctx2.font=`bold ${size*0.48}px system-ui, sans-serif`;
+            ctx2.textAlign='center'; ctx2.textBaseline='middle'; ctx2.shadowColor='rgba(0,0,0,0.15)'; ctx2.shadowBlur=8;
+            ctx2.fillText(letter,size/2,size/2+3); ctx2.shadowBlur=0;
+            const img=new Image(); img.src=c.toDataURL('image/png'); return img;
+        }
+        function loadPlayerPFP(player) {
+            const src = player.pfp || state.defaultAvatar;
+            if (pfpCache.has(src)) { const cached=pfpCache.get(src); if(cached.loaded&&cached.img){ player.pfpImg=cached.img; return; } }
+            const img=new Image(); let attempts=0; const maxAttempts=3;
+            const doLoad=()=>{
+                img.onload=()=>{ pfpCache.set(src,{img,loaded:true}); player.pfpImg=img; updatePlayerList(); };
+                img.onerror=()=>{ attempts++; if(attempts<maxAttempts){ const sep=src.includes('?')?'&':'?'; img.src=src+sep+'retry='+attempts+'t='+Date.now(); } else { pfpCache.set(src,{img:null,loaded:false}); } };
+                img.src=src;
+            };
+            pfpCache.set(src,{img:null,loaded:false}); doLoad();
+        }
+        const icePfpCache = pfpCache;
+        function loadIcePlayerPFP(player) {
+            const src = player.pfp || state.defaultAvatar;
+            if (icePfpCache.has(src)) { const cached=icePfpCache.get(src); if(cached.loaded&&cached.img){ player.pfpImg=cached.img; return; } }
+            const img=new Image(); let attempts=0; const maxAttempts=3;
+            img.onload=()=>{ icePfpCache.set(src,{img,loaded:true}); player.pfpImg=img; };
+            img.onerror=()=>{ attempts++; if(attempts<maxAttempts){ const sep=src.includes('?')?'&':'?'; img.src=src+sep+'retry='+attempts+'t='+Date.now(); } else { icePfpCache.set(src,{img:null,loaded:false}); } };
+            icePfpCache.set(src,{img:null,loaded:false}); img.src=src;
+        }
+
+        // ─── CANVAS RESIZE ─────────────────────────────────────────────
+        function resizeCanvas() {
+            const rect=canvas.parentElement.getBoundingClientRect();
+            const size=Math.min(rect.width-16, rect.height-16, 440);
+            const dpr=window.devicePixelRatio||1;
+            canvas.width=size*dpr; canvas.height=size*dpr; canvas.style.width=size+'px'; canvas.style.height=size+'px';
+            state.arenaSize=size; ctx.setTransform(dpr,0,0,dpr,0,0);
+        }
+        function resizeIceCanvas() {
+            const rect=iceCanvas.parentElement.getBoundingClientRect();
+            const size=Math.min(rect.width-16, rect.height-16, 440);
+            const dpr=window.devicePixelRatio||1;
+            iceCanvas.width=size*dpr; iceCanvas.height=size*dpr; iceCanvas.style.width=size+'px'; iceCanvas.style.height=size+'px';
+            iceState.arenaSize=size; iceCtx.setTransform(dpr,0,0,dpr,0,0);
+        }
+        function scaleFactor(){ return state.arenaSize / SERVER_ARENA_SIZE; }
+        function iceScaleFactor(){ return iceState.arenaSize / SERVER_ARENA_SIZE; }
+
+        // ─── SOCKET ─────────────────────────────────────────────────────
+        const socket = (typeof io !== 'undefined') ? io(SERVER_URL, { transports: ['websocket','polling'] }) : null;
+        function setOnline(isOnline){ statusDot.classList.toggle('offline',!isOnline); }
+
+        if(!socket){ console.error('Socket.IO failed to load'); setOnline(false); } else {
+            socket.on('connect', ()=>{
+                setOnline(true);
+                const initData = tg?.initData || '';
+                socket.emit('join', { initData }, (res)=>{
+                    if(!res?.ok){ waitingText.innerHTML=`<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error||'try reopening'}</div>`; return; }
+                    state.userId=res.user.id; state.username=res.user.username; state.pfp=res.user.pfp;
+                    state.balance=res.user.balance; state.wins=res.user.wins; state.losses=res.user.losses;
+                    state.anonymous=!!res.user.anonymous; anonToggle.checked=state.anonymous;
+                    SERVER_ARENA_SIZE=res.arena.size; state.perimeterPoints=res.arena.perimeter; state.cornerRadius=res.arena.cornerRadius;
+                    if(res.iceArena){ iceState.perimeterPoints=res.iceArena.perimeter; iceState.cornerRadius=res.iceArena.cornerRadius; }
+                    if(Array.isArray(res.recentWinners)&&res.recentWinners.length){
+                        state.winHistory=res.recentWinners.slice(0,state.maxHistory).map(w=>({name:w.name,pfp:w.pfp,timestamp:Date.now()}));
+                        updateWinHistoryUI();
+                    }
+                    if(Array.isArray(res.iceRecentWinners)&&res.iceRecentWinners.length){
+                        iceState.winHistory=res.iceRecentWinners.slice(0,8).map(w=>({name:w.name,pfp:w.pfp}));
+                        updateIceWinHistoryUI();
+                    }
+                    usernameDisplay.textContent='@'+state.username; profileName.textContent=state.username;
+                    profileUsername.textContent='@'+state.username; profilePfp.src=state.pfp||state.defaultAvatar;
+                    updateBalance(); updateProfile(); refreshLeaderboard();
+                    if(window._topRefreshInterval) clearInterval(window._topRefreshInterval);
+                    window._topRefreshInterval=setInterval(refreshLeaderboard,30000);
+                });
             });
-            const data = await response.json();
-            if (data.ok) {
-                state.balance = data.newBalance;
-                updateBalance();
-                updateProfile();
-                promoGif.src = DIAMOND_GIF;
-                promoMsg.textContent = `Successfully claimed ${data.amount} 💎`;
-                promoSub.textContent = `Your new balance is ${data.newBalance}`;
-                promoModal.classList.add('show');
-                haptic('heavy');
-                promoMessage.textContent = '✅ Code redeemed!';
-                promoMessage.style.color = 'var(--green)';
-                promoInput.value = '';
+            socket.on('disconnect',()=>setOnline(false));
+            socket.on('connect_error',()=>setOnline(false));
+            socket.on('state',(snapshot)=>{ applyServerState(snapshot); });
+            socket.on('roundEnd',(payload)=>{ handleRoundEnd(payload); });
+            socket.on('iceState',(snapshot)=>{ applyIceServerState(snapshot); });
+            socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
+        }
+
+        // ─── PVP STATE APPLICATION ──────────────────────────────────────
+        function applyServerState(snapshot) {
+            const prevGameState=state.gameState;
+            state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
+            state.opening=snapshot.opening;
+            const seen=new Set(); const isCountdown=(state.gameState==='countdown'||state.gameState==='prestart');
+            snapshot.players.forEach(sp=>{
+                seen.add(sp.id);
+                let local=state.players.find(p=>p.id===sp.id);
+                if(!local){
+                    const colorIdx=state.players.length%state.colors.length;
+                    local={ id:sp.id, name:sp.name, pfp:sp.pfp, pfpImg:generateDefaultAvatar(sp.name?sp.name.charAt(0):'?',colorIdx),
+                        isPopping:true, popStartTime:performance.now(), popDuration:550,
+                        isPulsing:false, pulseTime:0, pulseStartTime:0,
+                        homeX:sp.x, homeY:sp.y, spawnStartX:sp.x+(Math.random()-0.5)*80, spawnStartY:sp.y+(Math.random()-0.5)*80,
+                        spawnProgress:0, isSpawning:true, spawnStartTime:performance.now(), spawnDuration:2000,
+                        x:sp.x, y:sp.y };
+                    state.players.push(local);
+                    loadPlayerPFP(local);
+                } else {
+                    local.homeX=sp.x; local.homeY=sp.y;
+                    if(isCountdown){
+                        if(!local.isSpawning){
+                            local.spawnStartX=local.x; local.spawnStartY=local.y;
+                            local.spawnStartTime=performance.now(); local.spawnDuration=2000;
+                            local.isSpawning=true; local.spawnProgress=0;
+                        }
+                    } else {
+                        if(!local.isSpawning){ local.x=sp.x; local.y=sp.y; }
+                    }
+                    if(sp.bet>local.bet){ local.isPulsing=true; local.pulseStartTime=performance.now(); local.pulseTime=0; }
+                }
+                local.name=sp.name; local.bet=sp.bet; local.color=sp.color; local.displayRadius=sp.displayRadius; local.alive=sp.alive;
+            });
+            state.players=state.players.filter(p=>seen.has(p.id));
+            if(state.gameState==='playing'||state.gameState==='finished'){
+                state.players.forEach(p=>{ p.isSpawning=false; p.x=p.homeX; p.y=p.homeY; });
+            }
+            detectBumpsForHaptics();
+            if(prevGameState!=='idle'&&state.gameState==='idle'){ waitingText.style.display='block'; countdownTimer.style.display='none'; timerProgressWrap.classList.remove('visible'); }
+            if(state.gameState==='countdown'){ countdownTimer.style.display='block'; timerProgressWrap.classList.add('visible'); }
+            if(state.gameState==='playing'||state.gameState==='finished'){
+                countdownTimer.style.display=state.gameState==='countdown'?'block':countdownTimer.style.display;
+                if(state.gameState==='playing') timerProgressWrap.classList.remove('visible');
+            }
+            updateStatsBar(); updateBetUI(); updateWaitingText(); updateBetOverlayVisibility(); updatePlayerList(); updateFrogVisibility();
+        }
+
+        function detectBumpsForHaptics() {
+            if(state.gameState!=='playing'){ touchingIds=new Set(); return; }
+            const me=getPlayer(state.userId);
+            if(!me||!me.alive){ touchingIds=new Set(); return; }
+            const nowTouching=new Set();
+            state.players.forEach(p=>{
+                if(p.id===me.id||!p.alive) return;
+                const dx=p.x-me.x, dy=p.y-me.y;
+                const dist=Math.sqrt(dx*dx+dy*dy);
+                const minDist=(me.displayRadius||18)+(p.displayRadius||18);
+                if(dist<minDist) nowTouching.add(p.id);
+            });
+            let isNewBump=false;
+            nowTouching.forEach(id=>{ if(!touchingIds.has(id)) isNewBump=true; });
+            if(isNewBump) haptic('medium');
+            touchingIds=nowTouching;
+        }
+        let touchingIds=new Set();
+
+        function getPlayer(id){ return state.players.find(p=>p.id===id); }
+        function getAlive(){ return state.players.filter(p=>p.alive); }
+
+        function updateStatsBar(){ statsPlayers.textContent=getAlive().length; statsPot.textContent=state.pot; }
+        function updateWaitingText(){
+            const alive=getAlive();
+            if(alive.length===0){ waitingText.innerHTML='<span>waiting for players</span><div class="sub">place a bet to join</div>'; }
+            else { waitingText.innerHTML=`<span>● ${alive.length} player${alive.length>1?'s':''} ready</span>`; }
+            updateFrogVisibility();
+        }
+        function updateFrogVisibility(){
+            const alive=getAlive();
+            const showFrog=alive.length<2&&state.gameState==='idle';
+            frogGif.classList.toggle('show',showFrog);
+            waitingText.style.display=showFrog?'none':'block';
+        }
+        function updateBetOverlayVisibility(){
+            const shouldHide=state.gameState==='playing'||state.gameState==='finished';
+            betOverlayWrap.classList.toggle('hidden',shouldHide);
+            playerListContainer.classList.toggle('shift-up',shouldHide);
+        }
+        function updatePlayerList(){
+            const alive=getAlive();
+            const totalBet=state.players.reduce((s,p)=>s+p.bet,0);
+            if(alive.length===0){ playerListContainer.innerHTML=''; return; }
+            let html='';
+            alive.forEach(p=>{
+                const chance=totalBet>0?((p.bet/totalBet)*100).toFixed(1):0;
+                const isYou=p.id===state.userId;
+                const topInfo=state.topPlayerIds.get(p.id);
+                let crown='';
+                if(topInfo){ if(topInfo.rank===1) crown='👑'; else if(topInfo.rank===2) crown='👑'; }
+                html+=`<div class="pl-entry ${isYou?'you':''}">
+                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
+                            <span class="pl-name">${crown} ${p.name}</span>
+                            <span class="pl-bet">${p.bet}</span>
+                            <span class="pl-chance">${chance}%</span>
+                        </div>`;
+            });
+            playerListContainer.innerHTML=html;
+        }
+
+        // ─── PVP RENDER HELPERS ─────────────────────────────────────────
+        function easePopBounce(t){ if(t>=1)return 1; const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
+        function getPopScale(player){
+            if(!player.isPopping) return 1;
+            const elapsed=performance.now()-player.popStartTime;
+            const progress=Math.min(elapsed/player.popDuration,1);
+            if(progress>=1){ player.isPopping=false; return 1; }
+            return easePopBounce(progress);
+        }
+        function updatePlayerAnimations(){
+            const now=performance.now();
+            state.players.forEach(p=>{
+                if(p.isPulsing){
+                    const elapsed=(now-p.pulseStartTime)/1000;
+                    if(elapsed>0.6){ p.isPulsing=false; p.pulseTime=0; } else p.pulseTime=elapsed;
+                }
+                if(p.isSpawning&&p.homeX!==undefined){
+                    const elapsed=now-p.spawnStartTime;
+                    const progress=Math.min(elapsed/p.spawnDuration,1);
+                    const eased=easeOutCubic(progress);
+                    p.x=p.spawnStartX+(p.homeX-p.spawnStartX)*eased;
+                    p.y=p.spawnStartY+(p.homeY-p.spawnStartY)*eased;
+                    p.spawnProgress=eased;
+                    if(progress>=1){ p.isSpawning=false; p.x=p.homeX; p.y=p.homeY; }
+                }
+            });
+        }
+
+        function updateBetUI(){
+            const existing=getPlayer(state.userId);
+            const inGame=!!existing;
+            const canBet=(state.gameState==='idle'||state.gameState==='countdown'||state.gameState==='prestart');
+            betBtn.textContent=canBet?(inGame?'increase':'join'):(inGame?'in game':'waiting');
+            betBtn.disabled=!canBet; betInput.disabled=!canBet; allInBtn.disabled=!canBet;
+            currentBetDisplay.textContent=existing?existing.bet:'0';
+            if(betInput.dataset.empty==='true'){ betInput.value=10; delete betInput.dataset.empty; }
+        }
+
+        // ─── ROUND END (PvP) ──────────────────────────────────────────
+        function handleRoundEnd(payload){
+            if(!payload){ hideWinPanelAndReset(); return; }
+            addWinToHistory(payload.winnerName, payload.winnerPfp);
+            refreshLeaderboard();
+            if(payload.winnerId===state.userId){ state.balance+=payload.winnings; state.wins++; playVictorySound(); } else { state.losses++; }
+            updateBalance(); updateProfile();
+            const randomGif=WIN_GIFS[Math.floor(Math.random()*WIN_GIFS.length)];
+            winGif.src=randomGif; winAvatar.src=payload.winnerPfp||state.defaultAvatar;
+            winName.textContent=payload.winnerName+' wins!'; winMultiplier.textContent='x'+payload.multiplier.toFixed(1);
+            winPanel.classList.add('show'); haptic('heavy');
+            countdownTimer.style.display='none'; timerProgressWrap.classList.remove('visible'); waitingText.style.display='none';
+            if(window.winTimeout) clearTimeout(window.winTimeout);
+            window.winTimeout=setTimeout(hideWinPanelAndReset,5000);
+        }
+        function hideWinPanelAndReset(){
+            winPanel.classList.remove('show'); stopVictorySound();
+            if(window.winTimeout){ clearTimeout(window.winTimeout); window.winTimeout=null; }
+            waitingText.style.display='block'; countdownTimer.style.display='none'; timerProgressWrap.classList.remove('visible');
+            updateWaitingText(); updateBetUI(); updateStatsBar(); updateBetOverlayVisibility(); updateFrogVisibility();
+        }
+        winContinueBtn.addEventListener('click', hideWinPanelAndReset);
+
+        function addWinToHistory(name,pfp){
+            state.winHistory.unshift({name,pfp,timestamp:Date.now()});
+            if(state.winHistory.length>state.maxHistory) state.winHistory.pop();
+            updateWinHistoryUI();
+        }
+        function updateWinHistoryUI(){
+            if(state.winHistory.length===0){ winHistoryEl.innerHTML=''; return; }
+            let html='';
+            state.winHistory.forEach(entry=>{
+                const avatarSrc=entry.pfp||state.defaultAvatar;
+                html+=`<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            winHistoryEl.innerHTML=html;
+        }
+
+        // ─── ICE ARENA ──────────────────────────────────────────────────
+        function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
+
+        function applyIceServerState(snapshot) {
+            const prevGameState=iceState.gameState;
+            iceState.gameState=snapshot.gameState;
+            iceState.pot=snapshot.pot;
+            iceState.countdownStartTime=snapshot.countdownStartTime;
+            iceState.spinStartTime=snapshot.spinStartTime;
+            iceState.spinDuration=snapshot.spinDuration;
+            iceState.spinFinalAngle=snapshot.spinFinalAngle;
+            iceState.puck.x=snapshot.puck.x;
+            iceState.puck.y=snapshot.puck.y;
+
+            if(snapshot.gameState==='spinning' && prevGameState!=='spinning'){
+                iceState.puckVisible=true;
+                iceState.puckPopStart=performance.now();
+                iceState.puckScale=0;
+                iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
+            }
+            if(snapshot.gameState==='sliding' && prevGameState!=='sliding'){
+                iceState.slideStartTime=performance.now();
+                iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
+            }
+            if(snapshot.gameState==='finished' && prevGameState!=='finished'){
+                if(iceState.zoom>1.1 && !iceState.zoomOutTriggered){
+                    iceState.zoomOutTriggered=true;
+                    iceState.isZoomingOut=true;
+                    iceState.isZoomingIn=false;
+                    iceState.zoomStartTime=performance.now();
+                    iceState.zoomTarget=1;
+                }
+            }
+            if(snapshot.gameState==='idle' && prevGameState!=='idle'){
+                iceState.puckVisible=false; iceState.puckScale=1;
+                iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
+                iceState.segmentPop.clear();
+            }
+
+            const seen=new Set();
+            snapshot.players.forEach(sp=>{
+                seen.add(sp.id);
+                let local=iceState.players.find(p=>p.id===sp.id);
+                if(!local){
+                    const colorIdx=iceState.players.length%state.colors.length;
+                    local={ id:sp.id, name:sp.name, pfp:sp.pfp, pfpImg:generateDefaultAvatar(sp.name?sp.name.charAt(0):'?',colorIdx), segStart:sp.segStart, segEnd:sp.segEnd, color:sp.color, bet:sp.bet };
+                    iceState.players.push(local);
+                    loadIcePlayerPFP(local);
+                    iceState.segmentPop.set(sp.id,{startTime:performance.now(),duration:300});
+                } else {
+                    if(Math.abs(local.segStart-sp.segStart)>2 || Math.abs(local.segEnd-sp.segEnd)>2){
+                        iceState.segmentPop.set(sp.id,{startTime:performance.now(),duration:300});
+                    }
+                    local.segStart=sp.segStart; local.segEnd=sp.segEnd; local.color=sp.color; local.bet=sp.bet;
+                }
+                local.name=sp.name;
+            });
+            iceState.players=iceState.players.filter(p=>seen.has(p.id));
+
+            if(prevGameState!=='idle' && iceState.gameState==='idle'){
+                iceState.winnerId=null;
+                iceWaitingText.style.display='block';
+                iceTimerWrap.style.display='none';
+                iceTimerProgressWrap.classList.remove('visible');
+            }
+            iceTimerWrap.style.display=(iceState.gameState==='countdown'||iceState.gameState==='spinning')?'flex':'none';
+            if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
+
+            updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
+        }
+
+        function updateIceBetOverlayVisibility(){
+            const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
+            iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
+        }
+        function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
+        function updateIceWaitingText(){
+            const n=iceState.players.length;
+            if(n===0){ iceWaitingText.innerHTML='<span>waiting for players</span><div class="sub">place a bet to claim the rink</div>'; iceWaitingText.style.display='block'; }
+            else if(iceState.gameState==='idle'||iceState.gameState==='countdown'){ iceWaitingText.innerHTML=`<span>● ${n} player${n>1?'s':''} on the rink</span>`; iceWaitingText.style.display='block'; }
+            else { iceWaitingText.style.display='none'; }
+        }
+        function updateIceBetUI(){
+            const existing=getIcePlayerLocal(state.userId);
+            const inGame=!!existing;
+            const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
+            iceBetBtn.textContent=canBet?(inGame?'increase':'join'):(inGame?'in game':'waiting');
+            iceBetBtn.disabled=!canBet; iceBetInput.disabled=!canBet; iceAllInBtn.disabled=!canBet;
+            iceCurrentBetDisplay.textContent=existing?existing.bet:'0';
+        }
+        function addIceWinToHistory(name,pfp){
+            iceState.winHistory.unshift({name,pfp});
+            if(iceState.winHistory.length>8) iceState.winHistory.pop();
+            updateIceWinHistoryUI();
+        }
+        function updateIceWinHistoryUI(){
+            if(iceState.winHistory.length===0){ iceWinHistoryEl.innerHTML=''; return; }
+            let html='';
+            iceState.winHistory.forEach(entry=>{
+                const avatarSrc=entry.pfp||state.defaultAvatar;
+                html+=`<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            iceWinHistoryEl.innerHTML=html;
+        }
+        function handleIceRoundEnd(payload){
+            if(!payload){ hideIceWinPanelAndReset(); return; }
+            iceState.winnerId=payload.winnerId;
+            addIceWinToHistory(payload.winnerName, payload.winnerPfp);
+            refreshLeaderboard();
+            if(payload.winnerId===state.userId){ state.balance+=payload.winnings; state.wins++; playVictorySound(); } else { state.losses++; }
+            updateBalance(); updateProfile();
+            iceWinAvatar.src=payload.winnerPfp||state.defaultAvatar;
+            iceWinName.textContent=payload.winnerName+' wins the rink!';
+            iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
+            iceWinPanel.classList.add('show'); haptic('heavy');
+            iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
+            if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
+            window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
+        }
+        function hideIceWinPanelAndReset(){
+            iceWinPanel.classList.remove('show');
+            if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
+            iceState.winnerId=null;
+            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
+        }
+        iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
+
+        // ─── LEADERBOARD ──────────────────────────────────────────────
+        function refreshLeaderboard(){
+            if(!socket) return;
+            socket.emit('leaderboard',{},(res)=>{
+                if(!res?.ok) return;
+                state.topPlayers=res.top.map((u,i)=>({ id:u.id, name:u.username, pfp:u.pfp||state.defaultAvatar, wins:u.wins, score:u.balance, rank:i+1 }));
+                state.topPlayerIds.clear();
+                state.topPlayers.forEach(p=>{ state.topPlayerIds.set(p.id,{rank:p.rank}); });
+                updateTopUI();
+            });
+        }
+        function updateTopUI(){
+            const players=state.topPlayers;
+            if(players.length===0){ podiumEl.innerHTML=''; topList.innerHTML=''; return; }
+            const top3=players.slice(0,3);
+            const podiumOrder=[
+                { player:top3[2]||top3[0], cls:'bronze', label:'🥉', base:'bronze', colClass:'p3' },
+                { player:top3[0]||top3[1], cls:'gold', label:'🥇', base:'gold', colClass:'p1' },
+                { player:top3[1]||top3[2], cls:'silver', label:'🥈', base:'silver', colClass:'p2' }
+            ];
+            let podiumHtml='';
+            podiumOrder.forEach(info=>{
+                const p=info.player; if(!p) return;
+                const prize=getPrizeForRank(p.rank);
+                let prizeHtml=prize?(prize.gif?`<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`:prize.label):'';
+                podiumHtml+=`<div class="podium-col ${info.colClass}">
+                            <div class="rank-badge ${info.cls}">${info.label}</div>
+                            <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
+                            <div class="podium-name">${p.name}</div>
+                            <div class="podium-prize">${prizeHtml}</div>
+                            <div class="podium-stats">${p.wins} wins · ${p.score}</div>
+                            <div class="podium-base ${info.base}"></div>
+                        </div>`;
+            });
+            podiumEl.innerHTML=podiumHtml;
+            const rest=players.slice(3);
+            if(rest.length===0){ topList.innerHTML=''; return; }
+            let listHtml='';
+            rest.forEach(p=>{
+                const rank=p.rank;
+                let rClass='rank';
+                if(rank===4) rClass+=' gold';
+                else if(rank===5) rClass+=' silver';
+                else if(rank===6) rClass+=' bronze';
+                const prize=getPrizeForRank(rank);
+                let prizeHtml=prize?(prize.gif?`<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`:prize.label):'';
+                listHtml+=`<div class="top-entry">
+                            <div class="${rClass}">#${rank}</div>
+                            <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
+                            <div class="t-name">${p.name}</div>
+                            <div class="t-wins">${p.wins} wins</div>
+                            <div class="t-score">${p.score}</div>
+                            <div class="t-prize">${prizeHtml}</div>
+                        </div>`;
+            });
+            topList.innerHTML=listHtml;
+        }
+        function getPrizeForRank(rank){
+            if(rank===1) return { label:'Gift Box', gif:PRIZE_GIFS.first };
+            if(rank===2||rank===3) return { label:'Bear', gif:PRIZE_GIFS.second };
+            if(rank===4||rank===5) return { label:'1500', gif:DIAMOND_GIF };
+            if(rank>=6&&rank<=10) return { label:'100', gif:DIAMOND_GIF };
+            return null;
+        }
+
+        // ─── BALANCE / PROFILE ──────────────────────────────────────
+        let balanceAnimInterval=null;
+        function animateBalanceTo(target){
+            const current=parseInt(balanceEl.textContent)||0;
+            if(current===target){ balanceEl.textContent=target; return; }
+            const diff=target-current;
+            const steps=Math.min(Math.abs(diff),40);
+            const stepSize=diff/steps;
+            let step=0;
+            if(balanceAnimInterval){ clearInterval(balanceAnimInterval); balanceAnimInterval=null; }
+            balanceAnimInterval=setInterval(()=>{
+                step++;
+                const newVal=Math.round(current+stepSize*step);
+                if(step>=steps||Math.abs(newVal-target)<1){
+                    balanceEl.textContent=target;
+                    clearInterval(balanceAnimInterval);
+                    balanceAnimInterval=null;
+                } else balanceEl.textContent=newVal;
+            },25);
+        }
+        function updateBalance(){
+            const target=Math.floor(state.balance);
+            pBalance.textContent=target;
+            animateBalanceTo(target);
+        }
+        function updateProfile(){
+            pWins.textContent=state.wins; pLosses.textContent=state.losses;
+            const total=state.wins+state.losses;
+            pWinrate.textContent=total>0?Math.round((state.wins/total)*100)+'%':'0%';
+            profileName.textContent=state.username; profileUsername.textContent='@'+state.username;
+            if(state.pfp) profilePfp.src=state.pfp;
+            updateBalance();
+        }
+
+        // ─── AUDIO ────────────────────────────────────────────────────
+        let audioCtx=null, victorySoundPlaying=false;
+        function playVictorySound(){
+            try {
+                if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+                if(victorySoundPlaying) return;
+                victorySoundPlaying=true;
+                const now=audioCtx.currentTime;
+                const notes=[523.25,659.25,783.99];
+                const startTimes=[0,0.08,0.16];
+                const durations=[0.3,0.3,0.5];
+                for(let i=0;i<notes.length;i++){
+                    const osc=audioCtx.createOscillator();
+                    const gain=audioCtx.createGain();
+                    osc.frequency.value=notes[i];
+                    osc.type='sine';
+                    gain.gain.setValueAtTime(0.18,now+startTimes[i]);
+                    gain.gain.exponentialRampToValueAtTime(0.001,now+startTimes[i]+durations[i]);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now+startTimes[i]);
+                    osc.stop(now+startTimes[i]+durations[i]);
+                }
+                setTimeout(()=>{ victorySoundPlaying=false; },800);
+            } catch(e){ victorySoundPlaying=false; }
+        }
+        function stopVictorySound(){ victorySoundPlaying=false; }
+
+        // ─── BET ──────────────────────────────────────────────────────
+        betBtn.addEventListener('click', ()=>{
+            if(!socket||!socket.connected) return;
+            let addAmount=parseInt(betInput.value)||10;
+            if(addAmount<10) addAmount=10;
+            if(addAmount>state.balance) addAmount=state.balance;
+            if(addAmount<=0){ haptic('light'); return; }
+            socket.emit('placeBet',{amount:addAmount},(res)=>{
+                if(!res?.ok){ haptic('light'); console.warn('Bet rejected:',res?.error); return; }
+                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
+            });
+            betInput.value=10; updateBetUI();
+        });
+
+        let betCollapsed=false;
+        betToggleBtn.addEventListener('click',function(e){ e.stopPropagation(); betCollapsed=!betCollapsed; betOverlay.classList.toggle('collapsed',betCollapsed); haptic('light'); });
+
+        let allInConfirming=false, allInTimeout=null;
+        allInBtn.addEventListener('click',()=>{
+            if(allInConfirming){
+                const fullAmount=state.balance;
+                if(fullAmount<10){ haptic('light'); return; }
+                betInput.value=fullAmount; betBtn.click();
+                allInConfirming=false; allInBtn.textContent='All In';
+                if(allInTimeout) clearTimeout(allInTimeout);
+                haptic('medium');
             } else {
-                promoMessage.textContent = data.error || 'Invalid or expired code.';
-                promoMessage.style.color = 'var(--red)';
+                allInConfirming=true; allInBtn.textContent='Sure?';
+                if(allInTimeout) clearTimeout(allInTimeout);
+                allInTimeout=setTimeout(()=>{ allInConfirming=false; allInBtn.textContent='All In'; },2000);
+                haptic('light');
             }
-        } catch (e) {
-            promoMessage.textContent = 'Network error, please try again.';
-            promoMessage.style.color = 'var(--red)';
-        } finally {
-            promoBtn.disabled = false;
-            promoBtn.textContent = 'Redeem';
+        });
+
+        // ─── AUTO BET ─────────────────────────────────────────────────
+        function setupInputWithClear(inputEl,defaultVal=10){
+            inputEl.addEventListener('input',()=>{ const raw=inputEl.value; if(raw===''){ inputEl.dataset.empty='true'; return; } delete inputEl.dataset.empty; });
+            inputEl.addEventListener('blur',()=>{
+                if(inputEl.dataset.empty==='true'||inputEl.value===''){ inputEl.value=defaultVal; delete inputEl.dataset.empty; }
+                let val=parseInt(inputEl.value);
+                if(isNaN(val)||val<defaultVal) val=defaultVal;
+                if(val>state.balance) val=state.balance;
+                inputEl.value=val; updateBetUI();
+            });
         }
-    });
-    promoContinueBtn.addEventListener('click', () => { promoModal.classList.remove('show'); });
+        setupInputWithClear(betInput,10); setupInputWithClear(autoAmount,10); setupInputWithClear(iceAutoAmount,10);
 
-    // ─── STATS ─────────────────────────────────────────────────────
-    function updateStatsBar() {
-        statsPlayers.textContent = getAlive().length;
-        statsPot.textContent = state.pot;
-    }
-
-    // ═══════════════════════════════════════════════════════════════════
-    // RENDER LOOP
-    // ═══════════════════════════════════════════════════════════════════
-    function renderLoop() {
-        updatePlayerAnimations();
-
-        // PvP timer
-        if (state.gameState === 'countdown' && state.countdownStartTime) {
-            const elapsed = (Date.now() - state.countdownStartTime) / 1000;
-            const remaining = Math.max(0, 10.0 - elapsed);
-            const secs = Math.floor(remaining);
-            const ms = Math.floor((remaining - secs) * 100);
-            countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-            const progress = Math.min(1, elapsed / 10.0) * 100;
-            timerProgress.style.width = progress + '%';
-            timerProgressWrap.classList.add('visible');
-        } else if (state.gameState === 'prestart') {
-            countdownTimer.textContent = 'GO!';
-            timerProgress.style.width = '100%';
-            timerProgressWrap.classList.add('visible');
-        } else if (state.gameState === 'idle') {
-            timerProgressWrap.classList.remove('visible');
-        }
-
-        // Ice timer
-        if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
-            const elapsed = (Date.now() - iceState.countdownStartTime) / 1000;
-            const remaining = Math.max(0, 10.0 - elapsed);
-            const secs = Math.floor(remaining);
-            const ms = Math.floor((remaining - secs) * 100);
-            iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-            iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
-            iceTimerProgressWrap.classList.add('visible');
-        } else if (iceState.gameState === 'spinning') {
-            iceCountdownTimer.textContent = '🌀';
-            iceTimerProgress.style.width = '100%';
-        } else if (iceState.gameState === 'idle') {
-            iceTimerProgressWrap.classList.remove('visible');
-        }
-
-        render();
-        renderIce();
-        requestAnimationFrame(renderLoop);
-    }
-
-    // ─── RENDER PVP ───────────────────────────────────────────────
-    function render() {
-        const w = state.arenaSize;
-        const half = w / 2;
-        const s = scaleFactor();
-        ctx.clearRect(0, 0, w, w);
-
-        const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
-        grad.addColorStop(0, 'rgba(10,10,10,0.85)');
-        grad.addColorStop(1, 'rgba(0,0,0,0.95)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, w, w);
-
-        const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        ctx.shadowBlur = 30;
-        ctx.fillStyle = 'rgba(26,26,30,0.80)';
-        if (pts.length > 0) {
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-            ctx.closePath();
-            ctx.fill();
-        }
-        ctx.restore();
-
-        ctx.save();
-        ctx.fillStyle = 'rgba(40,40,46,0.60)';
-        if (pts.length > 0) {
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-            ctx.closePath();
-            ctx.fill();
-        }
-        ctx.restore();
-
-        const opening = state.opening;
-        const isFlashing = opening && opening.state === 'flashing';
-        const isOpen = opening && opening.state === 'open';
-        const total = pts.length;
-
-        ctx.save();
-        const hasGap = opening !== null && (isFlashing || isOpen);
-        if (hasGap && total > 0) {
-            const start = opening.startIdx, end = opening.endIdx;
-            ctx.strokeStyle = 'rgba(160,160,176,0.3)';
-            ctx.lineWidth = 5;
-            for (let i = 0; i < total; i++) {
-                const j = (i + 1) % total;
-                let inGap = false;
-                if (start < end) { if (i >= start && i < end) inGap = true; if (j >= start && j < end) inGap = true; } else { if (i >= start || i < end) inGap = true; if (j >= start || j < end) inGap = true; }
-                if (inGap) continue;
-                ctx.beginPath();
-                ctx.moveTo(pts[i].x, pts[i].y);
-                ctx.lineTo(pts[j].x, pts[j].y);
-                ctx.stroke();
+        let autoBetInterval=null, autoBetEnabled=false;
+        function toggleAutoBet(enable){
+            if(enable&&!autoBetEnabled){
+                autoBetEnabled=true; autoToggle.classList.add('active'); autoToggle.textContent='▶';
+                if(autoBetInterval) clearInterval(autoBetInterval);
+                autoBetInterval=setInterval(()=>{
+                    const canBet=(state.gameState==='idle'||state.gameState==='countdown'||state.gameState==='prestart');
+                    if(!canBet) return;
+                    const existing=getPlayer(state.userId);
+                    if(existing) return;
+                    const amount=parseInt(autoAmount.value)||10;
+                    if(amount<10||amount>state.balance) return;
+                    socket.emit('placeBet',{amount},(res)=>{
+                        if(res?.ok){ state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium'); }
+                    });
+                },2000);
+            } else if(!enable&&autoBetEnabled){
+                autoBetEnabled=false; autoToggle.classList.remove('active'); autoToggle.textContent='⏱';
+                if(autoBetInterval){ clearInterval(autoBetInterval); autoBetInterval=null; }
             }
-            if (isFlashing) {
-                const isRed = (opening.flashCount % 2 === 0);
+        }
+        autoToggle.addEventListener('click',()=>{ autoPanel.classList.toggle('open'); });
+        autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
+        autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
+
+        // ─── ICE BET ──────────────────────────────────────────────────
+        function placeIceBet(amount){
+            if(!socket||!socket.connected) return;
+            let addAmount=parseInt(amount)||10;
+            if(addAmount<10) addAmount=10;
+            if(addAmount>state.balance) addAmount=state.balance;
+            if(addAmount<=0){ haptic('light'); return; }
+            socket.emit('icePlaceBet',{amount:addAmount},(res)=>{
+                if(!res?.ok){ haptic('light'); console.warn('Ice bet rejected:',res?.error); return; }
+                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
+            });
+            iceBetInput.value=''; updateIceBetUI();
+        }
+        iceBetBtn.addEventListener('click',()=>placeIceBet(iceBetInput.value));
+        iceAllInBtn.addEventListener('click',()=>{ iceBetInput.value=state.balance; placeIceBet(state.balance); });
+        iceBetInput.addEventListener('blur',()=>{
+            let val=parseInt(iceBetInput.value);
+            if(isNaN(val)||val<10) val=10;
+            if(val>state.balance) val=state.balance;
+            iceBetInput.value=val;
+        });
+
+        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
+        function toggleIceAutoBet(enable){
+            if(enable&&!iceAutoBetEnabled){
+                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
+                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
+                iceAutoBetInterval=setInterval(()=>{
+                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
+                    if(!canBet) return;
+                    const existing=getIcePlayerLocal(state.userId);
+                    if(existing) return;
+                    const amount=parseInt(iceAutoAmount.value)||10;
+                    if(amount<10||amount>state.balance) return;
+                    placeIceBet(amount);
+                },2000);
+            } else if(!enable&&iceAutoBetEnabled){
+                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
+                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
+            }
+        }
+        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
+        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
+        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
+
+        // ─── PROMO ────────────────────────────────────────────────────
+        promoBtn.addEventListener('click', async ()=>{
+            const code=promoInput.value.trim().toUpperCase();
+            if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
+            if(!state.userId){ promoMessage.textContent='You are not logged in.'; promoMessage.style.color='var(--red)'; return; }
+            promoBtn.disabled=true; promoBtn.textContent='...'; promoMessage.textContent='';
+            try {
+                const response=await fetch(SERVER_URL+'/redeem',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code,userId:state.userId}) });
+                const data=await response.json();
+                if(data.ok){ state.balance=data.newBalance; updateBalance(); updateProfile();
+                    promoGif.src=DIAMOND_GIF; promoMsg.textContent=`Successfully claimed ${data.amount} 💎`; promoSub.textContent=`Your new balance is ${data.newBalance}`;
+                    promoModal.classList.add('show'); haptic('heavy');
+                    promoMessage.textContent='✅ Code redeemed!'; promoMessage.style.color='var(--green)'; promoInput.value='';
+                } else { promoMessage.textContent=data.error||'Invalid or expired code.'; promoMessage.style.color='var(--red)'; }
+            } catch(e){ promoMessage.textContent='Network error, please try again.'; promoMessage.style.color='var(--red)'; }
+            finally { promoBtn.disabled=false; promoBtn.textContent='Redeem'; }
+        });
+        promoContinueBtn.addEventListener('click',()=>{ promoModal.classList.remove('show'); });
+
+        // ─── PROFILE / ANON ──────────────────────────────────────────
+        reloadPfpBtn.addEventListener('click',function(){
+            const user=getPlayer(state.userId);
+            if(user){ pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); } else if(state.pfp){
+                pfpCache.delete(state.pfp);
+                const img=new Image();
+                img.onload=()=>{ profilePfp.src=state.pfp; haptic('medium'); };
+                img.onerror=()=>{ profilePfp.src=state.defaultAvatar; haptic('light'); };
+                img.src=state.pfp;
+            }
+        });
+        anonToggle.addEventListener('change',()=>{
+            if(!socket||!socket.connected){ anonToggle.checked=state.anonymous; return; }
+            const enabled=anonToggle.checked;
+            anonToggle.disabled=true;
+            socket.emit('setAnonymous',{enabled},(res)=>{
+                anonToggle.disabled=false;
+                if(!res?.ok){ anonToggle.checked=state.anonymous; console.warn('setAnonymous failed:',res?.error); return; }
+                state.anonymous=res.anonymous; haptic('light');
+            });
+        });
+
+        // ─── TABS ──────────────────────────────────────────────────────
+        function switchTab(tabId){
+            if(state.currentTab===tabId) return;
+            const oldTab=state.currentTab;
+            state.currentTab=tabId;
+            const oldEl=tabPages[oldTab];
+            if(oldEl){ oldEl.classList.remove('active'); oldEl.classList.add('exit'); setTimeout(()=>{ oldEl.classList.remove('exit'); },350); }
+            const newEl=tabPages[tabId];
+            if(newEl){ newEl.classList.add('active'); newEl.classList.remove('exit'); if(tabId==='profile') updateProfile(); if(tabId==='top') refreshLeaderboard(); }
+            tabBtns.forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tabId));
+            haptic('light');
+        }
+        tabBtns.forEach(btn=>{
+            btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
+        });
+
+        // ─── RENDER ────────────────────────────────────────────────────
+        function render(){
+            const w=state.arenaSize;
+            const half=w/2;
+            const s=scaleFactor();
+            ctx.clearRect(0,0,w,w);
+            const grad=ctx.createRadialGradient(half,half,0,half,half,half);
+            grad.addColorStop(0,'rgba(10,10,10,0.85)');
+            grad.addColorStop(1,'rgba(0,0,0,0.95)');
+            ctx.fillStyle=grad; ctx.fillRect(0,0,w,w);
+            const pts=state.perimeterPoints.map(p=>({x:p.x*s,y:p.y*s}));
+            ctx.save();
+            ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=30;
+            ctx.fillStyle='rgba(26,26,30,0.80)';
+            if(pts.length>0){ ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath(); ctx.fill(); }
+            ctx.restore();
+            ctx.save();
+            ctx.fillStyle='rgba(40,40,46,0.60)';
+            if(pts.length>0){ ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath(); ctx.fill(); }
+            ctx.restore();
+            const opening=state.opening;
+            const isFlashing=opening&&opening.state==='flashing';
+            const isOpen=opening&&opening.state==='open';
+            const total=pts.length;
+            ctx.save();
+            const hasGap=opening!==null&&(isFlashing||isOpen);
+            if(hasGap&&total>0){
+                const start=opening.startIdx, end=opening.endIdx;
+                ctx.strokeStyle='rgba(160,160,176,0.3)'; ctx.lineWidth=5;
+                for(let i=0;i<total;i++){
+                    const j=(i+1)%total;
+                    let inGap=false;
+                    if(start<end){ if(i>=start&&i<end) inGap=true; if(j>=start&&j<end) inGap=true; } else { if(i>=start||i<end) inGap=true; if(j>=start||j<end) inGap=true; }
+                    if(inGap) continue;
+                    ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+                }
+                if(isFlashing){
+                    const isRed=(opening.flashCount%2===0);
+                    ctx.save();
+                    const flashColor=isRed?'#ff0044':'rgba(160,160,176,0.25)';
+                    let gapSegments=[];
+                    if(start<end){ for(let i=start;i<end;i++) gapSegments.push({i,j:(i+1)%total}); }
+                    else { for(let i=start;i<total;i++) gapSegments.push({i,j:(i+1)%total}); for(let i=0;i<end;i++) gapSegments.push({i,j:(i+1)%total}); }
+                    ctx.strokeStyle=flashColor; ctx.lineWidth=isRed?5:3; ctx.shadowBlur=0; ctx.shadowColor='transparent';
+                    for(const seg of gapSegments){ ctx.beginPath(); ctx.moveTo(pts[seg.i].x,pts[seg.i].y); ctx.lineTo(pts[seg.j].x,pts[seg.j].y); ctx.stroke(); }
+                    ctx.restore();
+                }
+            } else if(total>0){
+                ctx.strokeStyle='rgba(160,160,176,0.25)'; ctx.lineWidth=5;
+                ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+                for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+                ctx.closePath(); ctx.stroke();
+            }
+            ctx.restore();
+            state.players.forEach(p=>{
+                if(!p.alive) return;
+                const px=p.x*s, py=p.y*s;
+                const popScale=getPopScale(p);
+                const radius=(p.displayRadius||18)*s*VISUAL_RADIUS_SCALE;
+                const displayRadius=radius*popScale;
+                let pulseScale=1;
+                if(p.isPulsing){ const t=p.pulseTime; if(t<0.6){ const phase=t/0.6; pulseScale=1+0.12*Math.sin(phase*Math.PI*3)*(1-phase); } }
+                const finalRadius=displayRadius*pulseScale;
+                const drawRadius=Math.max(finalRadius-1,1);
+                const topInfo=state.topPlayerIds.get(p.id);
+                let borderColor='rgba(255,255,255,0.35)'; let borderWidth=1.5; let shadowColor='transparent', shadowBlur=0;
+                if(topInfo){
+                    if(topInfo.rank===1){ borderColor='#FFD700'; borderWidth=3.5; shadowColor='rgba(255,215,0,0.6)'; shadowBlur=18; }
+                    else if(topInfo.rank===2){ borderColor='#C0C0C0'; borderWidth=3.0; shadowColor='rgba(192,192,192,0.5)'; shadowBlur=14; }
+                }
                 ctx.save();
-                const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
-                let gapSegments = [];
-                if (start < end) { for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total }); }
-                else { for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total }); for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total }); }
-                ctx.strokeStyle = flashColor;
-                ctx.lineWidth = isRed ? 5 : 3;
-                ctx.shadowBlur = 0;
-                ctx.shadowColor = 'transparent';
-                for (const seg of gapSegments) {
-                    ctx.beginPath();
-                    ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
-                    ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
-                    ctx.stroke();
+                ctx.beginPath(); ctx.arc(px,py,drawRadius,0,Math.PI*2); ctx.closePath(); ctx.clip();
+                if(p.pfpImg&&p.pfpImg.complete&&p.pfpImg.naturalWidth>0){
+                    const size=drawRadius*2;
+                    ctx.drawImage(p.pfpImg,px-drawRadius,py-drawRadius,size,size);
+                } else {
+                    ctx.fillStyle=p.color||'#555';
+                    ctx.fillRect(px-drawRadius,py-drawRadius,drawRadius*2,drawRadius*2);
+                    ctx.fillStyle='#fff';
+                    ctx.font=`${drawRadius*0.5}px system-ui, sans-serif`;
+                    ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillText((p.name||'?').charAt(0).toUpperCase(),px,py+1);
                 }
                 ctx.restore();
-            }
-        } else if (total > 0) {
-            ctx.strokeStyle = 'rgba(160,160,176,0.25)';
-            ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(pts[0].x, pts[0].y);
-            for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-            ctx.closePath();
-            ctx.stroke();
+                ctx.save();
+                ctx.shadowBlur=shadowBlur; ctx.shadowColor=shadowColor;
+                ctx.beginPath(); ctx.arc(px,py,finalRadius,0,Math.PI*2);
+                ctx.strokeStyle=borderColor; ctx.lineWidth=borderWidth; ctx.stroke();
+                ctx.shadowBlur=0;
+                ctx.restore();
+            });
         }
-        ctx.restore();
 
-        // Players
-        state.players.forEach(p => {
-            if (!p.alive) return;
-            const px = p.x * s, py = p.y * s;
-            const popScale = getPopScale(p);
-            const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
-            const displayRadius = radius * popScale;
-            let pulseScale = 1;
-            if (p.isPulsing) {
-                const t = p.pulseTime;
-                if (t < 0.6) { const phase = t / 0.6; pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
-            }
-            const finalRadius = displayRadius * pulseScale;
-            const drawRadius = Math.max(finalRadius - 1, 1);
+        // ─── RENDER ICE ──────────────────────────────────────────────
+        function renderIce() {
+            const w=iceState.arenaSize;
+            if(!w||!iceState.perimeterPoints.length) return;
+            const half=w/2; const s=iceScaleFactor();
+            iceCtx.clearRect(0,0,w,w);
+            const grad=iceCtx.createRadialGradient(half,half,0,half,half,half);
+            grad.addColorStop(0,'rgba(12,16,22,0.85)');
+            grad.addColorStop(1,'rgba(2,4,8,0.95)');
+            iceCtx.fillStyle=grad; iceCtx.fillRect(0,0,w,w);
+            const pts=iceState.perimeterPoints.map(p=>({x:p.x*s, y:p.y*s}));
+            if(pts.length===0) return;
+            const perimeterPath=new Path2D();
+            perimeterPath.moveTo(pts[0].x,pts[0].y);
+            for(let i=1;i<pts.length;i++) perimeterPath.lineTo(pts[i].x,pts[i].y);
+            perimeterPath.closePath();
 
-            const topInfo = state.topPlayerIds.get(p.id);
-            let borderColor = 'rgba(255,255,255,0.35)';
-            let borderWidth = 1.5;
-            let shadowColor = 'transparent', shadowBlur = 0;
-            if (topInfo) {
-                if (topInfo.rank === 1) { borderColor = '#FFD700'; borderWidth = 3.5; shadowColor = 'rgba(255,215,0,0.6)'; shadowBlur = 18; }
-                else if (topInfo.rank === 2) { borderColor = '#C0C0C0'; borderWidth = 3.0; shadowColor = 'rgba(192,192,192,0.5)'; shadowBlur = 14; }
-            }
+            const now=performance.now();
+            let zoomTx=0, zoomTy=0, zoomSc=1;
+            const puck=iceState.puck;
 
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                const size = drawRadius * 2;
-                ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
-            } else {
-                ctx.fillStyle = p.color || '#555';
-                ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
-                ctx.fillStyle = '#fff';
-                ctx.font = `${drawRadius * 0.5}px system-ui, sans-serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
-            }
-            ctx.restore();
-
-            ctx.save();
-            ctx.shadowBlur = shadowBlur;
-            ctx.shadowColor = shadowColor;
-            ctx.beginPath();
-            ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
-            ctx.strokeStyle = borderColor;
-            ctx.lineWidth = borderWidth;
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-            ctx.restore();
-        });
-    }
-
-    // ─── RENDER ICE ─────────────────────────────────────────────────
-    function renderIce() {
-        const w = iceState.arenaSize;
-        if (!w || !iceState.perimeterPoints.length) return;
-        const half = w / 2;
-        const s = iceScaleFactor();
-
-        // Clear
-        iceCtx.clearRect(0, 0, w, w);
-        const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-        grad.addColorStop(0, 'rgba(12,16,22,0.85)');
-        grad.addColorStop(1, 'rgba(2,4,8,0.95)');
-        iceCtx.fillStyle = grad;
-        iceCtx.fillRect(0, 0, w, w);
-
-        const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
-        if (pts.length === 0) return;
-        const perimeterPath = new Path2D();
-        perimeterPath.moveTo(pts[0].x, pts[0].y);
-        for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
-        perimeterPath.closePath();
-
-        // ─── ZOOM LOGIC ─────────────────────────────────────────────
-        const now = performance.now();
-        let zoomTx = 0, zoomTy = 0, zoomSc = 1;
-        const puck = iceState.puck;
-
-        if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-            const slideElapsed = (now - iceState.slideStartTime) / 1000;
-            // Zoom in after 6 seconds
-            if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
-                if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
-                    iceState.isZoomingIn = true;
-                    iceState.zoomStartTime = now;
-                    iceState.zoomTarget = 1.8;
+            if(iceState.gameState==='sliding'){
+                const slideElapsed=(now-iceState.slideStartTime)/1000;
+                if(slideElapsed>6.0 && !iceState.isZoomingOut && !iceState.zoomLocked){
+                    if(!iceState.isZoomingIn && iceState.zoom<1.7){
+                        iceState.isZoomingIn=true; iceState.zoomStartTime=now; iceState.zoomTarget=1.8;
+                    }
                 }
             }
-            // Zoom out if finished and currently zoomed in (triggered by setTimeout in applyIceServerState)
-            if (iceState.isZoomingOut) {
-                const elapsed = (now - iceState.zoomStartTime) / 1000;
-                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
-                const eased = easeInOutCubic(progress);
-                iceState.zoom = iceState.zoomTarget + (1 - iceState.zoomTarget) * (1 - eased);
-                if (progress >= 1) {
-                    iceState.isZoomingOut = false;
-                    iceState.zoom = 1;
-                    iceState.zoomLocked = false;
+            if(iceState.isZoomingOut){
+                const elapsed=(now-iceState.zoomStartTime)/1000;
+                const progress=Math.min(elapsed/iceState.zoomDuration,1);
+                const eased=easeInOutCubic(progress);
+                iceState.zoom=iceState.zoomTarget+(1-iceState.zoomTarget)*(1-eased);
+                if(progress>=1){ iceState.isZoomingOut=false; iceState.zoom=1; iceState.zoomLocked=false; iceState.zoomOutTriggered=false; }
+            }
+            if(iceState.isZoomingIn){
+                const elapsed=(now-iceState.zoomStartTime)/1000;
+                const progress=Math.min(elapsed/iceState.zoomDuration,1);
+                const eased=easeInOutCubic(progress);
+                iceState.zoom=1+(iceState.zoomTarget-1)*eased;
+                if(progress>=1){ iceState.isZoomingIn=false; iceState.zoomLocked=true; iceState.zoom=iceState.zoomTarget; }
+            }
+            if(iceState.zoom>1.01){
+                const puckScreenX=puck.x*s, puckScreenY=puck.y*s;
+                const cx=w/2, cy=w/2;
+                zoomTx=(cx-puckScreenX)*iceState.zoom + cx - cx*iceState.zoom;
+                zoomTy=(cy-puckScreenY)*iceState.zoom + cy - cy*iceState.zoom;
+                zoomSc=iceState.zoom;
+            }
+
+            iceCtx.save();
+            iceCtx.translate(zoomTx,zoomTy);
+            iceCtx.scale(zoomSc,zoomSc);
+
+            iceCtx.save();
+            iceCtx.shadowColor='rgba(0,0,0,0.9)'; iceCtx.shadowBlur=30;
+            iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
+            iceCtx.restore();
+
+            iceCtx.save();
+            iceCtx.clip(perimeterPath);
+            iceState.players.forEach(p=>{
+                const x1=p.segStart*s; const x2=p.segEnd*s; let segW=Math.max(x2-x1,0.5);
+                const isWinner=(iceState.gameState==='finished'&&iceState.winnerId===p.id);
+                let scaleX=1;
+                const popData=iceState.segmentPop.get(p.id);
+                if(popData){
+                    const elapsed=(now-popData.startTime)/1000;
+                    const progress=Math.min(elapsed/(popData.duration/1000),1);
+                    if(progress<1){
+                        scaleX=0.9+0.1*easeOutCubic(progress);
+                        const center=(x1+x2)/2; const halfWidth=segW/2*scaleX;
+                        iceCtx.save();
+                        iceCtx.translate(center,half);
+                        iceCtx.scale(scaleX,1);
+                        const drawX1=-halfWidth, drawX2=halfWidth;
+                        const segGrad=iceCtx.createLinearGradient(0,0,0,w);
+                        segGrad.addColorStop(0,lightenColor(p.color,isWinner?70:40));
+                        segGrad.addColorStop(1,p.color);
+                        iceCtx.globalAlpha=isWinner?1:0.93;
+                        iceCtx.fillStyle=segGrad;
+                        iceCtx.fillRect(drawX1,-half,drawX2-drawX1,w);
+                        iceCtx.globalAlpha=1;
+                        if(isWinner){
+                            iceCtx.strokeStyle='rgba(255,255,255,0.85)'; iceCtx.lineWidth=3;
+                            iceCtx.shadowColor=hexToRgba(p.color,0.8); iceCtx.shadowBlur=16;
+                            iceCtx.strokeRect(drawX1+1.5,-half+1.5,(drawX2-drawX1)-3,w-3);
+                        }
+                        iceCtx.restore();
+                    } else {
+                        iceState.segmentPop.delete(p.id);
+                    }
                 }
-            }
-        }
-
-        if (iceState.isZoomingIn) {
-            const elapsed = (now - iceState.zoomStartTime) / 1000;
-            const progress = Math.min(elapsed / iceState.zoomDuration, 1);
-            const eased = easeInOutCubic(progress);
-            iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
-            if (progress >= 1) {
-                iceState.isZoomingIn = false;
-                iceState.zoomLocked = true;
-                iceState.zoom = iceState.zoomTarget;
-            }
-        }
-
-        // Compute transform
-        if (iceState.zoom > 1.01) {
-            const puckScreenX = puck.x * s;
-            const puckScreenY = puck.y * s;
-            const cx = w/2, cy = w/2;
-            zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
-            zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
-            zoomSc = iceState.zoom;
-        }
-
-        iceCtx.save();
-        iceCtx.translate(zoomTx, zoomTy);
-        iceCtx.scale(zoomSc, zoomSc);
-
-        // Draw rink base
-        iceCtx.save();
-        iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
-        iceCtx.shadowBlur = 30;
-        iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
-        iceCtx.fill(perimeterPath);
-        iceCtx.restore();
-
-        // Player fields with pop‑up animation
-        iceCtx.save();
-        iceCtx.clip(perimeterPath);
-        iceState.players.forEach(p => {
-            const x1 = p.segStart * s;
-            const x2 = p.segEnd * s;
-            let segW = Math.max(x2 - x1, 0.5);
-            // Pop animation: scale from 0 to 1
-            let scaleX = 1;
-            const popData = iceState.segmentPop.get(p.id);
-            if (popData) {
-                const elapsed = (now - popData.startTime) / 1000;
-                const progress = Math.min(elapsed / (popData.duration / 1000), 1);
-                if (progress < 1) {
-                    scaleX = easeOutBack(progress);
-                    // Expand from center: shift start/end accordingly
-                    const center = (x1 + x2) / 2;
-                    const halfWidth = segW / 2 * scaleX;
-                    // We'll draw the segment with a scaled width, but we need to clip to original bounds
-                    // Simpler: draw rectangle centered, but we can just scale the drawing
-                    // We'll use scale transform
+                if(!popData || (popData && (now-popData.startTime)/1000 >= popData.duration/1000)){
+                    const segGrad=iceCtx.createLinearGradient(0,0,0,w);
+                    segGrad.addColorStop(0,lightenColor(p.color,isWinner?70:40));
+                    segGrad.addColorStop(1,p.color);
+                    iceCtx.globalAlpha=isWinner?1:0.93;
+                    iceCtx.fillStyle=segGrad;
+                    iceCtx.fillRect(x1,0,segW,w);
+                    iceCtx.globalAlpha=1;
+                    if(isWinner){
+                        iceCtx.save();
+                        iceCtx.strokeStyle='rgba(255,255,255,0.85)'; iceCtx.lineWidth=3;
+                        iceCtx.shadowColor=hexToRgba(p.color,0.8); iceCtx.shadowBlur=16;
+                        iceCtx.strokeRect(x1+1.5,1.5,segW-3,w-3);
+                        iceCtx.restore();
+                    }
+                    iceCtx.strokeStyle='rgba(255,255,255,0.15)'; iceCtx.lineWidth=2;
+                    iceCtx.beginPath(); iceCtx.moveTo(x2,0); iceCtx.lineTo(x2,w); iceCtx.stroke();
+                }
+                const segCenterX=(x1+x2)/2;
+                if(segW>30){
+                    const avatarR=Math.min(segW*0.32,18);
+                    const avatarY=half-14;
                     iceCtx.save();
-                    iceCtx.translate(center, half);
-                    iceCtx.scale(scaleX, 1);
-                    const drawX1 = -halfWidth;
-                    const drawX2 = halfWidth;
-                    const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
-                    const segGrad = iceCtx.createLinearGradient(0, 0, 0, w);
-                    segGrad.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
-                    segGrad.addColorStop(1, p.color);
-                    iceCtx.globalAlpha = isWinner ? 1 : 0.93;
-                    iceCtx.fillStyle = segGrad;
-                    iceCtx.fillRect(drawX1, -half, drawX2 - drawX1, w);
-                    iceCtx.globalAlpha = 1;
-                    if (isWinner) {
-                        iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
-                        iceCtx.lineWidth = 3;
-                        iceCtx.shadowColor = hexToRgba(p.color, 0.8);
-                        iceCtx.shadowBlur = 16;
-                        iceCtx.strokeRect(drawX1 + 1.5, -half + 1.5, (drawX2 - drawX1) - 3, w - 3);
+                    iceCtx.beginPath(); iceCtx.arc(segCenterX,avatarY,avatarR,0,Math.PI*2); iceCtx.closePath(); iceCtx.clip();
+                    if(p.pfpImg&&p.pfpImg.complete&&p.pfpImg.naturalWidth>0){
+                        iceCtx.drawImage(p.pfpImg,segCenterX-avatarR,avatarY-avatarR,avatarR*2,avatarR*2);
+                    } else {
+                        iceCtx.fillStyle=p.color||'#555';
+                        iceCtx.fillRect(segCenterX-avatarR,avatarY-avatarR,avatarR*2,avatarR*2);
                     }
                     iceCtx.restore();
-                    // Skip the normal drawing for this frame
-                    return;
-                } else {
-                    iceState.segmentPop.delete(p.id);
+                    iceCtx.strokeStyle='rgba(255,255,255,0.6)'; iceCtx.lineWidth=1.5;
+                    iceCtx.beginPath(); iceCtx.arc(segCenterX,avatarY,avatarR,0,Math.PI*2); iceCtx.stroke();
+                    if(segW>44){
+                        iceCtx.fillStyle='#fff'; iceCtx.font='600 11px system-ui, sans-serif';
+                        iceCtx.textAlign='center'; iceCtx.textBaseline='middle';
+                        iceCtx.fillText(p.bet, segCenterX, avatarY+avatarR+14);
+                    }
                 }
-            }
-            // Normal drawing (full size)
-            const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
-            const segGrad = iceCtx.createLinearGradient(0, 0, 0, w);
-            segGrad.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
-            segGrad.addColorStop(1, p.color);
-            iceCtx.globalAlpha = isWinner ? 1 : 0.93;
-            iceCtx.fillStyle = segGrad;
-            iceCtx.fillRect(x1, 0, segW, w);
-            iceCtx.globalAlpha = 1;
-            if (isWinner) {
-                iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
-                iceCtx.lineWidth = 3;
-                iceCtx.shadowColor = hexToRgba(p.color, 0.8);
-                iceCtx.shadowBlur = 16;
-                iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
-                iceCtx.restore();
-            }
-            // divider
-            iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
-            iceCtx.lineWidth = 2;
-            iceCtx.beginPath();
-            iceCtx.moveTo(x2, 0);
-            iceCtx.lineTo(x2, w);
-            iceCtx.stroke();
-
-            // label
-            const segCenterX = (x1 + x2) / 2;
-            if (segW > 30) {
-                const avatarR = Math.min(segW * 0.32, 18);
-                const avatarY = half - 14;
-                iceCtx.save();
-                iceCtx.beginPath();
-                iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
-                iceCtx.closePath();
-                iceCtx.clip();
-                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                    iceCtx.drawImage(p.pfpImg, segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
-                } else {
-                    iceCtx.fillStyle = p.color || '#555';
-                    iceCtx.fillRect(segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
-                }
-                iceCtx.restore();
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.6)';
-                iceCtx.lineWidth = 1.5;
-                iceCtx.beginPath();
-                iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
-                iceCtx.stroke();
-                if (segW > 44) {
-                    iceCtx.fillStyle = '#fff';
-                    iceCtx.font = `600 11px system-ui, sans-serif`;
-                    iceCtx.textAlign = 'center';
-                    iceCtx.textBaseline = 'middle';
-                    iceCtx.fillText(p.bet, segCenterX, avatarY + avatarR + 14);
-                }
-            }
-        });
-        iceCtx.restore();
-
-        // Rink border
-        iceCtx.save();
-        iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
-        iceCtx.lineWidth = 4;
-        iceCtx.stroke(perimeterPath);
-        iceCtx.restore();
-
-        // ─── SPINNING ARROW (shorter) ────────────────────────────
-        if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
-            const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
-            const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
-            const extraSpins = 4;
-            const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
-
-            const arrowLen = Math.min(w * 0.18, 45);
-            const headSize = Math.min(arrowLen * 0.4, 12);
+            });
+            iceCtx.restore();
 
             iceCtx.save();
-            iceCtx.translate(half, half);
-            iceCtx.rotate(angle);
-            iceCtx.strokeStyle = '#e8f4ff';
-            iceCtx.lineWidth = 2.5;
-            iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
-            iceCtx.shadowBlur = 12;
-            iceCtx.beginPath();
-            iceCtx.moveTo(0, 0);
-            iceCtx.lineTo(arrowLen - headSize * 0.6, 0);
-            iceCtx.stroke();
-            iceCtx.fillStyle = '#e8f4ff';
-            iceCtx.shadowBlur = 16;
-            iceCtx.beginPath();
-            iceCtx.moveTo(arrowLen, 0);
-            iceCtx.lineTo(arrowLen - headSize, -headSize * 0.5);
-            iceCtx.lineTo(arrowLen - headSize, headSize * 0.5);
-            iceCtx.closePath();
-            iceCtx.fill();
+            iceCtx.strokeStyle='rgba(160,190,220,0.35)'; iceCtx.lineWidth=4;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
+
+            if(iceState.gameState==='spinning' && iceState.spinStartTime){
+                const elapsed=(Date.now()-iceState.spinStartTime)/1000;
+                const t=Math.min(1, elapsed/(iceState.spinDuration||1));
+                const extraSpins=4;
+                const angle=iceState.spinFinalAngle - (1-easeOutCubic(t))*(extraSpins*Math.PI*2);
+                const arrowLen=Math.min(w*0.18,45);
+                const headSize=Math.min(arrowLen*0.4,12);
+                iceCtx.save();
+                iceCtx.translate(half,half);
+                iceCtx.rotate(angle);
+                iceCtx.strokeStyle='#e8f4ff'; iceCtx.lineWidth=2.5;
+                iceCtx.shadowColor='rgba(139,197,255,0.8)'; iceCtx.shadowBlur=12;
+                iceCtx.beginPath(); iceCtx.moveTo(0,0); iceCtx.lineTo(arrowLen-headSize*0.6,0); iceCtx.stroke();
+                iceCtx.fillStyle='#e8f4ff'; iceCtx.shadowBlur=16;
+                iceCtx.beginPath(); iceCtx.moveTo(arrowLen,0); iceCtx.lineTo(arrowLen-headSize,-headSize*0.5); iceCtx.lineTo(arrowLen-headSize,headSize*0.5); iceCtx.closePath(); iceCtx.fill();
+                iceCtx.restore();
+            }
+
+            if(iceState.puckVisible){
+                let scale=1;
+                if(iceState.puckPopStart){
+                    const elapsedPop=(performance.now()-iceState.puckPopStart)/1000;
+                    const duration=0.4;
+                    const progress=Math.min(elapsedPop/duration,1);
+                    if(progress<1){
+                        scale=easeOutBack(progress);
+                        scale=Math.min(1.2,Math.max(0,scale));
+                    } else { scale=1; iceState.puckPopStart=0; }
+                }
+                let px, py;
+                if(iceState.gameState==='spinning'){ px=half; py=half; } else { px=puck.x*s; py=puck.y*s; }
+                const puckRadius=PUCK_RENDER_RADIUS * s * scale;
+                iceCtx.save();
+                iceCtx.shadowColor='rgba(180,220,255,0.9)'; iceCtx.shadowBlur=14;
+                iceCtx.strokeStyle='#eaf6ff'; iceCtx.lineWidth=2.5;
+                iceCtx.beginPath(); iceCtx.arc(px,py,puckRadius,0,Math.PI*2); iceCtx.stroke();
+                const crossSize=puckRadius*0.6;
+                iceCtx.lineWidth=2; iceCtx.strokeStyle='#eaf6ff'; iceCtx.shadowBlur=0;
+                iceCtx.beginPath(); iceCtx.moveTo(px-crossSize,py); iceCtx.lineTo(px+crossSize,py);
+                iceCtx.moveTo(px,py-crossSize); iceCtx.lineTo(px,py+crossSize); iceCtx.stroke();
+                iceCtx.restore();
+            }
             iceCtx.restore();
         }
 
-        // ─── PUCK (with dynamic radius based on speed) ──────────
-        if (iceState.puckVisible) {
-            let scale = 1;
-            if (iceState.puckPopStart) {
-                const elapsedPop = (performance.now() - iceState.puckPopStart) / 1000;
-                const duration = 0.6;
-                const progress = Math.min(elapsedPop / duration, 1);
-                const pop = easeOutBack(progress);
-                scale = Math.max(0, pop);
-                if (progress >= 1) {
-                    scale = 1;
-                    iceState.puckPopStart = 0;
-                }
-            }
+        // ─── GAME LOOP ───────────────────────────────────────────────
+        function renderLoop(){
+            updatePlayerAnimations();
+            const now=Date.now();
+            if(state.gameState==='countdown'&&state.countdownStartTime){
+                const elapsed=(now-state.countdownStartTime)/1000;
+                const remaining=Math.max(0,10.0-elapsed);
+                const secs=Math.floor(remaining);
+                const ms=Math.floor((remaining-secs)*100);
+                countdownTimer.textContent=secs+'.'+String(ms).padStart(2,'0');
+                const progress=Math.min(1,elapsed/10.0)*100;
+                timerProgress.style.width=progress+'%';
+                timerProgressWrap.classList.add('visible');
+            } else if(state.gameState==='prestart'){ countdownTimer.textContent='GO!'; timerProgress.style.width='100%'; timerProgressWrap.classList.add('visible'); }
+            else if(state.gameState==='idle'){ timerProgressWrap.classList.remove('visible'); }
 
-            let px, py;
-            if (iceState.gameState === 'spinning') {
-                px = half;
-                py = half;
-            } else {
-                px = puck.x * s;
-                py = puck.y * s;
-            }
+            if(iceState.gameState==='countdown'&&iceState.countdownStartTime){
+                const elapsed=(now-iceState.countdownStartTime)/1000;
+                const remaining=Math.max(0,10.0-elapsed);
+                const secs=Math.floor(remaining);
+                const ms=Math.floor((remaining-secs)*100);
+                iceCountdownTimer.textContent=secs+'.'+String(ms).padStart(2,'0');
+                iceTimerProgress.style.width=(Math.min(1,elapsed/10.0)*100)+'%';
+                iceTimerProgressWrap.classList.add('visible');
+            } else if(iceState.gameState==='spinning'){ iceCountdownTimer.textContent='🌀'; iceTimerProgress.style.width='100%'; }
+            else if(iceState.gameState==='idle'){ iceTimerProgressWrap.classList.remove('visible'); }
 
-            // Estimate speed from puck movement (client side) to shrink radius
-            // We'll use the last known puck position difference (updated each frame in renderIce)
-            let puckSpeed = 0;
-            if (iceState._lastPuckPos) {
-                const dx = puck.x - iceState._lastPuckPos.x;
-                const dy = puck.y - iceState._lastPuckPos.y;
-                const dt = (now - iceState._lastPuckTime) / 1000 || 0.016;
-                puckSpeed = Math.sqrt(dx*dx + dy*dy) / dt;
-            }
-            iceState._lastPuckPos = { x: puck.x, y: puck.y };
-            iceState._lastPuckTime = now;
-
-            // Dynamic radius: from 10 down to 3 as speed approaches 0
-            const initialSpeed = 11;
-            const speedRatio = Math.min(1, puckSpeed / initialSpeed);
-            const dynamicRadius = 3 + 7 * speedRatio; // range 3..10
-            const puckRadius = dynamicRadius * s * scale;
-
-            iceCtx.save();
-            iceCtx.shadowColor = 'rgba(180,220,255,0.9)';
-            iceCtx.shadowBlur = 14;
-            iceCtx.strokeStyle = '#eaf6ff';
-            iceCtx.lineWidth = 2.5;
-            iceCtx.beginPath();
-            iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
-            iceCtx.stroke();
-            const crossSize = puckRadius * 0.6;
-            iceCtx.lineWidth = 2;
-            iceCtx.strokeStyle = '#eaf6ff';
-            iceCtx.shadowBlur = 0;
-            iceCtx.beginPath();
-            iceCtx.moveTo(px - crossSize, py);
-            iceCtx.lineTo(px + crossSize, py);
-            iceCtx.moveTo(px, py - crossSize);
-            iceCtx.lineTo(px, py + crossSize);
-            iceCtx.stroke();
-            iceCtx.restore();
+            render(); renderIce();
+            requestAnimationFrame(renderLoop);
         }
 
-        iceCtx.restore(); // end zoom transform
-    }
-
-    // ─── INIT ──────────────────────────────────────────────────────
-    function init() {
-        if (tg?.initDataUnsafe?.user) {
-            const u = tg.initDataUnsafe.user;
-            state.username = u.username || u.first_name || 'player';
-            state.pfp = u.photo_url || '';
-        } else {
-            state.username = 'player';
+        // ─── INIT ──────────────────────────────────────────────────────
+        function init(){
+            if(tg?.initDataUnsafe?.user){ const u=tg.initDataUnsafe.user; state.username=u.username||u.first_name||'player'; state.pfp=u.photo_url||''; } else state.username='player';
+            usernameDisplay.textContent='@'+state.username;
+            profilePfp.src=state.pfp||state.defaultAvatar;
+            profileName.textContent=state.username;
+            profileUsername.textContent='@'+state.username;
+            resizeCanvas(); resizeIceCanvas();
+            window.addEventListener('resize',()=>{ resizeCanvas(); resizeIceCanvas(); });
+            Object.keys(tabPages).forEach(key=>tabPages[key].classList.toggle('active',key==='pvp'));
+            document.getElementById('tabs').style.pointerEvents='auto';
+            tabBtns.forEach(b=>b.style.pointerEvents='auto');
+            requestAnimationFrame(renderLoop);
+            setOnline(false);
         }
-        usernameDisplay.textContent = '@' + state.username;
-        profilePfp.src = state.pfp || state.defaultAvatar;
-        profileName.textContent = state.username;
-        profileUsername.textContent = '@' + state.username;
-
-        resizeCanvas();
-        resizeIceCanvas();
-        window.addEventListener('resize', () => { resizeCanvas(); resizeIceCanvas(); });
-        Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
-        document.getElementById('tabs').style.pointerEvents = 'auto';
-        tabBtns.forEach(b => b.style.pointerEvents = 'auto');
-        requestAnimationFrame(renderLoop);
-        setOnline(false);
-    }
-    init();
-    window.__state = state;
+        init();
+        window.__state=state;
     </script>
 </body>
 </html>
