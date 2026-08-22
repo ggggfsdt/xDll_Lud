@@ -3697,33 +3697,27 @@
         // ─── ICE ARENA RENDER ─────────────────────────────────────────
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
-        function drawIceOrbitArrow(ctx, cx, cy, ringR, angle, size) {
-            // Positioned ON the ring (at radius ringR, angle `angle`) instead of pivoting
-            // in place at the center — so as `angle` advances over time this reads as an
-            // arrow/marker travelling around the ring, like a roulette ball on the rim,
-            // rather than a compass needle spinning in one spot.
-            const ax = cx + Math.cos(angle) * ringR;
-            const ay = cy + Math.sin(angle) * ringR;
-            const travelDir = angle + Math.PI / 2; // tangent to the ring = direction of travel
-            ctx.save();
-            ctx.translate(ax, ay);
-            ctx.rotate(travelDir);
-            ctx.beginPath();
-            ctx.moveTo(-size * 0.5, size * 0.42);
-            ctx.lineTo(size * 0.55, 0);
-            ctx.lineTo(-size * 0.5, -size * 0.42);
-            ctx.lineTo(-size * 0.28, 0);
-            ctx.closePath();
-            ctx.fillStyle = '#e8f4ff';
-            ctx.shadowColor = 'rgba(139, 197, 255, 0.9)';
-            ctx.shadowBlur = 16;
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(20,40,60,0.4)';
-            ctx.lineWidth = 1;
-            ctx.shadowBlur = 0;
-            ctx.stroke();
-            ctx.restore();
-        }
+        function drawIceArrow(ctx, cx, cy, angle, size) {
+    // Arrow pointing in direction of 'angle' (0 = right)
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    // Draw a filled arrowhead
+    ctx.beginPath();
+    ctx.moveTo(size * 0.6, 0);
+    ctx.lineTo(-size * 0.4, size * 0.4);
+    ctx.lineTo(-size * 0.2, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#e8f4ff';
+    ctx.shadowColor = 'rgba(139, 197, 255, 0.9)';
+    ctx.shadowBlur = 16;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(20,40,60,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+    ctx.restore();
+}
 
         function renderIce() {
             const w = iceState.arenaSize;
@@ -3833,32 +3827,33 @@
             iceCtx.restore();
 
             // center ring + orbiting arrow (during the "spinning" phase only)
-            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
-                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
-                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
-                const extraSpins = 4;
-                // decelerating from several extra full turns down to the exact final angle
-                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+           // center ring + spinning arrow (during the "spinning" phase only)
+if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+    const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+    const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+    const extraSpins = 4;
+    const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
-                const ringR = Math.max(w * 0.13, 30);
-                iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(220,235,255,0.85)';
-                iceCtx.lineWidth = 4;
-                iceCtx.beginPath();
-                iceCtx.arc(half, half, ringR, 0, Math.PI * 2);
-                iceCtx.stroke();
-                // "+" crosshair, interior left unfilled
-                iceCtx.lineWidth = 2.5;
-                iceCtx.beginPath();
-                iceCtx.moveTo(half - ringR * 0.35, half);
-                iceCtx.lineTo(half + ringR * 0.35, half);
-                iceCtx.moveTo(half, half - ringR * 0.35);
-                iceCtx.lineTo(half, half + ringR * 0.35);
-                iceCtx.stroke();
-                iceCtx.restore();
+    const ringR = Math.max(w * 0.08, 18); // smaller ring
+    iceCtx.save();
+    iceCtx.strokeStyle = 'rgba(220,235,255,0.85)';
+    iceCtx.lineWidth = 3;
+    iceCtx.beginPath();
+    iceCtx.arc(half, half, ringR, 0, Math.PI * 2);
+    iceCtx.stroke();
+    // "+" crosshair, interior left unfilled
+    iceCtx.lineWidth = 2;
+    iceCtx.beginPath();
+    iceCtx.moveTo(half - ringR * 0.3, half);
+    iceCtx.lineTo(half + ringR * 0.3, half);
+    iceCtx.moveTo(half, half - ringR * 0.3);
+    iceCtx.lineTo(half, half + ringR * 0.3);
+    iceCtx.stroke();
+    iceCtx.restore();
 
-                if (t < 1) drawIceOrbitArrow(iceCtx, half, half, ringR, angle, Math.max(ringR * 0.85, 22));
-            }
+    // Draw the arrow at the centre, pointing in the current direction
+    if (t < 1) drawIceArrow(iceCtx, half, half, angle, Math.max(ringR * 1.2, 24));
+}
 
             // ─── PUCK: outline circle with crosshair (no fill) ─────
             if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
