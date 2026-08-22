@@ -121,7 +121,8 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
 function speedForRadius(radius) {
-  const minR = 12, maxR = 50;
+  const minR = 15;   // match new min radius
+  const maxR = 50;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
   const speed = 8.0 - norm * 5.5;
   return Math.max(2.5, Math.min(8.0, speed));
@@ -150,16 +151,16 @@ const room = createRoom('main');
 function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
-// ─── Radius scaling – min 12, power 2.5 ──────────────────────
+// ─── Radius scaling – min 15, exponent 1.5 ──────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
-  const minR = 12;
+  const minR = 15;
   const maxR = 50;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
-    // Power curve: small bets get much smaller, large bets much larger
-    const adjustedRatio = Math.pow(ratio, 2.5);
+    // Power 1.5 gives a nice balance: equal bets get medium size
+    const adjustedRatio = Math.pow(ratio, 1.5);
     const r = minR + adjustedRatio * (maxR - minR);
     p.targetRadius = Math.min(Math.max(r, minR), maxR);
     p.mass = p.targetRadius * p.targetRadius * 1.2;
@@ -169,7 +170,7 @@ function computeRadii() {
 
 function makePlayer(id, bet, name, pfp) {
   const half = ARENA_SIZE / 2;
-  const radius = 18; // initial placeholder
+  const radius = 18; // placeholder
   let x, y, attempts = 0, overlap = true;
   while (overlap && attempts < 100) {
     x = half + (Math.random() - 0.5) * (ARENA_SIZE * 0.6);
@@ -187,7 +188,7 @@ function makePlayer(id, bet, name, pfp) {
     alive: true,
   };
   room.players.push(p);
-  computeRadii(); // recalc radii based on final bets
+  computeRadii();
   return p;
 }
 
