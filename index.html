@@ -491,7 +491,7 @@
 
     <script>
     // ═══════════════════════════════════════════════════════════════════
-    // FULL CLIENT LOGIC (with fixed ice arena zoom)
+    // FULL CLIENT LOGIC (with fixed tab switching and ice arena)
     // ═══════════════════════════════════════════════════════════════════
 
     // ─── CONFIG ──────────────────────────────────────────────────────
@@ -658,7 +658,7 @@
         zoomDuration: 1.5,
         isZoomingIn: false,
         isZoomingOut: false,
-        zoomLocked: false, // prevent re‑trigger
+        zoomLocked: false,
     };
 
     // Auto‑bet elements (PvP)
@@ -1637,11 +1637,10 @@
         }
         const newEl = tabPages[tabId];
         if (newEl) {
-            setTimeout(() => {
-                newEl.classList.add('active');
-                if (tabId === 'profile') updateProfile();
-                if (tabId === 'top') refreshLeaderboard();
-            }, 50);
+            newEl.classList.add('active');
+            newEl.classList.remove('exit');
+            if (tabId === 'profile') updateProfile();
+            if (tabId === 'top') refreshLeaderboard();
         }
         tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
         haptic('light');
@@ -2177,6 +2176,7 @@
 
     // ─── INIT ──────────────────────────────────────────────────────
     function init() {
+        if (tg?.initDataUnsafe?.user) {
             const u = tg.initDataUnsafe.user;
             state.username = u.username || u.first_name || 'player';
             state.pfp = u.photo_url || '';
