@@ -157,7 +157,7 @@ function getPlayer(id) { return room.players.find(p => p.id === id); }
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
-const PUCK_RADIUS = 10;
+const PUCK_RADIUS = 10; // used as base, but dynamic radius is used in physics
 
 function createIceRoom(id) {
   return {
@@ -287,12 +287,19 @@ async function endIceGame() {
   }, 3000);
 }
 
+// ─── ICE PHYSICS with DYNAMIC PUCK RADIUS ─────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
   const subSteps = 6;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
+
+  // Compute current speed to determine dynamic radius
+  const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+  const initialSpeed = 11; // from launchIcePuck
+  const speedRatio = Math.min(1, currentSpeed / initialSpeed);
+  const dynamicRadius = 3 + 7 * speedRatio; // range 3..10
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -310,9 +317,9 @@ function updateIcePhysics(dt) {
       const nearX = ax + t * dx, nearY = ay + t * dy;
       const distX = puck.x - nearX, distY = puck.y - nearY;
       const dist = Math.sqrt(distX * distX + distY * distY);
-      if (dist < PUCK_RADIUS) {
+      if (dist < dynamicRadius) {
         const nx = distX / dist, ny = distY / dist;
-        const overlap = PUCK_RADIUS - dist;
+        const overlap = dynamicRadius - dist;
         puck.x += nx * overlap;
         puck.y += ny * overlap;
         const vn = puck.vx * nx + puck.vy * ny;
@@ -325,7 +332,7 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── FASTER STOP: friction per second 0.75 (was 0.90) ────
+    // friction
     const frictionPerSecond = 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
