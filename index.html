@@ -379,7 +379,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.30); /* lighter overlay */
+            background: rgba(0, 0, 0, 0.20);
             border-radius: 12px;
             z-index: 0;
             pointer-events: none;
@@ -464,7 +464,7 @@
             display: inline;
         }
 
-        /* Compact row */
+        /* Compact row – smaller buttons */
         .bet-row {
             display: flex;
             align-items: center;
@@ -475,13 +475,13 @@
         #bet-input {
             flex: 1;
             max-width: 120px;
-            padding: 4px 6px;
-            height: 32px;
+            padding: 2px 6px;
+            height: 28px;
             border-radius: 8px;
             border: 1px solid var(--border);
             background: rgba(255, 255, 255, 0.10);
             color: var(--text);
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
             text-align: center;
             outline: none;
@@ -492,14 +492,14 @@
             box-shadow: 0 0 24px var(--primary-glow);
         }
         #all-in-btn {
-            height: 32px;
+            height: 28px;
             padding: 0 10px;
             border-radius: 8px;
             border: none;
             background: var(--gold);
             color: #000;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: 0.2s;
             white-space: nowrap;
@@ -511,14 +511,14 @@
             opacity: 0.8;
         }
         #bet-btn {
-            padding: 4px 0;
-            height: 30px;
+            padding: 2px 0;
+            height: 26px;
             border-radius: 8px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: 0.2s;
             box-shadow: 0 0 24px var(--primary-glow);
@@ -1492,18 +1492,18 @@
             }
             #bet-input {
                 max-width: 90px;
-                height: 28px;
-                font-size: 14px;
-                padding: 3px 4px;
+                height: 24px;
+                font-size: 13px;
+                padding: 1px 4px;
             }
             #all-in-btn {
-                height: 28px;
-                font-size: 12px;
+                height: 24px;
+                font-size: 11px;
                 padding: 0 6px;
             }
             #bet-btn {
-                height: 28px;
-                font-size: 13px;
+                height: 22px;
+                font-size: 12px;
             }
             #bet-overlay.collapsed {
                 padding: 4px 8px;
@@ -1870,7 +1870,7 @@
         };
 
         let SERVER_ARENA_SIZE = 400;
-        const VISUAL_RADIUS_SCALE = 0.85;
+        const VISUAL_RADIUS_SCALE = 0.75; // smaller circles
 
         // DOM refs
         const canvas = document.getElementById('game-canvas');
@@ -2485,8 +2485,7 @@
             }
         });
 
-        // ─── Input handling (allow empty, default to 10 on blur) ──
-        // This function is used for both bet input and auto amount input
+        // ─── Input handling – fully deletable, no forced updates ──
         function setupInputWithClear(inputEl, defaultVal = 10) {
             inputEl.addEventListener('input', () => {
                 const raw = inputEl.value;
@@ -2495,10 +2494,7 @@
                     return;
                 }
                 delete inputEl.dataset.empty;
-                const val = parseInt(raw);
-                if (!isNaN(val) && val > state.balance) {
-                    inputEl.value = state.balance;
-                }
+                // Do NOT clamp here – let the user type freely
             });
 
             inputEl.addEventListener('blur', () => {
@@ -2517,7 +2513,7 @@
         setupInputWithClear(betInput, 10);
         setupInputWithClear(autoAmount, 10);
 
-        // ─── Auto‑bet (fix: click on switch label works anytime) ──
+        // ─── Auto‑bet (switch works anytime) ──────────────────────
         let autoBetInterval = null;
         let autoBetEnabled = false;
 
@@ -2555,12 +2551,10 @@
             }
         }
 
-        // Click on the toggle button opens/closes the panel
         autoToggle.addEventListener('click', () => {
             autoPanel.classList.toggle('open');
         });
 
-        // Click on the switch wrapper toggles the checkbox (works anytime)
         autoSwitchWrap.addEventListener('click', (e) => {
             e.stopPropagation();
             const checked = !autoSwitch.checked;
@@ -2569,218 +2563,11 @@
             haptic('light');
         });
 
-        // Also listen to the switch change event
         autoSwitch.addEventListener('change', () => {
             toggleAutoBet(autoSwitch.checked);
         });
 
-        // Stop auto-bet on disconnect (cleanup)
-        socket?.on('disconnect', () => {
-            if (autoBetEnabled) {
-                toggleAutoBet(false);
-                autoSwitch.checked = false;
-            }
-        });
-
-        // ═══════════════════════════════════════════════════════════════
-        // RENDER
-        // ═══════════════════════════════════════════════════════════════
-        function render() {
-            const w = state.arenaSize;
-            const half = w / 2;
-            const s = scaleFactor();
-            ctx.clearRect(0, 0, w, w);
-
-            const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(10,10,10,0.85)');
-            grad.addColorStop(1, 'rgba(0,0,0,0.95)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, w);
-
-            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
-            ctx.save();
-            ctx.shadowColor = 'rgba(0,0,0,0.9)';
-            ctx.shadowBlur = 30;
-            ctx.fillStyle = 'rgba(26,26,30,0.80)';
-            if (pts.length > 0) {
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.fill();
-            }
-            ctx.restore();
-
-            ctx.save();
-            ctx.fillStyle = 'rgba(40,40,46,0.60)';
-            if (pts.length > 0) {
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.fill();
-            }
-            ctx.restore();
-
-            const opening = state.opening;
-            const isFlashing = opening && opening.state === 'flashing';
-            const isOpen = opening && opening.state === 'open';
-            const total = pts.length;
-
-            ctx.save();
-            const hasGap = opening !== null && (isFlashing || isOpen);
-            if (hasGap && total > 0) {
-                const start = opening.startIdx,
-                    end = opening.endIdx;
-                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
-                ctx.lineWidth = 5;
-                for (let i = 0; i < total; i++) {
-                    const j = (i + 1) % total;
-                    let inGap = false;
-                    if (start < end) { if (i >= start && i < end) inGap = true; if (j >= start && j < end) inGap =
-                        true; } else { if (i >= start || i < end) inGap = true; if (j >= start || j < end) inGap =
-                        true; }
-                    if (inGap) continue;
-                    ctx.beginPath();
-                    ctx.moveTo(pts[i].x, pts[i].y);
-                    ctx.lineTo(pts[j].x, pts[j].y);
-                    ctx.stroke();
-                }
-                if (isFlashing) {
-                    const isRed = (opening.flashCount % 2 === 0);
-                    ctx.save();
-                    const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
-                    let gapSegments = [];
-                    if (start < end) { for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total }); }
-                    else {
-                        for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
-                        for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
-                    }
-                    ctx.strokeStyle = flashColor;
-                    ctx.lineWidth = isRed ? 5 : 3;
-                    ctx.shadowBlur = 0;
-                    ctx.shadowColor = 'transparent';
-                    for (const seg of gapSegments) {
-                        ctx.beginPath();
-                        ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
-                        ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
-                        ctx.stroke();
-                    }
-                    ctx.restore();
-                }
-            } else if (total > 0) {
-                ctx.strokeStyle = 'rgba(160,160,176,0.25)';
-                ctx.lineWidth = 5;
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // ─── Draw players ──────────────────────────────────────
-            state.players.forEach(p => {
-                if (!p.alive) return;
-
-                const px = p.x * s;
-                const py = p.y * s;
-
-                const popScale = getPopScale(p);
-                const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
-                const displayRadius = radius * popScale;
-                let pulseScale = 1;
-                if (p.isPulsing) {
-                    const t = p.pulseTime;
-                    if (t < 0.6) { const phase = t / 0.6;
-                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
-                }
-                const finalRadius = displayRadius * pulseScale;
-                const drawRadius = Math.max(finalRadius - 1, 1);
-
-                const topInfo = state.topPlayerIds.get(p.id);
-                let borderColor = 'rgba(255,255,255,0.35)';
-                let borderWidth = 1.5;
-                let shadowColor = 'transparent';
-                let shadowBlur = 0;
-
-                if (topInfo) {
-                    if (topInfo.rank === 1) {
-                        borderColor = '#FFD700';
-                        borderWidth = 3.5;
-                        shadowColor = 'rgba(255,215,0,0.6)';
-                        shadowBlur = 18;
-                    } else if (topInfo.rank === 2) {
-                        borderColor = '#C0C0C0';
-                        borderWidth = 3.0;
-                        shadowColor = 'rgba(192,192,192,0.5)';
-                        shadowBlur = 14;
-                    }
-                }
-
-                ctx.save();
-                ctx.beginPath();
-                ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
-                ctx.closePath();
-                ctx.clip();
-
-                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                    const size = drawRadius * 2;
-                    ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
-                } else {
-                    ctx.fillStyle = p.color || '#555';
-                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
-                    ctx.fillStyle = '#fff';
-                    ctx.font = `${drawRadius * 0.5}px system-ui, sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
-                }
-                ctx.restore();
-
-                ctx.save();
-                ctx.shadowBlur = shadowBlur;
-                ctx.shadowColor = shadowColor;
-                ctx.beginPath();
-                ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = borderColor;
-                ctx.lineWidth = borderWidth;
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.restore();
-            });
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // UI UPDATES
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        function updateProfile() {
-            pWins.textContent = state.wins;
-            pLosses.textContent = state.losses;
-            const total = state.wins + state.losses;
-            pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
-            profileName.textContent = state.username;
-            profileUsername.textContent = '@' + state.username;
-            if (state.pfp) profilePfp.src = state.pfp;
-            updateBalance();
-        }
-
-        function updateStatsBar() {
-            statsPlayers.textContent = getAlive().length;
-            statsPot.textContent = state.pot;
-        }
-
-        function updateWaitingText() {
-            const alive = getAlive();
-            if (alive.length === 0) {
-                waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
-            } else {
-                waitingText.innerHTML =
-                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span>`;
-            }
-            updateFrogVisibility();
-        }
-
+        // ─── updateBetUI – never overwrite user input ─────────────
         function updateBetUI() {
             const existing = getPlayer(state.userId);
             const inGame = !!existing;
@@ -2799,15 +2586,15 @@
             }
             currentBetDisplay.textContent = existing ? existing.bet : '0';
 
-            // Only update input if not empty (so user can type freely)
-            if (!betInput.dataset.empty) {
-                let val = parseInt(betInput.value);
-                if (isNaN(val) || val < 10) val = 10;
-                if (val > state.balance) val = state.balance;
-                betInput.value = val;
+            // Only update input value if it's empty or invalid
+            if (betInput.dataset.empty === 'true') {
+                betInput.value = 10;
+                delete betInput.dataset.empty;
             }
+            // Otherwise, leave the user's typed value alone.
         }
 
+        // ─── Frog visibility ─────────────────────────────────────────
         function updateFrogVisibility() {
             const alive = getAlive();
             const showFrog = alive.length < 2 && state.gameState === 'idle';
@@ -3053,9 +2840,205 @@
                 updateProfile();
                 haptic('medium');
             });
+            // Reset input to 10 after placing bet
             betInput.value = 10;
             updateBetUI();
         });
+
+        // ─── DRAW ───────────────────────────────────────────────────
+        function render() {
+            const w = state.arenaSize;
+            const half = w / 2;
+            const s = scaleFactor();
+            ctx.clearRect(0, 0, w, w);
+
+            const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(10,10,10,0.85)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.95)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, w);
+
+            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = 'rgba(26,26,30,0.80)';
+            if (pts.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(40,40,46,0.60)';
+            if (pts.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+
+            const opening = state.opening;
+            const isFlashing = opening && opening.state === 'flashing';
+            const isOpen = opening && opening.state === 'open';
+            const total = pts.length;
+
+            ctx.save();
+            const hasGap = opening !== null && (isFlashing || isOpen);
+            if (hasGap && total > 0) {
+                const start = opening.startIdx,
+                    end = opening.endIdx;
+                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
+                ctx.lineWidth = 5;
+                for (let i = 0; i < total; i++) {
+                    const j = (i + 1) % total;
+                    let inGap = false;
+                    if (start < end) { if (i >= start && i < end) inGap = true; if (j >= start && j < end) inGap =
+                        true; } else { if (i >= start || i < end) inGap = true; if (j >= start || j < end) inGap =
+                        true; }
+                    if (inGap) continue;
+                    ctx.beginPath();
+                    ctx.moveTo(pts[i].x, pts[i].y);
+                    ctx.lineTo(pts[j].x, pts[j].y);
+                    ctx.stroke();
+                }
+                if (isFlashing) {
+                    const isRed = (opening.flashCount % 2 === 0);
+                    ctx.save();
+                    const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
+                    let gapSegments = [];
+                    if (start < end) { for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total }); }
+                    else {
+                        for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                    }
+                    ctx.strokeStyle = flashColor;
+                    ctx.lineWidth = isRed ? 5 : 3;
+                    ctx.shadowBlur = 0;
+                    ctx.shadowColor = 'transparent';
+                    for (const seg of gapSegments) {
+                        ctx.beginPath();
+                        ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
+                        ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            } else if (total > 0) {
+                ctx.strokeStyle = 'rgba(160,160,176,0.25)';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // ─── Draw players (smaller circles) ──────────────────
+            state.players.forEach(p => {
+                if (!p.alive) return;
+
+                const px = p.x * s;
+                const py = p.y * s;
+
+                const popScale = getPopScale(p);
+                const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
+                const displayRadius = radius * popScale;
+                let pulseScale = 1;
+                if (p.isPulsing) {
+                    const t = p.pulseTime;
+                    if (t < 0.6) { const phase = t / 0.6;
+                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); }
+                }
+                const finalRadius = displayRadius * pulseScale;
+                const drawRadius = Math.max(finalRadius - 1, 1);
+
+                const topInfo = state.topPlayerIds.get(p.id);
+                let borderColor = 'rgba(255,255,255,0.35)';
+                let borderWidth = 1.5;
+                let shadowColor = 'transparent';
+                let shadowBlur = 0;
+
+                if (topInfo) {
+                    if (topInfo.rank === 1) {
+                        borderColor = '#FFD700';
+                        borderWidth = 3.5;
+                        shadowColor = 'rgba(255,215,0,0.6)';
+                        shadowBlur = 18;
+                    } else if (topInfo.rank === 2) {
+                        borderColor = '#C0C0C0';
+                        borderWidth = 3.0;
+                        shadowColor = 'rgba(192,192,192,0.5)';
+                        shadowBlur = 14;
+                    }
+                }
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+
+                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                    const size = drawRadius * 2;
+                    ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
+                } else {
+                    ctx.fillStyle = p.color || '#555';
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${drawRadius * 0.5}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
+                }
+                ctx.restore();
+
+                ctx.save();
+                ctx.shadowBlur = shadowBlur;
+                ctx.shadowColor = shadowColor;
+                ctx.beginPath();
+                ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = borderWidth;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            });
+        }
+
+        // ─── UPDATE UI FUNCTIONS ──────────────────────────────────
+        function updateProfile() {
+            pWins.textContent = state.wins;
+            pLosses.textContent = state.losses;
+            const total = state.wins + state.losses;
+            pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
+            profileName.textContent = state.username;
+            profileUsername.textContent = '@' + state.username;
+            if (state.pfp) profilePfp.src = state.pfp;
+            updateBalance();
+        }
+
+        function updateStatsBar() {
+            statsPlayers.textContent = getAlive().length;
+            statsPot.textContent = state.pot;
+        }
+
+        function updateWaitingText() {
+            const alive = getAlive();
+            if (alive.length === 0) {
+                waitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to join</div>';
+            } else {
+                waitingText.innerHTML =
+                    `<span>● ${alive.length} player${alive.length > 1 ? 's' : ''} ready</span>`;
+            }
+            updateFrogVisibility();
+        }
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
