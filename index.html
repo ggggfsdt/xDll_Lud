@@ -1473,6 +1473,286 @@
             opacity: 0.8;
         }
 
+        /* ═══════════════════════════════════════════════════════════
+           ICE ARENA — second game mode
+        ═══════════════════════════════════════════════════════════ */
+        #ice-page {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+        #ice-arena-wrap {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px 0 10px;
+            min-height: 0;
+            overflow: visible;
+            flex-shrink: 0;
+        }
+        #ice-canvas {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: var(--radius);
+            background: rgba(18, 18, 20, 0.60);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            touch-action: none;
+            display: block;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(91, 141, 239, 0.06);
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        #ice-timer-wrap {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            z-index: 3;
+            pointer-events: none;
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        #ice-countdown-timer {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+        #ice-timer-progress-wrap {
+            width: 46px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.18);
+            overflow: hidden;
+            display: none;
+        }
+        #ice-timer-progress-wrap.visible { display: block; }
+        #ice-timer-progress {
+            height: 100%;
+            width: 0%;
+            border-radius: 3px;
+            background: #fff;
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+        }
+        #ice-waiting-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            color: var(--text2);
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            line-height: 1.6;
+            display: block;
+        }
+        #ice-waiting-text .sub {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
+        }
+        #ice-win-history {
+            position: absolute;
+            top: 52px;
+            right: 12px;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+            max-width: 60%;
+            overflow-x: auto;
+            scrollbar-width: none;
+            flex-direction: row-reverse;
+        }
+        #ice-win-history::-webkit-scrollbar { display: none; }
+        #ice-bet-overlay-wrap {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            width: 92%;
+            max-width: 360px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
+        }
+        #ice-bet-overlay-wrap.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
+        }
+        #ice-bet-overlay {
+            background: rgba(26, 26, 30, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+        }
+        .ice-bet-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+        #ice-bet-input {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text);
+            font-size: 15px;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+        #ice-bet-input:focus {
+            border-color: #5b8def;
+            box-shadow: 0 0 20px rgba(91, 141, 239, 0.35);
+        }
+        #ice-all-in-btn {
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        #ice-all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #ice-bet-btn {
+            padding: 8px 0;
+            width: 100%;
+            border-radius: 12px;
+            border: none;
+            background: #5b8def;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
+            letter-spacing: 0.2px;
+        }
+        #ice-bet-btn:active { transform: scale(0.97); opacity: 0.85; }
+        #ice-bet-btn:disabled { opacity: 0.4; transform: none; pointer-events: none; }
+        #ice-current-bet-display {
+            color: var(--text2);
+            font-size: 12px;
+            width: 100%;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            padding-top: 4px;
+        }
+        #ice-current-bet-display span { color: var(--gold); font-weight: 700; }
+
+        #ice-stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 14px 10px 14px;
+            flex-shrink: 0;
+            color: var(--text2);
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-top: 1px solid var(--border);
+        }
+        #ice-stats-bar .stat-item { display: flex; align-items: center; gap: 6px; }
+        #ice-stats-bar .stat-item .icon { width: 20px; height: 20px; object-fit: contain; }
+        #ice-stats-bar .stat-item .value { color: #fff; font-weight: 700; }
+        #ice-stats-bar .stat-item .label { color: var(--text2); font-size: 12px; margin-right: 2px; }
+
+        #ice-win-panel {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%) translateY(100%);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(26, 26, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 20px 18px 24px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.8);
+            z-index: 25;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #ice-win-panel.show {
+            transform: translateX(-50%) translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #ice-win-avatar-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #5b8def;
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        #ice-win-avatar-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #ice-win-name { font-size: 24px; font-weight: 700; color: #5b8def; text-align: center; }
+        #ice-win-multiplier { font-size: 30px; font-weight: 800; color: #fff; text-align: center; }
+        #ice-win-continue-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: #5b8def;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(91, 141, 239, 0.4);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #ice-win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
+
         @media (max-width:400px) {
             #balance-wrap {
                 padding: 2px 10px 2px 4px;
@@ -1748,6 +2028,41 @@
                 </div>
             </div>
 
+            <div id="ice-page" class="tab-page">
+                <div id="ice-arena-wrap">
+                    <canvas id="ice-canvas"></canvas>
+                    <div id="ice-timer-wrap">
+                        <div id="ice-countdown-timer">10.00</div>
+                        <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
+                    </div>
+                    <div id="ice-win-history"></div>
+                    <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
+
+                    <div id="ice-win-panel">
+                        <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
+                        <div id="ice-win-name">Winner</div>
+                        <div id="ice-win-multiplier">x2.5</div>
+                        <button id="ice-win-continue-btn">Continue</button>
+                    </div>
+
+                    <div id="ice-bet-overlay-wrap">
+                        <div id="ice-bet-overlay">
+                            <div class="ice-bet-row">
+                                <input type="text" id="ice-bet-input" placeholder="10" inputmode="numeric" />
+                                <button id="ice-all-in-btn">All In</button>
+                            </div>
+                            <button id="ice-bet-btn">join</button>
+                            <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="ice-stats-bar">
+                    <div class="stat-item"><span class="label">Players</span><span class="value" id="ice-stats-players">0</span></div>
+                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="ice-stats-pot">0</span></div>
+                </div>
+            </div>
+
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -1803,6 +2118,13 @@
                         <path d="M18 6 L15 9" />
                         <circle cx="12" cy="12" r="2" fill="currentColor" />
                     </svg></span>PvP</button>
+            <button class="tab-btn" data-tab="ice">
+                <span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="2" x2="12" y2="22" />
+                        <line x1="2" y1="12" x2="22" y2="12" />
+                        <line x1="4.9" y1="4.9" x2="19.1" y2="19.1" />
+                        <line x1="19.1" y1="4.9" x2="4.9" y2="19.1" />
+                    </svg></span>Ice</button>
             <button class="tab-btn" data-tab="profile">
                 <span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5" /><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20" /></svg></span>Profile</button>
             <button class="tab-btn" data-tab="top">
@@ -1905,6 +2227,7 @@
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabPages = {
             pvp: document.getElementById('pvp-page'),
+            ice: document.getElementById('ice-page'),
             profile: document.getElementById('profile-page'),
             top: document.getElementById('top-page'),
         };
@@ -1926,6 +2249,44 @@
         const promoMsg = document.getElementById('promo-msg');
         const promoSub = document.getElementById('promo-sub');
         const promoContinueBtn = document.getElementById('promo-continue-btn');
+
+        // ─── Ice Arena DOM refs ─────────────────────────────────────
+        const iceCanvas = document.getElementById('ice-canvas');
+        const iceCtx = iceCanvas.getContext('2d');
+        const iceWaitingText = document.getElementById('ice-waiting-text');
+        const iceBetOverlayWrap = document.getElementById('ice-bet-overlay-wrap');
+        const iceBetInput = document.getElementById('ice-bet-input');
+        const iceBetBtn = document.getElementById('ice-bet-btn');
+        const iceAllInBtn = document.getElementById('ice-all-in-btn');
+        const iceCurrentBetDisplay = document.getElementById('ice-current-bet-value');
+        const iceCountdownTimer = document.getElementById('ice-countdown-timer');
+        const iceTimerWrap = document.getElementById('ice-timer-wrap');
+        const iceTimerProgressWrap = document.getElementById('ice-timer-progress-wrap');
+        const iceTimerProgress = document.getElementById('ice-timer-progress');
+        const iceStatsPlayers = document.getElementById('ice-stats-players');
+        const iceStatsPot = document.getElementById('ice-stats-pot');
+        const iceWinPanel = document.getElementById('ice-win-panel');
+        const iceWinAvatar = document.getElementById('ice-win-avatar');
+        const iceWinName = document.getElementById('ice-win-name');
+        const iceWinMultiplier = document.getElementById('ice-win-multiplier');
+        const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
+        const iceWinHistoryEl = document.getElementById('ice-win-history');
+
+        // Ice Arena's own state — separate game, separate room, but shares the same
+        // user/balance/wins/losses since it's the same underlying account.
+        const iceState = {
+            gameState: 'idle',
+            players: [],       // { id, name, pfp, pfpImg, bet, color, segStart, segEnd }
+            pot: 0,
+            arenaSize: 0,
+            countdownStartTime: 0,
+            spinStartTime: 0,
+            spinDuration: 0,
+            spinFinalAngle: 0,
+            puck: { x: 200, y: 200 },
+            winnerId: null,
+            winHistory: [],
+        };
 
         // Auto‑bet elements
         const autoToggle = document.getElementById('auto-bet-toggle');
@@ -2043,6 +2404,18 @@
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
+        function resizeIceCanvas() {
+            const rect = iceCanvas.parentElement.getBoundingClientRect();
+            const size = Math.min(rect.width - 16, rect.height - 16, 440);
+            const dpr = window.devicePixelRatio || 1;
+            iceCanvas.width = size * dpr;
+            iceCanvas.height = size * dpr;
+            iceCanvas.style.width = size + 'px';
+            iceCanvas.style.height = size + 'px';
+            iceState.arenaSize = size;
+            iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
@@ -2087,6 +2460,12 @@
                         }));
                         updateWinHistoryUI();
                     }
+                    if (Array.isArray(res.iceRecentWinners) && res.iceRecentWinners.length) {
+                        iceState.winHistory = res.iceRecentWinners.slice(0, 8).map(w => ({
+                            name: w.name, pfp: w.pfp,
+                        }));
+                        updateIceWinHistoryUI();
+                    }
 
                     usernameDisplay.textContent = '@' + state.username;
                     profileName.textContent = state.username;
@@ -2110,6 +2489,14 @@
 
             socket.on('roundEnd', (payload) => {
                 handleRoundEnd(payload);
+            });
+
+            socket.on('iceState', (snapshot) => {
+                applyIceServerState(snapshot);
+            });
+
+            socket.on('iceRoundEnd', (payload) => {
+                handleIceRoundEnd(payload);
             });
         }
 
@@ -2292,6 +2679,173 @@
         }
 
         winContinueBtn.addEventListener('click', hideWinPanelAndReset);
+
+        // ─── ICE ARENA — state application & round end ───────────────
+        const icePfpCache = pfpCache; // share the same image cache — pfp URLs are the same person either way
+
+        function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
+
+        function loadIcePlayerPFP(player) {
+            const src = player.pfp || state.defaultAvatar;
+            if (icePfpCache.has(src)) {
+                const cached = icePfpCache.get(src);
+                if (cached.loaded && cached.img) { player.pfpImg = cached.img; return; }
+            }
+            const img = new Image();
+            let attempts = 0;
+            const maxAttempts = 3;
+            img.onload = () => { icePfpCache.set(src, { img, loaded: true }); player.pfpImg = img; };
+            img.onerror = () => {
+                attempts++;
+                if (attempts < maxAttempts) {
+                    const sep = src.includes('?') ? '&' : '?';
+                    img.src = src + sep + 'retry=' + attempts + 't=' + Date.now();
+                } else {
+                    icePfpCache.set(src, { img: null, loaded: false });
+                }
+            };
+            icePfpCache.set(src, { img: null, loaded: false });
+            img.src = src;
+        }
+
+        function applyIceServerState(snapshot) {
+            const prevGameState = iceState.gameState;
+            iceState.gameState = snapshot.gameState;
+            iceState.pot = snapshot.pot;
+            iceState.countdownStartTime = snapshot.countdownStartTime;
+            iceState.spinStartTime = snapshot.spinStartTime;
+            iceState.spinDuration = snapshot.spinDuration;
+            iceState.spinFinalAngle = snapshot.spinFinalAngle;
+            iceState.puck.x = snapshot.puck.x;
+            iceState.puck.y = snapshot.puck.y;
+
+            const seen = new Set();
+            snapshot.players.forEach(sp => {
+                seen.add(sp.id);
+                let local = getIcePlayerLocal(sp.id);
+                if (!local) {
+                    const colorIdx = iceState.players.length % state.colors.length;
+                    local = {
+                        id: sp.id, name: sp.name, pfp: sp.pfp,
+                        pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
+                    };
+                    iceState.players.push(local);
+                    loadIcePlayerPFP(local);
+                }
+                local.name = sp.name;
+                local.bet = sp.bet;
+                local.color = sp.color;
+                local.segStart = sp.segStart;
+                local.segEnd = sp.segEnd;
+            });
+            iceState.players = iceState.players.filter(p => seen.has(p.id));
+
+            if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
+                iceState.winnerId = null;
+                iceWaitingText.style.display = 'block';
+                iceTimerWrap.style.display = 'none';
+                iceTimerProgressWrap.classList.remove('visible');
+            }
+            iceTimerWrap.style.display = (iceState.gameState === 'countdown' || iceState.gameState === 'spinning') ? 'flex' : iceTimerWrap.style.display;
+            if (iceState.gameState === 'countdown') iceTimerProgressWrap.classList.add('visible');
+
+            updateIceStatsBar();
+            updateIceBetUI();
+            updateIceWaitingText();
+            updateIceBetOverlayVisibility();
+        }
+
+        function updateIceBetOverlayVisibility() {
+            const shouldHide = iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished';
+            iceBetOverlayWrap.classList.toggle('hidden', shouldHide);
+        }
+
+        function updateIceStatsBar() {
+            iceStatsPlayers.textContent = iceState.players.length;
+            iceStatsPot.textContent = iceState.pot;
+        }
+
+        function updateIceWaitingText() {
+            const n = iceState.players.length;
+            if (n === 0) {
+                iceWaitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to claim the rink</div>';
+                iceWaitingText.style.display = 'block';
+            } else if (iceState.gameState === 'idle' || iceState.gameState === 'countdown') {
+                iceWaitingText.innerHTML = `<span>● ${n} player${n > 1 ? 's' : ''} on the rink</span>`;
+                iceWaitingText.style.display = 'block';
+            } else {
+                iceWaitingText.style.display = 'none';
+            }
+        }
+
+        function updateIceBetUI() {
+            const existing = getIcePlayerLocal(state.userId);
+            const inGame = !!existing;
+            const canBet = (iceState.gameState === 'idle' || iceState.gameState === 'countdown');
+
+            iceBetBtn.textContent = canBet ? (inGame ? 'increase' : 'join') : (inGame ? 'in game' : 'waiting');
+            iceBetBtn.disabled = !canBet;
+            iceBetInput.disabled = !canBet;
+            iceAllInBtn.disabled = !canBet;
+            iceCurrentBetDisplay.textContent = existing ? existing.bet : '0';
+        }
+
+        function addIceWinToHistory(name, pfp) {
+            iceState.winHistory.unshift({ name, pfp });
+            if (iceState.winHistory.length > 8) iceState.winHistory.pop();
+            updateIceWinHistoryUI();
+        }
+
+        function updateIceWinHistoryUI() {
+            if (iceState.winHistory.length === 0) { iceWinHistoryEl.innerHTML = ''; return; }
+            let html = '';
+            iceState.winHistory.forEach(entry => {
+                const avatarSrc = entry.pfp || state.defaultAvatar;
+                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            iceWinHistoryEl.innerHTML = html;
+        }
+
+        function handleIceRoundEnd(payload) {
+            if (!payload) { hideIceWinPanelAndReset(); return; }
+
+            iceState.winnerId = payload.winnerId;
+            addIceWinToHistory(payload.winnerName, payload.winnerPfp);
+            refreshLeaderboard();
+
+            if (payload.winnerId === state.userId) {
+                state.balance += payload.winnings;
+                state.wins++;
+                playVictorySound();
+            } else {
+                state.losses++;
+            }
+            updateBalance();
+            updateProfile();
+
+            iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
+            iceWinName.textContent = payload.winnerName + ' wins the rink!';
+            iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
+            iceWinPanel.classList.add('show');
+            haptic('heavy');
+            iceTimerWrap.style.display = 'none';
+            iceTimerProgressWrap.classList.remove('visible');
+
+            if (window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
+            window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
+        }
+
+        function hideIceWinPanelAndReset() {
+            iceWinPanel.classList.remove('show');
+            if (window.iceWinTimeout) { clearTimeout(window.iceWinTimeout); window.iceWinTimeout = null; }
+            iceState.winnerId = null;
+            updateIceWaitingText();
+            updateIceBetUI();
+            updateIceStatsBar();
+            updateIceBetOverlayVisibility();
+        }
+
+        iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
         function refreshLeaderboard() {
             if (!socket) return;
@@ -2817,7 +3371,23 @@
                 timerProgressWrap.classList.remove('visible');
             }
 
+            if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
+                const elapsed = (Date.now() - iceState.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
+                iceTimerProgressWrap.classList.add('visible');
+            } else if (iceState.gameState === 'spinning') {
+                iceCountdownTimer.textContent = '🌀';
+                iceTimerProgress.style.width = '100%';
+            } else if (iceState.gameState === 'idle') {
+                iceTimerProgressWrap.classList.remove('visible');
+            }
+
             render();
+            renderIce();
             requestAnimationFrame(renderLoop);
         }
 
@@ -2843,6 +3413,40 @@
             // Reset input to 10 after placing bet
             betInput.value = 10;
             updateBetUI();
+        });
+
+        // ─── ICE BET BUTTON ─────────────────────────────────────────
+        function placeIceBet(amount) {
+            if (!socket || !socket.connected) return;
+            let addAmount = parseInt(amount) || 10;
+            if (addAmount < 10) addAmount = 10;
+            if (addAmount > state.balance) addAmount = state.balance;
+            if (addAmount <= 0) { haptic('light'); return; }
+
+            socket.emit('icePlaceBet', { amount: addAmount }, (res) => {
+                if (!res?.ok) {
+                    haptic('light');
+                    console.warn('Ice bet rejected:', res?.error);
+                    return;
+                }
+                state.balance = res.balance;
+                updateBalance();
+                updateProfile();
+                haptic('medium');
+            });
+            iceBetInput.value = '';
+            updateIceBetUI();
+        }
+        iceBetBtn.addEventListener('click', () => placeIceBet(iceBetInput.value));
+        iceAllInBtn.addEventListener('click', () => {
+            iceBetInput.value = state.balance;
+            placeIceBet(state.balance);
+        });
+        iceBetInput.addEventListener('blur', () => {
+            let val = parseInt(iceBetInput.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > state.balance) val = state.balance;
+            iceBetInput.value = val;
         });
 
         // ─── DRAW ───────────────────────────────────────────────────
@@ -3012,6 +3616,185 @@
             });
         }
 
+        // ─── ICE ARENA RENDER ─────────────────────────────────────────
+        // Reuses the exact same rounded-square geometry (state.perimeterPoints /
+        // SERVER_ARENA_SIZE) that the bump arena fetched at join — the server's
+        // ice rink is geometrically identical, just used differently.
+        function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
+
+        function drawIceArrow(ctx, cx, cy, angle, length) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(-length * 0.35, 0);
+            ctx.lineTo(length * 0.55, 0);
+            ctx.lineTo(length * 0.30, -length * 0.18);
+            ctx.moveTo(length * 0.55, 0);
+            ctx.lineTo(length * 0.30, length * 0.18);
+            ctx.strokeStyle = '#e8f4ff';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.shadowColor = 'rgba(139, 197, 255, 0.8)';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function renderIce() {
+            const w = iceState.arenaSize;
+            if (!w || !state.perimeterPoints.length) return;
+            const half = w / 2;
+            const s = iceScaleFactor();
+            iceCtx.clearRect(0, 0, w, w);
+
+            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
+            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
+            iceCtx.fillStyle = grad;
+            iceCtx.fillRect(0, 0, w, w);
+
+            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length === 0) return;
+
+            const perimeterPath = new Path2D();
+            perimeterPath.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
+            perimeterPath.closePath();
+
+            // rink base
+            iceCtx.save();
+            iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            iceCtx.shadowBlur = 30;
+            iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
+            iceCtx.fill(perimeterPath);
+            iceCtx.restore();
+
+            // player fields — vertical strips clipped to the rounded square, sized
+            // proportional to each player's bet share of the pot
+            iceCtx.save();
+            iceCtx.clip(perimeterPath);
+            iceState.players.forEach(p => {
+                const x1 = p.segStart * s, x2 = p.segEnd * s;
+                const segW = Math.max(x2 - x1, 0.5);
+                const isWinner = iceState.gameState === 'finished' && iceState.winnerId === p.id;
+
+                iceCtx.fillStyle = hexToRgba(p.color, isWinner ? 0.55 : 0.28);
+                iceCtx.fillRect(x1, 0, segW, w);
+
+                if (isWinner) {
+                    iceCtx.fillStyle = hexToRgba(p.color, 0.18);
+                    iceCtx.fillRect(x1, 0, segW, w);
+                }
+
+                // divider
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+                iceCtx.lineWidth = 2;
+                iceCtx.beginPath();
+                iceCtx.moveTo(x2, 0);
+                iceCtx.lineTo(x2, w);
+                iceCtx.stroke();
+
+                // label (avatar + name/bet) — only if the segment is wide enough
+                const segCenterX = (x1 + x2) / 2;
+                if (segW > 30) {
+                    const avatarR = Math.min(segW * 0.32, 18);
+                    const avatarY = half - 14;
+                    iceCtx.save();
+                    iceCtx.beginPath();
+                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
+                    iceCtx.closePath();
+                    iceCtx.clip();
+                    if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                        iceCtx.drawImage(p.pfpImg, segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
+                    } else {
+                        iceCtx.fillStyle = p.color || '#555';
+                        iceCtx.fillRect(segCenterX - avatarR, avatarY - avatarR, avatarR * 2, avatarR * 2);
+                    }
+                    iceCtx.restore();
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.6)';
+                    iceCtx.lineWidth = 1.5;
+                    iceCtx.beginPath();
+                    iceCtx.arc(segCenterX, avatarY, avatarR, 0, Math.PI * 2);
+                    iceCtx.stroke();
+
+                    if (segW > 44) {
+                        iceCtx.fillStyle = '#fff';
+                        iceCtx.font = `600 11px system-ui, sans-serif`;
+                        iceCtx.textAlign = 'center';
+                        iceCtx.textBaseline = 'middle';
+                        iceCtx.fillText(p.bet, segCenterX, avatarY + avatarR + 14);
+                    }
+                }
+            });
+            iceCtx.restore();
+
+            // rink border
+            iceCtx.save();
+            iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
+            iceCtx.lineWidth = 4;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
+
+            // center ring + spinning arrow (during the "spinning" phase only)
+            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+                const extraSpins = 4;
+                // decelerating from several extra full turns down to the exact final angle
+                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+
+                const ringR = Math.max(w * 0.09, 22);
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(220,235,255,0.85)';
+                iceCtx.lineWidth = 4;
+                iceCtx.beginPath();
+                iceCtx.arc(half, half, ringR, 0, Math.PI * 2);
+                iceCtx.stroke();
+                // "+" crosshair, interior left unfilled
+                iceCtx.lineWidth = 2.5;
+                iceCtx.beginPath();
+                iceCtx.moveTo(half - ringR * 0.35, half);
+                iceCtx.lineTo(half + ringR * 0.35, half);
+                iceCtx.moveTo(half, half - ringR * 0.35);
+                iceCtx.lineTo(half, half + ringR * 0.35);
+                iceCtx.stroke();
+                iceCtx.restore();
+
+                if (t < 1) drawIceArrow(iceCtx, half, half, angle, ringR * 1.5);
+            }
+
+            // puck
+            if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                const px = iceState.puck.x * s, py = iceState.puck.y * s;
+                const r = PUCK_RENDER_RADIUS * s;
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(180, 220, 255, 0.9)';
+                iceCtx.shadowBlur = 14;
+                const puckGrad = iceCtx.createRadialGradient(px - r * 0.3, py - r * 0.3, 0, px, py, r);
+                puckGrad.addColorStop(0, '#eaf6ff');
+                puckGrad.addColorStop(1, '#8fc7ec');
+                iceCtx.fillStyle = puckGrad;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+                iceCtx.lineWidth = 1.5;
+                iceCtx.stroke();
+                iceCtx.restore();
+            }
+        }
+
+        function hexToRgba(hex, alpha) {
+            if (!hex) return `rgba(120,120,120,${alpha})`;
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+        const PUCK_RENDER_RADIUS = 10;
+
         // ─── UPDATE UI FUNCTIONS ──────────────────────────────────
         function updateProfile() {
             pWins.textContent = state.wins;
@@ -3055,7 +3838,8 @@
             profileUsername.textContent = '@' + state.username;
 
             resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+            resizeIceCanvas();
+            window.addEventListener('resize', () => { resizeCanvas(); resizeIceCanvas(); });
             Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
