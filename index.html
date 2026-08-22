@@ -491,7 +491,7 @@
 
     <script>
     // ═══════════════════════════════════════════════════════════════════
-    // FULL CLIENT LOGIC (with fixed tab switching and ice arena)
+    // FULL CLIENT LOGIC (with smoother zoom and shorter arrow)
     // ═══════════════════════════════════════════════════════════════════
 
     // ─── CONFIG ──────────────────────────────────────────────────────
@@ -655,7 +655,7 @@
         zoom: 1,
         zoomTarget: 1,
         zoomStartTime: 0,
-        zoomDuration: 1.5,
+        zoomDuration: 2.0,       // longer for smoother transition
         isZoomingIn: false,
         isZoomingOut: false,
         zoomLocked: false,
@@ -670,6 +670,7 @@
 
     // ─── SHARED HELPERS ────────────────────────────────────────────
     function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+    function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
     function easeOutBack(t) {
         const c1 = 1.70158;
         const c3 = c1 + 1;
@@ -1956,8 +1957,8 @@
         // If in sliding or finished, decide zoom state
         if (iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
             const slideElapsed = (now - iceState.slideStartTime) / 1000;
-            // Zoom in after 5 seconds (if not already zoomed in or out)
-            if (slideElapsed > 5.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
+            // Zoom in after 6 seconds (delayed by 1 second)
+            if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
                 if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
                     iceState.isZoomingIn = true;
                     iceState.zoomStartTime = now;
@@ -1974,11 +1975,11 @@
             }
         }
 
-        // Apply zoom in animation
+        // Apply zoom in animation (smoother with easeInOutCubic)
         if (iceState.isZoomingIn) {
             const elapsed = (now - iceState.zoomStartTime) / 1000;
             const progress = Math.min(elapsed / iceState.zoomDuration, 1);
-            const eased = easeOutCubic(progress);
+            const eased = easeInOutCubic(progress);
             iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
             if (progress >= 1) {
                 iceState.isZoomingIn = false;
@@ -1987,11 +1988,11 @@
             }
         }
 
-        // Apply zoom out animation
+        // Apply zoom out animation (smoother with easeInOutCubic)
         if (iceState.isZoomingOut) {
             const elapsed = (now - iceState.zoomStartTime) / 1000;
             const progress = Math.min(elapsed / iceState.zoomDuration, 1);
-            const eased = easeOutCubic(progress);
+            const eased = easeInOutCubic(progress);
             iceState.zoom = iceState.zoomTarget + (1 - iceState.zoomTarget) * (1 - eased);
             if (progress >= 1) {
                 iceState.isZoomingOut = false;
@@ -2092,22 +2093,23 @@
         iceCtx.stroke(perimeterPath);
         iceCtx.restore();
 
-        // ─── SPINNING ARROW ─────────────────────────────────────
+        // ─── SPINNING ARROW (shorter) ────────────────────────────
         if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
             const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
             const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
             const extraSpins = 4;
             const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
-            const arrowLen = Math.min(w * 0.28, 70);
-            const headSize = Math.min(arrowLen * 0.4, 16);
+            // Shorter arrow
+            const arrowLen = Math.min(w * 0.18, 45);
+            const headSize = Math.min(arrowLen * 0.4, 12);
 
             iceCtx.save();
             iceCtx.translate(half, half);
             iceCtx.rotate(angle);
             // Shaft
             iceCtx.strokeStyle = '#e8f4ff';
-            iceCtx.lineWidth = 3;
+            iceCtx.lineWidth = 2.5;
             iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
             iceCtx.shadowBlur = 12;
             iceCtx.beginPath();
