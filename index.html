@@ -3757,7 +3757,7 @@
 
         let lastIceFrameTs = null;
 
-        function drawIceBall(ctx, x, y, r) {
+        function drawIceBall(ctx, x, y, r, emphasizeCross) {
             ctx.save();
             ctx.shadowColor = 'rgba(180, 220, 255, 0.85)';
             ctx.shadowBlur = 14;
@@ -3776,35 +3776,50 @@
             ctx.lineWidth = 1.4;
             ctx.stroke();
 
-            // tiny crosshair so it still reads as "the ball" from the original ring motif
+            // crosshair marks the ball's exact center — this is the single point the
+            // server uses to decide the winning strip, so it stays true and visible
+            // even when the ball is resting right on a boundary line. Once the round
+            // is decided it's drawn brighter so it reads clearly under the zoom-in,
+            // proving the win came from this precise spot and not from which color
+            // the ball's edge happens to overlap most (keeps thin, low-bet strips fair).
             const cross = r * 0.42;
-            ctx.strokeStyle = 'rgba(30,50,70,0.35)';
-            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = emphasizeCross ? 'rgba(20,40,60,0.75)' : 'rgba(30,50,70,0.35)';
+            ctx.lineWidth = emphasizeCross ? 1.8 : 1.2;
             ctx.beginPath();
             ctx.moveTo(x - cross, y);
             ctx.lineTo(x + cross, y);
             ctx.moveTo(x, y - cross);
             ctx.lineTo(x, y + cross);
             ctx.stroke();
+            if (emphasizeCross) {
+                ctx.fillStyle = 'rgba(20,40,60,0.85)';
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(1.2, r * 0.06), 0, Math.PI * 2);
+                ctx.fill();
+            }
             ctx.restore();
         }
 
-        function drawIceOrbitArrow(ctx, cx, cy, ringR, angle, size) {
-            // Positioned ON the ring (at radius ringR, angle `angle`) instead of pivoting
-            // in place at the center — so as `angle` advances over time this reads as an
-            // arrow/marker travelling around the ring, like a roulette ball on the rim,
-            // rather than a compass needle spinning in one spot.
-            const ax = cx + Math.cos(angle) * ringR;
-            const ay = cy + Math.sin(angle) * ringR;
-            const travelDir = angle + Math.PI / 2; // tangent to the ring = direction of travel
+        function drawIceNeedle(ctx, cx, cy, angle, innerR, outerR) {
+            // Pivots exactly at the ring's center (cx,cy) — like a clock hand, not a
+            // marker travelling around the rim. `angle` is the true direction the ball
+            // will launch in, and the needle points straight along it (tip = outerR,
+            // away from center), so it visibly "aims" rather than just decorating the
+            // rim. innerR keeps a gap around the ball sitting at the pivot so the two
+            // don't visually collide.
+            const len = outerR - innerR;
+            const headLen = len * 0.34;
             ctx.save();
-            ctx.translate(ax, ay);
-            ctx.rotate(travelDir);
+            ctx.translate(cx, cy);
+            ctx.rotate(angle);
             ctx.beginPath();
-            ctx.moveTo(-size * 0.5, size * 0.42);
-            ctx.lineTo(size * 0.55, 0);
-            ctx.lineTo(-size * 0.5, -size * 0.42);
-            ctx.lineTo(-size * 0.28, 0);
+            ctx.moveTo(innerR, -len * 0.09);
+            ctx.lineTo(outerR - headLen, -len * 0.09);
+            ctx.lineTo(outerR - headLen, -len * 0.22);
+            ctx.lineTo(outerR, 0);
+            ctx.lineTo(outerR - headLen, len * 0.22);
+            ctx.lineTo(outerR - headLen, len * 0.09);
+            ctx.lineTo(innerR, len * 0.09);
             ctx.closePath();
             ctx.fillStyle = '#e8f4ff';
             ctx.shadowColor = 'rgba(139, 197, 255, 0.9)';
@@ -3840,11 +3855,18 @@
 
             iceCtx.clearRect(0, 0, w, w);
 
+            // Clamp to the exact same bounds the server uses in its winner check
+            // (Math.min(Math.max(puck.x,0),ICE_SIZE)) — so the ball, its crosshair,
+            // and the camera focus can never drift a pixel from the coordinate that
+            // actually decided the round, on any strip width.
+            const clampedPuckX = Math.min(Math.max(iceState.puckRender.x, 0), SERVER_ARENA_SIZE);
+            const clampedPuckY = Math.min(Math.max(iceState.puckRender.y, 0), SERVER_ARENA_SIZE);
+
             // ─── camera: zooms in on the puck as it slows to a stop, holds on the
             // result, then eases back out to the full rink ───
             let camZoom = 1, camX = half, camY = half;
-            const puckCanvasX = iceState.puckRender.x * s;
-            const puckCanvasY = iceState.puckRender.y * s;
+            const puckCanvasX = clampedPuckX * s;
+            const puckCanvasY = clampedPuckY * s;
             if (iceState.gameState === 'sliding') {
                 const speed = iceState.puckSpeedEstimate;
                 const t = Math.min(1, Math.max(0, (ICE_CAM.speedZoomStart - speed) / (ICE_CAM.speedZoomStart - ICE_CAM.speedZoomEnd)));
@@ -3978,7 +4000,8 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // center ring + orbiting arrow (during the "spinning" phase only)
+            // center ring (during the "spinning" phase only) — kept as a plain
+            // outline circle with an unfilled "+" inside; nothing rides on its rim.
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -4003,7 +4026,13 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                if (t < 1) drawIceOrbitArrow(iceCtx, half, half, ringR, angle, Math.max(ringR * 0.85, 22));
+                // needle — pivots exactly at the ring's center, points radially in the
+                // real launch direction (not tangent to the ring), tip trailing off
+                // toward the ring but not touching it or the ball at the pivot.
+                if (t < 1) {
+                    const ballR = PUCK_RENDER_RADIUS * s;
+                    drawIceNeedle(iceCtx, half, half, angle, ballR * 1.6, ringR * 0.92);
+                }
             }
 
             // ─── THE BALL — same object throughout: pops in at the center pivot
@@ -4017,7 +4046,7 @@
 
                 if (popScale > 0.001) {
                     const r = PUCK_RENDER_RADIUS * s * popScale;
-                    drawIceBall(iceCtx, puckCanvasX, puckCanvasY, r);
+                    drawIceBall(iceCtx, puckCanvasX, puckCanvasY, r, iceState.gameState === 'finished');
                 }
             }
 
