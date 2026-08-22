@@ -290,7 +290,7 @@ async function endIceGame() {
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 10; // increased for smoother simulation
+  const subSteps = 12; // smooth
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
@@ -325,15 +325,15 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── FASTER STOP: friction per second 0.70 ────────────────
-    const frictionPerSecond = 0.70;
+    // friction per second 0.72 – smooth stop
+    const frictionPerSecond = 0.72;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (speed < 0.12) endIceGame();
+  if (speed < 0.15) endIceGame();
 }
 
 function broadcastIceState() {
