@@ -129,7 +129,7 @@ function speedForRadius(radius) {
 }
 
 // ─── Room ──────────────────────────────────────────────────────
-const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
+const COLORS = ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#e84393'];
 const MAX_PLAYERS = 8;
 
 function createRoom(id) {
@@ -180,15 +180,12 @@ function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
-  // Shuffle to get random layouts
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  // Partition the whole arena
   partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
-  // Copy back to original player objects
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
   players.forEach(p => {
@@ -208,10 +205,8 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
     p.x1 = x; p.y1 = y; p.x2 = x + w; p.y2 = y + h;
     return;
   }
-  // Total bet of this subset
   const totalBet = players.slice(startIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   if (totalBet === 0) {
-    // fallback: equal split
     const mid = Math.floor((startIdx + endIdx) / 2);
     const dir = Math.random() < 0.5 ? 'h' : 'v';
     if (dir === 'h') {
@@ -225,7 +220,6 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
     }
     return;
   }
-  // Choose a split index based on bet proportions (with randomness)
   const cum = [];
   let sum = 0;
   for (let i = startIdx; i < endIdx; i++) {
@@ -240,15 +234,12 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
       break;
     }
   }
-  // Ensure at least one player on each side
   if (splitIdx <= startIdx) splitIdx = startIdx + 1;
   if (splitIdx >= endIdx) splitIdx = endIdx - 1;
-  // Compute bet sums of left and right groups
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  const clampedRatio = Math.max(0.15, Math.min(0.85, ratio)); // avoid too‑thin strips
-  // Random direction
+  const clampedRatio = Math.max(0.15, Math.min(0.85, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
     const splitY = y + h * clampedRatio;
@@ -267,10 +258,10 @@ function makeIcePlayer(id, bet, name, pfp) {
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx],
-    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE, // will be set by repartition
+    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
   };
   iceRoom.players.push(p);
-  repartitionIceArena(); // assign rectangles
+  repartitionIceArena();
   return p;
 }
 
@@ -312,7 +303,6 @@ function getIceWinner() {
       return p;
     }
   }
-  // fallback: closest by center
   let closest = null;
   let minDist = Infinity;
   for (const p of iceRoom.players) {
@@ -394,7 +384,7 @@ function updateIcePhysics(dt) {
   const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
   const initialSpeed = 11;
   const speedRatio = Math.min(1, currentSpeed / initialSpeed);
-  const dynamicRadius = 3 + 7 * speedRatio; // 3..10
+  const dynamicRadius = 3 + 7 * speedRatio;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -453,12 +443,11 @@ function broadcastIceState() {
   });
 }
 
-// ─── Radius scaling for bump arena (unchanged) ──────────────
+// ─── Radius scaling for bump arena ──────────────────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
-  const minR = 18;
-  const maxR = 52;
+  const minR = 18, maxR = 52;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
     const adjustedRatio = Math.pow(ratio, 1.8);
@@ -498,7 +487,6 @@ function startCountdown() {
   if (getAlive().length < 2) return;
   room.gameState = 'countdown';
   room.countdownStartTime = Date.now();
-  room.countdownEndTime = Date.now() + 10000;
 }
 
 function startPrestart() {
@@ -794,6 +782,7 @@ io.on('connection', (socket) => {
       userId = String(tgUser.id);
       socket.data.userId = userId;
       socket.join(room.id);
+
       const user = await getUser(userId, {
         username: tgUser.username || tgUser.first_name || 'player',
         pfp: tgUser.photo_url || '',
@@ -802,6 +791,13 @@ io.on('connection', (socket) => {
         ack?.({ ok: false, error: 'You have been banned.' });
         return;
       }
+
+      // ─── Send current ice room players and pot for persistence ──
+      const icePlayers = iceRoom.players.map(p => ({
+        id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+        x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+      }));
+
       ack?.({
         ok: true,
         user: {
@@ -812,6 +808,8 @@ io.on('connection', (socket) => {
         iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
+        icePlayers: icePlayers,
+        icePot: iceRoom.pot,
       });
       broadcastState();
     } catch (err) {
@@ -866,7 +864,6 @@ io.on('connection', (socket) => {
       const user = await getUser(userId);
       if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
       if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
-      // Max players check
       if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
         return ack?.({ ok: false, error: 'Rink is full.' });
       }
@@ -875,7 +872,6 @@ io.on('connection', (socket) => {
       const existing = getIcePlayer(userId);
       if (existing) {
         existing.bet += amt;
-        // Re‑partition after bet update
         repartitionIceArena();
       } else {
         const p = makeIcePlayer(userId, amt, user.username, user.pfp);
@@ -884,7 +880,6 @@ io.on('connection', (socket) => {
           await saveUser(user);
           return ack?.({ ok: false, error: 'Could not assign cell.' });
         }
-        // makeIcePlayer already called repartition
       }
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
@@ -896,14 +891,19 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    // ─── PERSISTENCE FIX: Do NOT remove the player from the ice room ──
+    // The player stays in the arena so their bet and position survive reloads.
+    // The server will clear the room when the round ends.
+    // if (userId) {
+    //   const icePlayer = getIcePlayer(userId);
+    //   if (icePlayer) {
+    //     removeIcePlayer(userId);
+    //     broadcastIceState();
+    //   }
+    // }
+    // Just log the disconnect.
     if (userId) {
-      // Remove player from ice room if present
-      const icePlayer = getIcePlayer(userId);
-      if (icePlayer) {
-        removeIcePlayer(userId);
-        broadcastIceState();
-      }
-      // Also remove from PvP room (already handled by game loop)
+      console.log(`User ${userId} disconnected, but keeping their ice arena bet.`);
     }
   });
 });
@@ -1045,7 +1045,6 @@ app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
-// Admin API endpoints
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
