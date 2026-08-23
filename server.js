@@ -152,33 +152,12 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — 2D GRID LAYOUT
+// ICE ARENA
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
-
-// Grid settings: 4x4 grid (16 cells) – each player gets a random free cell
-const GRID_COLS = 4;
-const GRID_ROWS = 4;
-const CELL_WIDTH = ICE_SIZE / GRID_COLS;
-const CELL_HEIGHT = ICE_SIZE / GRID_ROWS;
-
-// Pre‑compute all grid cells (x1, y1, x2, y2) – centre‑aligned within each cell with some padding
-function getGridCells() {
-  const cells = [];
-  const pad = 6; // padding inside each cell to avoid overlapping borders
-  for (let row = 0; row < GRID_ROWS; row++) {
-    for (let col = 0; col < GRID_COLS; col++) {
-      const x1 = col * CELL_WIDTH + pad;
-      const y1 = row * CELL_HEIGHT + pad;
-      const x2 = (col + 1) * CELL_WIDTH - pad;
-      const y2 = (row + 1) * CELL_HEIGHT - pad;
-      cells.push({ x1, y1, x2, y2, used: false });
-    }
-  }
-  return cells;
-}
+const PUCK_RADIUS = 10; // used as base, but dynamic radius is used in physics
 
 function createIceRoom(id) {
   return {
@@ -192,53 +171,34 @@ function createIceRoom(id) {
     spinFinalAngle: 0,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
-    gridCells: getGridCells(), // tracks which cells are taken
   };
 }
 const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
-// Assign a random free cell to a new player
-function assignIceCell() {
-  const freeCells = iceRoom.gridCells.filter(c => !c.used);
-  if (freeCells.length === 0) return null;
-  const idx = Math.floor(Math.random() * freeCells.length);
-  const cell = freeCells[idx];
-  cell.used = true;
-  return { x1: cell.x1, y1: cell.y1, x2: cell.x2, y2: cell.y2 };
-}
-
-// Free a player's cell when they leave (reset)
-function freeIceCell(player) {
-  if (!player) return;
-  const cell = iceRoom.gridCells.find(c =>
-    c.x1 === player.x1 && c.y1 === player.y1 &&
-    c.x2 === player.x2 && c.y2 === player.y2
-  );
-  if (cell) cell.used = false;
+function computeIceSegments() {
+  const totalBet = iceRoom.players.reduce((s, p) => s + p.bet, 0);
+  if (totalBet === 0) return;
+  let cursor = 0;
+  iceRoom.players.forEach(p => {
+    const width = (p.bet / totalBet) * ICE_SIZE;
+    p.segStart = cursor;
+    p.segEnd = cursor + width;
+    cursor += width;
+  });
+  iceRoom.players[iceRoom.players.length - 1].segEnd = ICE_SIZE;
 }
 
 function makeIcePlayer(id, bet, name, pfp) {
   const colorIdx = iceRoom.players.length % COLORS.length;
-  const pos = assignIceCell();
-  if (!pos) return null; // no free cells
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
-    color: COLORS[colorIdx],
-    x1: pos.x1, y1: pos.y1, x2: pos.x2, y2: pos.y2,
+    color: COLORS[colorIdx], segStart: 0, segEnd: ICE_SIZE,
   };
   iceRoom.players.push(p);
+  computeIceSegments();
   return p;
-}
-
-// Remove a player (e.g., on reset)
-function removeIcePlayer(id) {
-  const idx = iceRoom.players.findIndex(p => p.id === id);
-  if (idx === -1) return;
-  const p = iceRoom.players[idx];
-  freeIceCell(p);
-  iceRoom.players.splice(idx, 1);
 }
 
 function startIceCountdown() {
@@ -264,32 +224,13 @@ function launchIcePuck() {
   iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
 }
 
-function getIceWinner() {
-  const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
-  const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
-  // Find which player's rectangle contains the point
-  for (const p of iceRoom.players) {
-    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) {
-      return p;
-    }
-  }
-  // Fallback: closest player (by distance to centre)
-  let closest = null;
-  let minDist = Infinity;
-  for (const p of iceRoom.players) {
-    const cx = (p.x1 + p.x2) / 2;
-    const cy = (p.y1 + p.y2) / 2;
-    const d = Math.hypot(px - cx, py - cy);
-    if (d < minDist) { minDist = d; closest = p; }
-  }
-  return closest;
-}
-
 async function endIceGame() {
   if (iceRoom.gameState === 'finished') return;
   iceRoom.gameState = 'finished';
 
-  const winner = getIceWinner();
+  const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
+  let winner = iceRoom.players.find(p => px >= p.segStart && px < p.segEnd);
+  if (!winner) winner = iceRoom.players[iceRoom.players.length - 1];
 
   let payload = null;
   if (winner) {
@@ -339,18 +280,14 @@ async function endIceGame() {
 
   io.emit('iceRoundEnd', payload);
   setTimeout(() => {
-    // Reset: remove all players and free cells
-    for (const p of iceRoom.players) {
-      freeIceCell(p);
-    }
     iceRoom.players = [];
     iceRoom.pot = 0;
     iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
-    iceRoom.gridCells = getGridCells(); // reset cells
     iceRoom.gameState = 'idle';
   }, 3000);
 }
 
+// ─── ICE PHYSICS with DYNAMIC PUCK RADIUS ─────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
@@ -358,16 +295,16 @@ function updateIcePhysics(dt) {
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
+  // Compute current speed to determine dynamic radius
   const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  const initialSpeed = 11;
+  const initialSpeed = 11; // from launchIcePuck
   const speedRatio = Math.min(1, currentSpeed / initialSpeed);
-  const dynamicRadius = 3 + 7 * speedRatio;
+  const dynamicRadius = 3 + 7 * speedRatio; // range 3..10
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // Wall collision (perimeter)
     for (let i = 0; i < totalPts; i++) {
       const j = (i + 1) % totalPts;
       const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
@@ -395,6 +332,7 @@ function updateIcePhysics(dt) {
       }
     }
 
+    // friction
     const frictionPerSecond = 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
@@ -416,7 +354,7 @@ function broadcastIceState() {
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-      x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+      segStart: p.segStart, segEnd: p.segEnd,
     })),
   });
 }
@@ -834,24 +772,14 @@ io.on('connection', (socket) => {
       const user = await getUser(userId);
       if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
       if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
-      // Check if there are free cells
-      const freeCells = iceRoom.gridCells.filter(c => !c.used);
-      if (freeCells.length === 0 && !getIcePlayer(userId)) {
+      if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
         return ack?.({ ok: false, error: 'Rink is full.' });
       }
       user.balance -= amt;
       await saveUser(user);
       const existing = getIcePlayer(userId);
-      if (existing) {
-        existing.bet += amt;
-      } else {
-        const p = makeIcePlayer(userId, amt, user.username, user.pfp);
-        if (!p) {
-          user.balance += amt; // refund
-          await saveUser(user);
-          return ack?.({ ok: false, error: 'No free cells.' });
-        }
-      }
+      if (existing) { existing.bet += amt; computeIceSegments(); }
+      else { makeIcePlayer(userId, amt, user.username, user.pfp); }
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastIceState();
