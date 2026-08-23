@@ -171,126 +171,30 @@ function createIceRoom(id) {
     spinFinalAngle: 0,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
-    // ─── layout for this round: chosen fresh each time the rink empties out ───
-    layoutMode: 'rect',        // 'rect' | 'grid' | 'wedge'
-    layoutDirection: 'left-right', // rect: 'left-right' | 'right-left' | 'top-bottom' | 'bottom-top'
-    layoutRowMajor: true,      // grid: group into rows (true) or columns (false)
-    layoutFlipX: false,        // grid: mirror horizontally
-    layoutFlipY: false,        // grid: mirror vertically
-    layoutStartAngle: 0,       // wedge: where the first wedge begins
   };
 }
 const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
-function pickRandomIceLayout() {
-  iceRoom.layoutMode = randChoice(['rect', 'rect', 'grid', 'wedge']); // rect a bit more common
-  iceRoom.layoutDirection = randChoice(['left-right', 'right-left', 'top-bottom', 'bottom-top']);
-  iceRoom.layoutRowMajor = Math.random() < 0.5;
-  iceRoom.layoutFlipX = Math.random() < 0.5;
-  iceRoom.layoutFlipY = Math.random() < 0.5;
-  iceRoom.layoutStartAngle = Math.random() * Math.PI * 2;
-}
-
-function randChoice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-
-// Builds a full, gap-free tiling of an `size`×`size` square into `n` cells whose
-// areas are proportional to `bets`. Cells are grouped into rows (or columns, if
-// !rowMajor) of roughly sqrt(n) items; each row's thickness is proportional to
-// that row's share of the total bet, and within a row each cell's width is
-// proportional to its own share of the row — so the whole square is always
-// completely covered with no gaps, in a roughly square-ish mosaic.
-function buildGridRegions(bets, size, rowMajor, flipX, flipY) {
-  const n = bets.length;
-  const totalBet = bets.reduce((a, b) => a + b, 0) || 1;
-  const groupSize = Math.max(1, Math.round(Math.sqrt(n)));
-  const numGroups = Math.ceil(n / groupSize);
-  const groups = [];
-  for (let g = 0; g < numGroups; g++) {
-    const idxs = [];
-    for (let i = g * groupSize; i < Math.min(n, (g + 1) * groupSize); i++) idxs.push(i);
-    groups.push(idxs);
-  }
-  const groupTotals = groups.map(idxs => idxs.reduce((s, i) => s + bets[i], 0));
-  const regions = new Array(n);
-  let cursorMain = 0; // along the "thickness" axis (rows: y, columns: x)
-  groups.forEach((idxs, g) => {
-    const thickness = (groupTotals[g] / totalBet) * size;
-    let mainEnd = cursorMain + thickness;
-    if (g === groups.length - 1) mainEnd = size;
-    let cursorCross = 0; // along the "within-group" axis
-    idxs.forEach((i, ci) => {
-      const crossSpan = (bets[i] / groupTotals[g]) * size;
-      let crossEnd = cursorCross + crossSpan;
-      if (ci === idxs.length - 1) crossEnd = size;
-      if (rowMajor) {
-        regions[i] = { x1: cursorCross, y1: cursorMain, x2: crossEnd, y2: mainEnd };
-      } else {
-        regions[i] = { x1: cursorMain, y1: cursorCross, x2: mainEnd, y2: crossEnd };
-      }
-      cursorCross = crossEnd;
-    });
-    cursorMain = mainEnd;
-  });
-  if (flipX) regions.forEach(r => { const nx1 = size - r.x2, nx2 = size - r.x1; r.x1 = nx1; r.x2 = nx2; });
-  if (flipY) regions.forEach(r => { const ny1 = size - r.y2, ny2 = size - r.y1; r.y1 = ny1; r.y2 = ny2; });
-  return regions;
-}
-
-// Recomputes every player's winning `region` — always a full, gap-free tiling
-// of the rink, just shaped differently depending on iceRoom.layoutMode:
-//  - 'rect'  : one strip per player, straight across the rink (axis/direction
-//              randomized per round: left-to-right, right-to-left, top-down, bottom-up)
-//  - 'grid'  : a mosaic of rectangles ("square-like" cells) sized by bet share
-//  - 'wedge' : pie-slice wedges from the center out to the rink's edge
-//              ("triangle-like"), angle proportional to bet share
 function computeIceSegments() {
-  const players = iceRoom.players;
-  const totalBet = players.reduce((s, p) => s + p.bet, 0);
+  const totalBet = iceRoom.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
-
-  if (iceRoom.layoutMode === 'wedge') {
-    let cursor = iceRoom.layoutStartAngle;
-    players.forEach(p => {
-      const span = (p.bet / totalBet) * Math.PI * 2;
-      p.region = { type: 'wedge', angleStart: cursor, angleEnd: cursor + span };
-      cursor += span;
-    });
-    players[players.length - 1].region.angleEnd = iceRoom.layoutStartAngle + Math.PI * 2;
-  } else if (iceRoom.layoutMode === 'grid') {
-    const cells = buildGridRegions(players.map(p => p.bet), ICE_SIZE, iceRoom.layoutRowMajor, iceRoom.layoutFlipX, iceRoom.layoutFlipY);
-    players.forEach((p, i) => { p.region = { type: 'rect', ...cells[i] }; });
-  } else {
-    const dir = iceRoom.layoutDirection;
-    let cursor = 0;
-    const spans = players.map(p => (p.bet / totalBet) * ICE_SIZE);
-    players.forEach((p, i) => {
-      let a = cursor, b = cursor + spans[i];
-      if (i === players.length - 1) b = ICE_SIZE;
-      cursor = b;
-      if (dir === 'left-right') p.region = { type: 'rect', x1: a, y1: 0, x2: b, y2: ICE_SIZE };
-      else if (dir === 'right-left') p.region = { type: 'rect', x1: ICE_SIZE - b, y1: 0, x2: ICE_SIZE - a, y2: ICE_SIZE };
-      else if (dir === 'top-bottom') p.region = { type: 'rect', x1: 0, y1: a, x2: ICE_SIZE, y2: b };
-      else p.region = { type: 'rect', x1: 0, y1: ICE_SIZE - b, x2: ICE_SIZE, y2: ICE_SIZE - a };
-    });
-  }
-
-  // legacy fields some older client code may still read — only meaningful for
-  // straight left-right rect layouts, harmless placeholders otherwise
-  players.forEach(p => {
-    if (p.region.type === 'rect') { p.segStart = p.region.x1; p.segEnd = p.region.x2; }
-    else { p.segStart = 0; p.segEnd = ICE_SIZE; }
+  let cursor = 0;
+  iceRoom.players.forEach(p => {
+    const width = (p.bet / totalBet) * ICE_SIZE;
+    p.segStart = cursor;
+    p.segEnd = cursor + width;
+    cursor += width;
   });
+  iceRoom.players[iceRoom.players.length - 1].segEnd = ICE_SIZE;
 }
 
 function makeIcePlayer(id, bet, name, pfp) {
-  if (iceRoom.players.length === 0) pickRandomIceLayout(); // fresh shape each new round
   const colorIdx = iceRoom.players.length % COLORS.length;
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx], segStart: 0, segEnd: ICE_SIZE,
-    region: { type: 'rect', x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE },
   };
   iceRoom.players.push(p);
   computeIceSegments();
@@ -320,37 +224,12 @@ function launchIcePuck() {
   iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
 }
 
-// Finds whichever player's region contains the puck's final (px,py) — works for
-// all three layout shapes since 'rect' region is a plain box test and 'wedge'
-// region is an angle-around-center test.
-function findIceWinner(px, py) {
-  const cx = ICE_SIZE / 2, cy = ICE_SIZE / 2;
-  let ang = Math.atan2(py - cy, px - cx);
-  if (ang < 0) ang += Math.PI * 2;
-  for (const p of iceRoom.players) {
-    const r = p.region;
-    if (!r) continue;
-    if (r.type === 'wedge') {
-      let a0 = r.angleStart % (Math.PI * 2);
-      if (a0 < 0) a0 += Math.PI * 2;
-      const span = r.angleEnd - r.angleStart;
-      let testAng = ang;
-      if (testAng < a0) testAng += Math.PI * 2;
-      if (testAng >= a0 && testAng < a0 + span) return p;
-    } else {
-      if (px >= r.x1 && px < r.x2 && py >= r.y1 && py < r.y2) return p;
-    }
-  }
-  return null;
-}
-
 async function endIceGame() {
   if (iceRoom.gameState === 'finished') return;
   iceRoom.gameState = 'finished';
 
   const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
-  const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
-  let winner = findIceWinner(px, py);
+  let winner = iceRoom.players.find(p => px >= p.segStart && px < p.segEnd);
   if (!winner) winner = iceRoom.players[iceRoom.players.length - 1];
 
   let payload = null;
@@ -475,7 +354,7 @@ function broadcastIceState() {
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-      segStart: p.segStart, segEnd: p.segEnd, region: p.region,
+      segStart: p.segStart, segEnd: p.segEnd,
     })),
   });
 }
