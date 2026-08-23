@@ -11,6 +11,10 @@ function load() {
   try {
     data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
     if (!data.promoCodes) data.promoCodes = [];
+    // Ensure each promo code has a redeemedBy array
+    data.promoCodes.forEach(p => {
+      if (!p.redeemedBy) p.redeemedBy = [];
+    });
   } catch (e) {
     data = { users: {}, promoCodes: [] };
   }
@@ -50,9 +54,6 @@ async function getUser(id, defaults = {}) {
   return data.users[id];
 }
 
-// server.js calls this at the end of every round to record a win. Without it defined
-// here, the import silently resolves to undefined and every call throws (caught by
-// server.js's try/catch, so it fails silently) — no win ever actually gets saved.
 async function addWinToHistory(id, name, pfp, amount) {
   const user = await getUser(id);
   if (!Array.isArray(user.winHistory)) user.winHistory = [];
@@ -83,6 +84,19 @@ async function allUsersCount() {
   return Object.keys(data.users).length;
 }
 
+// ─── Reset player (admin) ──────────────────────────────────────
+async function resetPlayer(userId) {
+  const user = data.users[userId];
+  if (!user) return false;
+  user.balance = STARTING_BALANCE;
+  user.wins = 0;
+  user.losses = 0;
+  user.winHistory = [];
+  // Do not change banned status
+  queueSave();
+  return true;
+}
+
 // ─── Promo codes ──────────────────────────────────────────────
 function generateRandomCode(length = 8) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -100,6 +114,7 @@ async function createPromoCode(amount, code = null, maxUses = 1) {
     amount: parseInt(amount),
     maxUses: parseInt(maxUses),
     usedCount: 0,
+    redeemedBy: [],   // array of user IDs who have redeemed this code
     createdAt: Date.now(),
   };
   data.promoCodes.push(promo);
@@ -110,12 +125,17 @@ async function createPromoCode(amount, code = null, maxUses = 1) {
 async function redeemPromoCode(code, userId) {
   const promo = data.promoCodes.find(p => p.code === code);
   if (!promo) return { ok: false, error: 'Invalid code' };
-  if (promo.usedCount >= promo.maxUses) return { ok: false, error: 'Code already used' };
+  if (promo.usedCount >= promo.maxUses) return { ok: false, error: 'Code already fully used' };
+  if (promo.redeemedBy && promo.redeemedBy.includes(userId)) {
+    return { ok: false, error: 'You have already redeemed this code' };
+  }
   const user = await getUser(userId);
   if (!user) return { ok: false, error: 'User not found' };
   user.balance += promo.amount;
   await saveUser(user);
   promo.usedCount += 1;
+  if (!promo.redeemedBy) promo.redeemedBy = [];
+  promo.redeemedBy.push(userId);
   queueSave();
   return { ok: true, amount: promo.amount, newBalance: user.balance };
 }
@@ -140,4 +160,5 @@ module.exports = {
   redeemPromoCode,
   getPromoCodes,
   deletePromoCode,
+  resetPlayer,   // exported
 };
