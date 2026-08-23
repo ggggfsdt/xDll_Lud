@@ -27,6 +27,7 @@ const {
   redeemPromoCode,
   getPromoCodes,
   deletePromoCode,
+  resetPlayer,   // <-- new
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -792,7 +793,6 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // ─── Send current ice room players and pot for persistence ──
       const icePlayers = iceRoom.players.map(p => ({
         id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
         x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
@@ -891,25 +891,14 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    // ─── PERSISTENCE FIX: Do NOT remove the player from the ice room ──
-    // The player stays in the arena so their bet and position survive reloads.
-    // The server will clear the room when the round ends.
-    // if (userId) {
-    //   const icePlayer = getIcePlayer(userId);
-    //   if (icePlayer) {
-    //     removeIcePlayer(userId);
-    //     broadcastIceState();
-    //   }
-    // }
-    // Just log the disconnect.
     if (userId) {
-      console.log(`User ${userId} disconnected, but keeping their ice arena bet.`);
+      console.log(`User ${userId} disconnected, keeping their ice arena bet.`);
     }
   });
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API (unchanged)
+// ADMIN API
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -954,6 +943,8 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
     <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
     <br/>
     <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
+    <br/>
+    <input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button>
   </div>
 </div>
 <script>
@@ -1015,6 +1006,13 @@ async function banPlayer(id){
   const userId = id || document.getElementById('banUserId').value;
   if(!userId) return;
   await fetchAdmin('/ban', 'POST', {id: userId});
+  refreshPlayers();
+}
+async function resetPlayer(){
+  const id = document.getElementById('resetUserId').value;
+  if(!id) return;
+  if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return;
+  await fetchAdmin('/reset-player', 'POST', {id});
   refreshPlayers();
 }
 async function generatePromo(){
@@ -1143,6 +1141,20 @@ app.post('/admin/api/ban', adminAuth, async (req, res) => {
     res.json({ ok: true, banned: user.banned });
   } catch (err) {
     console.error('Ban error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+// ─── NEW: Reset player stats (remove from top) ──────────────
+app.post('/admin/api/reset-player', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+    const success = await resetPlayer(id);
+    if (!success) return res.status(404).json({ ok: false, error: 'User not found' });
+    res.json({ ok: true, message: 'Player stats reset' });
+  } catch (err) {
+    console.error('Reset player error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
   }
 });
