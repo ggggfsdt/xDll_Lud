@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── Full CSS (same as before, with additions for ice player list) ─── */
+        /* ─── Full CSS (same as previous, but removed ice-player-list styles) ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -198,7 +198,7 @@
         #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        /* ─── Ice Arena specific ─────────────────────────────────────── */
+        /* ─── ICE ARENA (updated) ───────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
@@ -211,7 +211,7 @@
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
         #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
         #ice-win-history::-webkit-scrollbar { display:none; }
-        /* ─── Ice bet overlay (collapsible, same as PvP) ───────────── */
+        /* ─── Ice bet overlay (collapsible) ─────────────────────────── */
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
@@ -240,16 +240,11 @@
         #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
         #ice-current-bet-display span { color:var(--gold); font-weight:700; }
         #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
-        #ice-player-list-container { width:100%; max-height:80px; overflow-y:auto; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:4px; padding:2px 4px; flex-shrink:0; scrollbar-width:thin; transition:max-height 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease; margin-top:2px; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-radius:8px; border:1px solid var(--border); }
-        #ice-player-list-container.shift-up { max-height:0 !important; padding:0 !important; border:none !important; overflow:hidden !important; opacity:0 !important; pointer-events:none !important; margin-top:0 !important; }
-        #ice-player-list-container::-webkit-scrollbar { width:3px; }
-        #ice-player-list-container::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
-        .ice-pl-entry { display:flex; align-items:center; gap:4px; background:rgba(26,26,30,0.80); border-radius:20px; padding:1px 8px 1px 2px; border:1px solid var(--border); font-size:10px; color:#ccc; opacity:0.85; flex-shrink:0; }
-        .ice-pl-entry.you { border-color:#5b8def; opacity:1; }
-        .ice-pl-entry .pl-avatar { width:14px; height:14px; border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--surface3); }
-        .ice-pl-entry .pl-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
-        .ice-pl-entry .pl-name { font-weight:600; max-width:40px; overflow:hidden; text-overflow:ellipsis; font-size:10px; }
-        .ice-pl-entry .pl-bet { color:var(--gold); font-weight:700; font-size:10px; }
+        /* ─── Ice auto-bet (unchanged) ─────────────────────────────── */
+        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
+        .ice-auto-bet-toggle:active { transform:scale(0.9); }
         #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
         #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
         #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
@@ -263,10 +258,6 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
-        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
-        .ice-auto-bet-toggle:active { transform:scale(0.9); }
         @media (max-width:400px) {
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
@@ -300,10 +291,6 @@
             .pl-entry .pl-name { max-width:40px; font-size:10px; }
             .pl-entry .pl-bet { font-size:10px; }
             .pl-entry .pl-chance { font-size:9px; }
-            #ice-player-list-container { max-height:60px; }
-            .ice-pl-entry { font-size:9px; }
-            .ice-pl-entry .pl-name { max-width:30px; font-size:9px; }
-            .ice-pl-entry .pl-bet { font-size:9px; }
             #win-history, #ice-win-history { top:42px; right:8px; gap:3px; }
             .win-entry { width:22px; height:22px; }
             #podium { gap:8px; padding:10px 0 6px; }
@@ -387,7 +374,7 @@
                 </div>
             </div>
 
-            <!-- Ice Page (updated) -->
+            <!-- Ice Page (updated: no player list, no count text) -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
@@ -396,6 +383,7 @@
                         <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
                     </div>
                     <div id="ice-win-history"></div>
+                    <!-- Simplified waiting text – no player count -->
                     <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
                     <div id="ice-win-panel">
                         <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
@@ -415,8 +403,6 @@
                             <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
                         </div>
                     </div>
-                    <!-- Ice player list -->
-                    <div id="ice-player-list-container"></div>
                     <!-- Ice auto-bet -->
                     <div id="ice-auto-bet-container" class="ice-auto-bet-container">
                         <button id="ice-auto-bet-toggle" class="ice-auto-bet-toggle">⏱</button>
@@ -485,7 +471,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with Ice UI improvements
+        // FULL CLIENT – removed ice player list and player count text
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -522,6 +508,7 @@
         const VISUAL_RADIUS_SCALE = 0.75;
 
         // ─── DOM refs ──────────────────────────────────────────────────
+        // (All DOM refs including ice elements – ice-player-list-container removed)
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         const balanceEl = document.getElementById('balance');
@@ -598,7 +585,7 @@
         const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
         const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
         const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
-        const icePlayerListContainer = document.getElementById('ice-player-list-container');
+        // Removed: icePlayerListContainer
         const autoToggle = document.getElementById('auto-bet-toggle');
         const autoPanel = document.getElementById('auto-bet-panel');
         const autoSwitch = document.getElementById('auto-bet-switch');
@@ -927,7 +914,7 @@
             winHistoryEl.innerHTML=html;
         }
 
-        // ─── ICE ARENA ──────────────────────────────────────────────────
+        // ─── ICE ARENA (updated: no player list, no count text) ──────
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
         function applyIceServerState(snapshot) {
@@ -998,20 +985,23 @@
             if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
 
             updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
-            updateIcePlayerList(); // update the ice player list
+            // No updateIcePlayerList() – removed
         }
 
         function updateIceBetOverlayVisibility(){
             const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
             iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
-            icePlayerListContainer.classList.toggle('shift-up',shouldHide);
+            // No player list to shift
         }
         function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
         function updateIceWaitingText(){
-            const n=iceState.players.length;
-            if(n===0){ iceWaitingText.innerHTML='<span>waiting for players</span><div class="sub">place a bet to claim the rink</div>'; iceWaitingText.style.display='block'; }
-            else if(iceState.gameState==='idle'||iceState.gameState==='countdown'){ iceWaitingText.innerHTML=`<span>● ${n} player${n>1?'s':''} on the rink</span>`; iceWaitingText.style.display='block'; }
-            else { iceWaitingText.style.display='none'; }
+            // Always show the same message (no player count)
+            iceWaitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to claim the rink</div>';
+            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                iceWaitingText.style.display = 'none';
+            } else {
+                iceWaitingText.style.display = 'block';
+            }
         }
         function updateIceBetUI(){
             const existing=getIcePlayerLocal(state.userId);
@@ -1021,21 +1011,6 @@
             iceBetBtn.disabled=!canBet; iceBetInput.disabled=!canBet; iceAllInBtn.disabled=!canBet;
             iceCurrentBetDisplay.textContent=existing?existing.bet:'0';
             if(iceBetInput.dataset.empty==='true'){ iceBetInput.value=10; delete iceBetInput.dataset.empty; }
-        }
-
-        function updateIcePlayerList(){
-            const players = iceState.players;
-            if(players.length===0){ icePlayerListContainer.innerHTML=''; return; }
-            let html='';
-            players.forEach(p=>{
-                const isYou = p.id === state.userId;
-                html+=`<div class="ice-pl-entry ${isYou?'you':''}">
-                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${p.name}</span>
-                            <span class="pl-bet">${p.bet}</span>
-                        </div>`;
-            });
-            icePlayerListContainer.innerHTML=html;
         }
 
         function addIceWinToHistory(name,pfp){
@@ -1071,7 +1046,7 @@
             iceWinPanel.classList.remove('show');
             if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
             iceState.winnerId=null;
-            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility(); updateIcePlayerList();
+            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
         }
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
@@ -1569,7 +1544,7 @@
                     iceCtx.restore();
                 }
 
-                // ─── PFP POP (no bet text) ──────────────────────────
+                // ─── PFP POP ──────────────────────────────────────────
                 const centerX = (x1 + x2) / 2;
                 const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.28;
@@ -1610,8 +1585,7 @@
                 iceCtx.arc(cx, cy, avatarR, 0, Math.PI * 2);
                 iceCtx.stroke();
 
-                // ─── NO BET TEXT ─────────────────────────────────────
-                // (removed)
+                // NO BET TEXT
 
                 // Divider lines (optional)
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
