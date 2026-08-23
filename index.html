@@ -7,9 +7,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-    <!-- ─── LOADING SCREEN STYLES (unchanged) ─── -->
+    <!-- ─── LOADING SCREEN STYLES ─── -->
     <style>
-        /* loading overlay – sits on top of everything */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -233,7 +232,6 @@
 
     <!-- ─── ORIGINAL APP STYLES (unchanged) ─── -->
     <style>
-        /* ─── Full CSS (same as before, with no ice player list) ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -433,12 +431,10 @@
         #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
         #ice-timer-progress-wrap.visible { display:block; }
         #ice-timer-progress { height:100%; width:0%; border-radius:3px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.8); }
-        /* ─── Ice waiting text (no player count) ───────────────────── */
         #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
         #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
         #ice-win-history::-webkit-scrollbar { display:none; }
-        /* ─── Ice bet overlay (collapsible) ─────────────────────────── */
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
@@ -480,7 +476,6 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        /* ─── Ice auto-bet (same styles as PvP) ────────────────────── */
         #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
         .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
         .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
@@ -565,7 +560,7 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ ORIGINAL APP (unchanged) ═══ -->
+    <!-- ═══ ORIGINAL APP ═══ -->
     <div id="app">
         <div id="topbar">
             <div id="balance-wrap">
@@ -713,7 +708,7 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ ORIGINAL APP SCRIPT (unchanged) + ICE IDLE ANIMATION ═══ -->
+    <!-- ═══ SCRIPT (fishnet removed) ═══ -->
     <script>
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
@@ -863,7 +858,6 @@
             isZoomingOut: false,
             zoomLocked: false,
             zoomOutTriggered: false,
-            // ─── idle animation state ──────────────────────────────────
             idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 10 },
             idlePuckInitialized: false,
         };
@@ -1716,15 +1710,19 @@
             });
         }
 
+        // ─── RENDER ICE (fishnet removed) ───────────────────────────────
         function renderIce() {
-            const w=iceState.arenaSize;
-            if(!w) return;
-            const half=w/2; const s=iceScaleFactor();
-            iceCtx.clearRect(0,0,w,w);
-            const grad=iceCtx.createRadialGradient(half,half,0,half,half,half);
-            grad.addColorStop(0,'rgba(12,16,22,0.85)');
-            grad.addColorStop(1,'rgba(2,4,8,0.95)');
-            iceCtx.fillStyle=grad; iceCtx.fillRect(0,0,w,w);
+            const w = iceState.arenaSize;
+            if (!w) return;
+            const half = w / 2;
+            const s = iceScaleFactor();
+
+            iceCtx.clearRect(0, 0, w, w);
+            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
+            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
+            iceCtx.fillStyle = grad;
+            iceCtx.fillRect(0, 0, w, w);
 
             // ─── IDLE ANIMATION (when no players and gameState idle) ──
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
@@ -1763,44 +1761,6 @@
                 iceState.idlePuck.vx = vx;
                 iceState.idlePuck.vy = vy;
 
-                // ─── Draw fishnet square (behind text) ──────────────────
-                
-
-                // Glowing center light
-                const glowRadius = 12;
-                const glowGrad = iceCtx.createRadialGradient(fcx, fcy, 0, fcx, fcy, glowRadius * 2);
-                glowGrad.addColorStop(0, 'rgba(120, 200, 255, 0.6)');
-                glowGrad.addColorStop(0.4, 'rgba(80, 160, 255, 0.2)');
-                glowGrad.addColorStop(1, 'rgba(80, 160, 255, 0)');
-                iceCtx.fillStyle = glowGrad;
-                iceCtx.beginPath();
-                iceCtx.arc(fcx, fcy, glowRadius * 2, 0, Math.PI * 2);
-                iceCtx.fill();
-
-                // Square outline with grid (fishnet)
-                iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(200, 220, 255, 0.25)';
-                iceCtx.lineWidth = 1.5;
-                iceCtx.shadowBlur = 10;
-                iceCtx.shadowColor = 'rgba(100, 200, 255, 0.15)';
-
-                // outer rectangle
-                iceCtx.strokeRect(fcx - halfFish, fcy - halfFish, fishnetSize, fishnetSize);
-
-                // inner grid lines
-                for (let i = 1; i < 6; i++) {
-                    const pos = -halfFish + i * gridSpacing;
-                    iceCtx.beginPath();
-                    iceCtx.moveTo(fcx - halfFish, fcy + pos);
-                    iceCtx.lineTo(fcx + halfFish, fcy + pos);
-                    iceCtx.stroke();
-                    iceCtx.beginPath();
-                    iceCtx.moveTo(fcx + pos, fcy - halfFish);
-                    iceCtx.lineTo(fcx + pos, fcy + halfFish);
-                    iceCtx.stroke();
-                }
-                iceCtx.restore();
-
                 // ─── Draw sliding puck (circle + cross) ────────────────
                 const puckR = iceState.idlePuck.radius * s;
                 const px = iceState.idlePuck.x;
@@ -1827,57 +1787,72 @@
 
             // ─── Regular ice rendering (only if not idle or there are players) ──
             if (!showIdle) {
-                // Draw perimeter and players as before
-                const pts = iceState.perimeterPoints.map(p=>({x:p.x*s, y:p.y*s}));
-                if(pts.length===0) return;
-                const perimeterPath=new Path2D();
-                perimeterPath.moveTo(pts[0].x,pts[0].y);
-                for(let i=1;i<pts.length;i++) perimeterPath.lineTo(pts[i].x,pts[i].y);
+                const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+                if (pts.length === 0) return;
+                const perimeterPath = new Path2D();
+                perimeterPath.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
                 perimeterPath.closePath();
 
-                const now=performance.now();
-                let zoomTx=0, zoomTy=0, zoomSc=1;
-                const puck=iceState.puck;
+                const now = performance.now();
+                let zoomTx = 0, zoomTy = 0, zoomSc = 1;
+                const puck = iceState.puck;
 
-                if(iceState.gameState==='sliding'){
-                    const slideElapsed=(now-iceState.slideStartTime)/1000;
-                    if(slideElapsed>6.0 && !iceState.isZoomingOut && !iceState.zoomLocked){
-                        if(!iceState.isZoomingIn && iceState.zoom<1.7){
-                            iceState.isZoomingIn=true; iceState.zoomStartTime=now; iceState.zoomTarget=1.8;
+                if (iceState.gameState === 'sliding') {
+                    const slideElapsed = (now - iceState.slideStartTime) / 1000;
+                    if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                        if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
+                            iceState.isZoomingIn = true;
+                            iceState.zoomStartTime = now;
+                            iceState.zoomTarget = 1.8;
                         }
                     }
                 }
-                if(iceState.isZoomingOut){
-                    const elapsed=(now-iceState.zoomStartTime)/1000;
-                    const progress=Math.min(elapsed/iceState.zoomDuration,1);
-                    const eased=easeInOutCubic(progress);
-                    iceState.zoom=iceState.zoomTarget+(1-iceState.zoomTarget)*(1-eased);
-                    if(progress>=1){ iceState.isZoomingOut=false; iceState.zoom=1; iceState.zoomLocked=false; iceState.zoomOutTriggered=false; }
+                if (iceState.isZoomingOut) {
+                    const elapsed = (now - iceState.zoomStartTime) / 1000;
+                    const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                    const eased = easeInOutCubic(progress);
+                    iceState.zoom = iceState.zoomTarget + (1 - iceState.zoomTarget) * (1 - eased);
+                    if (progress >= 1) {
+                        iceState.isZoomingOut = false;
+                        iceState.zoom = 1;
+                        iceState.zoomLocked = false;
+                        iceState.zoomOutTriggered = false;
+                    }
                 }
-                if(iceState.isZoomingIn){
-                    const elapsed=(now-iceState.zoomStartTime)/1000;
-                    const progress=Math.min(elapsed/iceState.zoomDuration,1);
-                    const eased=easeInOutCubic(progress);
-                    iceState.zoom=1+(iceState.zoomTarget-1)*eased;
-                    if(progress>=1){ iceState.isZoomingIn=false; iceState.zoomLocked=true; iceState.zoom=iceState.zoomTarget; }
+                if (iceState.isZoomingIn) {
+                    const elapsed = (now - iceState.zoomStartTime) / 1000;
+                    const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                    const eased = easeInOutCubic(progress);
+                    iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
+                    if (progress >= 1) {
+                        iceState.isZoomingIn = false;
+                        iceState.zoomLocked = true;
+                        iceState.zoom = iceState.zoomTarget;
+                    }
                 }
-                if(iceState.zoom>1.01){
-                    const puckScreenX=puck.x*s, puckScreenY=puck.y*s;
-                    const cx=w/2, cy=w/2;
-                    zoomTx=(cx-puckScreenX)*iceState.zoom + cx - cx*iceState.zoom;
-                    zoomTy=(cy-puckScreenY)*iceState.zoom + cy - cy*iceState.zoom;
-                    zoomSc=iceState.zoom;
+                if (iceState.zoom > 1.01) {
+                    const puckScreenX = puck.x * s,
+                        puckScreenY = puck.y * s;
+                    const cx = w / 2,
+                        cy = w / 2;
+                    zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
+                    zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
+                    zoomSc = iceState.zoom;
                 }
 
                 iceCtx.save();
-                iceCtx.translate(zoomTx,zoomTy);
-                iceCtx.scale(zoomSc,zoomSc);
+                iceCtx.translate(zoomTx, zoomTy);
+                iceCtx.scale(zoomSc, zoomSc);
 
                 iceCtx.save();
-                iceCtx.shadowColor='rgba(0,0,0,0.9)'; iceCtx.shadowBlur=30;
-                iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
+                iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
+                iceCtx.shadowBlur = 30;
+                iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
+                iceCtx.fill(perimeterPath);
                 iceCtx.restore();
 
+                // ─── Players segments ────────────────────────────────
                 iceCtx.save();
                 iceCtx.clip(perimeterPath);
                 iceState.players.forEach(p => {
@@ -1952,51 +1927,81 @@
                 });
                 iceCtx.restore();
 
+                // ─── Rink border ──────────────────────────────────────
                 iceCtx.save();
-                iceCtx.strokeStyle='rgba(160,190,220,0.35)'; iceCtx.lineWidth=4;
+                iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
+                iceCtx.lineWidth = 4;
                 iceCtx.stroke(perimeterPath);
                 iceCtx.restore();
 
-                if(iceState.gameState==='spinning' && iceState.spinStartTime){
-                    const elapsed=(Date.now()-iceState.spinStartTime)/1000;
-                    const t=Math.min(1, elapsed/(iceState.spinDuration||1));
-                    const extraSpins=4;
-                    const angle=iceState.spinFinalAngle - (1-easeOutCubic(t))*(extraSpins*Math.PI*2);
-                    const arrowLen=Math.min(w*0.18,45);
-                    const headSize=Math.min(arrowLen*0.4,12);
+                // ─── Spinning arrow ──────────────────────────────────
+                if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+                    const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                    const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+                    const extraSpins = 4;
+                    const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+                    const arrowLen = Math.min(w * 0.18, 45);
+                    const headSize = Math.min(arrowLen * 0.4, 12);
                     iceCtx.save();
-                    iceCtx.translate(half,half);
+                    iceCtx.translate(half, half);
                     iceCtx.rotate(angle);
-                    iceCtx.strokeStyle='#e8f4ff'; iceCtx.lineWidth=2.5;
-                    iceCtx.shadowColor='rgba(139,197,255,0.8)'; iceCtx.shadowBlur=12;
-                    iceCtx.beginPath(); iceCtx.moveTo(0,0); iceCtx.lineTo(arrowLen-headSize*0.6,0); iceCtx.stroke();
-                    iceCtx.fillStyle='#e8f4ff'; iceCtx.shadowBlur=16;
-                    iceCtx.beginPath(); iceCtx.moveTo(arrowLen,0); iceCtx.lineTo(arrowLen-headSize,-headSize*0.5); iceCtx.lineTo(arrowLen-headSize,headSize*0.5); iceCtx.closePath(); iceCtx.fill();
+                    iceCtx.strokeStyle = '#e8f4ff';
+                    iceCtx.lineWidth = 2.5;
+                    iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
+                    iceCtx.shadowBlur = 12;
+                    iceCtx.beginPath();
+                    iceCtx.moveTo(0, 0);
+                    iceCtx.lineTo(arrowLen - headSize * 0.6, 0);
+                    iceCtx.stroke();
+                    iceCtx.fillStyle = '#e8f4ff';
+                    iceCtx.shadowBlur = 16;
+                    iceCtx.beginPath();
+                    iceCtx.moveTo(arrowLen, 0);
+                    iceCtx.lineTo(arrowLen - headSize, -headSize * 0.5);
+                    iceCtx.lineTo(arrowLen - headSize, headSize * 0.5);
+                    iceCtx.closePath();
+                    iceCtx.fill();
                     iceCtx.restore();
                 }
 
-                if(iceState.puckVisible){
-                    let scale=1;
-                    if(iceState.puckPopStart){
-                        const elapsedPop=(performance.now()-iceState.puckPopStart)/1000;
-                        const duration=0.4;
-                        const progress=Math.min(elapsedPop/duration,1);
-                        if(progress<1){
-                            scale=easeOutBack(progress);
-                            scale=Math.min(1.2,Math.max(0,scale));
-                        } else { scale=1; iceState.puckPopStart=0; }
+                // ─── Puck ──────────────────────────────────────────────
+                if (iceState.puckVisible) {
+                    let scale = 1;
+                    if (iceState.puckPopStart) {
+                        const elapsedPop = (performance.now() - iceState.puckPopStart) / 1000;
+                        const duration = 0.4;
+                        const progress = Math.min(elapsedPop / duration, 1);
+                        if (progress < 1) {
+                            scale = easeOutBack(progress);
+                            scale = Math.min(1.2, Math.max(0, scale));
+                        } else {
+                            scale = 1;
+                            iceState.puckPopStart = 0;
+                        }
                     }
                     let px, py;
-                    if(iceState.gameState==='spinning'){ px=half; py=half; } else { px=puck.x*s; py=puck.y*s; }
-                    const puckRadius=PUCK_RENDER_RADIUS * s * scale;
+                    if (iceState.gameState === 'spinning') { px = half;
+                        py = half; } else { px = puck.x * s;
+                        py = puck.y * s; }
+                    const puckRadius = PUCK_RENDER_RADIUS * s * scale;
                     iceCtx.save();
-                    iceCtx.shadowColor='rgba(180,220,255,0.9)'; iceCtx.shadowBlur=14;
-                    iceCtx.strokeStyle='#eaf6ff'; iceCtx.lineWidth=2.5;
-                    iceCtx.beginPath(); iceCtx.arc(px,py,puckRadius,0,Math.PI*2); iceCtx.stroke();
-                    const crossSize=puckRadius*0.6;
-                    iceCtx.lineWidth=2; iceCtx.strokeStyle='#eaf6ff'; iceCtx.shadowBlur=0;
-                    iceCtx.beginPath(); iceCtx.moveTo(px-crossSize,py); iceCtx.lineTo(px+crossSize,py);
-                    iceCtx.moveTo(px,py-crossSize); iceCtx.lineTo(px,py+crossSize); iceCtx.stroke();
+                    iceCtx.shadowColor = 'rgba(180,220,255,0.9)';
+                    iceCtx.shadowBlur = 14;
+                    iceCtx.strokeStyle = '#eaf6ff';
+                    iceCtx.lineWidth = 2.5;
+                    iceCtx.beginPath();
+                    iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
+                    iceCtx.stroke();
+                    const crossSize = puckRadius * 0.6;
+                    iceCtx.lineWidth = 2;
+                    iceCtx.strokeStyle = '#eaf6ff';
+                    iceCtx.shadowBlur = 0;
+                    iceCtx.beginPath();
+                    iceCtx.moveTo(px - crossSize, py);
+                    iceCtx.lineTo(px + crossSize, py);
+                    iceCtx.moveTo(px, py - crossSize);
+                    iceCtx.lineTo(px, py + crossSize);
+                    iceCtx.stroke();
                     iceCtx.restore();
                 }
                 iceCtx.restore(); // zoom transform
