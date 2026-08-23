@@ -7,35 +7,37 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-    <!-- ═══ LOADING SCREEN STYLES (added) ═══ -->
+    <!-- ─── LOADING SCREEN STYLES (added) ─── -->
     <style>
-        /* loading screen overlay */
+        /* loading overlay – sits on top of everything */
         #loading-screen {
             position: fixed;
             inset: 0;
-            z-index: 99999;
+            z-index: 999999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             background: radial-gradient(ellipse at center, #0e0e14 0%, #050507 100%);
-            transition: opacity 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.8s ease;
+            transition: opacity 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.9s ease;
             opacity: 1;
             visibility: visible;
             will-change: opacity;
+            pointer-events: all;
         }
         #loading-screen.hidden {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
         }
+        /* subtle glow */
         #loading-screen::before {
             content: '';
             position: absolute;
             width: 70vmin;
             height: 70vmin;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(76, 175, 80, 0.08) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(76, 175, 80, 0.07) 0%, transparent 70%);
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -43,9 +45,10 @@
             animation: orbPulse 4s ease-in-out infinite;
         }
         @keyframes orbPulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
             50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
         }
+
         #grid-wrapper {
             position: relative;
             width: 300px;
@@ -64,7 +67,6 @@
             height: 100%;
             padding: 4px;
             position: relative;
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .load-square {
             position: relative;
@@ -74,11 +76,9 @@
             backdrop-filter: blur(4px);
             border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), inset 0 0 60px rgba(0, 0, 0, 0.4);
-            transform: scale(0) rotate(-8deg);
+            transform: scale(0) rotate(-6deg);
             opacity: 0;
-            transition: none;
             will-change: transform, opacity;
-            cursor: default;
         }
         .load-square .gif-bg {
             width: 100%;
@@ -96,31 +96,31 @@
             pointer-events: none;
             z-index: 1;
         }
-        .load-square::before {
-            content: '';
-            position: absolute;
-            inset: 1px;
-            border-radius: 17px;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, transparent 60%);
-            pointer-events: none;
-            z-index: 2;
-            opacity: 0;
-            transition: opacity 0.4s ease;
-        }
+
+        /* pop animation */
         @keyframes squarePop {
-            0% { transform: scale(0) rotate(-8deg); opacity: 0; }
-            60% { transform: scale(1.12) rotate(1deg); opacity: 1; }
-            80% { transform: scale(0.94) rotate(-0.5deg); opacity: 1; }
+            0%   { transform: scale(0) rotate(-6deg); opacity: 0; }
+            60%  { transform: scale(1.10) rotate(1deg); opacity: 1; }
+            80%  { transform: scale(0.95) rotate(-0.5deg); opacity: 1; }
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
         .load-square.pop {
             animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
+
+        /* slide to center – applied via JS inline transform */
         .load-square.slide {
-            transition: all 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
-            position: relative;
-            z-index: 3;
+            transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        border-radius 0.6s ease,
+                        box-shadow 0.6s ease,
+                        opacity 0.5s ease;
+            border-radius: 20px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 60px rgba(76,175,80,0.08);
+            z-index: 5;
+            opacity: 1;
         }
+
+        /* merged big square */
         #merged-square {
             position: absolute;
             border-radius: 28px;
@@ -132,7 +132,8 @@
             transform: scale(0);
             opacity: 0;
             z-index: 10;
-            transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.6s ease;
             pointer-events: none;
             will-change: transform, opacity;
         }
@@ -155,13 +156,15 @@
             pointer-events: none;
             z-index: 1;
         }
+
+        /* pulse ring around merged */
         #pulse-ring {
             position: absolute;
             border-radius: 50%;
             border: 1.5px solid rgba(76, 175, 80, 0.15);
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(1);
+            transform: translate(-50%, -50%) scale(0.8);
             width: 120%;
             height: 120%;
             pointer-events: none;
@@ -174,10 +177,11 @@
             opacity: 1;
         }
         @keyframes ringPulse {
-            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
-            50% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
+            0%   { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
+            50%  { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
             100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
         }
+
         #loading-text {
             margin-top: 36px;
             font-size: 14px;
@@ -190,31 +194,21 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             transition: opacity 0.6s ease;
         }
-        #loading-text .dots {
-            display: inline-block;
-            animation: dotsAnim 1.4s steps(4, end) infinite;
-        }
-        @keyframes dotsAnim {
-            0% { content: ''; }
-            25% { content: '.'; }
-            50% { content: '..'; }
-            75% { content: '...'; }
-            100% { content: ''; }
-        }
         #loading-text .dots::after {
             content: '';
-            animation: dotsContent 1.4s steps(4, end) infinite;
+            animation: dotsAnim 1.4s steps(4, end) infinite;
             display: inline-block;
             width: 1.2em;
             text-align: left;
         }
-        @keyframes dotsContent {
-            0% { content: ''; }
-            25% { content: '.'; }
-            50% { content: '..'; }
-            75% { content: '...'; }
+        @keyframes dotsAnim {
+            0%   { content: ''; }
+            25%  { content: '.'; }
+            50%  { content: '..'; }
+            75%  { content: '...'; }
             100% { content: ''; }
         }
+
         #brand-mark {
             position: absolute;
             bottom: 28px;
@@ -229,12 +223,12 @@
             pointer-events: none;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
         @media (max-width: 420px) {
             #grid-wrapper { width: 220px; height: 220px; }
             #loading-grid { gap: 6px; padding: 3px; }
             .load-square { border-radius: 14px; }
             .load-square::after { border-radius: 14px; }
-            .load-square::before { border-radius: 13px; }
             #merged-square { border-radius: 22px; }
             #merged-square::after { border-radius: 22px; }
             #loading-text { font-size: 12px; margin-top: 28px; }
@@ -244,7 +238,6 @@
             #loading-grid { gap: 4px; padding: 2px; }
             .load-square { border-radius: 10px; }
             .load-square::after { border-radius: 10px; }
-            .load-square::before { border-radius: 9px; }
             #merged-square { border-radius: 16px; }
             #merged-square::after { border-radius: 16px; }
             #loading-text { font-size: 10px; margin-top: 20px; }
@@ -585,7 +578,7 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ ORIGINAL APP (unchanged) ═══ -->
+    <!-- ═══ ORIGINAL APP (completely unchanged) ═══ -->
     <div id="app">
         <div id="topbar">
             <div id="balance-wrap">
@@ -598,7 +591,7 @@
             </div>
         </div>
         <div id="main">
-            <!-- PvP Page (unchanged) -->
+            <!-- PvP Page -->
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
@@ -610,7 +603,7 @@
                     <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
                     <div id="win-panel">
-                        <div id="win-gif-container"><img id="win-gif" src="" alt="🎉" /></div>
+                        <div id="win-gif-container"><img id="win-gif" src="" alt="" /></div>
                         <div id="win-avatar-container"><img id="win-avatar" src="" alt="winner" /></div>
                         <div id="win-details">
                             <div id="win-name">Winner</div>
@@ -640,11 +633,11 @@
                 <div id="player-list-container"></div>
                 <div id="stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
-                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
+                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="stats-pot">0</span></div>
                 </div>
             </div>
 
-            <!-- Ice Page (updated) -->
+            <!-- Ice Page -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
@@ -653,7 +646,6 @@
                         <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
                     </div>
                     <div id="ice-win-history"></div>
-                    <!-- Simplified waiting text (no player count) -->
                     <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
                     <div id="ice-win-panel">
                         <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
@@ -682,11 +674,11 @@
                 </div>
                 <div id="ice-stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="ice-stats-players">0</span></div>
-                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="ice-stats-pot">0</span></div>
+                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="ice-stats-pot">0</span></div>
                 </div>
             </div>
 
-            <!-- Profile & Top pages (unchanged) -->
+            <!-- Profile -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -712,6 +704,8 @@
                     <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">⟳ Reload Avatars</button>
                 </div>
             </div>
+
+            <!-- Top -->
             <div id="top-page" class="tab-page">
                 <div id="podium"></div>
                 <div id="top-list"></div>
@@ -725,14 +719,15 @@
         </div>
     </div>
 
+    <div id="promo-modal">
+        <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
+        <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
+        <div class="promo-sub" id="promo-sub">Your new balance is 1100</div>
+        <button class="promo-btn" id="promo-continue-btn">Continue</button>
+    </div>
+
     <!-- ═══ ORIGINAL APP SCRIPT (unchanged) ═══ -->
     <script>
-        // ─── ORIGINAL SCRIPT (copied verbatim from user's file) ───
-        // (I have placed the exact script that was provided, without any changes.
-        //  The only addition is the loading screen script below which will
-        //  hide the loading screen after its animation.)
-        // ──────────────────────────────────────────────────────────────
-
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
         // ═══════════════════════════════════════════════════════════════
@@ -755,8 +750,8 @@
 
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
-        function haptic(style = 'light') {
-            try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style); else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
+        function haptic(style) {
+            try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light'); else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
         }
 
         // ─── STATE ──────────────────────────────────────────────────────
@@ -975,7 +970,6 @@
                         iceState.winHistory=res.iceRecentWinners.slice(0,8).map(w=>({name:w.name,pfp:w.pfp}));
                         updateIceWinHistoryUI();
                     }
-                    // ─── RESTORE ICE PLAYERS ──────────────────────────────────
                     if (res.icePlayers && Array.isArray(res.icePlayers)) {
                         iceState.players = res.icePlayers.map(p => ({
                             id: p.id, name: p.name, pfp: p.pfp,
@@ -985,9 +979,8 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
-                        // Update UI
                         updateIceStatsBar();
-                        updateIceBetUI();          // restore bet display
+                        updateIceBetUI();
                         updateIceWaitingText();
                         updateIceBetOverlayVisibility();
                         document.getElementById('ice-stats-pot').textContent = iceState.pot;
@@ -1007,7 +1000,6 @@
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
         }
 
-        // ─── PVP STATE APPLICATION ──────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1116,7 +1108,6 @@
             playerListContainer.innerHTML=html;
         }
 
-        // ─── PVP RENDER HELPERS ─────────────────────────────────────────
         function easePopBounce(t){ if(t>=1)return 1; const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
         function getPopScale(player){
             if(!player.isPopping) return 1;
@@ -1154,7 +1145,6 @@
             if(betInput.dataset.empty==='true'){ betInput.value=10; delete betInput.dataset.empty; }
         }
 
-        // ─── ROUND END (PvP) ──────────────────────────────────────────
         function handleRoundEnd(payload){
             if(!payload){ hideWinPanelAndReset(); return; }
             addWinToHistory(payload.winnerName, payload.winnerPfp);
@@ -1192,7 +1182,6 @@
             winHistoryEl.innerHTML=html;
         }
 
-        // ─── ICE ARENA ──────────────────────────────────────────────────
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
         function applyIceServerState(snapshot) {
@@ -1271,7 +1260,6 @@
         }
         function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
         function updateIceWaitingText(){
-            // Always show the same text (no player count)
             iceWaitingText.innerHTML = '<span>waiting for players</span><div class="sub">place a bet to claim the rink</div>';
             if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
                 iceWaitingText.style.display = 'none';
@@ -1326,7 +1314,6 @@
         }
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
-        // ─── ICE BET ──────────────────────────────────────────────────
         function placeIceBet(amount){
             if(!socket||!socket.connected) return;
             let addAmount=parseInt(amount)||10;
@@ -1348,7 +1335,6 @@
             iceBetInput.value=val;
         });
 
-        // ─── ICE AUTO BET ────────────────────────────────────────────
         let iceAutoBetInterval=null, iceAutoBetEnabled=false;
         function toggleIceAutoBet(enable){
             if(enable&&!iceAutoBetEnabled){
@@ -1372,7 +1358,6 @@
         iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
         iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
 
-        // ─── Ice overlay collapse ────────────────────────────────────
         let iceBetCollapsed = false;
         iceBetToggleBtn.addEventListener('click', function(e){
             e.stopPropagation();
@@ -1381,7 +1366,6 @@
             haptic('light');
         });
 
-        // ─── LEADERBOARD ──────────────────────────────────────────────
         function refreshLeaderboard(){
             if(!socket) return;
             socket.emit('leaderboard',{},(res)=>{
@@ -1446,7 +1430,6 @@
             return null;
         }
 
-        // ─── BALANCE / PROFILE ──────────────────────────────────────
         let balanceAnimInterval=null;
         function animateBalanceTo(target){
             const current=parseInt(balanceEl.textContent)||0;
@@ -1480,7 +1463,6 @@
             updateBalance();
         }
 
-        // ─── AUDIO ────────────────────────────────────────────────────
         let audioCtx=null, victorySoundPlaying=false;
         function playVictorySound(){
             try {
@@ -1508,7 +1490,6 @@
         }
         function stopVictorySound(){ victorySoundPlaying=false; }
 
-        // ─── BET ──────────────────────────────────────────────────────
         betBtn.addEventListener('click', ()=>{
             if(!socket||!socket.connected) return;
             let addAmount=parseInt(betInput.value)||10;
@@ -1542,7 +1523,6 @@
             }
         });
 
-        // ─── AUTO BET ─────────────────────────────────────────────────
         function setupInputWithClear(inputEl,defaultVal=10){
             inputEl.addEventListener('input',()=>{ const raw=inputEl.value; if(raw===''){ inputEl.dataset.empty='true'; return; } delete inputEl.dataset.empty; });
             inputEl.addEventListener('blur',()=>{
@@ -1580,7 +1560,6 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
-        // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async ()=>{
             const code=promoInput.value.trim().toUpperCase();
             if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
@@ -1599,7 +1578,6 @@
         });
         promoContinueBtn.addEventListener('click',()=>{ promoModal.classList.remove('show'); });
 
-        // ─── PROFILE / ANON ──────────────────────────────────────────
         reloadPfpBtn.addEventListener('click',function(){
             const user=getPlayer(state.userId);
             if(user){ pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); } else if(state.pfp){
@@ -1621,7 +1599,6 @@
             });
         });
 
-        // ─── TABS ──────────────────────────────────────────────────────
         function switchTab(tabId){
             if(state.currentTab===tabId) return;
             const oldTab=state.currentTab;
@@ -1637,7 +1614,6 @@
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
-        // ─── RENDER PVP ───────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -1730,7 +1706,6 @@
             });
         }
 
-        // ─── RENDER ICE (no ring, no bet text) ──────────────────────
         function renderIce() {
             const w=iceState.arenaSize;
             if(!w||!iceState.perimeterPoints.length) return;
@@ -1790,7 +1765,6 @@
             iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── DRAW PLAYER RECTANGLES (no ring, no bet text) ──────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
@@ -1820,7 +1794,6 @@
                     iceCtx.restore();
                 }
 
-                // ─── PFP (no ring) ──────────────────────────────────────
                 const centerX = (x1 + x2) / 2;
                 const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.28;
@@ -1855,13 +1828,6 @@
                 }
                 iceCtx.restore();
 
-                // ─── NO RING ──────────────────────────────────────────
-                // (removed the stroke)
-
-                // ─── NO BET TEXT ──────────────────────────────────────
-                // (removed the fillText)
-
-                // Divider lines (optional)
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
                 iceCtx.lineWidth = 2;
                 iceCtx.beginPath();
@@ -1873,13 +1839,11 @@
             });
             iceCtx.restore();
 
-            // ─── RINK BORDER ──────────────────────────────────────
             iceCtx.save();
             iceCtx.strokeStyle='rgba(160,190,220,0.35)'; iceCtx.lineWidth=4;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── SPINNING ARROW ─────────────────────────────────────
             if(iceState.gameState==='spinning' && iceState.spinStartTime){
                 const elapsed=(Date.now()-iceState.spinStartTime)/1000;
                 const t=Math.min(1, elapsed/(iceState.spinDuration||1));
@@ -1898,7 +1862,6 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK ────────────────────────────────────────────────────
             if(iceState.puckVisible){
                 let scale=1;
                 if(iceState.puckPopStart){
@@ -1923,10 +1886,9 @@
                 iceCtx.moveTo(px,py-crossSize); iceCtx.lineTo(px,py+crossSize); iceCtx.stroke();
                 iceCtx.restore();
             }
-            iceCtx.restore(); // zoom transform
+            iceCtx.restore();
         }
 
-        // ─── GAME LOOP ───────────────────────────────────────────────
         function renderLoop(){
             updatePlayerAnimations();
             const now=Date.now();
@@ -1957,7 +1919,6 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // ─── INIT ──────────────────────────────────────────────────────
         function init(){
             if(tg?.initDataUnsafe?.user){ const u=tg.initDataUnsafe.user; state.username=u.username||u.first_name||'player'; state.pfp=u.photo_url||''; } else state.username='player';
             usernameDisplay.textContent='@'+state.username;
@@ -1976,12 +1937,12 @@
         window.__state=state;
     </script>
 
-    <!-- ═══ LOADING SCREEN SCRIPT (added) ═══ -->
+    <!-- ═══ LOADING SCREEN CONTROLLER (added – completely standalone) ═══ -->
     <script>
-        // ─── LOADING SCREEN CONTROLLER (no particles, no emojis) ───
         (function() {
             'use strict';
 
+            // ─── GIFs ──────────────────────────────────────────────────────
             const GIFS = [
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
@@ -1993,13 +1954,10 @@
             const mergedSquare = document.getElementById('merged-square');
             const pulseRing = document.getElementById('pulse-ring');
             const loadingText = document.getElementById('loading-text');
-            const app = document.getElementById('app');
 
-            let selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
+            const selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
             let squares = [];
-            let squareSize = 0,
-                gapSize = 0,
-                gridSize = 0;
+            let squareSize = 0, gapSize = 0, gridSize = 0;
 
             function measureGrid() {
                 const rect = grid.getBoundingClientRect();
@@ -2007,7 +1965,6 @@
                 const computedStyle = getComputedStyle(grid);
                 gapSize = parseFloat(computedStyle.gap) || 8;
                 squareSize = (gridSize - gapSize * 2) / 3;
-                return { squareSize, gapSize, gridSize };
             }
 
             function buildGrid() {
@@ -2016,11 +1973,10 @@
                 for (let i = 0; i < 9; i++) {
                     const sq = document.createElement('div');
                     sq.className = 'load-square';
-                    sq.dataset.index = i;
                     const img = document.createElement('img');
                     img.className = 'gif-bg';
                     img.src = selectedGif;
-                    img.alt = 'loading';
+                    img.alt = '';
                     img.loading = 'lazy';
                     sq.appendChild(img);
                     grid.appendChild(sq);
@@ -2028,34 +1984,36 @@
                 }
             }
 
-            function runPopAnimation() {
+            // ─── PHASE 1: Pop ────────────────────────────────────────────
+            function runPop() {
                 return new Promise((resolve) => {
-                    let popped = 0;
+                    let done = 0;
                     squares.forEach((sq, i) => {
                         const delay = 60 + i * 50;
                         setTimeout(() => {
                             sq.classList.add('pop');
-                            popped++;
-                            if (popped === squares.length) {
-                                setTimeout(resolve, 300);
+                            done++;
+                            if (done === squares.length) {
+                                setTimeout(resolve, 350);
                             }
                         }, delay);
                     });
-                    setTimeout(resolve, 1200);
+                    setTimeout(resolve, 1400);
                 });
             }
 
-            function runSlideAnimation() {
+            // ─── PHASE 2: Slide to center ──────────────────────────────
+            function runSlide() {
                 return new Promise((resolve) => {
                     measureGrid();
                     const gridRect = grid.getBoundingClientRect();
-                    const centerX = gridRect.left + gridRect.width / 2;
-                    const centerY = gridRect.top + gridRect.height / 2;
+                    const cx = gridRect.left + gridRect.width / 2;
+                    const cy = gridRect.top + gridRect.height / 2;
 
                     squares.forEach((sq) => {
-                        const rect = sq.getBoundingClientRect();
-                        const dx = centerX - (rect.left + rect.width / 2);
-                        const dy = centerY - (rect.top + rect.height / 2);
+                        const r = sq.getBoundingClientRect();
+                        const dx = cx - (r.left + r.width / 2);
+                        const dy = cy - (r.top + r.height / 2);
                         sq.dataset.tx = dx;
                         sq.dataset.ty = dy;
                     });
@@ -2065,9 +2023,7 @@
                         const dy = parseFloat(sq.dataset.ty);
                         const delay = i * 30;
                         setTimeout(() => {
-                            sq.style.transition =
-                                'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), border-radius 0.6s ease, box-shadow 0.6s ease';
-                            sq.style.transform = `translate(${dx}px, ${dy}px) scale(1.02)`;
+                            sq.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(1.02)';
                             sq.style.borderRadius = '20px';
                             sq.style.boxShadow = '0 8px 40px rgba(0,0,0,0.8), 0 0 60px rgba(76,175,80,0.08)';
                             sq.style.zIndex = '5';
@@ -2075,84 +2031,83 @@
                         }, delay);
                     });
 
-                    const totalDelay = squares.length * 30 + 900;
-                    setTimeout(resolve, totalDelay);
+                    setTimeout(resolve, squares.length * 30 + 950);
                 });
             }
 
-            function runMergeAnimation() {
+            // ─── PHASE 3: Merge ──────────────────────────────────────────
+            function runMerge() {
                 return new Promise((resolve) => {
                     measureGrid();
                     const gridRect = grid.getBoundingClientRect();
-                    const centerX = gridRect.left + gridRect.width / 2;
-                    const centerY = gridRect.top + gridRect.height / 2;
+                    const cx = gridRect.left + gridRect.width / 2;
+                    const cy = gridRect.top + gridRect.height / 2;
                     const mergedSize = squareSize * 1.8;
 
                     mergedSquare.style.width = mergedSize + 'px';
                     mergedSquare.style.height = mergedSize + 'px';
-                    mergedSquare.style.left = (centerX - mergedSize / 2 - gridRect.left) + 'px';
-                    mergedSquare.style.top = (centerY - mergedSize / 2 - gridRect.top) + 'px';
+                    mergedSquare.style.left = (cx - mergedSize / 2 - gridRect.left) + 'px';
+                    mergedSquare.style.top = (cy - mergedSize / 2 - gridRect.top) + 'px';
 
                     const mergedImg = document.createElement('img');
                     mergedImg.className = 'gif-bg';
                     mergedImg.src = selectedGif;
-                    mergedImg.alt = 'loaded';
+                    mergedImg.alt = '';
                     mergedSquare.innerHTML = '';
                     mergedSquare.appendChild(mergedImg);
 
+                    // fade out all squares
                     squares.forEach((sq, i) => {
-                        const delay = i * 20;
                         setTimeout(() => {
-                            sq.style.transition =
-                                'transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease, border-radius 0.5s ease';
+                            sq.style.transition = 'transform 0.5s ease, opacity 0.4s ease, border-radius 0.4s ease';
                             sq.style.transform = 'scale(0.3)';
                             sq.style.opacity = '0';
                             sq.style.borderRadius = '30px';
                             sq.style.zIndex = '0';
-                        }, delay);
+                        }, i * 20);
                     });
 
+                    // show merged square with pop
                     setTimeout(() => {
-                        mergedSquare.style.transition =
-                            'transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease';
                         mergedSquare.classList.add('show');
                         setTimeout(() => {
                             pulseRing.classList.add('pulse');
                         }, 300);
                         loadingText.style.opacity = '0.4';
                         resolve();
-                    }, 400);
+                    }, 500);
                 });
             }
 
-            function runFinale() {
+            // ─── PHASE 4: Fade out loading screen ──────────────────────
+            function runFadeOut() {
                 return new Promise((resolve) => {
                     setTimeout(() => {
                         loadingScreen.classList.add('hidden');
-                        // The app is already shown because the original script runs in parallel.
-                        // We just need to ensure the app is visible (it's always visible behind the loading screen).
-                        // But we might want to ensure it's not hidden; the app is always display:flex.
-                        // So we just hide loading.
-                        setTimeout(resolve, 900);
-                    }, 1800);
+                        setTimeout(resolve, 950);
+                    }, 2200);
                 });
             }
 
-            async function startLoadingSequence() {
+            // ─── START ────────────────────────────────────────────────────
+            async function start() {
                 buildGrid();
                 measureGrid();
-                await runPopAnimation();
-                await runSlideAnimation();
-                await runMergeAnimation();
-                await runFinale();
-                // loading complete – the app is already initialized and running.
-                console.log('Loading complete, app ready.');
+                await runPop();
+                await runSlide();
+                await runMerge();
+                await runFadeOut();
+                console.log('Loading complete.');
             }
 
-            // Start after a small delay to let DOM settle
-            requestAnimationFrame(() => {
-                setTimeout(startLoadingSequence, 300);
-            });
+            // wait for DOM then start
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(start, 200);
+            } else {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(start, 200);
+                });
+            }
 
         })();
     </script>
