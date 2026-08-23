@@ -303,7 +303,6 @@
             </div>
         </div>
         <div id="main">
-            <!-- PvP Page -->
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
@@ -348,7 +347,6 @@
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
                 </div>
             </div>
-            <!-- Ice Page -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
@@ -387,7 +385,6 @@
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="ice-stats-pot">0</span></div>
                 </div>
             </div>
-            <!-- Profile Page -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -413,7 +410,6 @@
                     <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">⟳ Reload Avatars</button>
                 </div>
             </div>
-            <!-- Top Page -->
             <div id="top-page" class="tab-page">
                 <div id="podium"></div>
                 <div id="top-list"></div>
@@ -434,7 +430,10 @@
     </div>
 
     <script>
-        // ─── FULL CLIENT LOGIC ────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════
+        // FULL CLIENT LOGIC – VERTICAL RECTANGLES ONLY
+        // ═══════════════════════════════════════════════════════════════
+
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -916,9 +915,8 @@
                 let local=iceState.players.find(p=>p.id===sp.id);
                 if(!local){
                     const colorIdx=iceState.players.length%state.colors.length;
-                    // Random shape: 50% rect, 50% tri
-                    const shape = Math.random() < 0.5 ? 'rect' : 'tri';
-                    local={ id:sp.id, name:sp.name, pfp:sp.pfp, pfpImg:generateDefaultAvatar(sp.name?sp.name.charAt(0):'?',colorIdx), segStart:sp.segStart, segEnd:sp.segEnd, color:sp.color, bet:sp.bet, shape:shape };
+                    local={ id:sp.id, name:sp.name, pfp:sp.pfp, pfpImg:generateDefaultAvatar(sp.name?sp.name.charAt(0):'?',colorIdx),
+                        segStart:sp.segStart, segEnd:sp.segEnd, color:sp.color, bet:sp.bet };
                     iceState.players.push(local);
                     loadIcePlayerPFP(local);
                     iceState.pfpPop.set(sp.id, { startTime: performance.now(), duration: 400 });
@@ -1454,7 +1452,7 @@
             iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── SEGMENTS: RECT or TRIANGLE ──────────────────────────
+            // ─── VERTICAL RECTANGLES ──────────────────────────────────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
@@ -1468,37 +1466,7 @@
                 grad.addColorStop(1, p.color);
                 iceCtx.globalAlpha = isWinner ? 1 : 0.93;
                 iceCtx.fillStyle = grad;
-
-                if (p.shape === 'tri') {
-                    // Triangle: base at bottom, apex at top center.
-                    // To avoid gaps, we fill the entire rectangle with the base color (same as triangle)
-                    // and then draw the triangle shape on top – but since we want the field to look like a triangle,
-                    // we draw the triangle and fill the rest with a slightly darker shade? But user wants no gaps.
-                    // We'll draw the full rectangle first (with a darker shade) then overlay the triangle.
-                    // Actually we can draw the triangle as a clip region and fill with gradient.
-                    // Simpler: fill the whole rectangle, then draw a triangle with a slightly different shade? 
-                    // But to make it look like a triangle field, we want the colored area to be the triangle.
-                    // So we fill the entire segment with a dark background, then draw the triangle with the player's color.
-                    // That way the segment is fully covered (no gaps), but the visible colored part is a triangle.
-                    iceCtx.globalAlpha = 0.2; // dark background for the rest
-                    iceCtx.fillStyle = '#0a0a0e';
-                    iceCtx.fillRect(x1, 0, segW, w);
-                    iceCtx.globalAlpha = 1;
-                    // Now draw the triangle with full opacity
-                    const baseY = w;
-                    const topY = 0;
-                    const apexX = (x1 + x2) / 2;
-                    iceCtx.beginPath();
-                    iceCtx.moveTo(x1, baseY);
-                    iceCtx.lineTo(x2, baseY);
-                    iceCtx.lineTo(apexX, topY);
-                    iceCtx.closePath();
-                    iceCtx.fillStyle = grad;
-                    iceCtx.fill();
-                } else {
-                    // Rectangle: full strip
-                    iceCtx.fillRect(x1, 0, segW, w);
-                }
+                iceCtx.fillRect(x1, 0, segW, w);
                 iceCtx.globalAlpha = 1;
 
                 if (isWinner) {
@@ -1507,19 +1475,7 @@
                     iceCtx.lineWidth = 3;
                     iceCtx.shadowColor = hexToRgba(p.color, 0.8);
                     iceCtx.shadowBlur = 16;
-                    if (p.shape === 'tri') {
-                        const baseY = w;
-                        const topY = 0;
-                        const apexX = (x1 + x2) / 2;
-                        iceCtx.beginPath();
-                        iceCtx.moveTo(x1, baseY);
-                        iceCtx.lineTo(x2, baseY);
-                        iceCtx.lineTo(apexX, topY);
-                        iceCtx.closePath();
-                        iceCtx.stroke();
-                    } else {
-                        iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
-                    }
+                    iceCtx.strokeRect(x1 + 1.5, 1.5, segW - 3, w - 3);
                     iceCtx.restore();
                 }
 
@@ -1530,7 +1486,7 @@
                 iceCtx.lineTo(x2, w);
                 iceCtx.stroke();
 
-                // ─── PFP (with pop animation) ──────────────────────
+                // ─── PFP POP ──────────────────────────────────────────
                 const segCenterX = (x1 + x2) / 2;
                 if (segW > 30) {
                     const avatarR = Math.min(segW * 0.32, 18);
