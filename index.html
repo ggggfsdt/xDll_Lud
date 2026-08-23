@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── Full CSS (same as the previous version) ────────────── */
+        /* ─── Full CSS (same as previous version) ────────────── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -258,12 +258,11 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        /* ─── ice-auto-bet-panel (reuse auto-bet-panel styles) ────── */
+        /* ─── Ice auto-bet panel ────────────────────────────────────── */
         .ice-auto-bet-panel { background:rgba(18,18,22,0.95); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:12px; padding:12px 14px; width:160px; display:none; flex-direction:column; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.7); }
         .ice-auto-bet-panel.open { display:flex; }
         /* ─── Responsive ────────────────────────────────────────────── */
         @media (max-width:400px) {
-            /* ... (same as before) ... */
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
             #diamond-icon { width:22px; height:22px; }
@@ -471,7 +470,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with triangle shapes and bet persistence
+        // FULL CLIENT – with triangle diagonal split and bet persistence
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -711,6 +710,23 @@
                     if(Array.isArray(res.iceRecentWinners)&&res.iceRecentWinners.length){
                         iceState.winHistory=res.iceRecentWinners.slice(0,8).map(w=>({name:w.name,pfp:w.pfp}));
                         updateIceWinHistoryUI();
+                    }
+                    // Restore ice players from join response
+                    if (res.icePlayers && Array.isArray(res.icePlayers)) {
+                        iceState.players = res.icePlayers.map(p => ({
+                            id: p.id, name: p.name, pfp: p.pfp,
+                            pfpImg: generateDefaultAvatar(p.name ? p.name.charAt(0) : '?', 0),
+                            x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+                            color: p.color, bet: p.bet, shape: p.shape || 'rect',
+                        }));
+                        iceState.pot = res.icePot || 0;
+                        // Preload images
+                        iceState.players.forEach(p => loadIcePlayerPFP(p));
+                        // Update UI
+                        updateIceStatsBar();
+                        updateIceBetUI();
+                        updateIceWaitingText();
+                        updateIceBetOverlayVisibility();
                     }
                     usernameDisplay.textContent='@'+state.username; profileName.textContent=state.username;
                     profileUsername.textContent='@'+state.username; profilePfp.src=state.pfp||state.defaultAvatar;
@@ -1450,7 +1466,7 @@
             });
         }
 
-        // ─── RENDER ICE (with triangles) ──────────────────────────────
+        // ─── RENDER ICE (with triangle diagonal split, no gaps) ──────
         function renderIce() {
             const w=iceState.arenaSize;
             if(!w||!iceState.perimeterPoints.length) return;
@@ -1510,7 +1526,7 @@
             iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── DRAW SEGMENTS ──────────────────────────────────────────
+            // ─── DRAW SEGMENTS (rect or triangle diagonal split) ──────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
@@ -1522,54 +1538,35 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Dark base (fills the whole rectangle)
-                iceCtx.globalAlpha = 0.3;
-                iceCtx.fillStyle = '#0a0a0e';
-                iceCtx.fillRect(x1, y1, segW, segH);
-                iceCtx.globalAlpha = 1;
-
-                // Draw shape
+                // Fill entire rectangle with player color
                 const gradRect = iceCtx.createLinearGradient(x1, y1, x2, y2);
                 gradRect.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
                 gradRect.addColorStop(1, p.color);
-                iceCtx.fillStyle = gradRect;
                 iceCtx.globalAlpha = isWinner ? 1 : 0.93;
-
-                const shape = p.shape || 'rect';
-                if (shape === 'rect') {
-                    iceCtx.fillRect(x1, y1, segW, segH);
-                } else {
-                    iceCtx.beginPath();
-                    switch (shape) {
-                        case 'tri-tl':
-                            iceCtx.moveTo(x1, y1);
-                            iceCtx.lineTo(x2, y1);
-                            iceCtx.lineTo(x1, y2);
-                            break;
-                        case 'tri-tr':
-                            iceCtx.moveTo(x2, y1);
-                            iceCtx.lineTo(x2, y2);
-                            iceCtx.lineTo(x1, y1);
-                            break;
-                        case 'tri-bl':
-                            iceCtx.moveTo(x1, y2);
-                            iceCtx.lineTo(x2, y2);
-                            iceCtx.lineTo(x1, y1);
-                            break;
-                        case 'tri-br':
-                            iceCtx.moveTo(x2, y2);
-                            iceCtx.lineTo(x1, y2);
-                            iceCtx.lineTo(x2, y1);
-                            break;
-                        default:
-                            iceCtx.fillRect(x1, y1, segW, segH);
-                            break;
-                    }
-                    iceCtx.closePath();
-                    iceCtx.fill();
-                }
+                iceCtx.fillStyle = gradRect;
+                iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
 
+                // If triangle shape, draw a diagonal split with a lighter/darker shade
+                if (p.shape === 'tri') {
+                    // Draw a triangle (diagonal from top-left to bottom-right) with a different shade
+                    const triGrad = iceCtx.createLinearGradient(x1, y1, x2, y2);
+                    const lighter = lightenColor(p.color, 30);
+                    const darker = lightenColor(p.color, -20);
+                    triGrad.addColorStop(0, lighter);
+                    triGrad.addColorStop(1, darker);
+                    iceCtx.fillStyle = triGrad;
+                    iceCtx.globalAlpha = 0.6; // subtle overlay
+                    iceCtx.beginPath();
+                    iceCtx.moveTo(x1, y1);
+                    iceCtx.lineTo(x2, y1);
+                    iceCtx.lineTo(x1, y2);
+                    iceCtx.closePath();
+                    iceCtx.fill();
+                    iceCtx.globalAlpha = 1;
+                }
+
+                // Winner highlight
                 if (isWinner) {
                     iceCtx.save();
                     iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
