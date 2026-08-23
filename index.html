@@ -7,6 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
+        /* ─── Full CSS (same as before, with additions for ice player list) ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -197,6 +198,7 @@
         #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
+        /* ─── Ice Arena specific ─────────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
@@ -209,19 +211,45 @@
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
         #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
         #ice-win-history::-webkit-scrollbar { display:none; }
+        /* ─── Ice bet overlay (collapsible, same as PvP) ───────────── */
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
-        #ice-bet-overlay { background:rgba(26,26,30,0.92); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:14px; padding:10px 16px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.8); }
-        .ice-bet-row { display:flex; align-items:center; gap:8px; width:100%; }
-        #ice-bet-input { flex:1; min-width:0; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:15px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
+        #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
+        #ice-bet-overlay::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.20); border-radius:12px; z-index:0; pointer-events:none; }
+        #ice-bet-overlay>* { position:relative; z-index:1; }
+        #ice-bet-overlay.collapsed { padding:6px 12px; gap:4px; cursor:pointer; flex-direction:row; justify-content:center; }
+        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) { display:none; }
+        #ice-bet-overlay.collapsed .ice-bet-toggle { display:flex; width:100%; justify-content:center; color:var(--text2); font-size:13px; font-weight:500; letter-spacing:0.5px; gap:6px; align-items:center; }
+        .ice-bet-toggle { display:none; cursor:pointer; user-select:none; background:none; border:none; color:var(--text2); font-size:16px; padding:2px 8px; transition:0.2s; font-family:monospace; }
+        .ice-bet-toggle:active { opacity:0.6; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle { display:flex; position:absolute; top:4px; right:8px; font-size:16px; color:var(--text2); opacity:0.6; padding:2px; transform:rotate(0deg); z-index:2; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle::before { content:'>'; display:inline-block; transform:rotate(90deg); }
+        #ice-bet-overlay.collapsed .ice-bet-toggle { display:flex; font-size:14px; gap:6px; color:var(--text2); }
+        #ice-bet-overlay.collapsed .ice-bet-toggle span { font-size:11px; opacity:0.5; }
+        #ice-bet-overlay.collapsed .ice-bet-toggle::before { content:'>'; display:inline-block; transform:rotate(-90deg); margin-right:4px; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text { display:none; }
+        #ice-bet-overlay.collapsed .ice-bet-toggle-text { display:inline; }
+        .ice-bet-row { display:flex; align-items:center; gap:6px; justify-content:center; margin-top:2px; }
+        #ice-bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.10); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
         #ice-bet-input:focus { border-color:#5b8def; box-shadow:0 0 20px rgba(91,141,239,0.35); }
-        #ice-all-in-btn { padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); color:var(--gold); font-weight:700; font-size:12px; cursor:pointer; white-space:nowrap; }
+        #ice-all-in-btn { height:28px; padding:0 10px; border-radius:8px; border:none; background:var(--gold); color:#000; font-weight:700; font-size:12px; cursor:pointer; transition:0.2s; white-space:nowrap; box-shadow:0 0 20px rgba(200,168,78,0.3); flex-shrink:0; }
         #ice-all-in-btn:active { transform:scale(0.94); opacity:0.8; }
-        #ice-bet-btn { padding:8px 0; width:100%; border-radius:12px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:14px; cursor:pointer; transition:0.2s; box-shadow:0 0 24px rgba(91,141,239,0.4); letter-spacing:0.2px; }
-        #ice-bet-btn:active { transform:scale(0.97); opacity:0.85; }
+        #ice-bet-btn { padding:2px 0; height:26px; border-radius:8px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:13px; cursor:pointer; transition:0.2s; box-shadow:0 0 24px rgba(91,141,239,0.4); letter-spacing:0.2px; width:100%; text-align:center; margin-top:2px; }
+        #ice-bet-btn:active { transform:scale(0.96); opacity:0.8; }
         #ice-bet-btn:disabled { opacity:0.4; transform:none; pointer-events:none; }
-        #ice-current-bet-display { color:var(--text2); font-size:12px; width:100%; text-align:center; border-top:1px solid var(--border); padding-top:4px; }
+        #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
         #ice-current-bet-display span { color:var(--gold); font-weight:700; }
+        #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
+        #ice-player-list-container { width:100%; max-height:80px; overflow-y:auto; display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:4px; padding:2px 4px; flex-shrink:0; scrollbar-width:thin; transition:max-height 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease; margin-top:2px; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-radius:8px; border:1px solid var(--border); }
+        #ice-player-list-container.shift-up { max-height:0 !important; padding:0 !important; border:none !important; overflow:hidden !important; opacity:0 !important; pointer-events:none !important; margin-top:0 !important; }
+        #ice-player-list-container::-webkit-scrollbar { width:3px; }
+        #ice-player-list-container::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
+        .ice-pl-entry { display:flex; align-items:center; gap:4px; background:rgba(26,26,30,0.80); border-radius:20px; padding:1px 8px 1px 2px; border:1px solid var(--border); font-size:10px; color:#ccc; opacity:0.85; flex-shrink:0; }
+        .ice-pl-entry.you { border-color:#5b8def; opacity:1; }
+        .ice-pl-entry .pl-avatar { width:14px; height:14px; border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--surface3); }
+        .ice-pl-entry .pl-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+        .ice-pl-entry .pl-name { font-weight:600; max-width:40px; overflow:hidden; text-overflow:ellipsis; font-size:10px; }
+        .ice-pl-entry .pl-bet { color:var(--gold); font-weight:700; font-size:10px; }
         #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
         #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
         #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
@@ -235,17 +263,21 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
+        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
+        .ice-auto-bet-toggle:active { transform:scale(0.9); }
         @media (max-width:400px) {
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
             #diamond-icon { width:22px; height:22px; }
-            #bet-overlay-wrap { width:96%; }
-            #bet-overlay { padding:6px 10px 8px; }
-            #bet-input { max-width:90px; height:24px; font-size:13px; padding:1px 4px; }
-            #all-in-btn { height:24px; font-size:11px; padding:0 6px; }
-            #bet-btn { height:22px; font-size:12px; }
-            #bet-overlay.collapsed { padding:4px 8px; }
-            .auto-bet-toggle { width:34px; height:34px; font-size:16px; }
+            #bet-overlay-wrap, #ice-bet-overlay-wrap { width:96%; }
+            #bet-overlay, #ice-bet-overlay { padding:6px 10px 8px; }
+            #bet-input, #ice-bet-input { max-width:90px; height:24px; font-size:13px; padding:1px 4px; }
+            #all-in-btn, #ice-all-in-btn { height:24px; font-size:11px; padding:0 6px; }
+            #bet-btn, #ice-bet-btn { height:22px; font-size:12px; }
+            #bet-overlay.collapsed, #ice-bet-overlay.collapsed { padding:4px 8px; }
+            .auto-bet-toggle, .ice-auto-bet-toggle { width:34px; height:34px; font-size:16px; }
             .auto-bet-panel { width:140px; padding:10px 12px; }
             .profile-card { padding:16px 14px 20px; }
             .profile-pfp { width:60px; height:60px; }
@@ -255,8 +287,8 @@
             #countdown-timer { font-size:18px; top:12px; right:12px; }
             #timer-wrap { top:12px; right:12px; min-width:44px; }
             #timer-progress-wrap { width:36px; height:2px; }
-            #stats-bar { font-size:12px; padding:4px 10px; }
-            #stats-bar .stat-item .icon { width:16px; height:16px; }
+            #stats-bar, #ice-stats-bar { font-size:12px; padding:4px 10px; }
+            #stats-bar .stat-item .icon, #ice-stats-bar .stat-item .icon { width:16px; height:16px; }
             #win-panel { width:96%; padding:16px; }
             #win-name { font-size:20px; }
             #win-multiplier { font-size:24px; }
@@ -268,7 +300,11 @@
             .pl-entry .pl-name { max-width:40px; font-size:10px; }
             .pl-entry .pl-bet { font-size:10px; }
             .pl-entry .pl-chance { font-size:9px; }
-            #win-history { top:42px; right:8px; gap:3px; }
+            #ice-player-list-container { max-height:60px; }
+            .ice-pl-entry { font-size:9px; }
+            .ice-pl-entry .pl-name { max-width:30px; font-size:9px; }
+            .ice-pl-entry .pl-bet { font-size:9px; }
+            #win-history, #ice-win-history { top:42px; right:8px; gap:3px; }
             .win-entry { width:22px; height:22px; }
             #podium { gap:8px; padding:10px 0 6px; }
             .podium-col .podium-pfp { width:42px; height:42px; }
@@ -292,6 +328,7 @@
 </head>
 <body>
     <div id="app">
+        <!-- Top bar (unchanged) -->
         <div id="topbar">
             <div id="balance-wrap">
                 <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
@@ -302,7 +339,9 @@
                 <div id="status-dot"></div>
             </div>
         </div>
+        <!-- Main -->
         <div id="main">
+            <!-- PvP Page (unchanged) -->
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
@@ -347,6 +386,8 @@
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="stats-pot">0</span></div>
                 </div>
             </div>
+
+            <!-- Ice Page (updated) -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
@@ -362,8 +403,10 @@
                         <div id="ice-win-multiplier">x2.5</div>
                         <button id="ice-win-continue-btn">Continue</button>
                     </div>
+                    <!-- Ice bet overlay (collapsible, with background) -->
                     <div id="ice-bet-overlay-wrap">
                         <div id="ice-bet-overlay">
+                            <button class="ice-bet-toggle" id="ice-bet-toggle-btn"><span class="ice-bet-toggle-text">bet</span></button>
                             <div class="ice-bet-row">
                                 <input type="text" id="ice-bet-input" placeholder="10" inputmode="numeric" />
                                 <button id="ice-all-in-btn">All In</button>
@@ -372,8 +415,11 @@
                             <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
                         </div>
                     </div>
-                    <div id="ice-auto-bet-container" class="auto-bet-container">
-                        <button id="ice-auto-bet-toggle" class="auto-bet-toggle">⏱</button>
+                    <!-- Ice player list -->
+                    <div id="ice-player-list-container"></div>
+                    <!-- Ice auto-bet -->
+                    <div id="ice-auto-bet-container" class="ice-auto-bet-container">
+                        <button id="ice-auto-bet-toggle" class="ice-auto-bet-toggle">⏱</button>
                         <div id="ice-auto-bet-panel" class="auto-bet-panel">
                             <div class="row"><label>Amount</label><input type="text" id="ice-auto-bet-amount" placeholder="10" inputmode="numeric" /></div>
                             <div class="row"><label>Auto</label><div class="switch-sm" id="ice-auto-switch-wrap"><input type="checkbox" id="ice-auto-bet-switch" /><span class="slider-sm"></span></div></div>
@@ -385,6 +431,8 @@
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="⭐" /><span class="value" id="ice-stats-pot">0</span></div>
                 </div>
             </div>
+
+            <!-- Profile page (unchanged) -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -410,11 +458,15 @@
                     <button id="reload-pfp-btn" style="margin-top:12px;padding:6px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;">⟳ Reload Avatars</button>
                 </div>
             </div>
+
+            <!-- Top page (unchanged) -->
             <div id="top-page" class="tab-page">
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
         </div>
+
+        <!-- Tabs (unchanged) -->
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
@@ -422,6 +474,8 @@
             <button class="tab-btn" data-tab="top"><span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
         </div>
     </div>
+
+    <!-- Promo Modal -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -431,7 +485,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – 2D RECTANGLES, PUCK, ANIMATIONS
+        // FULL CLIENT – with Ice UI improvements
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -461,7 +515,7 @@
             balance: 0, username: 'player', userId: null, pfp: '', wins: 0, losses: 0, anonymous: false,
             gameState: 'idle', players: [], pot: 0, arenaSize: 0, cornerRadius: 0, perimeterPoints: [], opening: null,
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-            winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#5b8def','#50c890','#e06060','#d4af37','#c084e0','#f0a070','#60c0d0','#e8a0a0'],
+            winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
         };
         let SERVER_ARENA_SIZE = 400;
@@ -521,6 +575,8 @@
         const iceCtx = iceCanvas.getContext('2d');
         const iceWaitingText = document.getElementById('ice-waiting-text');
         const iceBetOverlayWrap = document.getElementById('ice-bet-overlay-wrap');
+        const iceBetOverlay = document.getElementById('ice-bet-overlay');
+        const iceBetToggleBtn = document.getElementById('ice-bet-toggle-btn');
         const iceBetInput = document.getElementById('ice-bet-input');
         const iceBetBtn = document.getElementById('ice-bet-btn');
         const iceAllInBtn = document.getElementById('ice-all-in-btn');
@@ -542,6 +598,7 @@
         const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
         const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
         const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
+        const icePlayerListContainer = document.getElementById('ice-player-list-container');
         const autoToggle = document.getElementById('auto-bet-toggle');
         const autoPanel = document.getElementById('auto-bet-panel');
         const autoSwitch = document.getElementById('auto-bet-switch');
@@ -685,7 +742,7 @@
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
         }
 
-        // ─── PVP STATE APPLICATION ──────────────────────────────────────
+        // ─── PVP STATE APPLICATION (unchanged) ──────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -794,7 +851,7 @@
             playerListContainer.innerHTML=html;
         }
 
-        // ─── PVP RENDER HELPERS ─────────────────────────────────────────
+        // ─── PVP RENDER HELPERS (unchanged) ──────────────────────────
         function easePopBounce(t){ if(t>=1)return 1; const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
         function getPopScale(player){
             if(!player.isPopping) return 1;
@@ -941,11 +998,13 @@
             if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
 
             updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
+            updateIcePlayerList(); // update the ice player list
         }
 
         function updateIceBetOverlayVisibility(){
             const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
             iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
+            icePlayerListContainer.classList.toggle('shift-up',shouldHide);
         }
         function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
         function updateIceWaitingText(){
@@ -961,7 +1020,24 @@
             iceBetBtn.textContent=canBet?(inGame?'increase':'join'):(inGame?'in game':'waiting');
             iceBetBtn.disabled=!canBet; iceBetInput.disabled=!canBet; iceAllInBtn.disabled=!canBet;
             iceCurrentBetDisplay.textContent=existing?existing.bet:'0';
+            if(iceBetInput.dataset.empty==='true'){ iceBetInput.value=10; delete iceBetInput.dataset.empty; }
         }
+
+        function updateIcePlayerList(){
+            const players = iceState.players;
+            if(players.length===0){ icePlayerListContainer.innerHTML=''; return; }
+            let html='';
+            players.forEach(p=>{
+                const isYou = p.id === state.userId;
+                html+=`<div class="ice-pl-entry ${isYou?'you':''}">
+                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
+                            <span class="pl-name">${p.name}</span>
+                            <span class="pl-bet">${p.bet}</span>
+                        </div>`;
+            });
+            icePlayerListContainer.innerHTML=html;
+        }
+
         function addIceWinToHistory(name,pfp){
             iceState.winHistory.unshift({name,pfp});
             if(iceState.winHistory.length>8) iceState.winHistory.pop();
@@ -995,11 +1071,66 @@
             iceWinPanel.classList.remove('show');
             if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
             iceState.winnerId=null;
-            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
+            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility(); updateIcePlayerList();
         }
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
-        // ─── LEADERBOARD ──────────────────────────────────────────────
+        // ─── ICE BET ──────────────────────────────────────────────────
+        function placeIceBet(amount){
+            if(!socket||!socket.connected) return;
+            let addAmount=parseInt(amount)||10;
+            if(addAmount<10) addAmount=10;
+            if(addAmount>state.balance) addAmount=state.balance;
+            if(addAmount<=0){ haptic('light'); return; }
+            socket.emit('icePlaceBet',{amount:addAmount},(res)=>{
+                if(!res?.ok){ haptic('light'); console.warn('Ice bet rejected:',res?.error); return; }
+                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
+            });
+            iceBetInput.value=''; updateIceBetUI();
+        }
+        iceBetBtn.addEventListener('click',()=>placeIceBet(iceBetInput.value));
+        iceAllInBtn.addEventListener('click',()=>{ iceBetInput.value=state.balance; placeIceBet(state.balance); });
+        iceBetInput.addEventListener('blur',()=>{
+            let val=parseInt(iceBetInput.value);
+            if(isNaN(val)||val<10) val=10;
+            if(val>state.balance) val=state.balance;
+            iceBetInput.value=val;
+        });
+
+        // ─── ICE AUTO BET ────────────────────────────────────────────
+        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
+        function toggleIceAutoBet(enable){
+            if(enable&&!iceAutoBetEnabled){
+                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
+                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
+                iceAutoBetInterval=setInterval(()=>{
+                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
+                    if(!canBet) return;
+                    const existing=getIcePlayerLocal(state.userId);
+                    if(existing) return;
+                    const amount=parseInt(iceAutoAmount.value)||10;
+                    if(amount<10||amount>state.balance) return;
+                    placeIceBet(amount);
+                },2000);
+            } else if(!enable&&iceAutoBetEnabled){
+                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
+                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
+            }
+        }
+        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
+        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
+        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
+
+        // ─── Ice overlay collapse ────────────────────────────────────
+        let iceBetCollapsed = false;
+        iceBetToggleBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            iceBetCollapsed = !iceBetCollapsed;
+            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
+            haptic('light');
+        });
+
+        // ─── LEADERBOARD (unchanged) ────────────────────────────────
         function refreshLeaderboard(){
             if(!socket) return;
             socket.emit('leaderboard',{},(res)=>{
@@ -1198,51 +1329,6 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
-        // ─── ICE BET ──────────────────────────────────────────────────
-        function placeIceBet(amount){
-            if(!socket||!socket.connected) return;
-            let addAmount=parseInt(amount)||10;
-            if(addAmount<10) addAmount=10;
-            if(addAmount>state.balance) addAmount=state.balance;
-            if(addAmount<=0){ haptic('light'); return; }
-            socket.emit('icePlaceBet',{amount:addAmount},(res)=>{
-                if(!res?.ok){ haptic('light'); console.warn('Ice bet rejected:',res?.error); return; }
-                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
-            });
-            iceBetInput.value=''; updateIceBetUI();
-        }
-        iceBetBtn.addEventListener('click',()=>placeIceBet(iceBetInput.value));
-        iceAllInBtn.addEventListener('click',()=>{ iceBetInput.value=state.balance; placeIceBet(state.balance); });
-        iceBetInput.addEventListener('blur',()=>{
-            let val=parseInt(iceBetInput.value);
-            if(isNaN(val)||val<10) val=10;
-            if(val>state.balance) val=state.balance;
-            iceBetInput.value=val;
-        });
-
-        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
-        function toggleIceAutoBet(enable){
-            if(enable&&!iceAutoBetEnabled){
-                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
-                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
-                iceAutoBetInterval=setInterval(()=>{
-                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
-                    if(!canBet) return;
-                    const existing=getIcePlayerLocal(state.userId);
-                    if(existing) return;
-                    const amount=parseInt(iceAutoAmount.value)||10;
-                    if(amount<10||amount>state.balance) return;
-                    placeIceBet(amount);
-                },2000);
-            } else if(!enable&&iceAutoBetEnabled){
-                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
-                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
-            }
-        }
-        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
-        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
-        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
-
         // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async ()=>{
             const code=promoInput.value.trim().toUpperCase();
@@ -1393,7 +1479,7 @@
             });
         }
 
-        // ─── RENDER ICE (2D RECTANGLES) ──────────────────────────────
+        // ─── RENDER ICE (2D RECTANGLES, NO BET TEXT) ─────────────────
         function renderIce() {
             const w=iceState.arenaSize;
             if(!w||!iceState.perimeterPoints.length) return;
@@ -1453,7 +1539,7 @@
             iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── DRAW PLAYER RECTANGLES ──────────────────────────
+            // ─── DRAW PLAYER RECTANGLES (no bet text) ──────────────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
@@ -1483,7 +1569,7 @@
                     iceCtx.restore();
                 }
 
-                // ─── PFP POP ──────────────────────────────────────
+                // ─── PFP POP (no bet text) ──────────────────────────
                 const centerX = (x1 + x2) / 2;
                 const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.28;
@@ -1524,13 +1610,10 @@
                 iceCtx.arc(cx, cy, avatarR, 0, Math.PI * 2);
                 iceCtx.stroke();
 
-                iceCtx.fillStyle = '#fff';
-                iceCtx.font = '600 11px system-ui, sans-serif';
-                iceCtx.textAlign = 'center';
-                iceCtx.textBaseline = 'middle';
-                iceCtx.fillText(p.bet, cx, cy + avatarR + 16);
+                // ─── NO BET TEXT ─────────────────────────────────────
+                // (removed)
 
-                // Divider lines (optional – you can remove)
+                // Divider lines (optional)
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
                 iceCtx.lineWidth = 2;
                 iceCtx.beginPath();
