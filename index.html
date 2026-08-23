@@ -7,7 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── Full CSS (same as previous version) ────────────── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -198,7 +197,7 @@
         #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        /* ─── ICE ARENA (updated) ───────────────────────────────────── */
+        /* ─── ICE ARENA ─────────────────────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
@@ -211,7 +210,6 @@
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
         #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
         #ice-win-history::-webkit-scrollbar { display:none; }
-        /* ─── Ice bet overlay (collapsible) ─────────────────────────── */
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
@@ -240,11 +238,6 @@
         #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
         #ice-current-bet-display span { color:var(--gold); font-weight:700; }
         #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
-        /* ─── Ice auto-bet ──────────────────────────────────────────── */
-        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
-        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
-        .ice-auto-bet-toggle:active { transform:scale(0.9); }
         #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
         #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
         #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
@@ -258,10 +251,23 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        /* ─── Ice auto-bet panel ────────────────────────────────────── */
+        /* ─── Ice auto-bet (same as PvP) ────────────────────────────── */
+        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
+        .ice-auto-bet-toggle:active { transform:scale(0.9); }
         .ice-auto-bet-panel { background:rgba(18,18,22,0.95); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:12px; padding:12px 14px; width:160px; display:none; flex-direction:column; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.7); }
         .ice-auto-bet-panel.open { display:flex; }
-        /* ─── Responsive ────────────────────────────────────────────── */
+        .ice-auto-bet-panel .row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .ice-auto-bet-panel .row label { font-size:12px; color:var(--text2); white-space:nowrap; }
+        .ice-auto-bet-panel .row input { width:70px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:13px; text-align:center; outline:none; }
+        .ice-auto-bet-panel .row input:focus { border-color:#5b8def; }
+        .ice-auto-bet-panel .switch-sm { position:relative; width:34px; height:18px; flex-shrink:0; cursor:pointer; }
+        .ice-auto-bet-panel .switch-sm input { opacity:0; width:0; height:0; }
+        .ice-auto-bet-panel .switch-sm .slider-sm { position:absolute; cursor:pointer; inset:0; background:var(--surface3); border:1px solid var(--border); border-radius:999px; transition:0.2s; }
+        .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
+        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
+        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
         @media (max-width:400px) {
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
@@ -330,7 +336,7 @@
             </div>
         </div>
         <div id="main">
-            <!-- PvP Page (unchanged) -->
+            <!-- PvP Page -->
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
@@ -403,7 +409,7 @@
                             <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
                         </div>
                     </div>
-                    <div id="ice-auto-bet-container">
+                    <div id="ice-auto-bet-container" class="ice-auto-bet-container">
                         <button id="ice-auto-bet-toggle" class="ice-auto-bet-toggle">⏱</button>
                         <div id="ice-auto-bet-panel" class="ice-auto-bet-panel">
                             <div class="row"><label>Amount</label><input type="text" id="ice-auto-bet-amount" placeholder="10" inputmode="numeric" /></div>
@@ -417,7 +423,7 @@
                 </div>
             </div>
 
-            <!-- Profile page (unchanged) -->
+            <!-- Profile Page -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -444,14 +450,12 @@
                 </div>
             </div>
 
-            <!-- Top page (unchanged) -->
+            <!-- Top Page -->
             <div id="top-page" class="tab-page">
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
         </div>
-
-        <!-- Tabs (unchanged) -->
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
@@ -460,7 +464,6 @@
         </div>
     </div>
 
-    <!-- Promo Modal -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="🎉" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -470,7 +473,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with triangle diagonal split and bet persistence
+        // FULL CLIENT – unified auto-bet, bet persistence, triangle shapes
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -711,7 +714,7 @@
                         iceState.winHistory=res.iceRecentWinners.slice(0,8).map(w=>({name:w.name,pfp:w.pfp}));
                         updateIceWinHistoryUI();
                     }
-                    // Restore ice players from join response
+                    // ─── RESTORE ICE PLAYERS ──────────────────────────────────
                     if (res.icePlayers && Array.isArray(res.icePlayers)) {
                         iceState.players = res.icePlayers.map(p => ({
                             id: p.id, name: p.name, pfp: p.pfp,
@@ -720,13 +723,13 @@
                             color: p.color, bet: p.bet, shape: p.shape || 'rect',
                         }));
                         iceState.pot = res.icePot || 0;
-                        // Preload images
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
                         // Update UI
                         updateIceStatsBar();
-                        updateIceBetUI();
+                        updateIceBetUI();          // <-- THIS RESTORES THE BET DISPLAY
                         updateIceWaitingText();
                         updateIceBetOverlayVisibility();
+                        document.getElementById('ice-stats-pot').textContent = iceState.pot;
                     }
                     usernameDisplay.textContent='@'+state.username; profileName.textContent=state.username;
                     profileUsername.textContent='@'+state.username; profilePfp.src=state.pfp||state.defaultAvatar;
@@ -743,7 +746,7 @@
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
         }
 
-        // ─── PVP STATE APPLICATION (unchanged) ──────────────────────────
+        // ─── PVP STATE APPLICATION ──────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -852,7 +855,7 @@
             playerListContainer.innerHTML=html;
         }
 
-        // ─── PVP RENDER HELPERS (unchanged) ──────────────────────────
+        // ─── PVP RENDER HELPERS ─────────────────────────────────────────
         function easePopBounce(t){ if(t>=1)return 1; const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
         function getPopScale(player){
             if(!player.isPopping) return 1;
@@ -1117,7 +1120,7 @@
             haptic('light');
         });
 
-        // ─── LEADERBOARD (unchanged) ────────────────────────────────
+        // ─── LEADERBOARD ──────────────────────────────────────────────
         function refreshLeaderboard(){
             if(!socket) return;
             socket.emit('leaderboard',{},(res)=>{
@@ -1466,7 +1469,7 @@
             });
         }
 
-        // ─── RENDER ICE (with triangle diagonal split, no gaps) ──────
+        // ─── RENDER ICE (with triangle overlay) ──────────────────────
         function renderIce() {
             const w=iceState.arenaSize;
             if(!w||!iceState.perimeterPoints.length) return;
@@ -1526,7 +1529,7 @@
             iceCtx.fillStyle='rgba(20,28,38,0.85)'; iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── DRAW SEGMENTS (rect or triangle diagonal split) ──────
+            // ─── DRAW PLAYER RECTANGLES (with optional triangle overlay) ──
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach(p => {
@@ -1547,16 +1550,15 @@
                 iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
 
-                // If triangle shape, draw a diagonal split with a lighter/darker shade
+                // If triangle shape, overlay a diagonal triangle with a different shade
                 if (p.shape === 'tri') {
-                    // Draw a triangle (diagonal from top-left to bottom-right) with a different shade
                     const triGrad = iceCtx.createLinearGradient(x1, y1, x2, y2);
                     const lighter = lightenColor(p.color, 30);
                     const darker = lightenColor(p.color, -20);
                     triGrad.addColorStop(0, lighter);
                     triGrad.addColorStop(1, darker);
                     iceCtx.fillStyle = triGrad;
-                    iceCtx.globalAlpha = 0.6; // subtle overlay
+                    iceCtx.globalAlpha = 0.5; // subtle overlay
                     iceCtx.beginPath();
                     iceCtx.moveTo(x1, y1);
                     iceCtx.lineTo(x2, y1);
@@ -1617,8 +1619,6 @@
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, avatarR, 0, Math.PI * 2);
                 iceCtx.stroke();
-
-                // ─── NO BET TEXT ─────────────────────────────────────
 
                 // Divider lines (optional)
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -1709,7 +1709,7 @@
                 iceCountdownTimer.textContent=secs+'.'+String(ms).padStart(2,'0');
                 iceTimerProgress.style.width=(Math.min(1,elapsed/10.0)*100)+'%';
                 iceTimerProgressWrap.classList.add('visible');
-            } else if(iceState.gameState==='spinning'){ iceCountdownTimer.textContent='🌀'; iceTimerProgress.style.width='100%'; }
+            } else if(iceState.gameState==='spinning'){ iceCountdownTimer.textContent='@'; iceTimerProgress.style.width='100%'; }
             else if(iceState.gameState==='idle'){ iceTimerProgressWrap.classList.remove('visible'); }
 
             render(); renderIce();
