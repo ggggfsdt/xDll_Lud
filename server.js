@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
-// dllump · bump arena — multiplayer backend (FULL)
+// dllump · bump arena — multiplayer backend (BSP layout)
 // ═══════════════════════════════════════════════════════════════
 
+// ─── Catch unhandled errors ──────────────────────────────────
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err.stack);
 });
@@ -9,6 +10,7 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection:', reason);
 });
 
+// ─── Imports ──────────────────────────────────────────────────
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
@@ -32,6 +34,7 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
+// ─── express + socket.io ──────────────────────────────────────
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -125,8 +128,8 @@ function speedForRadius(radius) {
   return Math.max(2.5, Math.min(8.0, speed));
 }
 
-// ─── PvP Room ──────────────────────────────────────────────────
-const COLORS = ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'];
+// ─── Room ──────────────────────────────────────────────────────
+const COLORS = ['#5b8def', '#50c890', '#e06060', '#d4af37', '#c084e0', '#f0a070', '#60c0d0', '#e8a0a0'];
 const MAX_PLAYERS = 8;
 
 function createRoom(id) {
@@ -149,7 +152,7 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — BSP LAYOUT + RANDOM SHAPES
+// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
@@ -177,12 +180,15 @@ function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
+  // Shuffle to get random layouts
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
+  // Partition the whole arena
   partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
+  // Copy back to original player objects
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
   players.forEach(p => {
@@ -202,8 +208,10 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
     p.x1 = x; p.y1 = y; p.x2 = x + w; p.y2 = y + h;
     return;
   }
+  // Total bet of this subset
   const totalBet = players.slice(startIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   if (totalBet === 0) {
+    // fallback: equal split
     const mid = Math.floor((startIdx + endIdx) / 2);
     const dir = Math.random() < 0.5 ? 'h' : 'v';
     if (dir === 'h') {
@@ -217,6 +225,7 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
     }
     return;
   }
+  // Choose a split index based on bet proportions (with randomness)
   const cum = [];
   let sum = 0;
   for (let i = startIdx; i < endIdx; i++) {
@@ -231,12 +240,15 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
       break;
     }
   }
+  // Ensure at least one player on each side
   if (splitIdx <= startIdx) splitIdx = startIdx + 1;
   if (splitIdx >= endIdx) splitIdx = endIdx - 1;
+  // Compute bet sums of left and right groups
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  const clampedRatio = Math.max(0.15, Math.min(0.85, ratio));
+  const clampedRatio = Math.max(0.15, Math.min(0.85, ratio)); // avoid too‑thin strips
+  // Random direction
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
     const splitY = y + h * clampedRatio;
@@ -249,18 +261,16 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   }
 }
 
-// ─── Player management with random shapes ──────────────────────
+// ─── Player management ──────────────────────────────────────────
 function makeIcePlayer(id, bet, name, pfp) {
   const colorIdx = iceRoom.players.length % COLORS.length;
-  const shape = Math.random() < 0.5 ? 'rect' : 'tri';
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx],
-    shape: shape,
-    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
+    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE, // will be set by repartition
   };
   iceRoom.players.push(p);
-  repartitionIceArena();
+  repartitionIceArena(); // assign rectangles
   return p;
 }
 
@@ -302,6 +312,7 @@ function getIceWinner() {
       return p;
     }
   }
+  // fallback: closest by center
   let closest = null;
   let minDist = Infinity;
   for (const p of iceRoom.players) {
@@ -316,6 +327,7 @@ function getIceWinner() {
 async function endIceGame() {
   if (iceRoom.gameState === 'finished') return;
   iceRoom.gameState = 'finished';
+
   const winner = getIceWinner();
   let payload = null;
   if (winner) {
@@ -331,8 +343,10 @@ async function endIceGame() {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
+
     iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
+
     try {
       const winnerUser = await getUser(winner.id);
       if (winnerUser) {
@@ -343,6 +357,7 @@ async function endIceGame() {
     } catch (err) {
       console.error('endIceGame: failed to credit winner balance:', err);
     }
+
     for (const p of iceRoom.players) {
       if (p.id === winner.id) continue;
       try {
@@ -352,12 +367,14 @@ async function endIceGame() {
         console.error('endIceGame: failed to update loser stats for', p.id, err);
       }
     }
+
     try {
       await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
     } catch (err) {
       console.error('endIceGame: failed to write win history:', err);
     }
   }
+
   io.emit('iceRoundEnd', payload);
   setTimeout(() => {
     iceRoom.players = [];
@@ -373,13 +390,16 @@ function updateIcePhysics(dt) {
   const subSteps = 6;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
+
   const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
   const initialSpeed = 11;
   const speedRatio = Math.min(1, currentSpeed / initialSpeed);
-  const dynamicRadius = 3 + 7 * speedRatio;
+  const dynamicRadius = 3 + 7 * speedRatio; // 3..10
+
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
+
     for (let i = 0; i < totalPts; i++) {
       const j = (i + 1) % totalPts;
       const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
@@ -406,11 +426,13 @@ function updateIcePhysics(dt) {
         break;
       }
     }
+
     const frictionPerSecond = 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
+
   const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
   if (speed < 0.12) endIceGame();
 }
@@ -427,16 +449,16 @@ function broadcastIceState() {
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
-      shape: p.shape,
     })),
   });
 }
 
-// ─── PvP room functions ────────────────────────────────────────────
+// ─── Radius scaling for bump arena (unchanged) ──────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
-  const minR = 18, maxR = 52;
+  const minR = 18;
+  const maxR = 52;
   room.players.forEach(p => {
     const ratio = p.bet / totalBet;
     const adjustedRatio = Math.pow(ratio, 1.8);
@@ -476,6 +498,7 @@ function startCountdown() {
   if (getAlive().length < 2) return;
   room.gameState = 'countdown';
   room.countdownStartTime = Date.now();
+  room.countdownEndTime = Date.now() + 10000;
 }
 
 function startPrestart() {
@@ -508,6 +531,7 @@ async function endGame(winnerId) {
   room.gameState = 'finished';
   const winner = getPlayer(winnerId);
   let payload = null;
+
   if (winner) {
     const totalPot = room.pot;
     const winnerBet = winner.bet;
@@ -521,8 +545,10 @@ async function endGame(winnerId) {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
+
     room.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
     if (room.recentWinners.length > 8) room.recentWinners.length = 8;
+
     try {
       const winnerUser = await getUser(winner.id);
       if (winnerUser) {
@@ -533,6 +559,7 @@ async function endGame(winnerId) {
     } catch (err) {
       console.error('endGame: failed to credit winner balance:', err);
     }
+
     for (const p of room.players) {
       if (p.id === winner.id) continue;
       try {
@@ -542,12 +569,14 @@ async function endGame(winnerId) {
         console.error('endGame: failed to update loser stats for', p.id, err);
       }
     }
+
     try {
       await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
     } catch (err) {
       console.error('endGame: failed to write win history:', err);
     }
   }
+
   io.to(room.id).emit('roundEnd', payload);
   setTimeout(() => {
     room.players = [];
@@ -773,12 +802,6 @@ io.on('connection', (socket) => {
         ack?.({ ok: false, error: 'You have been banned.' });
         return;
       }
-      // Send current ice room players so the client can restore bets immediately
-      const icePlayers = iceRoom.players.map(p => ({
-        id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-        x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
-        shape: p.shape,
-      }));
       ack?.({
         ok: true,
         user: {
@@ -789,8 +812,6 @@ io.on('connection', (socket) => {
         iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
-        icePlayers: icePlayers,
-        icePot: iceRoom.pot,
       });
       broadcastState();
     } catch (err) {
@@ -845,6 +866,7 @@ io.on('connection', (socket) => {
       const user = await getUser(userId);
       if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
       if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
+      // Max players check
       if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
         return ack?.({ ok: false, error: 'Rink is full.' });
       }
@@ -853,6 +875,7 @@ io.on('connection', (socket) => {
       const existing = getIcePlayer(userId);
       if (existing) {
         existing.bet += amt;
+        // Re‑partition after bet update
         repartitionIceArena();
       } else {
         const p = makeIcePlayer(userId, amt, user.username, user.pfp);
@@ -861,6 +884,7 @@ io.on('connection', (socket) => {
           await saveUser(user);
           return ack?.({ ok: false, error: 'Could not assign cell.' });
         }
+        // makeIcePlayer already called repartition
       }
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
@@ -873,17 +897,19 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     if (userId) {
+      // Remove player from ice room if present
       const icePlayer = getIcePlayer(userId);
       if (icePlayer) {
         removeIcePlayer(userId);
         broadcastIceState();
       }
+      // Also remove from PvP room (already handled by game loop)
     }
   });
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API
+// ADMIN API (unchanged)
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -1019,6 +1045,7 @@ app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
+// Admin API endpoints
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
