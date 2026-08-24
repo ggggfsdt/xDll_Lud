@@ -866,9 +866,6 @@
             puckLastBounceTime: 0,
             puckPrevVx: 0,
             puckPrevVy: 0,
-            // ─── field fade-in ──────────────────────────────────────────
-            fieldAppearTime: 0,
-            fieldAlpha: 1,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -973,7 +970,6 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
-                        iceState.fieldAppearTime = Date.now();
                         updateIceStatsBar();
                         updateIceBetUI();
                         updateIceWaitingText();
@@ -1292,14 +1288,6 @@
                 iceState.puckVisible=false; iceState.puckScale=1;
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
                 iceState.pfpPop.clear();
-                iceState.fieldAppearTime = Date.now();
-            }
-
-            // ─── Detect players change for fade-in ──────────────────────
-            const oldPlayers = new Set(iceState.players.map(p => p.id));
-            const newPlayers = new Set(snapshot.players.map(p => p.id));
-            if (oldPlayers.size !== newPlayers.size || ![...oldPlayers].every(id => newPlayers.has(id))) {
-                iceState.fieldAppearTime = Date.now();
             }
 
             const seen=new Set();
@@ -1796,7 +1784,7 @@
             });
         }
 
-        // ─── RENDER ICE (with improvements) ──────────────────────────
+        // ─── RENDER ICE (fade removed, all improvements kept) ──────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1852,7 +1840,7 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckR, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Cross with less transparency (0.65) and bigger (0.75)
+                // Cross: bigger (0.75) and less transparent (0.65)
                 const crossSize = puckR * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -1945,14 +1933,9 @@
             iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── Draw player segments with subtle fade-in ────────────
+            // ─── Draw player segments (no fade) ──────────────────────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
-
-            // Calculate field alpha (subtle fade: 0.8 → 1.0)
-            const appearTime = iceState.fieldAppearTime || 0;
-            const elapsedAppear = (Date.now() - appearTime) / 1000;
-            const fieldAlpha = Math.min(1, 0.8 + 0.2 * easeInOutQuad(elapsedAppear / 0.5));
 
             iceState.players.forEach((p, index) => {
                 const x1 = p.x1 * s;
@@ -1963,16 +1946,10 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Individual subtle fade with stagger
-                const staggerDelay = index * 0.04;
-                const individualAlpha = Math.min(1, 0.8 + 0.2 * easeInOutQuad(Math.max(0, (elapsedAppear - staggerDelay) / 0.4)));
-
-                const finalAlpha = fieldAlpha * individualAlpha;
-
                 const gradRect = iceCtx.createLinearGradient(x1, y1, x2, y2);
                 gradRect.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
                 gradRect.addColorStop(1, p.color);
-                iceCtx.globalAlpha = (isWinner ? 1 : 0.93) * finalAlpha;
+                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
                 iceCtx.fillStyle = gradRect;
                 iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
@@ -1987,7 +1964,7 @@
                     iceCtx.restore();
                 }
 
-                // ─── PFP circle (slightly bigger) ──────────────────────
+                // ─── PFP circle ──────────────────────────────────────
                 const centerX = (x1 + x2) / 2;
                 const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.32;
@@ -2011,7 +1988,6 @@
 
                 // Draw PFP
                 iceCtx.save();
-                iceCtx.globalAlpha = finalAlpha;
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
                 iceCtx.closePath();
@@ -2024,15 +2000,14 @@
                 }
                 iceCtx.restore();
 
-                // ─── Player name under PFP (during game, slightly transparent) ──
-                // Show during sliding, countdown, spinning, finished, idle
+                // ─── Player name under PFP (slightly transparent) ──
                 const showName = (iceState.gameState === 'sliding' || iceState.gameState === 'countdown' ||
                                  iceState.gameState === 'spinning' || iceState.gameState === 'finished' ||
                                  iceState.gameState === 'idle') && drawR > 8;
 
                 if (showName) {
                     iceCtx.save();
-                    iceCtx.globalAlpha = finalAlpha * 0.55; // slightly transparent
+                    iceCtx.globalAlpha = 0.55;
                     iceCtx.textAlign = 'center';
                     iceCtx.textBaseline = 'top';
                     const fontSize = Math.max(8, Math.min(12, drawR * 0.35));
@@ -2049,9 +2024,9 @@
                     iceCtx.restore();
                 }
 
-                // Divider lines (with fade)
+                // Divider lines
                 iceCtx.save();
-                iceCtx.globalAlpha = 0.15 * finalAlpha;
+                iceCtx.globalAlpha = 0.15;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
                 iceCtx.lineWidth = 2;
                 iceCtx.beginPath();
@@ -2102,7 +2077,7 @@
                 iceCtx.restore();
             }
 
-            // ─── Puck (bigger cross, less transparent) ──────────────────
+            // ─── Puck ──────────────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2193,8 +2168,6 @@
             Object.keys(tabPages).forEach(key=>tabPages[key].classList.toggle('active',key==='pvp'));
             document.getElementById('tabs').style.pointerEvents='auto';
             tabBtns.forEach(b=>b.style.pointerEvents='auto');
-            // Initialize field appear time
-            iceState.fieldAppearTime = Date.now();
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
