@@ -195,7 +195,6 @@ function spawnBot(betAmount) {
   const name = `Bot_${String(botCounter).padStart(3, '0')}`;
   const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
   
-  // Add to ice room
   const player = makeIcePlayer(id, betAmount, name, pfp);
   if (player) {
     botIds.add(id);
@@ -285,7 +284,8 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  const clampedRatio = Math.max(0.15, Math.min(0.85, ratio));
+  // ─── SMALLER MIN SEGMENT SIZE: 0.07 (was 0.15) ──────────────
+  const clampedRatio = Math.max(0.07, Math.min(0.93, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
     const splitY = y + h * clampedRatio;
@@ -332,11 +332,18 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
+// ─── LAUNCH PUCK AT RANDOM POSITION NEAR CENTER ──────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 11;
-  iceRoom.puck.x = ICE_SIZE / 2;
-  iceRoom.puck.y = ICE_SIZE / 2;
+  // Random position within 30% of center
+  const radius = ICE_SIZE * 0.15 + Math.random() * ICE_SIZE * 0.15;
+  const angle = Math.random() * Math.PI * 2;
+  iceRoom.puck.x = ICE_SIZE / 2 + Math.cos(angle) * radius;
+  iceRoom.puck.y = ICE_SIZE / 2 + Math.sin(angle) * radius;
+  // Ensure within bounds
+  iceRoom.puck.x = Math.max(20, Math.min(ICE_SIZE - 20, iceRoom.puck.x));
+  iceRoom.puck.y = Math.max(20, Math.min(ICE_SIZE - 20, iceRoom.puck.y));
   iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
   iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
 }
@@ -383,7 +390,6 @@ async function endIceGame() {
     iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
 
-    // Only credit real users (not bots)
     if (!isBot(winner.id)) {
       try {
         const winnerUser = await getUser(winner.id);
@@ -1284,7 +1290,6 @@ app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
       const player = spawnBot(betAmount);
       if (player) spawned++;
     }
-    // Force repartition after spawning
     if (spawned > 0) repartitionIceArena();
     broadcastIceState();
     res.json({ ok: true, spawned });
