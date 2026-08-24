@@ -706,7 +706,7 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ ORIGINAL APP SCRIPT (with fixes) ═══ -->
+    <!-- ═══ ORIGINAL APP SCRIPT (with thinner cross, no rotation) ═══ -->
     <script>
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
@@ -828,7 +828,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── ICE STATE (enhanced) ────────────────────────────────────
+        // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -866,8 +866,6 @@
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
-            rotationAngle: 0,
-            rotationSet: false,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -1199,21 +1197,6 @@
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // ─── Set rotation angle when game starts ──────────────────
-            if ((snapshot.gameState === 'sliding' || snapshot.gameState === 'spinning') && !iceState.rotationSet) {
-                // 30% chance of no rotation, otherwise random between -0.5 and 0.5 rad (≈ ±28°)
-                if (Math.random() < 0.3) {
-                    iceState.rotationAngle = 0;
-                } else {
-                    iceState.rotationAngle = (Math.random() - 0.5) * 0.9; // ±0.45 rad
-                }
-                iceState.rotationSet = true;
-            }
-            if (snapshot.gameState === 'idle') {
-                iceState.rotationAngle = 0;
-                iceState.rotationSet = false;
-            }
-
             // ─── SINGLE VIBRATION: Detect actual bounce ──────────────
             if (snapshot.gameState === 'sliding' && iceState.players.length > 0) {
                 const w = iceState.arenaSize || 400;
@@ -1222,7 +1205,6 @@
                     snapshot.puck.x < margin || snapshot.puck.x > w - margin ||
                     snapshot.puck.y < margin || snapshot.puck.y > w - margin
                 );
-                // Check corner proximity
                 const corners = [
                     { x: 0, y: 0 },
                     { x: w, y: 0 },
@@ -1241,12 +1223,10 @@
                 const prevDy = oldPuckY - iceState.puckPrevY;
                 const speed = Math.sqrt(dx*dx + dy*dy);
 
-                // Detect direction reversal (bounce)
                 const bounced = (dx !== 0 && prevDx !== 0 && dx * prevDx < 0) ||
                                 (dy !== 0 && prevDy !== 0 && dy * prevDy < 0);
 
                 const now = Date.now();
-                // Trigger only on actual bounce with speed threshold
                 if ((bounced || nearCorner) && speed > 0.3 && now - iceState.puckLastBounceTime > 200) {
                     if (nearCorner) {
                         haptic('heavy');
@@ -1797,7 +1777,7 @@
             });
         }
 
-        // ─── RENDER ICE (with larger rotation and fixed vibration) ──
+        // ─── RENDER ICE (no rotation, thinner cross) ──────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1853,10 +1833,11 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckR, 0, Math.PI * 2);
                 iceCtx.stroke();
+                // Thinner cross: lineWidth 1.5 instead of 2.5
                 const crossSize = puckR * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
-                iceCtx.lineWidth = 2.5;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
@@ -1869,7 +1850,7 @@
                 return;
             }
 
-            // ─── Regular game rendering with rotation ────────────────
+            // ─── Regular game rendering ──────────────────────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1931,14 +1912,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // ─── Apply rotation to visual elements ────────────────────
-            const rotAngle = iceState.rotationAngle || 0;
-            iceCtx.save();
-            iceCtx.translate(half, half);
-            iceCtx.rotate(rotAngle);
-            iceCtx.translate(-half, -half);
-
-            // Zoom (applied after rotation)
+            // ─── Apply zoom ──────────────────────────────────────────
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
@@ -1946,6 +1920,7 @@
                 zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                 zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
+                iceCtx.save();
                 iceCtx.translate(zoomTx, zoomTy);
                 iceCtx.scale(zoomSc, zoomSc);
             }
@@ -2108,10 +2083,11 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
+                // ─── Thinner cross: lineWidth 1.5 (was 2.5) ──────────
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
-                iceCtx.lineWidth = 2.5;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
@@ -2171,7 +2147,10 @@
                 }
             }
 
-            iceCtx.restore(); // restore rotation/zoom
+            // Restore zoom transform if used
+            if (iceState.zoom > 1.01) {
+                iceCtx.restore();
+            }
         }
 
         function renderLoop(){
