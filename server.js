@@ -27,7 +27,7 @@ const {
   redeemPromoCode,
   getPromoCodes,
   deletePromoCode,
-  resetPlayer,   // <-- new
+  resetPlayer,
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -176,6 +176,51 @@ function createIceRoom(id) {
 const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
+
+// ─── BOT MANAGEMENT ─────────────────────────────────────────────
+let botCounter = 0;
+const botIds = new Set();
+
+function generateBotId() {
+  return `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function isBot(id) {
+  return id && typeof id === 'string' && id.startsWith('bot_');
+}
+
+function spawnBot(betAmount) {
+  const id = generateBotId();
+  botCounter++;
+  const name = `Bot_${String(botCounter).padStart(3, '0')}`;
+  const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
+  
+  // Add to ice room
+  const player = makeIcePlayer(id, betAmount, name, pfp);
+  if (player) {
+    botIds.add(id);
+    console.log(`🤖 Spawned bot: ${name} (${id}) with bet ${betAmount}`);
+    return player;
+  }
+  return null;
+}
+
+function removeAllBots() {
+  const toRemove = [];
+  iceRoom.players.forEach(p => {
+    if (isBot(p.id)) toRemove.push(p.id);
+  });
+  toRemove.forEach(id => {
+    const idx = iceRoom.players.findIndex(p => p.id === id);
+    if (idx !== -1) iceRoom.players.splice(idx, 1);
+    botIds.delete(id);
+  });
+  if (toRemove.length > 0) {
+    console.log(`🧹 Removed ${toRemove.length} bots from ice arena`);
+    if (iceRoom.players.length > 0) repartitionIceArena();
+  }
+  return toRemove.length;
+}
 
 // ─── BSP Partition ──────────────────────────────────────────────
 function repartitionIceArena() {
@@ -338,24 +383,29 @@ async function endIceGame() {
     iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
 
-    try {
-      const winnerUser = await getUser(winner.id);
-      if (winnerUser) {
-        winnerUser.balance += winnings;
-        winnerUser.wins += 1;
-        await saveUser(winnerUser);
+    // Only credit real users (not bots)
+    if (!isBot(winner.id)) {
+      try {
+        const winnerUser = await getUser(winner.id);
+        if (winnerUser) {
+          winnerUser.balance += winnings;
+          winnerUser.wins += 1;
+          await saveUser(winnerUser);
+        }
+      } catch (err) {
+        console.error('endIceGame: failed to credit winner balance:', err);
       }
-    } catch (err) {
-      console.error('endIceGame: failed to credit winner balance:', err);
     }
 
     for (const p of iceRoom.players) {
       if (p.id === winner.id) continue;
-      try {
-        const u = await getUser(p.id);
-        if (u) { u.losses += 1; await saveUser(u); }
-      } catch (err) {
-        console.error('endIceGame: failed to update loser stats for', p.id, err);
+      if (!isBot(p.id)) {
+        try {
+          const u = await getUser(p.id);
+          if (u) { u.losses += 1; await saveUser(u); }
+        } catch (err) {
+          console.error('endIceGame: failed to update loser stats for', p.id, err);
+        }
       }
     }
 
@@ -372,6 +422,8 @@ async function endIceGame() {
     iceRoom.pot = 0;
     iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
     iceRoom.gameState = 'idle';
+    botIds.clear();
+    botCounter = 0;
   }, 3000);
 }
 
@@ -911,11 +963,24 @@ button.warning{background:#f0a030}
 input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff}
 .auth{display:flex;gap:10px;margin-bottom:20px}
 .section{border:1px solid #333;padding:15px;margin-top:15px;border-radius:8px}
+.bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.bot-row input{width:120px}
+.bot-row button{background:#5b8def}
 </style></head>
 <body>
 <h2>dllump Admin</h2>
 <div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
 <div id="content" style="display:none">
+  <div class="section">
+    <h3>🤖 Bot Spawn</h3>
+    <div class="bot-row">
+      <input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
+      <input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
+      <button onclick="spawnBots()">Spawn Bots</button>
+      <button class="danger" onclick="removeBots()">Remove All Bots</button>
+    </div>
+    <div style="font-size:12px;color:#888;margin-top:4px;">Spawns bots with custom bet amounts for testing the arena without real players.</div>
+  </div>
   <div class="section">
     <h3>Players</h3>
     <button onclick="refreshPlayers()">Refresh Players</button>
@@ -984,6 +1049,21 @@ async function refreshPromoCodes(){
   });
   html += '</table>';
   document.getElementById('promoCodes').innerHTML = html;
+}
+async function spawnBots(){
+  const bet = parseInt(document.getElementById('botBet').value) || 100;
+  const count = parseInt(document.getElementById('botCount').value) || 1;
+  if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; }
+  const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count});
+  if(data.ok) alert('Spawned ' + data.spawned + ' bots!');
+  else alert('Error: ' + data.error);
+  refreshPlayers();
+}
+async function removeBots(){
+  if(!confirm('Remove all bots from the ice arena?')) return;
+  const data = await fetchAdmin('/remove-bots', 'POST');
+  if(data.ok) alert('Removed ' + data.removed + ' bots');
+  refreshPlayers();
 }
 async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
 async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
@@ -1145,7 +1225,6 @@ app.post('/admin/api/ban', adminAuth, async (req, res) => {
   }
 });
 
-// ─── NEW: Reset player stats (remove from top) ──────────────
 app.post('/admin/api/reset-player', adminAuth, async (req, res) => {
   try {
     const { id } = req.body;
@@ -1189,6 +1268,39 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
     res.json({ codes });
   } catch (err) {
     console.error('Get promo codes error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+// ─── BOT ADMIN ENDPOINTS ─────────────────────────────────────────
+app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
+  try {
+    const { bet, count } = req.body;
+    const betAmount = Math.max(10, parseInt(bet) || 100);
+    const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
+    
+    let spawned = 0;
+    for (let i = 0; i < numBots; i++) {
+      const player = spawnBot(betAmount);
+      if (player) spawned++;
+    }
+    // Force repartition after spawning
+    if (spawned > 0) repartitionIceArena();
+    broadcastIceState();
+    res.json({ ok: true, spawned });
+  } catch (err) {
+    console.error('Spawn bot error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
+  try {
+    const removed = removeAllBots();
+    broadcastIceState();
+    res.json({ ok: true, removed });
+  } catch (err) {
+    console.error('Remove bots error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
   }
 });
