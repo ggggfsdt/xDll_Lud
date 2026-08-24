@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-    <!-- ─── LOADING SCREEN STYLES (unchanged) ─── -->
+    <!-- ─── LOADING SCREEN STYLES ─── -->
     <style>
         #loading-screen {
             position: fixed;
@@ -24,7 +24,11 @@
             will-change: opacity;
             pointer-events: all;
         }
-        #loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
         #loading-screen::before {
             content: '';
             position: absolute;
@@ -42,7 +46,15 @@
             0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
             50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
         }
-        #grid-wrapper { position: relative; width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        #grid-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
         #loading-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -65,7 +77,13 @@
             opacity: 0;
             will-change: transform, opacity;
         }
-        .load-square .gif-bg { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0.92; }
+        .load-square .gif-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            opacity: 0.92;
+        }
         .load-square::after {
             content: '';
             position: absolute;
@@ -81,9 +99,14 @@
             80%  { transform: scale(0.95) rotate(-0.5deg); opacity: 1; }
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
-        .load-square.pop { animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .load-square.pop {
+            animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
         .load-square.slide {
-            transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), border-radius 0.6s ease, box-shadow 0.6s ease, opacity 0.5s ease;
+            transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        border-radius 0.6s ease,
+                        box-shadow 0.6s ease,
+                        opacity 0.5s ease;
             border-radius: 20px;
             box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 60px rgba(76,175,80,0.08);
             z-index: 5;
@@ -100,12 +123,21 @@
             transform: scale(0);
             opacity: 0;
             z-index: 10;
-            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.6s ease;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.6s ease;
             pointer-events: none;
             will-change: transform, opacity;
         }
-        #merged-square.show { transform: scale(1); opacity: 1; }
-        #merged-square .gif-bg { width: 100%; height: 100%; object-fit: cover; display: block; }
+        #merged-square.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+        #merged-square .gif-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
         #merged-square::after {
             content: '';
             position: absolute;
@@ -129,7 +161,10 @@
             opacity: 0;
             transition: opacity 0.6s ease;
         }
-        #pulse-ring.pulse { animation: ringPulse 2.2s ease-in-out infinite; opacity: 1; }
+        #pulse-ring.pulse {
+            animation: ringPulse 2.2s ease-in-out infinite;
+            opacity: 1;
+        }
         @keyframes ringPulse {
             0%   { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
             50%  { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
@@ -193,255 +228,10 @@
             #merged-square::after { border-radius: 16px; }
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
+    </style>
 
-        /* ─── FISHING GAMEMODE STYLES ──────────────────────────────── */
-        #fishing-page {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            height: 100%;
-            overflow: hidden;
-            background: transparent;
-        }
-        #fishing-arena-wrap {
-            flex: 1;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 10px 0 10px;
-            min-height: 0;
-            overflow: visible;
-            flex-shrink: 0;
-        }
-        #fishing-canvas {
-            width: 100%;
-            aspect-ratio: 1/1;
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: var(--radius);
-            background: rgba(18, 18, 20, 0.60);
-            backdrop-filter: blur(6px);
-            touch-action: none;
-            display: block;
-            box-shadow: inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(76,175,80,0.05);
-            flex-shrink: 0;
-            border: 1px solid rgba(255,255,255,0.04);
-            cursor: pointer;
-        }
-        #fishing-bet-overlay-wrap {
-            position: absolute;
-            bottom: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-            width: 92%;
-            max-width: 360px;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            opacity: 1;
-        }
-        #fishing-bet-overlay-wrap.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(20px); }
-        #fishing-bet-overlay {
-            background: rgba(18,18,22,0.92);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 8px 12px 10px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            transition: 0.3s;
-            position: relative;
-            background-image: url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg');
-            background-size: cover;
-            background-position: center;
-            background-blend-mode: overlay;
-        }
-        #fishing-bet-overlay::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.20);
-            border-radius: 12px;
-            z-index: 0;
-            pointer-events: none;
-        }
-        #fishing-bet-overlay>* { position: relative; z-index: 1; }
-        .fishing-bet-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            justify-content: center;
-            margin-top: 2px;
-        }
-        #fishing-bet-input {
-            flex: 1;
-            max-width: 120px;
-            padding: 2px 6px;
-            height: 28px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.10);
-            color: var(--text);
-            font-size: 14px;
-            font-weight: 600;
-            text-align: center;
-            outline: none;
-            font-variant-numeric: tabular-nums;
-        }
-        #fishing-bet-input:focus { border-color: var(--primary); box-shadow: 0 0 24px var(--primary-glow); }
-        #fishing-all-in-btn {
-            height: 28px;
-            padding: 0 10px;
-            border-radius: 8px;
-            border: none;
-            background: var(--gold);
-            color: #000;
-            font-weight: 700;
-            font-size: 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-            box-shadow: 0 0 20px rgba(200,168,78,0.3);
-            flex-shrink: 0;
-        }
-        #fishing-all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
-        #fishing-cast-btn {
-            padding: 2px 0;
-            height: 26px;
-            border-radius: 8px;
-            border: none;
-            background: #5b8def;
-            color: #fff;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 0 24px rgba(91,141,239,0.4);
-            letter-spacing: 0.2px;
-            width: 100%;
-            text-align: center;
-            margin-top: 2px;
-        }
-        #fishing-cast-btn:active { transform: scale(0.96); opacity: 0.8; }
-        #fishing-cast-btn:disabled { opacity: 0.4; transform: none; pointer-events: none; }
-        #fishing-current-bet-display {
-            color: rgba(255,255,255,0.7);
-            font-size: 12px;
-            text-align: center;
-            margin-top: 2px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 4px;
-        }
-        #fishing-current-bet-display span { color: var(--gold); font-weight: 700; }
-        #fishing-stats-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 14px 10px 14px;
-            flex-shrink: 0;
-            color: var(--text2);
-            font-size: 14px;
-            font-weight: 600;
-            background: rgba(18,18,20,0.80);
-            backdrop-filter: blur(8px);
-            border-top: 1px solid var(--border);
-        }
-        #fishing-stats-bar .stat-item { display: flex; align-items: center; gap: 6px; }
-        #fishing-stats-bar .stat-item .value { color: #fff; font-weight: 700; }
-        #fishing-stats-bar .stat-item .label { color: var(--text2); font-size: 12px; margin-right: 2px; }
-        .fishing-result-panel {
-            position: absolute;
-            left: 50%;
-            bottom: 0;
-            transform: translateX(-50%) translateY(100%);
-            width: 92%;
-            max-width: 380px;
-            background: rgba(26,26,30,0.95);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius) var(--radius) 0 0;
-            padding: 20px 18px 24px;
-            border: 1px solid var(--border);
-            border-bottom: none;
-            box-shadow: 0 -8px 60px rgba(0,0,0,0.8);
-            z-index: 25;
-            transition: transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-        .fishing-result-panel.show { transform: translateX(-50%) translateY(0%); opacity: 1; pointer-events: auto; }
-        #fishing-result-fish { font-size: 60px; line-height: 1; }
-        #fishing-result-name { font-size: 24px; font-weight: 700; color: var(--gold); text-align: center; }
-        #fishing-result-multiplier { font-size: 30px; font-weight: 800; color: #fff; text-align: center; }
-        #fishing-result-btn {
-            padding: 10px 0;
-            border-radius: 30px;
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 0 20px var(--primary-glow);
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-            width: 100%;
-            text-align: center;
-            margin-top: 4px;
-        }
-        #fishing-result-btn:active { transform: scale(0.94); opacity: 0.8; }
-        .fishing-status {
-            position: absolute;
-            top: 14px;
-            left: 14px;
-            z-index: 4;
-            font-size: 16px;
-            font-weight: 600;
-            color: #fff;
-            text-shadow: 0 0 30px rgba(0,0,0,0.9);
-            pointer-events: none;
-            background: rgba(0,0,0,0.4);
-            padding: 4px 12px;
-            border-radius: 20px;
-            backdrop-filter: blur(4px);
-        }
-        .fishing-progress-wrap {
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 70%;
-            max-width: 240px;
-            height: 8px;
-            background: rgba(0,0,0,0.6);
-            border-radius: 4px;
-            overflow: hidden;
-            z-index: 3;
-            display: none;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .fishing-progress-wrap.visible { display: block; }
-        #fishing-progress {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #4CAF50, #8BC34A);
-            border-radius: 4px;
-            transition: width 0.1s linear;
-        }
-        .fishing-progress-wrap .fishing-progress-label {
-            position: absolute;
-            top: -18px;
-            right: 0;
-            font-size: 10px;
-            color: rgba(255,255,255,0.6);
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-        /* ─── ORIGINAL APP STYLES (unchanged) ─── */
+    <!-- ─── ORIGINAL APP STYLES (unchanged) ─── -->
+    <style>
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -632,7 +422,7 @@
         #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
-        /* ─── ICE ARENA ───────────────────────────────────── */
+        /* ─── ICE ARENA (updated) ───────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
@@ -706,11 +496,11 @@
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
             #diamond-icon { width:22px; height:22px; }
-            #bet-overlay-wrap, #ice-bet-overlay-wrap, #fishing-bet-overlay-wrap { width:96%; }
-            #bet-overlay, #ice-bet-overlay, #fishing-bet-overlay { padding:6px 10px 8px; }
-            #bet-input, #ice-bet-input, #fishing-bet-input { max-width:90px; height:24px; font-size:13px; padding:1px 4px; }
-            #all-in-btn, #ice-all-in-btn, #fishing-all-in-btn { height:24px; font-size:11px; padding:0 6px; }
-            #bet-btn, #ice-bet-btn, #fishing-cast-btn { height:22px; font-size:12px; }
+            #bet-overlay-wrap, #ice-bet-overlay-wrap { width:96%; }
+            #bet-overlay, #ice-bet-overlay { padding:6px 10px 8px; }
+            #bet-input, #ice-bet-input { max-width:90px; height:24px; font-size:13px; padding:1px 4px; }
+            #all-in-btn, #ice-all-in-btn { height:24px; font-size:11px; padding:0 6px; }
+            #bet-btn, #ice-bet-btn { height:22px; font-size:12px; }
             #bet-overlay.collapsed, #ice-bet-overlay.collapsed { padding:4px 8px; }
             .auto-bet-toggle, .ice-auto-bet-toggle { width:34px; height:34px; font-size:16px; }
             .auto-bet-panel, .ice-auto-bet-panel { width:140px; padding:10px 12px; }
@@ -722,7 +512,7 @@
             #countdown-timer { font-size:18px; top:12px; right:12px; }
             #timer-wrap { top:12px; right:12px; min-width:44px; }
             #timer-progress-wrap { width:36px; height:2px; }
-            #stats-bar, #ice-stats-bar, #fishing-stats-bar { font-size:12px; padding:4px 10px; }
+            #stats-bar, #ice-stats-bar { font-size:12px; padding:4px 10px; }
             #stats-bar .stat-item .icon, #ice-stats-bar .stat-item .icon { width:16px; height:16px; }
             #win-panel { width:96%; padding:16px; }
             #win-name { font-size:20px; }
@@ -770,7 +560,7 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ ORIGINAL APP ─── -->
+    <!-- ═══ ORIGINAL APP ═══ -->
     <div id="app">
         <div id="topbar">
             <div id="balance-wrap">
@@ -870,38 +660,6 @@
                 </div>
             </div>
 
-            <!-- ═══ FISHING PAGE (new) ═══ -->
-            <div id="fishing-page" class="tab-page">
-                <div id="fishing-arena-wrap">
-                    <canvas id="fishing-canvas"></canvas>
-                    <div class="fishing-status" id="fishing-status">🎣 Ready</div>
-                    <div class="fishing-progress-wrap" id="fishing-progress-wrap">
-                        <div id="fishing-progress"></div>
-                        <span class="fishing-progress-label" id="fishing-progress-label">0%</span>
-                    </div>
-                    <div class="fishing-result-panel" id="fishing-result-panel">
-                        <div id="fishing-result-fish">🐟</div>
-                        <div id="fishing-result-name">Fish</div>
-                        <div id="fishing-result-multiplier">x1.0</div>
-                        <button id="fishing-result-btn">Continue</button>
-                    </div>
-                    <div id="fishing-bet-overlay-wrap">
-                        <div id="fishing-bet-overlay">
-                            <div class="fishing-bet-row">
-                                <input type="text" id="fishing-bet-input" placeholder="10" inputmode="numeric" />
-                                <button id="fishing-all-in-btn">All In</button>
-                            </div>
-                            <button id="fishing-cast-btn">🎣 Cast</button>
-                            <div id="fishing-current-bet-display">your bet: <span id="fishing-current-bet-value">0</span></div>
-                        </div>
-                    </div>
-                </div>
-                <div id="fishing-stats-bar">
-                    <div class="stat-item"><span class="label">🎣</span><span class="value" id="fishing-catch-count">0</span></div>
-                    <div class="stat-item"><span class="label">Best</span><span class="value" id="fishing-best-multiplier">x0.0</span></div>
-                </div>
-            </div>
-
             <!-- Profile -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
@@ -938,7 +696,6 @@
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
-            <button class="tab-btn" data-tab="fishing"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20 L22 20"/><path d="M6 16 L8 12 L10 16"/><path d="M14 12 L18 12"/><circle cx="18" cy="12" r="2"/><path d="M20 8 L18 10 L20 12 L22 10 L20 8"/></svg></span>Fishing</button>
             <button class="tab-btn" data-tab="profile"><span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5"/><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20"/></svg></span>Profile</button>
             <button class="tab-btn" data-tab="top"><span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
         </div>
@@ -951,7 +708,7 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ SCRIPT ─── -->
+    <!-- ═══ SCRIPT (fishnet removed) ═══ -->
     <script>
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
@@ -986,9 +743,6 @@
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
             winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
-            // Fishing stats
-            fishingCatchCount: 0,
-            fishingBestMultiplier: 0,
         };
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
@@ -1024,7 +778,7 @@
         const topList = document.getElementById('top-list');
         const podiumEl = document.getElementById('podium');
         const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabPages = { pvp: document.getElementById('pvp-page'), ice: document.getElementById('ice-page'), fishing: document.getElementById('fishing-page'), profile: document.getElementById('profile-page'), top: document.getElementById('top-page') };
+        const tabPages = { pvp: document.getElementById('pvp-page'), ice: document.getElementById('ice-page'), profile: document.getElementById('profile-page'), top: document.getElementById('top-page') };
         const winPanel = document.getElementById('win-panel');
         const winGif = document.getElementById('win-gif');
         const winAvatar = document.getElementById('win-avatar');
@@ -1076,26 +830,6 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── FISHING DOM REFS ──────────────────────────────────────────
-        const fishingCanvas = document.getElementById('fishing-canvas');
-        const fishingCtx = fishingCanvas.getContext('2d');
-        const fishingStatus = document.getElementById('fishing-status');
-        const fishingBetInput = document.getElementById('fishing-bet-input');
-        const fishingCastBtn = document.getElementById('fishing-cast-btn');
-        const fishingAllInBtn = document.getElementById('fishing-all-in-btn');
-        const fishingCurrentBet = document.getElementById('fishing-current-bet-value');
-        const fishingBetOverlayWrap = document.getElementById('fishing-bet-overlay-wrap');
-        const fishingProgressWrap = document.getElementById('fishing-progress-wrap');
-        const fishingProgress = document.getElementById('fishing-progress');
-        const fishingProgressLabel = document.getElementById('fishing-progress-label');
-        const fishingResultPanel = document.getElementById('fishing-result-panel');
-        const fishingResultFish = document.getElementById('fishing-result-fish');
-        const fishingResultName = document.getElementById('fishing-result-name');
-        const fishingResultMultiplier = document.getElementById('fishing-result-multiplier');
-        const fishingResultBtn = document.getElementById('fishing-result-btn');
-        const fishingCatchCountEl = document.getElementById('fishing-catch-count');
-        const fishingBestMultiplierEl = document.getElementById('fishing-best-multiplier');
-
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
             gameState: 'idle',
@@ -1128,28 +862,6 @@
             idlePuckInitialized: false,
         };
 
-        // ─── FISHING STATE ─────────────────────────────────────────────
-        const fishing = {
-            state: 'idle', // idle | casting | waiting | reeling | caught | escaped
-            bet: 0,
-            fish: null, // { name, emoji, size, multiplier, struggleSpeed, progress }
-            progress: 0, // 0..1 how far reeled in
-            targetProgress: 1,
-            castAnim: 0, // 0..1
-            lineAnim: 0, // 0..1
-            fishX: 0,
-            fishY: 0,
-            fishSize: 0,
-            struggleTimer: 0,
-            hookX: 0,
-            hookY: 0,
-            rodAngle: 0,
-            isReeling: false,
-            reelTimer: 0,
-            catchCount: 0,
-            bestMultiplier: 0,
-        };
-
         // ─── SHARED HELPERS ────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
@@ -1163,31 +875,6 @@
         }
         function hexToRgba(hex,alpha) { if(!hex) return `rgba(120,120,120,${alpha})`; const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${alpha})`; }
         const PUCK_RENDER_RADIUS = 10;
-
-        // ─── FISH DATA ──────────────────────────────────────────────────
-        const FISH_TYPES = [
-            { name: 'Cod', emoji: '🐟', minSize: 0.2, maxSize: 0.5, minMultiplier: 0.3, maxMultiplier: 1.2, struggleBase: 0.4 },
-            { name: 'Salmon', emoji: '🐠', minSize: 0.3, maxSize: 0.7, minMultiplier: 0.5, maxMultiplier: 2.0, struggleBase: 0.6 },
-            { name: 'Pufferfish', emoji: '🐡', minSize: 0.15, maxSize: 0.4, minMultiplier: 0.2, maxMultiplier: 1.5, struggleBase: 0.3 },
-            { name: 'Tropical Fish', emoji: '🐠', minSize: 0.1, maxSize: 0.3, minMultiplier: 0.1, maxMultiplier: 0.8, struggleBase: 0.2 },
-            { name: 'Guardian', emoji: '🔱', minSize: 0.6, maxSize: 0.9, minMultiplier: 1.5, maxMultiplier: 4.0, struggleBase: 0.9 },
-            { name: 'Elder Guardian', emoji: '🪸', minSize: 0.8, maxSize: 1.0, minMultiplier: 3.0, maxMultiplier: 6.0, struggleBase: 1.2 },
-            { name: 'Minecraft Fish', emoji: '🎣', minSize: 0.4, maxSize: 0.8, minMultiplier: 0.8, maxMultiplier: 3.0, struggleBase: 0.7 },
-        ];
-
-        function generateFish() {
-            const type = FISH_TYPES[Math.floor(Math.random() * FISH_TYPES.length)];
-            const size = type.minSize + Math.random() * (type.maxSize - type.minSize);
-            const multiplier = type.minMultiplier + (size - type.minSize) / (type.maxSize - type.minSize) * (type.maxMultiplier - type.minMultiplier);
-            const struggle = type.struggleBase * (0.5 + size * 0.8);
-            return {
-                ...type,
-                size: size,
-                multiplier: Math.round(multiplier * 10) / 10,
-                struggleSpeed: Math.round(struggle * 10) / 10,
-                progress: 0,
-            };
-        }
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -1240,13 +927,6 @@
             const dpr=window.devicePixelRatio||1;
             iceCanvas.width=size*dpr; iceCanvas.height=size*dpr; iceCanvas.style.width=size+'px'; iceCanvas.style.height=size+'px';
             iceState.arenaSize=size; iceCtx.setTransform(dpr,0,0,dpr,0,0);
-        }
-        function resizeFishingCanvas() {
-            const rect=fishingCanvas.parentElement.getBoundingClientRect();
-            const size=Math.min(rect.width-16, rect.height-16, 440);
-            const dpr=window.devicePixelRatio||1;
-            fishingCanvas.width=size*dpr; fishingCanvas.height=size*dpr; fishingCanvas.style.width=size+'px'; fishingCanvas.style.height=size+'px';
-            fishingCtx.setTransform(dpr,0,0,dpr,0,0);
         }
         function scaleFactor(){ return state.arenaSize / SERVER_ARENA_SIZE; }
         function iceScaleFactor(){ return iceState.arenaSize / SERVER_ARENA_SIZE; }
@@ -1499,9 +1179,11 @@
             iceState.puck.x=snapshot.puck.x;
             iceState.puck.y=snapshot.puck.y;
 
+            // Reset idle puck when gameState changes to non-idle or players appear
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
             } else {
+                // idle and no players – ensure idle puck is initialized
                 if (!iceState.idlePuckInitialized) {
                     const s = iceState.arenaSize || 400;
                     const margin = 30;
@@ -1539,6 +1221,7 @@
                 iceState.puckVisible=false; iceState.puckScale=1;
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
                 iceState.pfpPop.clear();
+                // idle puck will be initialized in the next render if no players
             }
 
             const seen=new Set();
@@ -1855,7 +1538,6 @@
             });
         }
         setupInputWithClear(betInput,10); setupInputWithClear(autoAmount,10); setupInputWithClear(iceAutoAmount,10);
-        setupInputWithClear(fishingBetInput,10);
 
         let autoBetInterval=null, autoBetEnabled=false;
         function toggleAutoBet(enable){
@@ -1886,19 +1568,11 @@
             const code=promoInput.value.trim().toUpperCase();
             if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
             if(!state.userId){ promoMessage.textContent='You are not logged in.'; promoMessage.style.color='var(--red)'; return; }
-            // Check if already used
-            const storageKey = 'dllump_promo_used_' + state.userId;
-            if (localStorage.getItem(storageKey) === 'true') {
-                promoMessage.textContent='You have already used a promo code.';
-                promoMessage.style.color='var(--red)'; return;
-            }
             promoBtn.disabled=true; promoBtn.textContent='...'; promoMessage.textContent='';
             try {
                 const response=await fetch(SERVER_URL+'/redeem',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code,userId:state.userId}) });
                 const data=await response.json();
-                if(data.ok){
-                    localStorage.setItem(storageKey, 'true');
-                    state.balance=data.newBalance; updateBalance(); updateProfile();
+                if(data.ok){ state.balance=data.newBalance; updateBalance(); updateProfile();
                     promoGif.src=DIAMOND_GIF; promoMsg.textContent=`Successfully claimed ${data.amount} 💎`; promoSub.textContent=`Your new balance is ${data.newBalance}`;
                     promoModal.classList.add('show'); haptic('heavy');
                     promoMessage.textContent='✅ Code redeemed!'; promoMessage.style.color='var(--green)'; promoInput.value='';
@@ -1939,441 +1613,11 @@
             if(newEl){ newEl.classList.add('active'); newEl.classList.remove('exit'); if(tabId==='profile') updateProfile(); if(tabId==='top') refreshLeaderboard(); }
             tabBtns.forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tabId));
             haptic('light');
-            // Reset fishing when switching away
-            if (oldTab === 'fishing' && tabId !== 'fishing') {
-                resetFishing();
-            }
         }
         tabBtns.forEach(btn=>{
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
-        // ─── FISHING GAME ──────────────────────────────────────────────
-        function resetFishing() {
-            fishing.state = 'idle';
-            fishing.fish = null;
-            fishing.progress = 0;
-            fishing.castAnim = 0;
-            fishing.lineAnim = 0;
-            fishing.isReeling = false;
-            fishing.struggleTimer = 0;
-            fishing.reelTimer = 0;
-            fishingProgressWrap.classList.remove('visible');
-            fishingProgress.style.width = '0%';
-            fishingProgressLabel.textContent = '0%';
-            fishingBetOverlayWrap.classList.remove('hidden');
-            fishingCastBtn.textContent = '🎣 Cast';
-            fishingCastBtn.disabled = false;
-            fishingStatus.textContent = '🎣 Ready';
-            updateFishingBetUI();
-            fishingResultPanel.classList.remove('show');
-        }
-
-        function updateFishingBetUI() {
-            const bet = parseInt(fishingBetInput.value) || 10;
-            fishingCurrentBet.textContent = bet;
-            const inGame = fishing.state !== 'idle';
-            const canBet = fishing.state === 'idle';
-            fishingCastBtn.textContent = canBet ? '🎣 Cast' : (fishing.state === 'reeling' ? '⏳ Reeling...' : '⏳ Casting...');
-            fishingCastBtn.disabled = !canBet || fishing.bet > state.balance;
-            fishingBetInput.disabled = !canBet;
-            fishingAllInBtn.disabled = !canBet;
-            if (fishing.bet > 0 && canBet) {
-                fishingCurrentBet.textContent = fishing.bet;
-                fishingBetInput.value = fishing.bet;
-            }
-        }
-
-        function castLine() {
-            if (fishing.state !== 'idle') return;
-            const bet = parseInt(fishingBetInput.value) || 10;
-            if (bet < 10) { haptic('light'); return; }
-            if (bet > state.balance) { haptic('light'); return; }
-            fishing.bet = bet;
-            state.balance -= bet;
-            updateBalance();
-            updateProfile();
-            fishing.state = 'casting';
-            fishing.castAnim = 0;
-            fishing.lineAnim = 0;
-            fishing.progress = 0;
-            fishing.fish = null;
-            fishing.isReeling = false;
-            fishing.struggleTimer = 0;
-            fishingBetOverlayWrap.classList.add('hidden');
-            fishingCastBtn.disabled = true;
-            fishingStatus.textContent = '🎣 Casting...';
-            haptic('medium');
-            // After cast animation, wait for bite
-            setTimeout(() => {
-                if (fishing.state === 'casting') {
-                    fishing.state = 'waiting';
-                    fishingStatus.textContent = '🐟 Waiting for bite...';
-                    // Generate fish after random delay
-                    const delay = 800 + Math.random() * 1200;
-                    setTimeout(() => {
-                        if (fishing.state === 'waiting') {
-                            const fish = generateFish();
-                            fishing.fish = fish;
-                            fishing.fishX = 0.6 + Math.random() * 0.3;
-                            fishing.fishY = 0.6 + Math.random() * 0.3;
-                            fishing.state = 'reeling';
-                            fishing.progress = 0;
-                            fishing.isReeling = false;
-                            fishing.struggleTimer = 0;
-                            fishing.reelTimer = 0;
-                            fishingStatus.textContent = `🐟 ${fish.name} (${fish.size.toFixed(1)} size)`;
-                            fishingProgressWrap.classList.add('visible');
-                            fishingProgress.style.width = '0%';
-                            fishingProgressLabel.textContent = '0%';
-                            fishingCastBtn.textContent = '⏳ Reeling...';
-                            fishingCastBtn.disabled = true;
-                            haptic('heavy');
-                            // Start reeling mechanic
-                            startReeling();
-                        }
-                    }, delay);
-                }
-            }, 800);
-        }
-
-        function startReeling() {
-            if (fishing.state !== 'reeling') return;
-            fishing.isReeling = true;
-            // The player must click/tap to reel in
-            // The fish struggles: progress goes up on click, down over time
-            const struggleSpeed = fishing.fish.struggleSpeed * 0.8;
-            const reelSpeed = 0.08 + (1 - fishing.fish.size) * 0.06;
-            let interval = setInterval(() => {
-                if (fishing.state !== 'reeling') {
-                    clearInterval(interval);
-                    return;
-                }
-                // Fish pulls back
-                const pull = struggleSpeed * 0.012;
-                fishing.progress = Math.max(0, fishing.progress - pull);
-                // If player is reeling (clicking), add progress
-                if (fishing.isReeling) {
-                    fishing.progress += reelSpeed * 0.3;
-                }
-                // Check win/lose
-                if (fishing.progress >= 1) {
-                    fishing.state = 'caught';
-                    clearInterval(interval);
-                    fishingStatus.textContent = '🎉 Caught!';
-                    fishingProgress.style.width = '100%';
-                    fishingProgressLabel.textContent = '100%';
-                    fishingCastBtn.disabled = true;
-                    // Win!
-                    const winnings = Math.floor(fishing.bet * fishing.fish.multiplier);
-                    state.balance += winnings;
-                    updateBalance();
-                    updateProfile();
-                    fishingCatchCountEl.textContent = fishing.catchCount + 1;
-                    if (fishing.fish.multiplier > fishing.bestMultiplier) {
-                        fishing.bestMultiplier = fishing.fish.multiplier;
-                        fishingBestMultiplierEl.textContent = 'x' + fishing.bestMultiplier.toFixed(1);
-                    }
-                    // Show result
-                    fishingResultFish.textContent = fishing.fish.emoji;
-                    fishingResultName.textContent = fishing.fish.name + ' caught!';
-                    fishingResultMultiplier.textContent = 'x' + fishing.fish.multiplier.toFixed(1) + ' → +' + winnings + '💎';
-                    fishingResultPanel.classList.add('show');
-                    haptic('heavy');
-                    playVictorySound();
-                    clearInterval(interval);
-                    return;
-                }
-                // If progress drops to 0, fish escapes
-                if (fishing.progress <= 0) {
-                    fishing.state = 'escaped';
-                    clearInterval(interval);
-                    fishingStatus.textContent = '💨 Fish escaped!';
-                    fishingProgress.style.width = '0%';
-                    fishingProgressLabel.textContent = '0%';
-                    fishingCastBtn.disabled = true;
-                    haptic('light');
-                    // Show result
-                    fishingResultFish.textContent = '💨';
-                    fishingResultName.textContent = 'Fish escaped!';
-                    fishingResultMultiplier.textContent = 'Lost ' + fishing.bet + '💎';
-                    fishingResultPanel.classList.add('show');
-                    clearInterval(interval);
-                    return;
-                }
-                // Update UI
-                const pct = Math.round(fishing.progress * 100);
-                fishingProgress.style.width = pct + '%';
-                fishingProgressLabel.textContent = pct + '%';
-                // Struggle indicator
-                if (struggleSpeed > 0.7) {
-                    fishingStatus.textContent = `🐟 ${fishing.fish.name} fighting hard!`;
-                } else if (struggleSpeed > 0.4) {
-                    fishingStatus.textContent = `🐟 ${fishing.fish.name} pulling...`;
-                } else {
-                    fishingStatus.textContent = `🐟 ${fishing.fish.name} reeling in...`;
-                }
-            }, 60);
-
-            // Click to reel
-            function onReelClick(e) {
-                if (fishing.state === 'reeling') {
-                    fishing.isReeling = true;
-                    // Click adds progress
-                    const clickProgress = 0.04 + (1 - fishing.fish.size) * 0.03;
-                    fishing.progress = Math.min(1, fishing.progress + clickProgress);
-                    haptic('light');
-                }
-            }
-            fishingCanvas.addEventListener('click', onReelClick);
-            fishingCanvas.addEventListener('touchstart', (e) => { e.preventDefault();
-                onReelClick(e); }, { passive: false });
-
-            // Store cleanup
-            fishing._cleanup = () => {
-                fishingCanvas.removeEventListener('click', onReelClick);
-                fishingCanvas.removeEventListener('touchstart', onReelClick);
-            };
-            // Cleanup after 15s timeout
-            setTimeout(() => {
-                if (fishing.state === 'reeling') {
-                    fishing.state = 'escaped';
-                    fishingStatus.textContent = '⏰ Time out!';
-                    fishingResultFish.textContent = '⏰';
-                    fishingResultName.textContent = 'Time ran out!';
-                    fishingResultMultiplier.textContent = 'Lost ' + fishing.bet + '💎';
-                    fishingResultPanel.classList.add('show');
-                    if (fishing._cleanup) fishing._cleanup();
-                }
-            }, 15000);
-        }
-
-        function continueFishing() {
-            fishingResultPanel.classList.remove('show');
-            resetFishing();
-            // restore bet
-            const bet = Math.min(10, state.balance);
-            fishingBetInput.value = bet;
-            fishing.bet = 0;
-            updateFishingBetUI();
-            fishingBetOverlayWrap.classList.remove('hidden');
-            fishingStatus.textContent = '🎣 Ready';
-            if (fishing._cleanup) fishing._cleanup();
-            fishingStateChanged = true;
-        }
-
-        fishingResultBtn.addEventListener('click', continueFishing);
-
-        // ─── FISHING CANVAS RENDER ────────────────────────────────────
-        function renderFishing() {
-            const w = fishingCanvas.width / (window.devicePixelRatio || 1);
-            const h = fishingCanvas.height / (window.devicePixelRatio || 1);
-            const ctx = fishingCtx;
-            ctx.clearRect(0, 0, w, h);
-
-            // Water background
-            const grad = ctx.createLinearGradient(0, 0, 0, h);
-            grad.addColorStop(0, '#1a3a5c');
-            grad.addColorStop(0.4, '#1e5a7a');
-            grad.addColorStop(0.7, '#1a4a6a');
-            grad.addColorStop(1, '#0d2a3a');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
-
-            // Water surface waves
-            const time = Date.now() / 2000;
-            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 8; i++) {
-                const y = 0.1 * h + i * (0.06 * h);
-                ctx.beginPath();
-                for (let x = 0; x < w; x += 4) {
-                    const wave = Math.sin(x * 0.02 + time + i * 0.8) * 4 + Math.sin(x * 0.04 + time * 0.7 + i) * 2;
-                    if (x === 0) ctx.moveTo(x, y + wave);
-                    else ctx.lineTo(x, y + wave);
-                }
-                ctx.stroke();
-            }
-
-            // Water reflections
-            ctx.fillStyle = 'rgba(255,255,255,0.03)';
-            for (let i = 0; i < 12; i++) {
-                const x = 0.1 * w + Math.sin(time * 0.5 + i * 1.2) * 0.3 * w;
-                const y = 0.3 * h + Math.sin(time * 0.7 + i * 0.9) * 0.2 * h;
-                const r = 10 + Math.sin(time + i) * 5 + 10;
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // ─── Draw rod ──────────────────────────────────────────────
-            const rodX = w * 0.12;
-            const rodY = h * 0.65;
-            const rodLen = Math.min(w * 0.4, h * 0.35);
-            const castProgress = fishing.castAnim;
-            const rodAngle = -0.6 + (castProgress > 0.5 ? 1.2 : 0) * (castProgress * 2 - 1);
-
-            // Rod shadow
-            ctx.shadowColor = 'rgba(0,0,0,0.3)';
-            ctx.shadowBlur = 10;
-
-            // Rod handle
-            ctx.strokeStyle = '#6d4c2a';
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(rodX, rodY);
-            const tipX = rodX + Math.cos(rodAngle) * rodLen;
-            const tipY = rodY + Math.sin(rodAngle) * rodLen;
-            ctx.lineTo(tipX, tipY);
-            ctx.stroke();
-
-            // Rod tip (fishing line connection)
-            ctx.shadowBlur = 0;
-
-            // ─── Fishing line ──────────────────────────────────────────
-            const lineProgress = fishing.lineAnim;
-            const lineEndX = tipX + (w * 0.7 - tipX) * lineProgress;
-            const lineEndY = tipY + (h * 0.8 - tipY) * lineProgress;
-
-            // Line
-            ctx.strokeStyle = 'rgba(200,220,240,0.6)';
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([4, 6]);
-            ctx.beginPath();
-            ctx.moveTo(tipX, tipY);
-            // Slight curve
-            const midX = (tipX + lineEndX) / 2 + Math.sin(time * 0.5) * 4;
-            const midY = (tipY + lineEndY) / 2 + 8;
-            ctx.quadraticCurveTo(midX, midY, lineEndX, lineEndY);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // ─── Hook / Bait ──────────────────────────────────────────
-            if (lineProgress > 0.2) {
-                ctx.shadowColor = 'rgba(255,255,255,0.2)';
-                ctx.shadowBlur = 8;
-                // Bait (small circle)
-                ctx.fillStyle = '#ff6b4a';
-                ctx.beginPath();
-                ctx.arc(lineEndX, lineEndY, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#ff8a6a';
-                ctx.beginPath();
-                ctx.arc(lineEndX - 2, lineEndY - 2, 3, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-
-            // ─── Fish (if in reeling state) ──────────────────────────
-            if (fishing.state === 'reeling' && fishing.fish) {
-                const fish = fishing.fish;
-                const fishX = lineEndX + (w * 0.85 - lineEndX) * (1 - fishing.progress);
-                const fishY = lineEndY + Math.sin(time * 2 + fishing.progress * 3) * 8;
-                const size = 20 + fish.size * 25;
-
-                // Fish glow
-                ctx.shadowColor = 'rgba(255,200,100,0.2)';
-                ctx.shadowBlur = 20;
-
-                // Fish body (emoji)
-                ctx.font = size + 'px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.shadowBlur = 0;
-                ctx.fillStyle = '#fff';
-                ctx.fillText(fish.emoji, fishX, fishY);
-
-                // Size indicator
-                ctx.font = '10px sans-serif';
-                ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                ctx.textAlign = 'center';
-                ctx.fillText(fish.size.toFixed(1), fishX, fishY + size * 0.7);
-
-                // Struggle effect – fish shakes
-                if (fish.struggleSpeed > 0.6) {
-                    ctx.strokeStyle = 'rgba(255,50,50,0.2)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(fishX, fishY, size * 0.5 + 6, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-            }
-
-            // ─── Info overlay ──────────────────────────────────────────
-            if (fishing.state === 'idle') {
-                ctx.fillStyle = 'rgba(255,255,255,0.15)';
-                ctx.font = '14px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('🎣 Place a bet and cast!', w/2, h * 0.25);
-            }
-
-            ctx.shadowBlur = 0;
-        }
-
-        // ─── FISHING LOOP ─────────────────────────────────────────────
-        let fishingLoopActive = false;
-
-        function startFishingLoop() {
-            if (fishingLoopActive) return;
-            fishingLoopActive = true;
-            let lastTime = performance.now();
-
-            function loop(time) {
-                const dt = (time - lastTime) / 1000;
-                lastTime = time;
-
-                // Update casting animation
-                if (fishing.state === 'casting') {
-                    fishing.castAnim += dt * 1.2;
-                    fishing.lineAnim = Math.min(1, fishing.castAnim * 1.5);
-                    if (fishing.castAnim >= 1) {
-                        fishing.castAnim = 1;
-                        fishing.lineAnim = 1;
-                    }
-                }
-                // Update line animation when waiting
-                if (fishing.state === 'waiting') {
-                    fishing.lineAnim = 0.9 + Math.sin(time / 300) * 0.05;
-                }
-                // Reeling: fish moves closer
-                if (fishing.state === 'reeling' && fishing.fish) {
-                    // Fish position updates in the render
-                }
-
-                renderFishing();
-                requestAnimationFrame(loop);
-            }
-            requestAnimationFrame(loop);
-        }
-
-        // ─── FISHING EVENTS ──────────────────────────────────────────
-        fishingCastBtn.addEventListener('click', castLine);
-        fishingAllInBtn.addEventListener('click', () => {
-            fishingBetInput.value = state.balance;
-            const bet = parseInt(fishingBetInput.value) || 10;
-            if (bet > state.balance) fishingBetInput.value = state.balance;
-            updateFishingBetUI();
-            haptic('light');
-        });
-        fishingBetInput.addEventListener('blur', () => {
-            let val = parseInt(fishingBetInput.value) || 10;
-            if (val < 10) val = 10;
-            if (val > state.balance) val = state.balance;
-            fishingBetInput.value = val;
-            fishing.bet = val;
-            updateFishingBetUI();
-        });
-        fishingBetInput.addEventListener('input', () => {
-            const raw = fishingBetInput.value;
-            if (raw === '') { fishingBetInput.dataset.empty = 'true'; return; }
-            delete fishingBetInput.dataset.empty;
-            const val = parseInt(raw) || 10;
-            fishing.bet = val;
-            updateFishingBetUI();
-        });
-
-        // ─── RENDER PVP ──────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -2466,7 +1710,7 @@
             });
         }
 
-        // ─── RENDER ICE ──────────────────────────────────────────────
+        // ─── RENDER ICE (fishnet removed) ───────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -2480,8 +1724,10 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
+            // ─── IDLE ANIMATION (when no players and gameState idle) ──
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
+                // Ensure idle puck is initialized
                 if (!iceState.idlePuckInitialized) {
                     const margin = 30;
                     iceState.idlePuck.x = margin + Math.random() * (w - 2 * margin);
@@ -2493,23 +1739,29 @@
                     iceState.idlePuck.radius = 10;
                     iceState.idlePuckInitialized = true;
                 }
+
+                // Update idle puck position (bounce off rectangular bounds)
                 const margin = 20;
                 const r = iceState.idlePuck.radius;
                 let x = iceState.idlePuck.x;
                 let y = iceState.idlePuck.y;
                 let vx = iceState.idlePuck.vx;
                 let vy = iceState.idlePuck.vy;
+
                 x += vx;
                 y += vy;
+
                 if (x - r < margin) { x = margin + r; vx = -vx; }
                 if (x + r > w - margin) { x = w - margin - r; vx = -vx; }
                 if (y - r < margin) { y = margin + r; vy = -vy; }
                 if (y + r > w - margin) { y = w - margin - r; vy = -vy; }
+
                 iceState.idlePuck.x = x;
                 iceState.idlePuck.y = y;
                 iceState.idlePuck.vx = vx;
                 iceState.idlePuck.vy = vy;
 
+                // ─── Draw sliding puck (circle + cross) ────────────────
                 const puckR = iceState.idlePuck.radius * s;
                 const px = iceState.idlePuck.x;
                 const py = iceState.idlePuck.y;
@@ -2533,6 +1785,7 @@
                 iceCtx.restore();
             }
 
+            // ─── Regular ice rendering (only if not idle or there are players) ──
             if (!showIdle) {
                 const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
                 if (pts.length === 0) return;
@@ -2579,8 +1832,10 @@
                     }
                 }
                 if (iceState.zoom > 1.01) {
-                    const puckScreenX = puck.x * s, puckScreenY = puck.y * s;
-                    const cx = w / 2, cy = w / 2;
+                    const puckScreenX = puck.x * s,
+                        puckScreenY = puck.y * s;
+                    const cx = w / 2,
+                        cy = w / 2;
                     zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                     zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                     zoomSc = iceState.zoom;
@@ -2597,6 +1852,7 @@
                 iceCtx.fill(perimeterPath);
                 iceCtx.restore();
 
+                // ─── Players segments ────────────────────────────────
                 iceCtx.save();
                 iceCtx.clip(perimeterPath);
                 iceState.players.forEach(p => {
@@ -2671,12 +1927,14 @@
                 });
                 iceCtx.restore();
 
+                // ─── Rink border ──────────────────────────────────────
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
                 iceCtx.lineWidth = 4;
                 iceCtx.stroke(perimeterPath);
                 iceCtx.restore();
 
+                // ─── Spinning arrow ──────────────────────────────────
                 if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                     const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                     const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -2706,6 +1964,7 @@
                     iceCtx.restore();
                 }
 
+                // ─── Puck ──────────────────────────────────────────────
                 if (iceState.puckVisible) {
                     let scale = 1;
                     if (iceState.puckPopStart) {
@@ -2745,7 +2004,7 @@
                     iceCtx.stroke();
                     iceCtx.restore();
                 }
-                iceCtx.restore();
+                iceCtx.restore(); // zoom transform
             }
         }
 
@@ -2785,27 +2044,19 @@
             profilePfp.src=state.pfp||state.defaultAvatar;
             profileName.textContent=state.username;
             profileUsername.textContent='@'+state.username;
-            resizeCanvas(); resizeIceCanvas(); resizeFishingCanvas();
-            window.addEventListener('resize',()=>{ resizeCanvas(); resizeIceCanvas(); resizeFishingCanvas(); });
+            resizeCanvas(); resizeIceCanvas();
+            window.addEventListener('resize',()=>{ resizeCanvas(); resizeIceCanvas(); });
             Object.keys(tabPages).forEach(key=>tabPages[key].classList.toggle('active',key==='pvp'));
             document.getElementById('tabs').style.pointerEvents='auto';
             tabBtns.forEach(b=>b.style.pointerEvents='auto');
             requestAnimationFrame(renderLoop);
-            startFishingLoop();
             setOnline(false);
-            // Fishing initial state
-            resetFishing();
-            fishingBetInput.value = 10;
-            updateFishingBetUI();
-            fishingCatchCountEl.textContent = '0';
-            fishingBestMultiplierEl.textContent = 'x0.0';
         }
         init();
         window.__state=state;
-        window.__fishing = fishing;
     </script>
 
-    <!-- ═══ LOADING SCREEN CONTROLLER ─── -->
+    <!-- ═══ LOADING SCREEN CONTROLLER (unchanged) ═══ -->
     <script>
         (function() {
             'use strict';
