@@ -706,7 +706,7 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ ORIGINAL APP SCRIPT (with fixed vibration & wider cross) ═══ -->
+    <!-- ═══ UPDATED SCRIPT – fixed vibration & no random idle positioning ═══ -->
     <script>
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
@@ -1197,31 +1197,31 @@
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // ─── VIBRATION: Detect bounce on any wall or corner ──────────
+            // ─── VIBRATION: Detect actual wall/corner collisions ──────────
             if (snapshot.gameState === 'sliding' && iceState.players.length > 0) {
                 const w = iceState.arenaSize || 400;
-                const margin = 20;
+                const margin = 22;
                 const puckX = snapshot.puck.x;
                 const puckY = snapshot.puck.y;
+                const dx = puckX - oldPuckX;
+                const dy = puckY - oldPuckY;
+                const prevDx = oldPuckX - iceState.puckPrevX;
+                const prevDy = oldPuckY - iceState.puckPrevY;
+                const speed = Math.sqrt(dx*dx + dy*dy);
 
-                // Check proximity to each wall and velocity direction
-                const nearRight = puckX > w - margin;
-                const nearLeft = puckX < margin;
-                const nearBottom = puckY > w - margin;
-                const nearTop = puckY < margin;
+                // Direction reversal (bounce)
+                const bouncedX = (dx !== 0 && prevDx !== 0 && dx * prevDx < 0);
+                const bouncedY = (dy !== 0 && prevDy !== 0 && dy * prevDy < 0);
+                const bounced = bouncedX || bouncedY;
 
-                // Velocity components
-                const vx = puckX - oldPuckX;
-                const vy = puckY - oldPuckY;
-                const speed = Math.sqrt(vx*vx + vy*vy);
+                // Wall hit: near wall and moving towards it
+                const nearRight = puckX > w - margin && dx > 0.1;
+                const nearLeft = puckX < margin && dx < -0.1;
+                const nearBottom = puckY > w - margin && dy > 0.1;
+                const nearTop = puckY < margin && dy < -0.1;
+                const wallHit = nearRight || nearLeft || nearBottom || nearTop;
 
-                // Detect wall hit: near wall and moving towards it (or just bounced)
-                const hitRight = nearRight && vx > 0.1;
-                const hitLeft = nearLeft && vx < -0.1;
-                const hitBottom = nearBottom && vy > 0.1;
-                const hitTop = nearTop && vy < -0.1;
-
-                // Also check corner proximity
+                // Corner detection (only when extremely close)
                 const corners = [
                     { x: 0, y: 0 },
                     { x: w, y: 0 },
@@ -1231,12 +1231,11 @@
                 let nearCorner = false;
                 for (const c of corners) {
                     const dist = Math.hypot(puckX - c.x, puckY - c.y);
-                    if (dist < 30) { nearCorner = true; break; }
+                    if (dist < 16) { nearCorner = true; break; }
                 }
 
                 const now = Date.now();
-                // Trigger if we hit a wall or corner, with cooldown
-                if ((hitRight || hitLeft || hitBottom || hitTop || nearCorner) && speed > 0.3 && now - iceState.puckLastBounceTime > 200) {
+                if ((bounced || wallHit || nearCorner) && speed > 0.3 && now - iceState.puckLastBounceTime > 160) {
                     if (nearCorner) {
                         haptic('heavy');
                     } else {
@@ -1252,9 +1251,9 @@
             } else {
                 if (!iceState.idlePuckInitialized) {
                     const s = iceState.arenaSize || 400;
-                    const margin = 30;
-                    iceState.idlePuck.x = margin + Math.random() * (s - 2 * margin);
-                    iceState.idlePuck.y = margin + Math.random() * (s - 2 * margin);
+                    // Start at center with random velocity
+                    iceState.idlePuck.x = s / 2;
+                    iceState.idlePuck.y = s / 2;
                     const angle = Math.random() * Math.PI * 2;
                     const speed = 1.8 + Math.random() * 1.2;
                     iceState.idlePuck.vx = Math.cos(angle) * speed;
@@ -1786,7 +1785,7 @@
             });
         }
 
-        // ─── RENDER ICE (wider cross: lineWidth 2.0) ──────────────────
+        // ─── RENDER ICE (idle starts at center, cross slightly wider) ──
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1802,11 +1801,11 @@
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
-                // ─── Idle puck animation ──────────────────────────────
+                // ─── Idle puck (starts at center) ──────────────────────
                 if (!iceState.idlePuckInitialized) {
-                    const margin = 30;
-                    iceState.idlePuck.x = margin + Math.random() * (w - 2 * margin);
-                    iceState.idlePuck.y = margin + Math.random() * (w - 2 * margin);
+                    const s2 = iceState.arenaSize || 400;
+                    iceState.idlePuck.x = s2 / 2;
+                    iceState.idlePuck.y = s2 / 2;
                     const angle = Math.random() * Math.PI * 2;
                     const speed = 1.8 + Math.random() * 1.2;
                     iceState.idlePuck.vx = Math.cos(angle) * speed;
@@ -1842,7 +1841,7 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckR, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Wider cross: lineWidth 2.0 (was 1.5)
+                // Cross lineWidth 2.0
                 const crossSize = puckR * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -2092,7 +2091,7 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // ─── Wider cross: lineWidth 2.0 (was 1.5) ──────────
+                // Wider cross: lineWidth 2.0
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
