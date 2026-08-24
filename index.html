@@ -828,7 +828,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── ICE STATE (enhanced with interpolation & bounce tracking) ──
+        // ─── ICE STATE (enhanced with interpolation, bounce tracking, rotation) ──
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -864,15 +864,13 @@
             puckPrevY: 200,
             puckUpdateTime: 0,
             puckLastBounceTime: 0,
-            puckPrevVx: 0,
-            puckPrevVy: 0,
-            // ─── speed tracking for vibration ──────────────────────────
-            lastSpeed: 0,
             // ─── owner name display under puck ──────────────────────────
             currentOwnerName: '',
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
+            // ─── rotation angle for visual tilt ────────────────────────
+            rotationAngle: 0,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -977,6 +975,8 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
+                        // Set random rotation angle for visual tilt
+                        iceState.rotationAngle = (Math.random() - 0.5) * 0.4; // ±0.2 rad
                         updateIceStatsBar();
                         updateIceBetUI();
                         updateIceWaitingText();
@@ -1195,31 +1195,24 @@
             iceState.spinDuration=snapshot.spinDuration;
             iceState.spinFinalAngle=snapshot.spinFinalAngle;
 
-            // Store previous position for interpolation
-            iceState.puckPrevX = iceState.puck.x;
-            iceState.puckPrevY = iceState.puck.y;
+            // Store previous position for interpolation and bounce detection
+            const oldPuckX = iceState.puck.x;
+            const oldPuckY = iceState.puck.y;
+            iceState.puckPrevX = oldPuckX;
+            iceState.puckPrevY = oldPuckY;
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // ─── SINGLE VIBRATION: Detect wall/corner bounces ──────────
-            if (snapshot.gameState === 'sliding') {
+            // ─── SINGLE VIBRATION: Detect actual collision (bounce) ──
+            if (snapshot.gameState === 'sliding' && iceState.players.length > 0) {
                 const w = iceState.arenaSize || 400;
-                const margin = 28;
-                const puckX = snapshot.puck.x;
-                const puckY = snapshot.puck.y;
-
-                // Calculate speed
-                const dx = puckX - prevPuckX;
-                const dy = puckY - prevPuckY;
-                const speed = Math.sqrt(dx*dx + dy*dy);
-
-                // Check if puck is near wall
+                // Check if puck is near any perimeter point (simplified)
+                const margin = 20;
                 const nearWall = (
-                    puckX < margin || puckX > w - margin ||
-                    puckY < margin || puckY > w - margin
+                    snapshot.puck.x < margin || snapshot.puck.x > w - margin ||
+                    snapshot.puck.y < margin || snapshot.puck.y > w - margin
                 );
-
                 // Check corner proximity
                 const corners = [
                     { x: 0, y: 0 },
@@ -1229,13 +1222,24 @@
                 ];
                 let nearCorner = false;
                 for (const c of corners) {
-                    const dist = Math.hypot(puckX - c.x, puckY - c.y);
+                    const dist = Math.hypot(snapshot.puck.x - c.x, snapshot.puck.y - c.y);
                     if (dist < 35) { nearCorner = true; break; }
                 }
 
+                // Detect direction reversal (bounce) by comparing velocity signs
+                const dx = snapshot.puck.x - oldPuckX;
+                const dy = snapshot.puck.y - oldPuckY;
+                const prevDx = oldPuckX - iceState.puckPrevX;
+                const prevDy = oldPuckY - iceState.puckPrevY;
+                const speed = Math.sqrt(dx*dx + dy*dy);
+
+                // If direction changed sign (x or y reversed) and speed > threshold
+                const bounced = (dx !== 0 && prevDx !== 0 && dx * prevDx < 0) ||
+                                (dy !== 0 && prevDy !== 0 && dy * prevDy < 0);
+
                 const now = Date.now();
-                // SINGLE vibration per bounce - only trigger on first contact
-                if ((nearWall || nearCorner) && speed > 0.5 && now - iceState.puckLastBounceTime > 250) {
+                // Trigger only on actual bounce, with cooldown to avoid double-tap
+                if ((bounced || nearCorner) && speed > 0.3 && now - iceState.puckLastBounceTime > 200) {
                     if (nearCorner) {
                         haptic('heavy');
                     } else {
@@ -1272,6 +1276,10 @@
             if(snapshot.gameState==='sliding' && prevGameState!=='sliding'){
                 iceState.slideStartTime=performance.now();
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
+                // Set rotation when sliding starts (if not already set)
+                if (iceState.rotationAngle === 0) {
+                    iceState.rotationAngle = (Math.random() - 0.5) * 0.4;
+                }
             }
             if(snapshot.gameState==='finished' && prevGameState!=='finished'){
                 if(iceState.zoom>1.1 && !iceState.zoomOutTriggered){
@@ -1288,6 +1296,8 @@
                 iceState.pfpPop.clear();
                 iceState.showOwnerName = false;
                 iceState.currentOwnerName = '';
+                // Reset rotation when idle
+                iceState.rotationAngle = 0;
             }
 
             const seen=new Set();
@@ -1336,7 +1346,6 @@
             } else {
                 iceWaitingText.style.display = 'block';
             }
-            // Also hide during game states
             if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
                 iceWaitingText.style.display = 'none';
             }
@@ -1788,7 +1797,7 @@
             });
         }
 
-        // ─── RENDER ICE ──────────────────────────────────────────────
+        // ─── RENDER ICE (with rotation and fixed vibration) ──────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1860,7 +1869,7 @@
                 return;
             }
 
-            // ─── Regular game rendering ──────────────────────────────
+            // ─── Regular game rendering with rotation ────────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1916,24 +1925,32 @@
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
             }
 
-            // ─── Calculate speed for zoom and owner name ──────────────
-            const dx = renderPuckX - iceState.puckPrevX;
-            const dy = renderPuckY - iceState.puckPrevY;
-            const currentSpeed = Math.sqrt(dx*dx + dy*dy);
+            // Calculate speed for owner name display
+            const speed = Math.sqrt(
+                Math.pow(renderPuckX - iceState.puckPrevX, 2) +
+                Math.pow(renderPuckY - iceState.puckPrevY, 2)
+            );
 
+            // ─── Apply rotation to visual elements ────────────────────
+            const rotAngle = iceState.rotationAngle || 0;
+            iceCtx.save();
+            iceCtx.translate(half, half);
+            iceCtx.rotate(rotAngle);
+            iceCtx.translate(-half, -half);
+
+            // Zoom (applied after rotation)
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
-                const cx = w / 2, cy = w / 2;
+                const cx = half, cy = half;
                 zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                 zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
+                iceCtx.translate(zoomTx, zoomTy);
+                iceCtx.scale(zoomSc, zoomSc);
             }
 
-            iceCtx.save();
-            iceCtx.translate(zoomTx, zoomTy);
-            iceCtx.scale(zoomSc, zoomSc);
-
+            // ─── Draw perimeter and segments ──────────────────────────
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -1941,7 +1958,6 @@
             iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── Draw player segments ────────────────────────────────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
 
@@ -1994,7 +2010,6 @@
                 const cx = centerX;
                 const cy = centerY;
 
-                // Draw PFP
                 iceCtx.save();
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
@@ -2109,9 +2124,8 @@
 
                 // ─── Owner name under puck (when slowed down) ──────────
                 const speedThreshold = 2.0;
-                const isSlow = currentSpeed < speedThreshold && iceState.gameState === 'sliding';
+                const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
 
-                // Determine which player owns the current puck position
                 let ownerName = '';
                 let ownerPfp = '';
                 if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
@@ -2126,7 +2140,6 @@
                     }
                 }
 
-                // Smoothly show/hide name
                 if (isSlow && ownerName) {
                     iceState.currentOwnerName = ownerName;
                     iceState.currentOwnerPfp = ownerPfp;
@@ -2139,7 +2152,6 @@
                     }
                 }
 
-                // Draw owner name under puck
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
                     const fontSize = Math.max(9, Math.min(14, puckRadius * 0.9));
@@ -2158,7 +2170,8 @@
                     iceCtx.restore();
                 }
             }
-            iceCtx.restore(); // zoom transform
+
+            iceCtx.restore(); // restore rotation/zoom
         }
 
         function renderLoop(){
