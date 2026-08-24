@@ -884,7 +884,7 @@
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
         function hexToRgba(hex,alpha) { if(!hex) return `rgba(120,120,120,${alpha})`; const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${alpha})`; }
-        const PUCK_RENDER_RADIUS = 10;
+        const PUCK_RENDER_RADIUS = 12; // slightly bigger
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -1200,7 +1200,7 @@
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // ─── VIBRATION: Detect wall/corner bounces ──────────────────
+            // ─── VIBRATION: Detect wall/corner bounces (single hit) ──
             if (snapshot.gameState === 'sliding') {
                 const w = iceState.arenaSize || 400;
                 const margin = 25;
@@ -1227,8 +1227,8 @@
                 }
 
                 const now = Date.now();
-                // Only trigger every 120ms to avoid spam
-                if (now - iceState.puckLastBounceTime > 120) {
+                // Only trigger every 150ms to avoid spam
+                if (now - iceState.puckLastBounceTime > 150) {
                     // Detect direction reversal (bounce) by comparing with previous position
                     const dx = puckX - prevPuckX;
                     const dy = puckY - prevPuckY;
@@ -1852,11 +1852,11 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckR, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Cross with transparency
-                const crossSize = puckR * 0.6;
+                // Cross with less transparency (0.65) and bigger (0.75)
+                const crossSize = puckR * 0.75;
                 iceCtx.shadowBlur = 0;
-                iceCtx.globalAlpha = 0.4;
-                iceCtx.lineWidth = 2;
+                iceCtx.globalAlpha = 0.65;
+                iceCtx.lineWidth = 2.5;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
@@ -1945,14 +1945,14 @@
             iceCtx.fill(perimeterPath);
             iceCtx.restore();
 
-            // ─── Draw player segments with fade-in ──────────────────
+            // ─── Draw player segments with subtle fade-in ────────────
             iceCtx.save();
             iceCtx.clip(perimeterPath);
 
-            // Calculate field alpha (fade-in animation)
+            // Calculate field alpha (subtle fade: 0.8 → 1.0)
             const appearTime = iceState.fieldAppearTime || 0;
             const elapsedAppear = (Date.now() - appearTime) / 1000;
-            const fieldAlpha = Math.min(1, easeInOutQuad(elapsedAppear / 0.6));
+            const fieldAlpha = Math.min(1, 0.8 + 0.2 * easeInOutQuad(elapsedAppear / 0.5));
 
             iceState.players.forEach((p, index) => {
                 const x1 = p.x1 * s;
@@ -1963,9 +1963,9 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Individual fade per field with slight stagger
-                const staggerDelay = index * 0.05;
-                const individualAlpha = Math.min(1, easeInOutQuad(Math.max(0, (elapsedAppear - staggerDelay) / 0.5)));
+                // Individual subtle fade with stagger
+                const staggerDelay = index * 0.04;
+                const individualAlpha = Math.min(1, 0.8 + 0.2 * easeInOutQuad(Math.max(0, (elapsedAppear - staggerDelay) / 0.4)));
 
                 const finalAlpha = fieldAlpha * individualAlpha;
 
@@ -1990,7 +1990,6 @@
                 // ─── PFP circle (slightly bigger) ──────────────────────
                 const centerX = (x1 + x2) / 2;
                 const centerY = (y1 + y2) / 2;
-                // Increased from 0.28 to 0.32
                 const avatarR = Math.min(segW, segH) * 0.32;
 
                 let pfpScale = 1;
@@ -2025,13 +2024,15 @@
                 }
                 iceCtx.restore();
 
-                // ─── Player name under PFP (only when puck is slow) ──
-                const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-                const isSlow = speed < 2.0 || iceState.gameState === 'idle' || iceState.gameState === 'countdown' || iceState.gameState === 'spinning' || iceState.gameState === 'finished';
+                // ─── Player name under PFP (during game, slightly transparent) ──
+                // Show during sliding, countdown, spinning, finished, idle
+                const showName = (iceState.gameState === 'sliding' || iceState.gameState === 'countdown' ||
+                                 iceState.gameState === 'spinning' || iceState.gameState === 'finished' ||
+                                 iceState.gameState === 'idle') && drawR > 8;
 
-                if (isSlow && drawR > 8) {
+                if (showName) {
                     iceCtx.save();
-                    iceCtx.globalAlpha = finalAlpha * 0.7;
+                    iceCtx.globalAlpha = finalAlpha * 0.55; // slightly transparent
                     iceCtx.textAlign = 'center';
                     iceCtx.textBaseline = 'top';
                     const fontSize = Math.max(8, Math.min(12, drawR * 0.35));
@@ -2101,7 +2102,7 @@
                 iceCtx.restore();
             }
 
-            // ─── Puck (using interpolated position, cross transparent) ──
+            // ─── Puck (bigger cross, less transparent) ──────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2133,11 +2134,11 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Cross with transparency (globalAlpha 0.4)
-                const crossSize = puckRadius * 0.6;
+                // Cross: bigger (0.75) and less transparent (0.65)
+                const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
-                iceCtx.globalAlpha = 0.4;
-                iceCtx.lineWidth = 2;
+                iceCtx.globalAlpha = 0.65;
+                iceCtx.lineWidth = 2.5;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
