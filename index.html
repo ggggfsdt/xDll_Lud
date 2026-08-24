@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-    <!-- ─── LOADING SCREEN STYLES ─── -->
+    <!-- ─── LOADING SCREEN STYLES (unchanged) ─── -->
     <style>
         #loading-screen {
             position: fixed;
@@ -828,7 +828,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── ICE STATE (enhanced with interpolation, bounce tracking, rotation) ──
+        // ─── ICE STATE (enhanced) ────────────────────────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -856,21 +856,18 @@
             isZoomingOut: false,
             zoomLocked: false,
             zoomOutTriggered: false,
-            // ─── idle animation state ──────────────────────────────────
             idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 10 },
             idlePuckInitialized: false,
-            // ─── interpolation & bounce detection ──────────────────────
             puckPrevX: 200,
             puckPrevY: 200,
             puckUpdateTime: 0,
             puckLastBounceTime: 0,
-            // ─── owner name display under puck ──────────────────────────
             currentOwnerName: '',
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
-            // ─── rotation angle for visual tilt ────────────────────────
             rotationAngle: 0,
+            rotationSet: false,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -975,8 +972,6 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
-                        // Set random rotation angle for visual tilt
-                        iceState.rotationAngle = (Math.random() - 0.5) * 0.4; // ±0.2 rad
                         updateIceStatsBar();
                         updateIceBetUI();
                         updateIceWaitingText();
@@ -1204,10 +1199,24 @@
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // ─── SINGLE VIBRATION: Detect actual collision (bounce) ──
+            // ─── Set rotation angle when game starts ──────────────────
+            if ((snapshot.gameState === 'sliding' || snapshot.gameState === 'spinning') && !iceState.rotationSet) {
+                // 30% chance of no rotation, otherwise random between -0.5 and 0.5 rad (≈ ±28°)
+                if (Math.random() < 0.3) {
+                    iceState.rotationAngle = 0;
+                } else {
+                    iceState.rotationAngle = (Math.random() - 0.5) * 0.9; // ±0.45 rad
+                }
+                iceState.rotationSet = true;
+            }
+            if (snapshot.gameState === 'idle') {
+                iceState.rotationAngle = 0;
+                iceState.rotationSet = false;
+            }
+
+            // ─── SINGLE VIBRATION: Detect actual bounce ──────────────
             if (snapshot.gameState === 'sliding' && iceState.players.length > 0) {
                 const w = iceState.arenaSize || 400;
-                // Check if puck is near any perimeter point (simplified)
                 const margin = 20;
                 const nearWall = (
                     snapshot.puck.x < margin || snapshot.puck.x > w - margin ||
@@ -1223,22 +1232,21 @@
                 let nearCorner = false;
                 for (const c of corners) {
                     const dist = Math.hypot(snapshot.puck.x - c.x, snapshot.puck.y - c.y);
-                    if (dist < 35) { nearCorner = true; break; }
+                    if (dist < 30) { nearCorner = true; break; }
                 }
 
-                // Detect direction reversal (bounce) by comparing velocity signs
                 const dx = snapshot.puck.x - oldPuckX;
                 const dy = snapshot.puck.y - oldPuckY;
                 const prevDx = oldPuckX - iceState.puckPrevX;
                 const prevDy = oldPuckY - iceState.puckPrevY;
                 const speed = Math.sqrt(dx*dx + dy*dy);
 
-                // If direction changed sign (x or y reversed) and speed > threshold
+                // Detect direction reversal (bounce)
                 const bounced = (dx !== 0 && prevDx !== 0 && dx * prevDx < 0) ||
                                 (dy !== 0 && prevDy !== 0 && dy * prevDy < 0);
 
                 const now = Date.now();
-                // Trigger only on actual bounce, with cooldown to avoid double-tap
+                // Trigger only on actual bounce with speed threshold
                 if ((bounced || nearCorner) && speed > 0.3 && now - iceState.puckLastBounceTime > 200) {
                     if (nearCorner) {
                         haptic('heavy');
@@ -1276,10 +1284,6 @@
             if(snapshot.gameState==='sliding' && prevGameState!=='sliding'){
                 iceState.slideStartTime=performance.now();
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
-                // Set rotation when sliding starts (if not already set)
-                if (iceState.rotationAngle === 0) {
-                    iceState.rotationAngle = (Math.random() - 0.5) * 0.4;
-                }
             }
             if(snapshot.gameState==='finished' && prevGameState!=='finished'){
                 if(iceState.zoom>1.1 && !iceState.zoomOutTriggered){
@@ -1296,8 +1300,6 @@
                 iceState.pfpPop.clear();
                 iceState.showOwnerName = false;
                 iceState.currentOwnerName = '';
-                // Reset rotation when idle
-                iceState.rotationAngle = 0;
             }
 
             const seen=new Set();
@@ -1340,7 +1342,6 @@
         }
         function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
         function updateIceWaitingText(){
-            // Hide waiting text if at least 1 player has joined
             if (iceState.players.length >= 1) {
                 iceWaitingText.style.display = 'none';
             } else {
@@ -1647,7 +1648,6 @@
             const code=promoInput.value.trim().toUpperCase();
             if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
             if(!state.userId){ promoMessage.textContent='You are not logged in.'; promoMessage.style.color='var(--red)'; return; }
-            // Check if already used
             const storageKey = 'dllump_promo_used_' + state.userId;
             if (localStorage.getItem(storageKey) === 'true') {
                 promoMessage.textContent='You have already used a promo code.';
@@ -1797,7 +1797,7 @@
             });
         }
 
-        // ─── RENDER ICE (with rotation and fixed vibration) ──────────
+        // ─── RENDER ICE (with larger rotation and fixed vibration) ──
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
