@@ -284,7 +284,6 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  // ─── SMALLER MIN SEGMENT SIZE: 0.07 (was 0.15) ──────────────
   const clampedRatio = Math.max(0.07, Math.min(0.93, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
@@ -332,18 +331,14 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── LAUNCH PUCK AT RANDOM POSITION NEAR CENTER ──────────────
+// ─── LAUNCH PUCK AT CENTER (fixed) ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 11;
-  // Random position within 30% of center
-  const radius = ICE_SIZE * 0.15 + Math.random() * ICE_SIZE * 0.15;
-  const angle = Math.random() * Math.PI * 2;
-  iceRoom.puck.x = ICE_SIZE / 2 + Math.cos(angle) * radius;
-  iceRoom.puck.y = ICE_SIZE / 2 + Math.sin(angle) * radius;
-  // Ensure within bounds
-  iceRoom.puck.x = Math.max(20, Math.min(ICE_SIZE - 20, iceRoom.puck.x));
-  iceRoom.puck.y = Math.max(20, Math.min(ICE_SIZE - 20, iceRoom.puck.y));
+  // Fixed start position: center
+  iceRoom.puck.x = ICE_SIZE / 2;
+  iceRoom.puck.y = ICE_SIZE / 2;
+  // Direction still random (based on spinFinalAngle)
   iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
   iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
 }
