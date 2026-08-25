@@ -7,10 +7,6 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN STYLES (unchanged) ─── */
-        /* (copy from previous version – all styles until "APP STYLES" can stay) */
-        /* For brevity, I'll include the entire existing styles from the last working version,
-           but I'll remove the mode-switch and team-selector styles. */
         /* ─── LOADING SCREEN STYLES ─── */
         #loading-screen {
             position: fixed;
@@ -232,7 +228,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── APP STYLES (with notification overlay) ─── */
+        /* ─── ORIGINAL APP STYLES ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -494,43 +490,59 @@
         .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
-        /* ─── NOTIFICATION OVERLAY ───────────────────────────────────── */
-        #notification-overlay {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: rgba(0,0,0,0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 20px;
-            padding: 24px 36px;
-            max-width: 85%;
-            color: #fff;
-            font-size: 28px;
-            font-weight: 700;
-            text-align: center;
-            z-index: 99999;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 20px 80px rgba(0,0,0,0.9);
-            text-shadow: 0 0 20px rgba(255,255,255,0.2);
-            line-height: 1.4;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        #notification-overlay.show {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-            pointer-events: none;
-        }
-        @media (max-width: 420px) {
-            #notification-overlay {
-                font-size: 20px;
-                padding: 18px 24px;
-                max-width: 92%;
-            }
+        @media (max-width:400px) {
+            #balance-wrap { padding:2px 10px 2px 4px; }
+            #balance { font-size:15px; }
+            #diamond-icon { width:22px; height:22px; }
+            #bet-overlay-wrap, #ice-bet-overlay-wrap { width:96%; }
+            #bet-overlay, #ice-bet-overlay { padding:6px 10px 8px; }
+            #bet-input, #ice-bet-input { max-width:90px; height:24px; font-size:13px; padding:1px 4px; }
+            #all-in-btn, #ice-all-in-btn { height:24px; font-size:11px; padding:0 6px; }
+            #bet-btn, #ice-bet-btn { height:22px; font-size:12px; }
+            #bet-overlay.collapsed, #ice-bet-overlay.collapsed { padding:4px 8px; }
+            .auto-bet-toggle, .ice-auto-bet-toggle { width:34px; height:34px; font-size:16px; }
+            .auto-bet-panel, .ice-auto-bet-panel { width:140px; padding:10px 12px; }
+            .profile-card { padding:16px 14px 20px; }
+            .profile-pfp { width:60px; height:60px; }
+            .profile-name { font-size:17px; }
+            .stat-item .num { font-size:18px; }
+            #username-display { max-width:60px; font-size:11px; }
+            #countdown-timer { font-size:18px; top:12px; right:12px; }
+            #timer-wrap { top:12px; right:12px; min-width:44px; }
+            #timer-progress-wrap { width:36px; height:2px; }
+            #stats-bar, #ice-stats-bar { font-size:12px; padding:4px 10px; }
+            #stats-bar .stat-item .icon, #ice-stats-bar .stat-item .icon { width:16px; height:16px; }
+            #win-panel { width:96%; padding:16px; }
+            #win-name { font-size:20px; }
+            #win-multiplier { font-size:24px; }
+            #win-gif-container { width:65%; max-width:160px; }
+            #win-avatar-container { width:50px; height:50px; }
+            #player-list-container { max-height:80px; padding:2px 2px; gap:2px; }
+            .pl-entry { font-size:10px; padding:1px 6px 1px 3px; min-width:100px; max-width:150px; }
+            .pl-entry .pl-avatar { width:14px; height:14px; }
+            .pl-entry .pl-name { max-width:40px; font-size:10px; }
+            .pl-entry .pl-bet { font-size:10px; }
+            .pl-entry .pl-chance { font-size:9px; }
+            #win-history, #ice-win-history { top:42px; right:8px; gap:3px; }
+            .win-entry { width:22px; height:22px; }
+            #podium { gap:8px; padding:10px 0 6px; }
+            .podium-col .podium-pfp { width:42px; height:42px; }
+            .podium-col .podium-name { font-size:10px; }
+            .podium-col .podium-prize { font-size:9px; padding:1px 6px; }
+            .podium-col .podium-prize img { width:14px; height:14px; }
+            .podium-col .rank-badge { font-size:11px; padding:1px 8px; }
+            .podium-col .podium-base.gold { height:75px; min-height:75px; }
+            .podium-col .podium-base.silver { height:56px; min-height:56px; }
+            .podium-col .podium-base.bronze { height:38px; min-height:38px; }
+            .top-entry .t-prize img { width:16px; height:16px; }
+            .top-entry .t-flame { width:16px; height:16px; }
+            #frog-gif { width:50%; max-width:120px; }
+            #promo-modal { padding:20px 12px 22px; }
+            #promo-modal .promo-gif { max-width:150px; }
+            #promo-modal .promo-msg { font-size:17px; }
+            #promo-modal .promo-sub { font-size:12px; }
+            .promo-row input { font-size:12px; padding:6px 10px; }
+            .promo-row button { font-size:12px; padding:6px 12px; }
         }
     </style>
 </head>
@@ -688,9 +700,6 @@
         </div>
     </div>
 
-    <!-- Notification Overlay -->
-    <div id="notification-overlay"></div>
-
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -698,10 +707,10 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ FULL SCRIPT ─── -->
+    <!-- ═══ SCRIPT ─── -->
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – solo ice, with admin notification
+        // FULL CLIENT – flame in Top, solid segment colors, no idle spin
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -736,6 +745,7 @@
             topPlayerIds: new Map(),
             winStreak: 0,
         };
+
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
 
@@ -821,8 +831,6 @@
         const autoSwitch = document.getElementById('auto-bet-switch');
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
-        const notifOverlay = document.getElementById('notification-overlay');
-        let notifTimeout = null;
 
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
@@ -985,33 +993,8 @@
             socket.on('roundEnd',(payload)=>{ handleRoundEnd(payload); });
             socket.on('iceState',(snapshot)=>{ applyIceServerState(snapshot); });
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
-            // ─── NOTIFICATION listener ─────────────────────────────────
-            socket.on('notification', (data) => {
-                if (!data || !data.message) return;
-                showNotification(data.message);
-            });
         }
 
-        // ─── NOTIFICATION ──────────────────────────────────────────────
-        function showNotification(text) {
-            if (notifTimeout) {
-                clearTimeout(notifTimeout);
-                notifTimeout = null;
-                notifOverlay.classList.remove('show');
-            }
-            // Force reflow then show
-            notifOverlay.textContent = text;
-            // Use a small delay to allow reflow
-            requestAnimationFrame(() => {
-                notifOverlay.classList.add('show');
-                notifTimeout = setTimeout(() => {
-                    notifOverlay.classList.remove('show');
-                    notifTimeout = null;
-                }, 3000);
-            });
-        }
-
-        // ─── applyServerState (unchanged) ─────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1204,7 +1187,6 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-        // ─── ICE SERVER STATE APPLICATION (solo) ──────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState=iceState.gameState;
             const oldPuckX = iceState.puck.x;
@@ -1222,8 +1204,6 @@
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
-
-            // VIBRATION REMOVED
 
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -1330,14 +1310,13 @@
             });
             iceWinHistoryEl.innerHTML=html;
         }
-
         function handleIceRoundEnd(payload){
             if(!payload){ hideIceWinPanelAndReset(); return; }
             iceState.winnerId=payload.winnerId;
             addIceWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
             if(payload.winnerId===state.userId){
-                state.balance += payload.winnings;
+                state.balance+=payload.winnings;
                 state.wins++;
                 state.winStreak++;
                 playVictorySound();
@@ -1346,16 +1325,14 @@
                 state.winStreak = 0;
             }
             updateBalance(); updateProfile();
-
-            iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
-            iceWinName.textContent = payload.winnerName + ' wins!';
-            iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
+            iceWinAvatar.src=payload.winnerPfp||state.defaultAvatar;
+            iceWinName.textContent=payload.winnerName+' wins the rink!';
+            iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
             iceWinPanel.classList.add('show'); haptic('heavy');
             iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
             if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
-            window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
+            window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
         }
-
         function hideIceWinPanelAndReset(){
             iceWinPanel.classList.remove('show');
             if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
@@ -1364,43 +1341,58 @@
         }
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
-        // ─── ICE BET ──────────────────────────────────────────────────
-        function placeIceBet(amount) {
-            if (!socket || !socket.connected) return;
-            let addAmount = parseInt(amount) || 10;
-            if (addAmount < 10) addAmount = 10;
-            if (addAmount > state.balance) addAmount = state.balance;
-            if (addAmount <= 0) { haptic('light'); return; }
-
-            socket.emit('icePlaceBet', { amount: addAmount }, (res) => {
-                if (!res?.ok) {
-                    haptic('light');
-                    console.warn('Ice bet rejected:', res?.error);
-                    alert(res?.error || 'Bet failed');
-                    return;
-                }
-                state.balance = res.balance;
-                updateBalance();
-                updateProfile();
-                haptic('medium');
+        function placeIceBet(amount){
+            if(!socket||!socket.connected) return;
+            let addAmount=parseInt(amount)||10;
+            if(addAmount<10) addAmount=10;
+            if(addAmount>state.balance) addAmount=state.balance;
+            if(addAmount<=0){ haptic('light'); return; }
+            socket.emit('icePlaceBet',{amount:addAmount},(res)=>{
+                if(!res?.ok){ haptic('light'); console.warn('Ice bet rejected:',res?.error); return; }
+                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
             });
-            iceBetInput.value = '';
-            updateIceBetUI();
+            iceBetInput.value=''; updateIceBetUI();
         }
-
-        iceBetBtn.addEventListener('click', () => placeIceBet(iceBetInput.value));
-        iceAllInBtn.addEventListener('click', () => {
-            iceBetInput.value = state.balance;
-            placeIceBet(state.balance);
-        });
-        iceBetInput.addEventListener('blur', function() {
-            let val = parseInt(this.value);
-            if (isNaN(val) || val < 10) val = 10;
-            if (val > state.balance) val = state.balance;
-            this.value = val;
+        iceBetBtn.addEventListener('click',()=>placeIceBet(iceBetInput.value));
+        iceAllInBtn.addEventListener('click',()=>{ iceBetInput.value=state.balance; placeIceBet(state.balance); });
+        iceBetInput.addEventListener('blur',()=>{
+            let val=parseInt(iceBetInput.value);
+            if(isNaN(val)||val<10) val=10;
+            if(val>state.balance) val=state.balance;
+            iceBetInput.value=val;
         });
 
-        // ─── REFRESH LEADERBOARD WITH FLAME ──────────────────────────
+        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
+        function toggleIceAutoBet(enable){
+            if(enable&&!iceAutoBetEnabled){
+                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
+                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
+                iceAutoBetInterval=setInterval(()=>{
+                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
+                    if(!canBet) return;
+                    const existing=getIcePlayerLocal(state.userId);
+                    if(existing) return;
+                    const amount=parseInt(iceAutoAmount.value)||10;
+                    if(amount<10||amount>state.balance) return;
+                    placeIceBet(amount);
+                },2000);
+            } else if(!enable&&iceAutoBetEnabled){
+                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
+                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
+            }
+        }
+        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
+        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
+        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
+
+        let iceBetCollapsed = false;
+        iceBetToggleBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            iceBetCollapsed = !iceBetCollapsed;
+            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
+            haptic('light');
+        });
+
         function refreshLeaderboard(){
             if(!socket) return;
             socket.emit('leaderboard',{},(res)=>{
@@ -1426,6 +1418,7 @@
                 const p=info.player; if(!p) return;
                 const prize=getPrizeForRank(p.rank);
                 let prizeHtml=prize?(prize.gif?`<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`:prize.label):'';
+                // Flame for current player with streak >= 3
                 const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
                     `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` : '';
                 podiumHtml+=`<div class="podium-col ${info.colClass}">
@@ -1472,7 +1465,6 @@
             return null;
         }
 
-        // ─── BALANCE & PROFILE ────────────────────────────────────────
         let balanceAnimInterval=null;
         function animateBalanceTo(target){
             const current=parseInt(balanceEl.textContent)||0;
@@ -1506,7 +1498,6 @@
             updateBalance();
         }
 
-        // ─── VICTORY SOUND ────────────────────────────────────────────
         let audioCtx=null, victorySoundPlaying=false;
         function playVictorySound(){
             try {
@@ -1534,7 +1525,6 @@
         }
         function stopVictorySound(){ victorySoundPlaying=false; }
 
-        // ─── PVP BET ──────────────────────────────────────────────────
         betBtn.addEventListener('click', ()=>{
             if(!socket||!socket.connected) return;
             let addAmount=parseInt(betInput.value)||10;
@@ -1548,19 +1538,9 @@
             betInput.value=10; updateBetUI();
         });
 
-        // ─── BET OVERLAY COLLAPSE ────────────────────────────────────
         let betCollapsed=false;
         betToggleBtn.addEventListener('click',function(e){ e.stopPropagation(); betCollapsed=!betCollapsed; betOverlay.classList.toggle('collapsed',betCollapsed); haptic('light'); });
 
-        let iceBetCollapsed = false;
-        iceBetToggleBtn.addEventListener('click', function(e){
-            e.stopPropagation();
-            iceBetCollapsed = !iceBetCollapsed;
-            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
-            haptic('light');
-        });
-
-        // ─── ALL IN ────────────────────────────────────────────────────
         let allInConfirming=false, allInTimeout=null;
         allInBtn.addEventListener('click',()=>{
             if(allInConfirming){
@@ -1578,7 +1558,6 @@
             }
         });
 
-        // ─── INPUT CLEAR ──────────────────────────────────────────────
         function setupInputWithClear(inputEl,defaultVal=10){
             inputEl.addEventListener('input',()=>{ const raw=inputEl.value; if(raw===''){ inputEl.dataset.empty='true'; return; } delete inputEl.dataset.empty; });
             inputEl.addEventListener('blur',()=>{
@@ -1591,7 +1570,6 @@
         }
         setupInputWithClear(betInput,10); setupInputWithClear(autoAmount,10); setupInputWithClear(iceAutoAmount,10);
 
-        // ─── AUTO BET (PVP) ───────────────────────────────────────────
         let autoBetInterval=null, autoBetEnabled=false;
         function toggleAutoBet(enable){
             if(enable&&!autoBetEnabled){
@@ -1617,31 +1595,6 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
-        // ─── AUTO BET (ICE) ───────────────────────────────────────────
-        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
-        function toggleIceAutoBet(enable){
-            if(enable&&!iceAutoBetEnabled){
-                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
-                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
-                iceAutoBetInterval=setInterval(()=>{
-                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
-                    if(!canBet) return;
-                    const existing=getIcePlayerLocal(state.userId);
-                    if(existing) return;
-                    const amount=parseInt(iceAutoAmount.value)||10;
-                    if(amount<10||amount>state.balance) return;
-                    placeIceBet(amount);
-                },2000);
-            } else if(!enable&&iceAutoBetEnabled){
-                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
-                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
-            }
-        }
-        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
-        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
-        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
-
-        // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async ()=>{
             const code=promoInput.value.trim().toUpperCase();
             if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
@@ -1667,7 +1620,6 @@
         });
         promoContinueBtn.addEventListener('click',()=>{ promoModal.classList.remove('show'); });
 
-        // ─── RELOAD PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click',function(){
             const user=getPlayer(state.userId);
             if(user){ pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); } else if(state.pfp){
@@ -1678,8 +1630,6 @@
                 img.src=state.pfp;
             }
         });
-
-        // ─── ANONYMOUS MODE ──────────────────────────────────────────
         anonToggle.addEventListener('change',()=>{
             if(!socket||!socket.connected){ anonToggle.checked=state.anonymous; return; }
             const enabled=anonToggle.checked;
@@ -1691,7 +1641,6 @@
             });
         });
 
-        // ─── TAB SWITCHING ────────────────────────────────────────────
         function switchTab(tabId){
             if(state.currentTab===tabId) return;
             const oldTab=state.currentTab;
@@ -1707,7 +1656,6 @@
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
-        // ─── RENDER (PVP) ─────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -1800,7 +1748,7 @@
             });
         }
 
-        // ─── RENDER ICE ──────────────────────────────────────────────
+        // ─── RENDER ICE – solid colors, no gradients ────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1842,7 +1790,6 @@
                 iceState.idlePuck.y = y;
                 iceState.idlePuck.vx = vx;
                 iceState.idlePuck.vy = vy;
-
                 const cx = x;
                 const cy = y;
                 const puckRadius = 10 * s;
@@ -1870,7 +1817,7 @@
                 return;
             }
 
-            // ─── Regular game rendering ──────────────────────────────
+            // ─── Regular game rendering with SOLID colors ────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1967,8 +1914,6 @@
                 const cx = (x1 + x2) / 2;
                 const cy = (y1 + y2) / 2;
 
-                const color = isWinner ? lightenColor(p.color, 70) : p.color;
-
                 iceCtx.save();
                 iceCtx.beginPath();
                 iceCtx.rect(x1, y1, segW, segH);
@@ -1980,6 +1925,8 @@
                 const drawW = diag * 1.2;
                 const drawH = diag * 1.2;
 
+                // ─── SOLID COLOR – no gradient ─────────────────────
+                const color = isWinner ? lightenColor(p.color, 70) : p.color;
                 iceCtx.globalAlpha = isWinner ? 1 : 0.93;
                 iceCtx.fillStyle = color;
                 iceCtx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
@@ -1988,7 +1935,7 @@
                 if (isWinner) {
                     iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
                     iceCtx.lineWidth = 3;
-                    iceCtx.shadowColor = hexToRgba(color, 0.8);
+                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
                     iceCtx.shadowBlur = 16;
                     iceCtx.strokeRect(-drawW/2, -drawH/2, drawW, drawH);
                     iceCtx.shadowBlur = 0;
@@ -2016,7 +1963,7 @@
                 if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
                 } else {
-                    iceCtx.fillStyle = color || '#555';
+                    iceCtx.fillStyle = p.color || '#555';
                     iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
                 }
                 iceCtx.restore();
@@ -2165,7 +2112,6 @@
             }
         }
 
-        // ─── RENDER LOOP ──────────────────────────────────────────────
         function renderLoop(){
             updatePlayerAnimations();
             const now=Date.now();
@@ -2196,7 +2142,6 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // ─── INIT ──────────────────────────────────────────────────────
         function init(){
             if(tg?.initDataUnsafe?.user){ const u=tg.initDataUnsafe.user; state.username=u.username||u.first_name||'player'; state.pfp=u.photo_url||''; } else state.username='player';
             usernameDisplay.textContent='@'+state.username;
@@ -2215,7 +2160,7 @@
         window.__state=state;
     </script>
 
-    <!-- ═══ LOADING SCREEN CONTROLLER (unchanged) ═══ -->
+    <!-- ─── LOADING SCREEN CONTROLLER (unchanged) ─── -->
     <script>
         (function() {
             'use strict';
