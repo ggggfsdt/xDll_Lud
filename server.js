@@ -150,7 +150,7 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — solo only (group mode removed)
+// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
@@ -174,32 +174,6 @@ const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
-// ─── Auto-bot toggle ─────────────────────────────────────────────
-let autoBotEnabled = false;
-let autoBotInterval = null;
-
-function startAutoBot() {
-  if (autoBotInterval) clearInterval(autoBotInterval);
-  autoBotInterval = setInterval(() => {
-    if (!autoBotEnabled) return;
-    if (iceRoom.gameState !== 'idle') return;
-    if (iceRoom.players.length >= MAX_PLAYERS) return;
-    const bet = Math.floor(Math.random() * 140) + 10;
-    const bot = spawnBot(bet);
-    if (bot) {
-      console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
-    }
-  }, 4000);
-}
-startAutoBot();
-
-function stopAutoBot() {
-  if (autoBotInterval) {
-    clearInterval(autoBotInterval);
-    autoBotInterval = null;
-  }
-}
-
 // ─── BOT MANAGEMENT ─────────────────────────────────────────────
 let botCounter = 0;
 const botIds = new Set();
@@ -217,9 +191,11 @@ function spawnBot(betAmount) {
   botCounter++;
   const name = `Bot_${String(botCounter).padStart(3, '0')}`;
   const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
+  
   const player = makeIcePlayer(id, betAmount, name, pfp);
   if (player) {
     botIds.add(id);
+    console.log(`🤖 Spawned bot: ${name} (${id}) with bet ${betAmount}`);
     return player;
   }
   return null;
@@ -392,12 +368,11 @@ async function endIceGame() {
     const losersBets = totalPot - winnerBet;
     const commission = Math.floor(losersBets * 0.02);
     const winnings = totalPot - commission;
-
     payload = {
       winnerId: winner.id,
       winnerName: winner.name,
       winnerPfp: winner.pfp,
-      winnings: winnings,
+      winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
 
@@ -926,7 +901,6 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── ICE: place bet (solo only) ──────────────────────────────
   socket.on('icePlaceBet', async ({ amount }, ack) => {
     try {
       if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
@@ -940,10 +914,12 @@ io.on('connection', (socket) => {
       if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
         return ack?.({ ok: false, error: 'Rink is full.' });
       }
-
+      user.balance -= amt;
+      await saveUser(user);
       const existing = getIcePlayer(userId);
       if (existing) {
         existing.bet += amt;
+        repartitionIceArena();
       } else {
         const p = makeIcePlayer(userId, amt, user.username, user.pfp);
         if (!p) {
@@ -985,39 +961,11 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
 .bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
 .bot-row input{width:120px}
 .bot-row button{background:#5b8def}
-.switch-wrap{display:flex;align-items:center;gap:12px;margin:6px 0}
-.switch-wrap .switch{position:relative;width:50px;height:26px;flex-shrink:0;cursor:pointer}
-.switch-wrap .switch input{opacity:0;width:0;height:0}
-.switch-wrap .switch .slider{position:absolute;inset:0;background:#444;border-radius:999px;transition:0.3s}
-.switch-wrap .switch .slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s}
-.switch-wrap .switch input:checked+.slider{background:#5b8def}
-.switch-wrap .switch input:checked+.slider::before{transform:translateX(24px)}
-.notification-row{display:flex;gap:10px;margin:8px 0;align-items:center}
-.notification-row input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #444;background:#222;color:#fff}
-.notification-row button{padding:6px 16px}
 </style></head>
 <body>
 <h2>dllump Admin</h2>
 <div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
 <div id="content" style="display:none">
-  <div class="section">
-    <h3>📢 Send Notification</h3>
-    <div class="notification-row">
-      <input id="notifInput" placeholder="Type message or emoji..." />
-      <button onclick="sendNotification()">Send</button>
-    </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Auto Bot</h3>
-    <div class="switch-wrap">
-      <span style="color:#888;">Auto-spawn bots in ice arena</span>
-      <label class="switch">
-        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
-        <span class="slider"></span>
-      </label>
-      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
-    </div>
-  </div>
   <div class="section">
     <h3>🤖 Bot Spawn</h3>
     <div class="bot-row">
@@ -1026,6 +974,7 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
       <button onclick="spawnBots()">Spawn Bots</button>
       <button class="danger" onclick="removeBots()">Remove All Bots</button>
     </div>
+    <div style="font-size:12px;color:#888;margin-top:4px;">Spawns bots with custom bet amounts for testing the arena without real players.</div>
   </div>
   <div class="section">
     <h3>Players</h3>
@@ -1072,28 +1021,7 @@ function auth(){
     document.getElementById('content').style.display = 'block';
     refreshPlayers();
     refreshPromoCodes();
-    fetchAutoBotStatus();
   } else alert('Wrong secret');
-}
-async function fetchAutoBotStatus(){
-  const data = await fetchAdmin('/auto-bot-status');
-  document.getElementById('autoBotToggle').checked = data.enabled;
-  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-}
-async function toggleAutoBot(enabled){
-  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
-  if(data.ok) {
-    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-  } else alert('Error: '+data.error);
-}
-async function sendNotification(){
-  const msg = document.getElementById('notifInput').value.trim();
-  if(!msg) { alert('Please enter a message'); return; }
-  const data = await fetchAdmin('/send-notification', 'POST', {message: msg});
-  if(data.ok) {
-    alert('Notification sent!');
-    document.getElementById('notifInput').value = '';
-  } else alert('Error: '+data.error);
 }
 async function refreshPlayers(){
   const data = await fetchAdmin('/players');
@@ -1190,31 +1118,6 @@ app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
-// ─── Auto-bot toggle endpoint ────────────────────────────────
-app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
-  const { enabled } = req.body;
-  if (typeof enabled !== 'boolean') {
-    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
-  }
-  autoBotEnabled = enabled;
-  res.json({ ok: true, enabled: autoBotEnabled });
-});
-
-app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
-  res.json({ enabled: autoBotEnabled });
-});
-
-// ─── Send notification endpoint ────────────────────────────────
-app.post('/admin/api/send-notification', adminAuth, (req, res) => {
-  const { message } = req.body;
-  if (!message || typeof message !== 'string' || message.trim().length === 0) {
-    return res.status(400).json({ ok: false, error: 'Missing message' });
-  }
-  io.emit('notification', { message: message.trim(), timestamp: Date.now() });
-  res.json({ ok: true });
-});
-
-// ─── Existing admin endpoints ──────────────────────────────────
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -1369,6 +1272,7 @@ app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
     const { bet, count } = req.body;
     const betAmount = Math.max(10, parseInt(bet) || 100);
     const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
+    
     let spawned = 0;
     for (let i = 0; i < numBots; i++) {
       const player = spawnBot(betAmount);
