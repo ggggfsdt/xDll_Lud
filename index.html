@@ -639,11 +639,11 @@
             #promo-modal .promo-sub { font-size:12px; }
             .promo-row input { font-size:12px; padding:6px 10px; }
             .promo-row button { font-size:12px; padding:6px 12px; }
-            .team-btn { font-size: 10px; padding: 3px 10px; }
-            #mode-switch-container { font-size: 10px; }
-            .mode-switch { width: 44px; height: 22px; }
-            .mode-switch .slider { width: 18px; height: 18px; }
-            .mode-switch.group .slider { transform: translateX(22px); }
+            .team-btn { font-size:10px; padding:3px 10px; }
+            #mode-switch-container { font-size:10px; }
+            .mode-switch { width:44px; height:22px; }
+            .mode-switch .slider { width:18px; height:18px; }
+            .mode-switch.group .slider { transform:translateX(22px); }
         }
     </style>
 </head>
@@ -825,10 +825,10 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ SCRIPT ─── -->
+    <!-- ═══ FULL SCRIPT ─── -->
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with mode switch, team selection, auto-bot admin
+        // FULL CLIENT – all features integrated
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -867,7 +867,6 @@
             iceMode: 'solo',
             selectedTeam: null,
         };
-
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
 
@@ -1112,7 +1111,6 @@
                         updateIceWaitingText();
                         updateIceBetOverlayVisibility();
                         document.getElementById('ice-stats-pot').textContent = iceState.pot;
-                        updateIcePlayerList();
                     }
                     usernameDisplay.textContent='@'+state.username; profileName.textContent=state.username;
                     profileUsername.textContent='@'+state.username; profilePfp.src=state.pfp||state.defaultAvatar;
@@ -1129,6 +1127,7 @@
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
         }
 
+        // ─── applyServerState ──────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1345,6 +1344,8 @@
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
+            // VIBRATION REMOVED
+
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
             }
@@ -1409,7 +1410,6 @@
             if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
 
             updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
-            updateIcePlayerList();
         }
 
         function updateIceBetOverlayVisibility(){
@@ -1440,21 +1440,6 @@
                 iceCurrentBetDisplay.textContent = existing ? existing.bet : '0';
             }
             if(iceBetInput.dataset.empty==='true'){ iceBetInput.value=10; delete iceBetInput.dataset.empty; }
-        }
-
-        function updateIcePlayerList() {
-            const players = iceState.players;
-            if (players.length === 0) {
-                // We'll keep the container, but clear it
-                const container = document.getElementById('ice-player-list-container');
-                if (container) container.innerHTML = '';
-                return;
-            }
-            // Since we don't have a dedicated container for ice player list, we'll reuse the same one? 
-            // Actually we have player-list-container for PvP. For ice, we'll use a separate container or reuse.
-            // To keep it simple, we'll create a new container inside ice-arena-wrap or just use the existing one but we need to differentiate.
-            // Let's just keep the main player list container for PvP and ignore ice player list for now.
-            // In the UI we don't have an ice player list, so we skip.
         }
 
         function addIceWinToHistory(name,pfp){
@@ -1717,7 +1702,118 @@
             updateBalance();
         }
 
-        // ─── AUTO BET (ice) ───────────────────────────────────────────
+        // ─── VICTORY SOUND ────────────────────────────────────────────
+        let audioCtx=null, victorySoundPlaying=false;
+        function playVictorySound(){
+            try {
+                if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+                if(victorySoundPlaying) return;
+                victorySoundPlaying=true;
+                const now=audioCtx.currentTime;
+                const notes=[523.25,659.25,783.99];
+                const startTimes=[0,0.08,0.16];
+                const durations=[0.3,0.3,0.5];
+                for(let i=0;i<notes.length;i++){
+                    const osc=audioCtx.createOscillator();
+                    const gain=audioCtx.createGain();
+                    osc.frequency.value=notes[i];
+                    osc.type='sine';
+                    gain.gain.setValueAtTime(0.18,now+startTimes[i]);
+                    gain.gain.exponentialRampToValueAtTime(0.001,now+startTimes[i]+durations[i]);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now+startTimes[i]);
+                    osc.stop(now+startTimes[i]+durations[i]);
+                }
+                setTimeout(()=>{ victorySoundPlaying=false; },800);
+            } catch(e){ victorySoundPlaying=false; }
+        }
+        function stopVictorySound(){ victorySoundPlaying=false; }
+
+        // ─── PVP BET ──────────────────────────────────────────────────
+        betBtn.addEventListener('click', ()=>{
+            if(!socket||!socket.connected) return;
+            let addAmount=parseInt(betInput.value)||10;
+            if(addAmount<10) addAmount=10;
+            if(addAmount>state.balance) addAmount=state.balance;
+            if(addAmount<=0){ haptic('light'); return; }
+            socket.emit('placeBet',{amount:addAmount},(res)=>{
+                if(!res?.ok){ haptic('light'); console.warn('Bet rejected:',res?.error); return; }
+                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
+            });
+            betInput.value=10; updateBetUI();
+        });
+
+        // ─── BET OVERLAY COLLAPSE ────────────────────────────────────
+        let betCollapsed=false;
+        betToggleBtn.addEventListener('click',function(e){ e.stopPropagation(); betCollapsed=!betCollapsed; betOverlay.classList.toggle('collapsed',betCollapsed); haptic('light'); });
+
+        let iceBetCollapsed = false;
+        iceBetToggleBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            iceBetCollapsed = !iceBetCollapsed;
+            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
+            haptic('light');
+        });
+
+        // ─── ALL IN ────────────────────────────────────────────────────
+        let allInConfirming=false, allInTimeout=null;
+        allInBtn.addEventListener('click',()=>{
+            if(allInConfirming){
+                const fullAmount=state.balance;
+                if(fullAmount<10){ haptic('light'); return; }
+                betInput.value=fullAmount; betBtn.click();
+                allInConfirming=false; allInBtn.textContent='All In';
+                if(allInTimeout) clearTimeout(allInTimeout);
+                haptic('medium');
+            } else {
+                allInConfirming=true; allInBtn.textContent='Sure?';
+                if(allInTimeout) clearTimeout(allInTimeout);
+                allInTimeout=setTimeout(()=>{ allInConfirming=false; allInBtn.textContent='All In'; },2000);
+                haptic('light');
+            }
+        });
+
+        // ─── INPUT CLEAR ──────────────────────────────────────────────
+        function setupInputWithClear(inputEl,defaultVal=10){
+            inputEl.addEventListener('input',()=>{ const raw=inputEl.value; if(raw===''){ inputEl.dataset.empty='true'; return; } delete inputEl.dataset.empty; });
+            inputEl.addEventListener('blur',()=>{
+                if(inputEl.dataset.empty==='true'||inputEl.value===''){ inputEl.value=defaultVal; delete inputEl.dataset.empty; }
+                let val=parseInt(inputEl.value);
+                if(isNaN(val)||val<defaultVal) val=defaultVal;
+                if(val>state.balance) val=state.balance;
+                inputEl.value=val; updateBetUI();
+            });
+        }
+        setupInputWithClear(betInput,10); setupInputWithClear(autoAmount,10); setupInputWithClear(iceAutoAmount,10);
+
+        // ─── AUTO BET (PVP) ───────────────────────────────────────────
+        let autoBetInterval=null, autoBetEnabled=false;
+        function toggleAutoBet(enable){
+            if(enable&&!autoBetEnabled){
+                autoBetEnabled=true; autoToggle.classList.add('active'); autoToggle.textContent='▶';
+                if(autoBetInterval) clearInterval(autoBetInterval);
+                autoBetInterval=setInterval(()=>{
+                    const canBet=(state.gameState==='idle'||state.gameState==='countdown'||state.gameState==='prestart');
+                    if(!canBet) return;
+                    const existing=getPlayer(state.userId);
+                    if(existing) return;
+                    const amount=parseInt(autoAmount.value)||10;
+                    if(amount<10||amount>state.balance) return;
+                    socket.emit('placeBet',{amount},(res)=>{
+                        if(res?.ok){ state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium'); }
+                    });
+                },2000);
+            } else if(!enable&&autoBetEnabled){
+                autoBetEnabled=false; autoToggle.classList.remove('active'); autoToggle.textContent='⏱';
+                if(autoBetInterval){ clearInterval(autoBetInterval); autoBetInterval=null; }
+            }
+        }
+        autoToggle.addEventListener('click',()=>{ autoPanel.classList.toggle('open'); });
+        autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
+        autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
+
+        // ─── AUTO BET (ICE) ───────────────────────────────────────────
         let iceAutoBetInterval=null, iceAutoBetEnabled=false;
         function toggleIceAutoBet(enable){
             if(enable&&!iceAutoBetEnabled){
@@ -1741,8 +1837,530 @@
         iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
         iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
 
-        // ─── OTHER EVENTS (PROMO, RELOAD PFP, ANON, etc.) ────────────
-        // ... (keep all existing event handlers from your original file) ...
+        // ─── PROMO ────────────────────────────────────────────────────
+        promoBtn.addEventListener('click', async ()=>{
+            const code=promoInput.value.trim().toUpperCase();
+            if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
+            if(!state.userId){ promoMessage.textContent='You are not logged in.'; promoMessage.style.color='var(--red)'; return; }
+            const storageKey = 'dllump_promo_used_' + state.userId;
+            if (localStorage.getItem(storageKey) === 'true') {
+                promoMessage.textContent='You have already used a promo code.';
+                promoMessage.style.color='var(--red)'; return;
+            }
+            promoBtn.disabled=true; promoBtn.textContent='...'; promoMessage.textContent='';
+            try {
+                const response=await fetch(SERVER_URL+'/redeem',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code,userId:state.userId}) });
+                const data=await response.json();
+                if(data.ok){
+                    localStorage.setItem(storageKey, 'true');
+                    state.balance=data.newBalance; updateBalance(); updateProfile();
+                    promoGif.src=DIAMOND_GIF; promoMsg.textContent=`Successfully claimed ${data.amount} 💎`; promoSub.textContent=`Your new balance is ${data.newBalance}`;
+                    promoModal.classList.add('show'); haptic('heavy');
+                    promoMessage.textContent='✅ Code redeemed!'; promoMessage.style.color='var(--green)'; promoInput.value='';
+                } else { promoMessage.textContent=data.error||'Invalid or expired code.'; promoMessage.style.color='var(--red)'; }
+            } catch(e){ promoMessage.textContent='Network error, please try again.'; promoMessage.style.color='var(--red)'; }
+            finally { promoBtn.disabled=false; promoBtn.textContent='Redeem'; }
+        });
+        promoContinueBtn.addEventListener('click',()=>{ promoModal.classList.remove('show'); });
+
+        // ─── RELOAD PFP ──────────────────────────────────────────────
+        reloadPfpBtn.addEventListener('click',function(){
+            const user=getPlayer(state.userId);
+            if(user){ pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); } else if(state.pfp){
+                pfpCache.delete(state.pfp);
+                const img=new Image();
+                img.onload=()=>{ profilePfp.src=state.pfp; haptic('medium'); };
+                img.onerror=()=>{ profilePfp.src=state.defaultAvatar; haptic('light'); };
+                img.src=state.pfp;
+            }
+        });
+
+        // ─── ANONYMOUS MODE ──────────────────────────────────────────
+        anonToggle.addEventListener('change',()=>{
+            if(!socket||!socket.connected){ anonToggle.checked=state.anonymous; return; }
+            const enabled=anonToggle.checked;
+            anonToggle.disabled=true;
+            socket.emit('setAnonymous',{enabled},(res)=>{
+                anonToggle.disabled=false;
+                if(!res?.ok){ anonToggle.checked=state.anonymous; console.warn('setAnonymous failed:',res?.error); return; }
+                state.anonymous=res.anonymous; haptic('light');
+            });
+        });
+
+        // ─── TAB SWITCHING ────────────────────────────────────────────
+        function switchTab(tabId){
+            if(state.currentTab===tabId) return;
+            const oldTab=state.currentTab;
+            state.currentTab=tabId;
+            const oldEl=tabPages[oldTab];
+            if(oldEl){ oldEl.classList.remove('active'); oldEl.classList.add('exit'); setTimeout(()=>{ oldEl.classList.remove('exit'); },350); }
+            const newEl=tabPages[tabId];
+            if(newEl){ newEl.classList.add('active'); newEl.classList.remove('exit'); if(tabId==='profile') updateProfile(); if(tabId==='top') refreshLeaderboard(); }
+            tabBtns.forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tabId));
+            haptic('light');
+        }
+        tabBtns.forEach(btn=>{
+            btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
+        });
+
+        // ─── RENDER (PVP) ─────────────────────────────────────────────
+        function render(){
+            const w=state.arenaSize;
+            const half=w/2;
+            const s=scaleFactor();
+            ctx.clearRect(0,0,w,w);
+            const grad=ctx.createRadialGradient(half,half,0,half,half,half);
+            grad.addColorStop(0,'rgba(10,10,10,0.85)');
+            grad.addColorStop(1,'rgba(0,0,0,0.95)');
+            ctx.fillStyle=grad; ctx.fillRect(0,0,w,w);
+            const pts=state.perimeterPoints.map(p=>({x:p.x*s,y:p.y*s}));
+            ctx.save();
+            ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=30;
+            ctx.fillStyle='rgba(26,26,30,0.80)';
+            if(pts.length>0){ ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath(); ctx.fill(); }
+            ctx.restore();
+            ctx.save();
+            ctx.fillStyle='rgba(40,40,46,0.60)';
+            if(pts.length>0){ ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y); ctx.closePath(); ctx.fill(); }
+            ctx.restore();
+            const opening=state.opening;
+            const isFlashing=opening&&opening.state==='flashing';
+            const isOpen=opening&&opening.state==='open';
+            const total=pts.length;
+            ctx.save();
+            const hasGap=opening!==null&&(isFlashing||isOpen);
+            if(hasGap&&total>0){
+                const start=opening.startIdx, end=opening.endIdx;
+                ctx.strokeStyle='rgba(160,160,176,0.3)'; ctx.lineWidth=5;
+                for(let i=0;i<total;i++){
+                    const j=(i+1)%total;
+                    let inGap=false;
+                    if(start<end){ if(i>=start&&i<end) inGap=true; if(j>=start&&j<end) inGap=true; } else { if(i>=start||i<end) inGap=true; if(j>=start||j<end) inGap=true; }
+                    if(inGap) continue;
+                    ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+                }
+                if(isFlashing){
+                    const isRed=(opening.flashCount%2===0);
+                    ctx.save();
+                    const flashColor=isRed?'#ff0044':'rgba(160,160,176,0.25)';
+                    let gapSegments=[];
+                    if(start<end){ for(let i=start;i<end;i++) gapSegments.push({i,j:(i+1)%total}); }
+                    else { for(let i=start;i<total;i++) gapSegments.push({i,j:(i+1)%total}); for(let i=0;i<end;i++) gapSegments.push({i,j:(i+1)%total}); }
+                    ctx.strokeStyle=flashColor; ctx.lineWidth=isRed?5:3; ctx.shadowBlur=0; ctx.shadowColor='transparent';
+                    for(const seg of gapSegments){ ctx.beginPath(); ctx.moveTo(pts[seg.i].x,pts[seg.i].y); ctx.lineTo(pts[seg.j].x,pts[seg.j].y); ctx.stroke(); }
+                    ctx.restore();
+                }
+            } else if(total>0){
+                ctx.strokeStyle='rgba(160,160,176,0.25)'; ctx.lineWidth=5;
+                ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+                for(let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+                ctx.closePath(); ctx.stroke();
+            }
+            ctx.restore();
+            state.players.forEach(p=>{
+                if(!p.alive) return;
+                const px=p.x*s, py=p.y*s;
+                const popScale=getPopScale(p);
+                const radius=(p.displayRadius||18)*s*VISUAL_RADIUS_SCALE;
+                const displayRadius=radius*popScale;
+                let pulseScale=1;
+                if(p.isPulsing){ const t=p.pulseTime; if(t<0.6){ const phase=t/0.6; pulseScale=1+0.12*Math.sin(phase*Math.PI*3)*(1-phase); } }
+                const finalRadius=displayRadius*pulseScale;
+                const drawRadius=Math.max(finalRadius-1,1);
+                const topInfo=state.topPlayerIds.get(p.id);
+                let borderColor='rgba(255,255,255,0.35)'; let borderWidth=1.5; let shadowColor='transparent', shadowBlur=0;
+                if(topInfo){
+                    if(topInfo.rank===1){ borderColor='#FFD700'; borderWidth=3.5; shadowColor='rgba(255,215,0,0.6)'; shadowBlur=18; }
+                    else if(topInfo.rank===2){ borderColor='#C0C0C0'; borderWidth=3.0; shadowColor='rgba(192,192,192,0.5)'; shadowBlur=14; }
+                }
+                ctx.save();
+                ctx.beginPath(); ctx.arc(px,py,drawRadius,0,Math.PI*2); ctx.closePath(); ctx.clip();
+                if(p.pfpImg&&p.pfpImg.complete&&p.pfpImg.naturalWidth>0){
+                    const size=drawRadius*2;
+                    ctx.drawImage(p.pfpImg,px-drawRadius,py-drawRadius,size,size);
+                } else {
+                    ctx.fillStyle=p.color||'#555';
+                    ctx.fillRect(px-drawRadius,py-drawRadius,drawRadius*2,drawRadius*2);
+                    ctx.fillStyle='#fff';
+                    ctx.font=`${drawRadius*0.5}px system-ui, sans-serif`;
+                    ctx.textAlign='center'; ctx.textBaseline='middle';
+                    ctx.fillText((p.name||'?').charAt(0).toUpperCase(),px,py+1);
+                }
+                ctx.restore();
+                ctx.save();
+                ctx.shadowBlur=shadowBlur; ctx.shadowColor=shadowColor;
+                ctx.beginPath(); ctx.arc(px,py,finalRadius,0,Math.PI*2);
+                ctx.strokeStyle=borderColor; ctx.lineWidth=borderWidth; ctx.stroke();
+                ctx.shadowBlur=0;
+                ctx.restore();
+            });
+        }
+
+        // ─── RENDER ICE ──────────────────────────────────────────────
+        function renderIce() {
+            const w = iceState.arenaSize;
+            if (!w) return;
+            const half = w / 2;
+            const s = iceScaleFactor();
+
+            iceCtx.clearRect(0, 0, w, w);
+            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
+            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
+            iceCtx.fillStyle = grad;
+            iceCtx.fillRect(0, 0, w, w);
+
+            const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
+            if (showIdle) {
+                const margin = 20;
+                const r = 10;
+                if (!iceState.idlePuckInitialized) {
+                    iceState.idlePuck.x = w / 2;
+                    iceState.idlePuck.y = w / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2.0 + Math.random() * 1.5;
+                    iceState.idlePuck.vx = Math.cos(angle) * speed;
+                    iceState.idlePuck.vy = Math.sin(angle) * speed;
+                    iceState.idlePuck.radius = r;
+                    iceState.idlePuckInitialized = true;
+                }
+                let x = iceState.idlePuck.x;
+                let y = iceState.idlePuck.y;
+                let vx = iceState.idlePuck.vx;
+                let vy = iceState.idlePuck.vy;
+                x += vx;
+                y += vy;
+                if (x - r < margin) { x = margin + r; vx = -vx; }
+                if (x + r > w - margin) { x = w - margin - r; vx = -vx; }
+                if (y - r < margin) { y = margin + r; vy = -vy; }
+                if (y + r > w - margin) { y = w - margin - r; vy = -vy; }
+                iceState.idlePuck.x = x;
+                iceState.idlePuck.y = y;
+                iceState.idlePuck.vx = vx;
+                iceState.idlePuck.vy = vy;
+
+                const cx = x;
+                const cy = y;
+                const puckRadius = 10 * s;
+                // No rotation – just static cross
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.lineWidth = 2.5;
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
+                iceCtx.stroke();
+                const crossSize = puckRadius * 0.75;
+                iceCtx.shadowBlur = 0;
+                iceCtx.globalAlpha = 0.65;
+                iceCtx.lineWidth = 2.0;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.beginPath();
+                iceCtx.moveTo(cx - crossSize, cy);
+                iceCtx.lineTo(cx + crossSize, cy);
+                iceCtx.moveTo(cx, cy - crossSize);
+                iceCtx.lineTo(cx, cy + crossSize);
+                iceCtx.stroke();
+                iceCtx.globalAlpha = 1;
+                iceCtx.restore();
+                return;
+            }
+
+            // ─── Regular game rendering (solid colors, rotated segments) ───
+            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length === 0) return;
+            const perimeterPath = new Path2D();
+            perimeterPath.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
+            perimeterPath.closePath();
+
+            const now = performance.now();
+            let zoomTx = 0, zoomTy = 0, zoomSc = 1;
+            const puck = iceState.puck;
+
+            if (iceState.gameState === 'sliding') {
+                const slideElapsed = (now - iceState.slideStartTime) / 1000;
+                if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                    if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
+                        iceState.isZoomingIn = true;
+                        iceState.zoomStartTime = now;
+                        iceState.zoomTarget = 1.8;
+                    }
+                }
+            }
+            if (iceState.isZoomingOut) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = iceState.zoomTarget + (1 - iceState.zoomTarget) * (1 - eased);
+                if (progress >= 1) {
+                    iceState.isZoomingOut = false;
+                    iceState.zoom = 1;
+                    iceState.zoomLocked = false;
+                    iceState.zoomOutTriggered = false;
+                }
+            }
+            if (iceState.isZoomingIn) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
+                if (progress >= 1) {
+                    iceState.isZoomingIn = false;
+                    iceState.zoomLocked = true;
+                    iceState.zoom = iceState.zoomTarget;
+                }
+            }
+
+            let renderPuckX = puck.x;
+            let renderPuckY = puck.y;
+            if (iceState.puckUpdateTime > 0) {
+                const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
+                const lerpFactor = Math.min(elapsed * 30, 1);
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpFactor;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
+            }
+
+            const speed = Math.sqrt(
+                Math.pow(renderPuckX - iceState.puckPrevX, 2) +
+                Math.pow(renderPuckY - iceState.puckPrevY, 2)
+            );
+
+            if (iceState.zoom > 1.01) {
+                const puckScreenX = renderPuckX * s;
+                const puckScreenY = renderPuckY * s;
+                const cx = half, cy = half;
+                zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
+                zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
+                zoomSc = iceState.zoom;
+                iceCtx.save();
+                iceCtx.translate(zoomTx, zoomTy);
+                iceCtx.scale(zoomSc, zoomSc);
+            }
+
+            iceCtx.save();
+            iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
+            iceCtx.shadowBlur = 30;
+            iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
+            iceCtx.fill(perimeterPath);
+            iceCtx.restore();
+
+            iceCtx.save();
+            iceCtx.clip(perimeterPath);
+
+            iceState.players.forEach((p, index) => {
+                const x1 = p.x1 * s;
+                const y1 = p.y1 * s;
+                const x2 = p.x2 * s;
+                const y2 = p.y2 * s;
+                const segW = x2 - x1;
+                const segH = y2 - y1;
+                const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
+
+                const angleOptions = [0, Math.PI/4, Math.PI/2];
+                const rotAngle = angleOptions[index % angleOptions.length];
+
+                const cx = (x1 + x2) / 2;
+                const cy = (y1 + y2) / 2;
+
+                iceCtx.save();
+                iceCtx.beginPath();
+                iceCtx.rect(x1, y1, segW, segH);
+                iceCtx.clip();
+
+                iceCtx.translate(cx, cy);
+                iceCtx.rotate(rotAngle);
+                const diag = Math.sqrt(segW*segW + segH*segH);
+                const drawW = diag * 1.2;
+                const drawH = diag * 1.2;
+
+                // Solid color
+                const color = isWinner ? lightenColor(p.color, 70) : p.color;
+                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.fillStyle = color;
+                iceCtx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
+                iceCtx.globalAlpha = 1;
+
+                if (isWinner) {
+                    iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
+                    iceCtx.lineWidth = 3;
+                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
+                    iceCtx.shadowBlur = 16;
+                    iceCtx.strokeRect(-drawW/2, -drawH/2, drawW, drawH);
+                    iceCtx.shadowBlur = 0;
+                }
+
+                const avatarR = Math.min(segW, segH) * 0.32;
+                let pfpScale = 1;
+                const popData = iceState.pfpPop.get(p.id);
+                if (popData) {
+                    const elapsed = (now - popData.startTime) / 1000;
+                    const progress = Math.min(elapsed / (popData.duration / 1000), 1);
+                    if (progress < 1) {
+                        pfpScale = easeOutBack(progress);
+                        pfpScale = Math.min(1.2, Math.max(0, pfpScale));
+                    } else {
+                        iceState.pfpPop.delete(p.id);
+                    }
+                }
+                const drawR = avatarR * pfpScale;
+                iceCtx.save();
+                iceCtx.beginPath();
+                iceCtx.arc(0, 0, drawR, 0, Math.PI * 2);
+                iceCtx.closePath();
+                iceCtx.clip();
+                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                    iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
+                } else {
+                    iceCtx.fillStyle = p.color || '#555';
+                    iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
+                }
+                iceCtx.restore();
+
+                iceCtx.restore(); // restore from rotation/clip
+
+                iceCtx.save();
+                iceCtx.globalAlpha = 0.15;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+                iceCtx.lineWidth = 2;
+                iceCtx.beginPath();
+                iceCtx.moveTo(x2, y1);
+                iceCtx.lineTo(x2, y2);
+                iceCtx.moveTo(x1, y2);
+                iceCtx.lineTo(x2, y2);
+                iceCtx.stroke();
+                iceCtx.restore();
+                iceCtx.globalAlpha = 1;
+            });
+            iceCtx.restore();
+
+            iceCtx.save();
+            iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
+            iceCtx.lineWidth = 4;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
+
+            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+                const extraSpins = 4;
+                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+                const arrowLen = Math.min(w * 0.18, 45);
+                const headSize = Math.min(arrowLen * 0.4, 12);
+                iceCtx.save();
+                iceCtx.translate(half, half);
+                iceCtx.rotate(angle);
+                iceCtx.strokeStyle = '#e8f4ff';
+                iceCtx.lineWidth = 2.5;
+                iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.beginPath();
+                iceCtx.moveTo(0, 0);
+                iceCtx.lineTo(arrowLen - headSize * 0.6, 0);
+                iceCtx.stroke();
+                iceCtx.fillStyle = '#e8f4ff';
+                iceCtx.shadowBlur = 16;
+                iceCtx.beginPath();
+                iceCtx.moveTo(arrowLen, 0);
+                iceCtx.lineTo(arrowLen - headSize, -headSize * 0.5);
+                iceCtx.lineTo(arrowLen - headSize, headSize * 0.5);
+                iceCtx.closePath();
+                iceCtx.fill();
+                iceCtx.restore();
+            }
+
+            if (iceState.puckVisible) {
+                let scale = 1;
+                if (iceState.puckPopStart) {
+                    const elapsedPop = (performance.now() - iceState.puckPopStart) / 1000;
+                    const duration = 0.4;
+                    const progress = Math.min(elapsedPop / duration, 1);
+                    if (progress < 1) {
+                        scale = easeOutBack(progress);
+                        scale = Math.min(1.2, Math.max(0, scale));
+                    } else {
+                        scale = 1;
+                        iceState.puckPopStart = 0;
+                    }
+                }
+                let px, py;
+                if (iceState.gameState === 'spinning') {
+                    px = half;
+                    py = half;
+                } else {
+                    px = renderPuckX * s;
+                    py = renderPuckY * s;
+                }
+                const puckRadius = PUCK_RENDER_RADIUS * s * scale;
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(180,220,255,0.9)';
+                iceCtx.shadowBlur = 14;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.lineWidth = 2.5;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
+                iceCtx.stroke();
+                const crossSize = puckRadius * 0.75;
+                iceCtx.shadowBlur = 0;
+                iceCtx.globalAlpha = 0.65;
+                iceCtx.lineWidth = 2.0;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.beginPath();
+                iceCtx.moveTo(px - crossSize, py);
+                iceCtx.lineTo(px + crossSize, py);
+                iceCtx.moveTo(px, py - crossSize);
+                iceCtx.lineTo(px, py + crossSize);
+                iceCtx.stroke();
+                iceCtx.globalAlpha = 1;
+                iceCtx.restore();
+
+                const speedThreshold = 2.0;
+                const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
+                let ownerName = '';
+                if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
+                    const pxLocal = renderPuckX;
+                    const pyLocal = renderPuckY;
+                    for (const p of iceState.players) {
+                        if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
+                            ownerName = p.name || 'Player';
+                            break;
+                        }
+                    }
+                }
+                if (isSlow && ownerName) {
+                    iceState.currentOwnerName = ownerName;
+                    iceState.showOwnerName = true;
+                    iceState.nameFadeIn = Math.min(1, iceState.nameFadeIn + 0.03);
+                } else if (!isSlow || !ownerName) {
+                    iceState.nameFadeIn = Math.max(0, iceState.nameFadeIn - 0.02);
+                    if (iceState.nameFadeIn <= 0) {
+                        iceState.showOwnerName = false;
+                    }
+                }
+                if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
+                    const alpha = iceState.nameFadeIn * 0.55;
+                    const fontSize = Math.max(9, Math.min(14, puckRadius * 0.9));
+                    iceCtx.save();
+                    iceCtx.globalAlpha = alpha;
+                    iceCtx.textAlign = 'center';
+                    iceCtx.textBaseline = 'top';
+                    iceCtx.font = `bold ${fontSize}px system-ui, sans-serif`;
+                    iceCtx.fillStyle = 'rgba(255,255,255,0.85)';
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
+                    iceCtx.shadowBlur = 6;
+                    let displayName = iceState.currentOwnerName;
+                    if (displayName.length > 10) displayName = displayName.slice(0, 9) + '…';
+                    const textY = py + puckRadius + 4;
+                    iceCtx.fillText(displayName, px, textY);
+                    iceCtx.restore();
+                }
+            }
+
+            if (iceState.zoom > 1.01) {
+                iceCtx.restore();
+            }
+        }
 
         // ─── RENDER LOOP ──────────────────────────────────────────────
         function renderLoop(){
@@ -1775,16 +2393,6 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // ─── RENDER (PvP) ─────────────────────────────────────────────
-        function render(){
-            // ... (unchanged from your original render function) ...
-        }
-
-        // ─── RENDER ICE ──────────────────────────────────────────────
-        function renderIce(){
-            // ... (unchanged from your original renderIce function) ...
-        }
-
         // ─── INIT ──────────────────────────────────────────────────────
         function init(){
             if(tg?.initDataUnsafe?.user){ const u=tg.initDataUnsafe.user; state.username=u.username||u.first_name||'player'; state.pfp=u.photo_url||''; } else state.username='player';
@@ -1801,7 +2409,6 @@
             updateTeamUI();
             requestAnimationFrame(renderLoop);
             setOnline(false);
-            // Add any other init logic
         }
         init();
         window.__state=state;
