@@ -489,6 +489,35 @@
         .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
+        /* ─── STREAK STYLES ──────────────────────────────────── */
+        #streak-container {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 80, 0, 0.15);
+            padding: 2px 12px 2px 6px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 80, 0, 0.3);
+            animation: streakPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes streakPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        #streak-flame {
+            width: 28px;
+            height: 28px;
+            object-fit: contain;
+        }
+        #streak-count {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ff6a00;
+        }
+        #streak-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+        }
         @media (max-width:400px) {
             #balance-wrap { padding:2px 10px 2px 4px; }
             #balance { font-size:15px; }
@@ -541,6 +570,9 @@
             #promo-modal .promo-sub { font-size:12px; }
             .promo-row input { font-size:12px; padding:6px 10px; }
             .promo-row button { font-size:12px; padding:6px 12px; }
+            #streak-flame { width:22px; height:22px; }
+            #streak-count { font-size:13px; }
+            #streak-label { font-size:9px; }
         }
     </style>
 </head>
@@ -564,7 +596,13 @@
                 <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
                 <span id="balance">1000</span>
             </div>
-            <div id="top-right">
+            <div id="top-right" style="display:flex; align-items:center; gap:8px;">
+                <!-- Streak container -->
+                <div id="streak-container">
+                    <img id="streak-flame" src="https://i.postimg.cc/FHbt292h/fire-flame.gif" alt="flame" />
+                    <span id="streak-count">0</span>
+                    <span id="streak-label">win streak</span>
+                </div>
                 <span id="username-display">player</span>
                 <div id="status-dot"></div>
             </div>
@@ -708,7 +746,7 @@
     <!-- ═══ FULL SCRIPT ─── -->
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – idle puck moves & spins, segments rotated, no vibration
+        // FULL CLIENT – idle puck bounces (no spin), flame streak for 3+ wins
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -740,7 +778,9 @@
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
             winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
+            winStreak: 0, // ← added for streak tracking
         };
+
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
 
@@ -827,6 +867,10 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
+        // Streak DOM elements
+        const streakContainer = document.getElementById('streak-container');
+        const streakCountEl = document.getElementById('streak-count');
+
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
             gameState: 'idle',
@@ -865,7 +909,7 @@
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
-            idleAngle: 0,
+            // No idleAngle – we remove rotation
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -981,6 +1025,8 @@
                     updateBalance(); updateProfile(); refreshLeaderboard();
                     if(window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval=setInterval(refreshLeaderboard,30000);
+                    // Update streak display (initial)
+                    updateStreakDisplay();
                 });
             });
             socket.on('disconnect',()=>setOnline(false));
@@ -991,7 +1037,7 @@
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
         }
 
-        // ─── applyServerState ──────────────────────────────────────────
+        // ─── applyServerState (unchanged) ─────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1137,12 +1183,22 @@
             if(betInput.dataset.empty==='true'){ betInput.value=10; delete betInput.dataset.empty; }
         }
 
+        // ─── HANDLE ROUND END (update streak) ──────────────────────────
         function handleRoundEnd(payload){
             if(!payload){ hideWinPanelAndReset(); return; }
             addWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
-            if(payload.winnerId===state.userId){ state.balance+=payload.winnings; state.wins++; playVictorySound(); } else { state.losses++; }
+            if(payload.winnerId===state.userId){
+                state.balance+=payload.winnings;
+                state.wins++;
+                state.winStreak++;   // increment on win
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0; // reset on loss
+            }
             updateBalance(); updateProfile();
+            updateStreakDisplay();   // update UI
             const randomGif=WIN_GIFS[Math.floor(Math.random()*WIN_GIFS.length)];
             winGif.src=randomGif; winAvatar.src=payload.winnerPfp||state.defaultAvatar;
             winName.textContent=payload.winnerName+' wins!'; winMultiplier.textContent='x'+payload.multiplier.toFixed(1);
@@ -1151,6 +1207,7 @@
             if(window.winTimeout) clearTimeout(window.winTimeout);
             window.winTimeout=setTimeout(hideWinPanelAndReset,5000);
         }
+
         function hideWinPanelAndReset(){
             winPanel.classList.remove('show'); stopVictorySound();
             if(window.winTimeout){ clearTimeout(window.winTimeout); window.winTimeout=null; }
@@ -1227,7 +1284,6 @@
                 iceState.pfpPop.clear();
                 iceState.showOwnerName = false;
                 iceState.currentOwnerName = '';
-                // Reset idle puck so it re-initialises when idle again
                 iceState.idlePuckInitialized = false;
             }
 
@@ -1309,8 +1365,17 @@
             iceState.winnerId=payload.winnerId;
             addIceWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
-            if(payload.winnerId===state.userId){ state.balance+=payload.winnings; state.wins++; playVictorySound(); } else { state.losses++; }
+            if(payload.winnerId===state.userId){
+                state.balance+=payload.winnings;
+                state.wins++;
+                state.winStreak++;   // increment on win
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0; // reset on loss
+            }
             updateBalance(); updateProfile();
+            updateStreakDisplay();
             iceWinAvatar.src=payload.winnerPfp||state.defaultAvatar;
             iceWinName.textContent=payload.winnerName+' wins the rink!';
             iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
@@ -1474,6 +1539,16 @@
             profileName.textContent=state.username; profileUsername.textContent='@'+state.username;
             if(state.pfp) profilePfp.src=state.pfp;
             updateBalance();
+        }
+
+        // ─── STREAK DISPLAY ────────────────────────────────────────────
+        function updateStreakDisplay() {
+            if (state.winStreak >= 3) {
+                streakContainer.style.display = 'flex';
+                streakCountEl.textContent = state.winStreak;
+            } else {
+                streakContainer.style.display = 'none';
+            }
         }
 
         let audioCtx=null, victorySoundPlaying=false;
@@ -1726,7 +1801,7 @@
             });
         }
 
-        // ─── RENDER ICE – idle puck slides and rotates ──────────────
+        // ─── RENDER ICE – idle puck bounces (no spin) ────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1742,9 +1817,9 @@
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
-                // ─── Idle puck – bounce and spin ──────────────────────
+                // ─── Idle puck – bounce only (no rotation) ────────────
                 const margin = 20;
-                const r = 10; // logical radius
+                const r = 10;
 
                 if (!iceState.idlePuckInitialized) {
                     iceState.idlePuck.x = w / 2;
@@ -1757,7 +1832,6 @@
                     iceState.idlePuckInitialized = true;
                 }
 
-                // Update position
                 let x = iceState.idlePuck.x;
                 let y = iceState.idlePuck.y;
                 let vx = iceState.idlePuck.vx;
@@ -1775,23 +1849,18 @@
                 iceState.idlePuck.vx = vx;
                 iceState.idlePuck.vy = vy;
 
-                // Update rotation
-                iceState.idleAngle += 0.025;
-
                 const cx = x;
                 const cy = y;
                 const puckRadius = 10 * s;
 
+                // Draw puck without rotation
                 iceCtx.save();
-                iceCtx.translate(cx, cy);
-                iceCtx.rotate(iceState.idleAngle);
-
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.lineWidth = 2.5;
                 iceCtx.beginPath();
-                iceCtx.arc(0, 0, puckRadius, 0, Math.PI * 2);
+                iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
 
                 const crossSize = puckRadius * 0.75;
@@ -1800,17 +1869,17 @@
                 iceCtx.lineWidth = 2.0;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.beginPath();
-                iceCtx.moveTo(-crossSize, 0);
-                iceCtx.lineTo(crossSize, 0);
-                iceCtx.moveTo(0, -crossSize);
-                iceCtx.lineTo(0, crossSize);
+                iceCtx.moveTo(cx - crossSize, cy);
+                iceCtx.lineTo(cx + crossSize, cy);
+                iceCtx.moveTo(cx, cy - crossSize);
+                iceCtx.lineTo(cx, cy + crossSize);
                 iceCtx.stroke();
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
                 return;
             }
 
-            // ─── Regular game rendering ──────────────────────────────
+            // ─── Regular game rendering (segments with rotation) ──────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1856,7 +1925,6 @@
                 }
             }
 
-            // Interpolate puck
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
@@ -1871,7 +1939,6 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Apply zoom
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
@@ -1884,7 +1951,6 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter and segments
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -1904,7 +1970,6 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Rotation angles: 0°, 45°, 90°
                 const angleOptions = [0, Math.PI/4, Math.PI/2];
                 const rotAngle = angleOptions[index % angleOptions.length];
 
@@ -1939,7 +2004,6 @@
                     iceCtx.shadowBlur = 0;
                 }
 
-                // PFP circle
                 const avatarR = Math.min(segW, segH) * 0.32;
                 let pfpScale = 1;
                 const popData = iceState.pfpPop.get(p.id);
@@ -1967,9 +2031,8 @@
                 }
                 iceCtx.restore();
 
-                iceCtx.restore(); // restore from rotation/clip
+                iceCtx.restore();
 
-                // Divider lines (axis-aligned)
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.15;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -1985,14 +2048,12 @@
             });
             iceCtx.restore();
 
-            // Rink border
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
             iceCtx.lineWidth = 4;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // Spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -2022,7 +2083,6 @@
                 iceCtx.restore();
             }
 
-            // Puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2068,7 +2128,6 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // Owner name under puck
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
@@ -2159,6 +2218,7 @@
             tabBtns.forEach(b=>b.style.pointerEvents='auto');
             requestAnimationFrame(renderLoop);
             setOnline(false);
+            updateStreakDisplay();
         }
         init();
         window.__state=state;
