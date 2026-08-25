@@ -6,8 +6,9 @@
     <title>dllump · bump arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- ─── LOADING SCREEN STYLES (unchanged) ─── -->
     <style>
-        /* ─── LOADING SCREEN STYLES ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -228,7 +229,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── ORIGINAL APP STYLES ─── */
+        /* ─── ORIGINAL APP STYLES (unchanged) ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -705,10 +706,10 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ SCRIPT ─── -->
+    <!-- ═══ UPDATED SCRIPT – fixed vibration & no random idle positioning ═══ -->
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – segments visually rotated, idle puck spins
+        // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -827,7 +828,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── ICE STATE – no trail, added idleAngle ───────────────────
+        // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -865,8 +866,6 @@
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
-            // ─── For idle spin ──────────────────────────────────────────
-            idleAngle: 0,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -1176,11 +1175,11 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-        // ─── ICE SERVER STATE APPLICATION – no vibration ─────────────
+        // ─── ICE SERVER STATE APPLICATION ──────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState=iceState.gameState;
-            const oldPuckX = iceState.puck.x;
-            const oldPuckY = iceState.puck.y;
+            const prevPuckX = iceState.puck.x;
+            const prevPuckY = iceState.puck.y;
 
             iceState.gameState=snapshot.gameState;
             iceState.pot=snapshot.pot;
@@ -1189,16 +1188,24 @@
             iceState.spinDuration=snapshot.spinDuration;
             iceState.spinFinalAngle=snapshot.spinFinalAngle;
 
+            // Store previous position for interpolation
+            const oldPuckX = iceState.puck.x;
+            const oldPuckY = iceState.puck.y;
             iceState.puckPrevX = oldPuckX;
             iceState.puckPrevY = oldPuckY;
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // VIBRATION REMOVED
+            // ─── VIBRATION: REMOVED ─────────────────────────────────────
+            // (No haptic feedback for ice arena collisions)
 
+            // Reset idle puck when gameState changes to non-idle or players appear
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
+            } else {
+                // Idle puck will be drawn stationary at center – we don't need to update anything here.
+                // The render function handles it.
             }
 
             if(snapshot.gameState==='spinning' && prevGameState!=='spinning'){
@@ -1723,7 +1730,7 @@
             });
         }
 
-        // ─── RENDER ICE – with visual rotation and idle spin ──────────
+        // ─── RENDER ICE (idle puck stationary at center) ──────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1739,35 +1746,31 @@
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
-                // ─── Idle puck – spinning slowly ──────────────────────
+                // ─── Idle puck – stationary at center ──────────────────────
                 const cx = w / 2;
                 const cy = w / 2;
                 const puckRadius = 10 * s;
-                // Update idle angle
-                iceState.idleAngle += 0.02; // rad per frame
 
                 iceCtx.save();
-                iceCtx.translate(cx, cy);
-                iceCtx.rotate(iceState.idleAngle);
-
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.lineWidth = 2.5;
                 iceCtx.beginPath();
-                iceCtx.arc(0, 0, puckRadius, 0, Math.PI * 2);
+                iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
 
+                // cross (lineWidth 2.0)
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
                 iceCtx.lineWidth = 2.0;
                 iceCtx.strokeStyle = '#eaf6ff';
                 iceCtx.beginPath();
-                iceCtx.moveTo(-crossSize, 0);
-                iceCtx.lineTo(crossSize, 0);
-                iceCtx.moveTo(0, -crossSize);
-                iceCtx.lineTo(0, crossSize);
+                iceCtx.moveTo(cx - crossSize, cy);
+                iceCtx.lineTo(cx + crossSize, cy);
+                iceCtx.moveTo(cx, cy - crossSize);
+                iceCtx.lineTo(cx, cy + crossSize);
                 iceCtx.stroke();
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
@@ -1786,7 +1789,6 @@
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             const puck = iceState.puck;
 
-            // Zoom logic
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
@@ -1821,7 +1823,7 @@
                 }
             }
 
-            // Interpolate puck position
+            // ─── Interpolate puck position for smooth rendering ──────
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
@@ -1831,12 +1833,13 @@
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
             }
 
+            // Calculate speed for owner name display
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Apply zoom
+            // ─── Apply zoom ──────────────────────────────────────────
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
@@ -1849,7 +1852,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter and segments
+            // ─── Draw perimeter and segments ──────────────────────────
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -1860,7 +1863,6 @@
             iceCtx.save();
             iceCtx.clip(perimeterPath);
 
-            // Player segments with rotation applied to fill and PFP
             iceState.players.forEach((p, index) => {
                 const x1 = p.x1 * s;
                 const y1 = p.y1 * s;
@@ -1870,48 +1872,29 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Choose rotation angle: 0°, 45°, 90° based on index
-                const angleOptions = [0, Math.PI/4, Math.PI/2];
-                const rotAngle = angleOptions[index % angleOptions.length];
-
-                const cx = (x1 + x2) / 2;
-                const cy = (y1 + y2) / 2;
-
-                // ─── Draw rotated content inside the rectangle ──────
-                iceCtx.save();
-                iceCtx.beginPath();
-                iceCtx.rect(x1, y1, segW, segH);
-                iceCtx.clip();
-
-                // Translate to center, rotate, draw a larger rectangle
-                iceCtx.translate(cx, cy);
-                iceCtx.rotate(rotAngle);
-                // Draw a rectangle that covers the original area (enlarged)
-                const diag = Math.sqrt(segW*segW + segH*segH);
-                const drawW = diag * 1.2;
-                const drawH = diag * 1.2;
-
-                // Fill with gradient (rotated)
-                const gradRect = iceCtx.createLinearGradient(-drawW/2, -drawH/2, drawW/2, drawH/2);
+                const gradRect = iceCtx.createLinearGradient(x1, y1, x2, y2);
                 gradRect.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
                 gradRect.addColorStop(1, p.color);
                 iceCtx.globalAlpha = isWinner ? 1 : 0.93;
                 iceCtx.fillStyle = gradRect;
-                iceCtx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
+                iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
 
-                // Winner border (drawn on the rotated rect)
                 if (isWinner) {
+                    iceCtx.save();
                     iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
                     iceCtx.lineWidth = 3;
                     iceCtx.shadowColor = hexToRgba(p.color, 0.8);
                     iceCtx.shadowBlur = 16;
-                    iceCtx.strokeRect(-drawW/2, -drawH/2, drawW, drawH);
-                    iceCtx.shadowBlur = 0;
+                    iceCtx.strokeRect(x1 + 1.5, y1 + 1.5, segW - 3, segH - 3);
+                    iceCtx.restore();
                 }
 
-                // PFP circle (also rotated)
+                // ─── PFP circle ──────────────────────────────────────
+                const centerX = (x1 + x2) / 2;
+                const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.32;
+
                 let pfpScale = 1;
                 const popData = iceState.pfpPop.get(p.id);
                 if (popData) {
@@ -1924,23 +1907,25 @@
                         iceState.pfpPop.delete(p.id);
                     }
                 }
+
                 const drawR = avatarR * pfpScale;
+                const cx = centerX;
+                const cy = centerY;
+
                 iceCtx.save();
                 iceCtx.beginPath();
-                iceCtx.arc(0, 0, drawR, 0, Math.PI * 2);
+                iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
                 iceCtx.closePath();
                 iceCtx.clip();
                 if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                    iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
+                    iceCtx.drawImage(p.pfpImg, cx - drawR, cy - drawR, drawR * 2, drawR * 2);
                 } else {
                     iceCtx.fillStyle = p.color || '#555';
-                    iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
                 }
                 iceCtx.restore();
 
-                iceCtx.restore(); // restore from rotation/clip
-
-                // ─── Draw thin divider lines (axis-aligned) ──────
+                // Divider lines
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.15;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -1956,14 +1941,14 @@
             });
             iceCtx.restore();
 
-            // Rink border
+            // ─── Rink border ──────────────────────────────────────────
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
             iceCtx.lineWidth = 4;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // Spinning arrow
+            // ─── Spinning arrow ──────────────────────────────────────
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -1993,7 +1978,7 @@
                 iceCtx.restore();
             }
 
-            // Puck
+            // ─── Puck ──────────────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2025,6 +2010,7 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
+                // Wider cross: lineWidth 2.0
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -2039,22 +2025,27 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // Owner name under puck
+                // ─── Owner name under puck (when slowed down) ──────────
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
+
                 let ownerName = '';
+                let ownerPfp = '';
                 if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
                     const pxLocal = renderPuckX;
                     const pyLocal = renderPuckY;
                     for (const p of iceState.players) {
                         if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
                             ownerName = p.name || 'Player';
+                            ownerPfp = p.pfp || '';
                             break;
                         }
                     }
                 }
+
                 if (isSlow && ownerName) {
                     iceState.currentOwnerName = ownerName;
+                    iceState.currentOwnerPfp = ownerPfp;
                     iceState.showOwnerName = true;
                     iceState.nameFadeIn = Math.min(1, iceState.nameFadeIn + 0.03);
                 } else if (!isSlow || !ownerName) {
@@ -2063,6 +2054,7 @@
                         iceState.showOwnerName = false;
                     }
                 }
+
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
                     const fontSize = Math.max(9, Math.min(14, puckRadius * 0.9));
@@ -2082,7 +2074,7 @@
                 }
             }
 
-            // Restore zoom if used
+            // Restore zoom transform if used
             if (iceState.zoom > 1.01) {
                 iceCtx.restore();
             }
@@ -2140,19 +2132,23 @@
     <script>
         (function() {
             'use strict';
+
             const GIFS = [
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
                 'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
             ];
+
             const loadingScreen = document.getElementById('loading-screen');
             const grid = document.getElementById('loading-grid');
             const mergedSquare = document.getElementById('merged-square');
             const pulseRing = document.getElementById('pulse-ring');
             const loadingText = document.getElementById('loading-text');
+
             const selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
             let squares = [];
             let squareSize = 0, gapSize = 0, gridSize = 0;
+
             function measureGrid() {
                 const rect = grid.getBoundingClientRect();
                 gridSize = rect.width;
@@ -2160,6 +2156,7 @@
                 gapSize = parseFloat(computedStyle.gap) || 8;
                 squareSize = (gridSize - gapSize * 2) / 3;
             }
+
             function buildGrid() {
                 grid.innerHTML = '';
                 squares = [];
@@ -2176,6 +2173,7 @@
                     squares.push(sq);
                 }
             }
+
             function runPop() {
                 return new Promise((resolve) => {
                     let done = 0;
@@ -2192,12 +2190,14 @@
                     setTimeout(resolve, 1400);
                 });
             }
+
             function runSlide() {
                 return new Promise((resolve) => {
                     measureGrid();
                     const gridRect = grid.getBoundingClientRect();
                     const cx = gridRect.left + gridRect.width / 2;
                     const cy = gridRect.top + gridRect.height / 2;
+
                     squares.forEach((sq) => {
                         const r = sq.getBoundingClientRect();
                         const dx = cx - (r.left + r.width / 2);
@@ -2205,6 +2205,7 @@
                         sq.dataset.tx = dx;
                         sq.dataset.ty = dy;
                     });
+
                     squares.forEach((sq, i) => {
                         const dx = parseFloat(sq.dataset.tx);
                         const dy = parseFloat(sq.dataset.ty);
@@ -2217,9 +2218,11 @@
                             sq.classList.add('slide');
                         }, delay);
                     });
+
                     setTimeout(resolve, squares.length * 30 + 950);
                 });
             }
+
             function runMerge() {
                 return new Promise((resolve) => {
                     measureGrid();
@@ -2227,16 +2230,19 @@
                     const cx = gridRect.left + gridRect.width / 2;
                     const cy = gridRect.top + gridRect.height / 2;
                     const mergedSize = squareSize * 1.8;
+
                     mergedSquare.style.width = mergedSize + 'px';
                     mergedSquare.style.height = mergedSize + 'px';
                     mergedSquare.style.left = (cx - mergedSize / 2 - gridRect.left) + 'px';
                     mergedSquare.style.top = (cy - mergedSize / 2 - gridRect.top) + 'px';
+
                     const mergedImg = document.createElement('img');
                     mergedImg.className = 'gif-bg';
                     mergedImg.src = selectedGif;
                     mergedImg.alt = '';
                     mergedSquare.innerHTML = '';
                     mergedSquare.appendChild(mergedImg);
+
                     squares.forEach((sq, i) => {
                         setTimeout(() => {
                             sq.style.transition = 'transform 0.5s ease, opacity 0.4s ease, border-radius 0.4s ease';
@@ -2246,6 +2252,7 @@
                             sq.style.zIndex = '0';
                         }, i * 20);
                     });
+
                     setTimeout(() => {
                         mergedSquare.classList.add('show');
                         setTimeout(() => {
@@ -2256,6 +2263,7 @@
                     }, 500);
                 });
             }
+
             function runFadeOut() {
                 return new Promise((resolve) => {
                     setTimeout(() => {
@@ -2264,6 +2272,7 @@
                     }, 2200);
                 });
             }
+
             async function start() {
                 buildGrid();
                 measureGrid();
@@ -2273,6 +2282,7 @@
                 await runFadeOut();
                 console.log('Loading complete.');
             }
+
             if (document.readyState === 'complete' || document.readyState === 'interactive') {
                 setTimeout(start, 200);
             } else {
@@ -2280,6 +2290,7 @@
                     setTimeout(start, 200);
                 });
             }
+
         })();
     </script>
 
