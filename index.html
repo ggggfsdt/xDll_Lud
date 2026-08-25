@@ -7,8 +7,8 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-    <!-- ─── LOADING SCREEN STYLES (unchanged) ─── -->
     <style>
+        /* ─── LOADING SCREEN STYLES ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -229,7 +229,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── ORIGINAL APP STYLES (unchanged) ─── */
+        /* ─── ORIGINAL APP STYLES ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -706,10 +706,11 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ UPDATED SCRIPT – fixed vibration & no random idle positioning ═══ -->
+    <!-- ═══ FULL SCRIPT – with trail effect ═══ -->
     <script>
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
+        // plus TRAIL on ice puck
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -828,7 +829,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── ICE STATE ──────────────────────────────────────────────────
+        // ─── ICE STATE – added trail ──────────────────────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -866,6 +867,10 @@
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
+            // ─── TRAIL ──────────────────────────────────────────────────
+            trail: [],               // array of {x, y, time}
+            trailMaxAge: 2.0,        // seconds
+            trailMaxPoints: 50,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -1178,8 +1183,8 @@
         // ─── ICE SERVER STATE APPLICATION ──────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState=iceState.gameState;
-            const prevPuckX = iceState.puck.x;
-            const prevPuckY = iceState.puck.y;
+            const oldPuckX = iceState.puck.x;
+            const oldPuckY = iceState.puck.y;
 
             iceState.gameState=snapshot.gameState;
             iceState.pot=snapshot.pot;
@@ -1189,8 +1194,6 @@
             iceState.spinFinalAngle=snapshot.spinFinalAngle;
 
             // Store previous position for interpolation
-            const oldPuckX = iceState.puck.x;
-            const oldPuckY = iceState.puck.y;
             iceState.puckPrevX = oldPuckX;
             iceState.puckPrevY = oldPuckY;
             iceState.puck.x = snapshot.puck.x;
@@ -1200,12 +1203,29 @@
             // ─── VIBRATION: REMOVED ─────────────────────────────────────
             // (No haptic feedback for ice arena collisions)
 
+            // ─── TRAIL: add point if sliding ──────────────────────────
+            if (iceState.gameState === 'sliding') {
+                // Add current position with timestamp
+                iceState.trail.push({
+                    x: snapshot.puck.x,
+                    y: snapshot.puck.y,
+                    time: Date.now()
+                });
+                // Prune old points (older than trailMaxAge)
+                const now = Date.now();
+                iceState.trail = iceState.trail.filter(p => (now - p.time) / 1000 < iceState.trailMaxAge);
+                // Limit number of points
+                if (iceState.trail.length > iceState.trailMaxPoints) {
+                    iceState.trail = iceState.trail.slice(-iceState.trailMaxPoints);
+                }
+            } else if (prevGameState === 'sliding' && iceState.gameState !== 'sliding') {
+                // Clear trail when leaving sliding state
+                iceState.trail = [];
+            }
+
             // Reset idle puck when gameState changes to non-idle or players appear
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
-            } else {
-                // Idle puck will be drawn stationary at center – we don't need to update anything here.
-                // The render function handles it.
             }
 
             if(snapshot.gameState==='spinning' && prevGameState!=='spinning'){
@@ -1233,6 +1253,7 @@
                 iceState.pfpPop.clear();
                 iceState.showOwnerName = false;
                 iceState.currentOwnerName = '';
+                iceState.trail = [];
             }
 
             const seen=new Set();
@@ -1730,7 +1751,7 @@
             });
         }
 
-        // ─── RENDER ICE (idle puck stationary at center) ──────────────
+        // ─── RENDER ICE – with trail ──────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1746,11 +1767,10 @@
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
-                // ─── Idle puck – stationary at center ──────────────────────
+                // Idle puck – stationary at center
                 const cx = w / 2;
                 const cy = w / 2;
                 const puckRadius = 10 * s;
-
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
                 iceCtx.shadowBlur = 12;
@@ -1759,8 +1779,6 @@
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-
-                // cross (lineWidth 2.0)
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -1777,7 +1795,7 @@
                 return;
             }
 
-            // ─── Regular game rendering ──────────────────────────────
+            // Regular game rendering
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1789,6 +1807,7 @@
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             const puck = iceState.puck;
 
+            // Zoom logic
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
@@ -1823,7 +1842,7 @@
                 }
             }
 
-            // ─── Interpolate puck position for smooth rendering ──────
+            // Interpolate puck position
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
@@ -1833,13 +1852,13 @@
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
             }
 
-            // Calculate speed for owner name display
+            // Calculate speed for owner name
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // ─── Apply zoom ──────────────────────────────────────────
+            // Apply zoom
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
@@ -1852,7 +1871,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // ─── Draw perimeter and segments ──────────────────────────
+            // Draw perimeter and segments
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -1863,6 +1882,7 @@
             iceCtx.save();
             iceCtx.clip(perimeterPath);
 
+            // Player segments
             iceState.players.forEach((p, index) => {
                 const x1 = p.x1 * s;
                 const y1 = p.y1 * s;
@@ -1890,11 +1910,10 @@
                     iceCtx.restore();
                 }
 
-                // ─── PFP circle ──────────────────────────────────────
+                // PFP circle
                 const centerX = (x1 + x2) / 2;
                 const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.32;
-
                 let pfpScale = 1;
                 const popData = iceState.pfpPop.get(p.id);
                 if (popData) {
@@ -1907,11 +1926,9 @@
                         iceState.pfpPop.delete(p.id);
                     }
                 }
-
                 const drawR = avatarR * pfpScale;
                 const cx = centerX;
                 const cy = centerY;
-
                 iceCtx.save();
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
@@ -1941,14 +1958,14 @@
             });
             iceCtx.restore();
 
-            // ─── Rink border ──────────────────────────────────────────
+            // Rink border
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
             iceCtx.lineWidth = 4;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── Spinning arrow ──────────────────────────────────────
+            // Spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -1978,7 +1995,32 @@
                 iceCtx.restore();
             }
 
-            // ─── Puck ──────────────────────────────────────────────────
+            // ─── DRAW TRAIL ─────────────────────────────────────────────
+            if (iceState.trail.length > 1 && iceState.puckVisible) {
+                const nowMs = Date.now();
+                const puckRadius = PUCK_RENDER_RADIUS * s;
+                for (let i = 0; i < iceState.trail.length; i++) {
+                    const p = iceState.trail[i];
+                    const age = (nowMs - p.time) / 1000; // seconds
+                    if (age >= iceState.trailMaxAge) continue;
+                    const alpha = (1 - age / iceState.trailMaxAge) * 0.6;
+                    const radius = puckRadius * (0.5 + 0.5 * (1 - age / iceState.trailMaxAge));
+                    const screenX = p.x * s;
+                    const screenY = p.y * s;
+                    iceCtx.save();
+                    iceCtx.globalAlpha = alpha;
+                    iceCtx.shadowColor = 'rgba(180,220,255,0.4)';
+                    iceCtx.shadowBlur = 6;
+                    iceCtx.strokeStyle = '#eaf6ff';
+                    iceCtx.lineWidth = 1.5;
+                    iceCtx.beginPath();
+                    iceCtx.arc(screenX, screenY, radius, 0, Math.PI * 2);
+                    iceCtx.stroke();
+                    iceCtx.restore();
+                }
+            }
+
+            // ─── DRAW PUCK ──────────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2010,7 +2052,6 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Wider cross: lineWidth 2.0
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -2025,10 +2066,9 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // ─── Owner name under puck (when slowed down) ──────────
+                // Owner name under puck
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
-
                 let ownerName = '';
                 let ownerPfp = '';
                 if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
@@ -2042,7 +2082,6 @@
                         }
                     }
                 }
-
                 if (isSlow && ownerName) {
                     iceState.currentOwnerName = ownerName;
                     iceState.currentOwnerPfp = ownerPfp;
@@ -2054,7 +2093,6 @@
                         iceState.showOwnerName = false;
                     }
                 }
-
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
                     const fontSize = Math.max(9, Math.min(14, puckRadius * 0.9));
@@ -2074,7 +2112,7 @@
                 }
             }
 
-            // Restore zoom transform if used
+            // Restore zoom if used
             if (iceState.zoom > 1.01) {
                 iceCtx.restore();
             }
