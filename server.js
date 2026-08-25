@@ -284,7 +284,7 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  // ─── LARGER MINIMUM SEGMENT SIZE: 0.20 (was 0.07) ──────────
+  // ─── LARGER MINIMUM SEGMENT SIZE: 0.20 ──────────────────────────
   const clampedRatio = Math.max(0.20, Math.min(0.80, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
