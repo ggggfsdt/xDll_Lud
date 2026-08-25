@@ -705,10 +705,10 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ SCRIPT – idle puck now slides and rotates ─── -->
+    <!-- ═══ FULL SCRIPT ─── -->
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – idle puck bounces, segments rotate
+        // FULL CLIENT – idle puck moves & spins, segments rotated, no vibration
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -827,7 +827,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
 
-        // ─── ICE STATE – keep idle puck data ──────────────────────────
+        // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -855,7 +855,6 @@
             isZoomingOut: false,
             zoomLocked: false,
             zoomOutTriggered: false,
-            // idle puck – will be used for bouncing
             idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 10 },
             idlePuckInitialized: false,
             puckPrevX: 200,
@@ -866,7 +865,6 @@
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
-            // rotation for idle puck
             idleAngle: 0,
         };
 
@@ -993,7 +991,7 @@
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
         }
 
-        // ─── applyServerState (unchanged) ─────────────────────────────
+        // ─── applyServerState ──────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1728,7 +1726,7 @@
             });
         }
 
-        // ─── RENDER ICE – idle puck now slides and rotates ──────────────
+        // ─── RENDER ICE – idle puck slides and rotates ──────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1744,17 +1742,15 @@
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
-                // ─── Idle puck – bouncing and rotating ──────────────────────
+                // ─── Idle puck – bounce and spin ──────────────────────
                 const margin = 20;
                 const r = 10; // logical radius
 
-                // Initialize if not initialized
                 if (!iceState.idlePuckInitialized) {
-                    const s2 = iceState.arenaSize || 400;
-                    iceState.idlePuck.x = s2 / 2;
-                    iceState.idlePuck.y = s2 / 2;
+                    iceState.idlePuck.x = w / 2;
+                    iceState.idlePuck.y = w / 2;
                     const angle = Math.random() * Math.PI * 2;
-                    const speed = 1.8 + Math.random() * 1.2;
+                    const speed = 2.0 + Math.random() * 1.5;
                     iceState.idlePuck.vx = Math.cos(angle) * speed;
                     iceState.idlePuck.vy = Math.sin(angle) * speed;
                     iceState.idlePuck.radius = r;
@@ -1768,17 +1764,19 @@
                 let vy = iceState.idlePuck.vy;
                 x += vx;
                 y += vy;
+
                 if (x - r < margin) { x = margin + r; vx = -vx; }
                 if (x + r > w - margin) { x = w - margin - r; vx = -vx; }
                 if (y - r < margin) { y = margin + r; vy = -vy; }
                 if (y + r > w - margin) { y = w - margin - r; vy = -vy; }
+
                 iceState.idlePuck.x = x;
                 iceState.idlePuck.y = y;
                 iceState.idlePuck.vx = vx;
                 iceState.idlePuck.vy = vy;
 
                 // Update rotation
-                iceState.idleAngle += 0.02; // rad per frame
+                iceState.idleAngle += 0.025;
 
                 const cx = x;
                 const cy = y;
@@ -1812,7 +1810,7 @@
                 return;
             }
 
-            // ─── Regular game rendering (segments with rotation) ──────
+            // ─── Regular game rendering ──────────────────────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1824,7 +1822,6 @@
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             const puck = iceState.puck;
 
-            // Zoom logic (unchanged)
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
@@ -1859,7 +1856,7 @@
                 }
             }
 
-            // Interpolate puck position
+            // Interpolate puck
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
@@ -1887,7 +1884,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter and segments with rotation
+            // Draw perimeter and segments
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -1907,7 +1904,7 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Rotation angles: 0°, 45°, 90° alternating
+                // Rotation angles: 0°, 45°, 90°
                 const angleOptions = [0, Math.PI/4, Math.PI/2];
                 const rotAngle = angleOptions[index % angleOptions.length];
 
@@ -2071,7 +2068,7 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // Owner name under puck (when slow)
+                // Owner name under puck
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
@@ -2167,7 +2164,7 @@
         window.__state=state;
     </script>
 
-    <!-- ═══ LOADING SCREEN CONTROLLER (unchanged) ═══ -->
+    <!-- ─── LOADING SCREEN CONTROLLER (unchanged) ─── -->
     <script>
         (function() {
             'use strict';
