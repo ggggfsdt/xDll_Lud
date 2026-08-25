@@ -2,7 +2,6 @@
 // dllump · bump arena — multiplayer backend (BSP layout)
 // ═══════════════════════════════════════════════════════════════
 
-// ─── Catch unhandled errors ──────────────────────────────────
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err.stack);
 });
@@ -10,7 +9,6 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('💥 Unhandled Rejection:', reason);
 });
 
-// ─── Imports ──────────────────────────────────────────────────
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
@@ -35,7 +33,6 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
 
-// ─── express + socket.io ──────────────────────────────────────
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -153,16 +150,20 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
+// ICE ARENA — with mode, teams, auto-bot
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
 
+const TEAM_COLORS = ['#4CAF50', '#f44336', '#2196F3'];
+const TEAM_NAMES = ['Green', 'Red', 'Blue'];
+
 function createIceRoom(id) {
   return {
     id,
     gameState: 'idle',
+    mode: 'solo', // 'solo' or 'group'
     players: [],
     pot: 0,
     countdownStartTime: 0,
@@ -177,6 +178,36 @@ const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
+// ─── Auto-bot toggle ─────────────────────────────────────────────
+let autoBotEnabled = false;
+let autoBotInterval = null;
+
+function startAutoBot() {
+  if (autoBotInterval) clearInterval(autoBotInterval);
+  autoBotInterval = setInterval(() => {
+    if (!autoBotEnabled) return;
+    if (iceRoom.gameState !== 'idle') return;
+    if (iceRoom.players.length >= MAX_PLAYERS) return;
+    const bet = Math.floor(Math.random() * 140) + 10;
+    let team = null;
+    if (iceRoom.mode === 'group') {
+      team = Math.floor(Math.random() * 3);
+    }
+    const bot = spawnBot(bet, team);
+    if (bot) {
+      console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}${team !== null ? ' on team '+TEAM_NAMES[team] : ''}`);
+    }
+  }, 4000);
+}
+startAutoBot();
+
+function stopAutoBot() {
+  if (autoBotInterval) {
+    clearInterval(autoBotInterval);
+    autoBotInterval = null;
+  }
+}
+
 // ─── BOT MANAGEMENT ─────────────────────────────────────────────
 let botCounter = 0;
 const botIds = new Set();
@@ -189,16 +220,14 @@ function isBot(id) {
   return id && typeof id === 'string' && id.startsWith('bot_');
 }
 
-function spawnBot(betAmount) {
+function spawnBot(betAmount, team) {
   const id = generateBotId();
   botCounter++;
   const name = `Bot_${String(botCounter).padStart(3, '0')}`;
   const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
-  
-  const player = makeIcePlayer(id, betAmount, name, pfp);
+  const player = makeIcePlayer(id, betAmount, name, pfp, team);
   if (player) {
     botIds.add(id);
-    console.log(`🤖 Spawned bot: ${name} (${id}) with bet ${betAmount}`);
     return player;
   }
   return null;
@@ -284,7 +313,7 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  const clampedRatio = Math.max(0.07, Math.min(0.93, ratio));
+  const clampedRatio = Math.max(0.20, Math.min(0.80, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
     const splitY = y + h * clampedRatio;
@@ -298,11 +327,12 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
 }
 
 // ─── Player management ──────────────────────────────────────────
-function makeIcePlayer(id, bet, name, pfp) {
+function makeIcePlayer(id, bet, name, pfp, team) {
   const colorIdx = iceRoom.players.length % COLORS.length;
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx],
+    team: team !== undefined ? team : null,
     x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
   };
   iceRoom.players.push(p);
@@ -331,14 +361,11 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── LAUNCH PUCK AT CENTER (fixed) ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 11;
-  // Fixed start position: center
   iceRoom.puck.x = ICE_SIZE / 2;
   iceRoom.puck.y = ICE_SIZE / 2;
-  // Direction still random (based on spinFinalAngle)
   iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
   iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
 }
@@ -374,12 +401,41 @@ async function endIceGame() {
     const losersBets = totalPot - winnerBet;
     const commission = Math.floor(losersBets * 0.02);
     const winnings = totalPot - commission;
+
+    let winningTeam = null;
+    let teamMembers = [];
+    let isGroup = iceRoom.mode === 'group' && winner.team !== null;
+
+    if (isGroup) {
+      winningTeam = winner.team;
+      teamMembers = iceRoom.players.filter(p => p.team === winningTeam);
+    }
+
+    let payouts = [];
+    if (isGroup && teamMembers.length > 0) {
+      const totalTeamBet = teamMembers.reduce((s, p) => s + p.bet, 0);
+      if (totalTeamBet > 0) {
+        for (const p of teamMembers) {
+          const share = Math.floor((p.bet / totalTeamBet) * winnings);
+          payouts.push({ id: p.id, name: p.name, amount: share });
+        }
+      } else {
+        const each = Math.floor(winnings / teamMembers.length);
+        payouts = teamMembers.map(p => ({ id: p.id, name: p.name, amount: each }));
+      }
+    } else {
+      payouts = [{ id: winner.id, name: winner.name, amount: winnings }];
+    }
+
     payload = {
       winnerId: winner.id,
       winnerName: winner.name,
       winnerPfp: winner.pfp,
-      winnings,
+      winnings: winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
+      isGroup: isGroup,
+      winningTeam: winningTeam,
+      payouts: payouts,
     };
 
     iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
@@ -398,8 +454,28 @@ async function endIceGame() {
       }
     }
 
-    for (const p of iceRoom.players) {
-      if (p.id === winner.id) continue;
+    if (isGroup) {
+      for (const payout of payouts) {
+        if (!isBot(payout.id) && payout.id !== winner.id) {
+          try {
+            const u = await getUser(payout.id);
+            if (u) {
+              u.balance += payout.amount;
+              u.wins += 1;
+              await saveUser(u);
+            }
+          } catch (err) {
+            console.error('endIceGame: failed to credit team member:', payout.id, err);
+          }
+        }
+      }
+    }
+
+    const losingPlayers = isGroup
+      ? iceRoom.players.filter(p => p.team !== winningTeam)
+      : iceRoom.players.filter(p => p.id !== winner.id);
+
+    for (const p of losingPlayers) {
       if (!isBot(p.id)) {
         try {
           const u = await getUser(p.id);
@@ -484,6 +560,7 @@ function updateIcePhysics(dt) {
 function broadcastIceState() {
   io.emit('iceState', {
     gameState: iceRoom.gameState,
+    mode: iceRoom.mode,
     pot: iceRoom.pot,
     countdownStartTime: iceRoom.countdownStartTime,
     spinStartTime: iceRoom.spinStartTime,
@@ -492,6 +569,7 @@ function broadcastIceState() {
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+      team: p.team,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
     })),
   });
@@ -848,6 +926,7 @@ io.on('connection', (socket) => {
 
       const icePlayers = iceRoom.players.map(p => ({
         id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+        team: p.team,
         x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
       }));
 
@@ -863,6 +942,7 @@ io.on('connection', (socket) => {
         iceRecentWinners: iceRoom.recentWinners,
         icePlayers: icePlayers,
         icePot: iceRoom.pot,
+        iceMode: iceRoom.mode,
       });
       broadcastState();
     } catch (err) {
@@ -907,7 +987,32 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('icePlaceBet', async ({ amount }, ack) => {
+  // ─── ICE: set mode ──────────────────────────────────────────
+  socket.on('iceSetMode', async ({ mode }, ack) => {
+    try {
+      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
+      if (iceRoom.gameState !== 'idle') {
+        return ack?.({ ok: false, error: 'Cannot change mode during a round.' });
+      }
+      if (mode !== 'solo' && mode !== 'group') {
+        return ack?.({ ok: false, error: 'Invalid mode.' });
+      }
+      // Reset arena when mode changes
+      iceRoom.players = [];
+      iceRoom.pot = 0;
+      iceRoom.mode = mode;
+      botIds.clear();
+      botCounter = 0;
+      broadcastIceState();
+      ack?.({ ok: true, mode });
+    } catch (err) {
+      console.error('iceSetMode error:', err);
+      ack?.({ ok: false, error: 'Internal error' });
+    }
+  });
+
+  // ─── ICE: place bet (with team for group mode) ────────────
+  socket.on('icePlaceBet', async ({ amount, team }, ack) => {
     try {
       if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
       if (!['idle', 'countdown'].includes(iceRoom.gameState)) {
@@ -920,19 +1025,38 @@ io.on('connection', (socket) => {
       if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
         return ack?.({ ok: false, error: 'Rink is full.' });
       }
-      user.balance -= amt;
-      await saveUser(user);
+
+      let selectedTeam = null;
+      if (iceRoom.mode === 'group') {
+        if (team === undefined || team === null || team < 0 || team > 2) {
+          return ack?.({ ok: false, error: 'Please select a team (0,1,2).' });
+        }
+        selectedTeam = team;
+      }
+
       const existing = getIcePlayer(userId);
       if (existing) {
-        existing.bet += amt;
-        repartitionIceArena();
-      } else {
-        const p = makeIcePlayer(userId, amt, user.username, user.pfp);
-        if (!p) {
-          user.balance += amt;
+        if (iceRoom.mode === 'group' && existing.team !== selectedTeam) {
+          const idx = iceRoom.players.findIndex(p => p.id === userId);
+          if (idx !== -1) iceRoom.players.splice(idx, 1);
+        } else {
+          existing.bet += amt;
+          if (iceRoom.mode === 'group') existing.team = selectedTeam;
+          user.balance -= amt;
           await saveUser(user);
-          return ack?.({ ok: false, error: 'Could not assign cell.' });
+          iceRoom.pot += amt;
+          repartitionIceArena();
+          ack?.({ ok: true, balance: user.balance });
+          broadcastIceState();
+          return;
         }
+      }
+
+      const p = makeIcePlayer(userId, amt, user.username, user.pfp, selectedTeam);
+      if (!p) {
+        user.balance += amt;
+        await saveUser(user);
+        return ack?.({ ok: false, error: 'Could not assign cell.' });
       }
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
@@ -967,11 +1091,29 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
 .bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
 .bot-row input{width:120px}
 .bot-row button{background:#5b8def}
+.switch-wrap{display:flex;align-items:center;gap:12px;margin:6px 0}
+.switch-wrap .switch{position:relative;width:50px;height:26px;flex-shrink:0;cursor:pointer}
+.switch-wrap .switch input{opacity:0;width:0;height:0}
+.switch-wrap .switch .slider{position:absolute;inset:0;background:#444;border-radius:999px;transition:0.3s}
+.switch-wrap .switch .slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s}
+.switch-wrap .switch input:checked+.slider{background:#5b8def}
+.switch-wrap .switch input:checked+.slider::before{transform:translateX(24px)}
 </style></head>
 <body>
 <h2>dllump Admin</h2>
 <div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
 <div id="content" style="display:none">
+  <div class="section">
+    <h3>🤖 Auto Bot</h3>
+    <div class="switch-wrap">
+      <span style="color:#888;">Auto-spawn bots in ice arena</span>
+      <label class="switch">
+        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
+        <span class="slider"></span>
+      </label>
+      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
+    </div>
+  </div>
   <div class="section">
     <h3>🤖 Bot Spawn</h3>
     <div class="bot-row">
@@ -980,7 +1122,6 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
       <button onclick="spawnBots()">Spawn Bots</button>
       <button class="danger" onclick="removeBots()">Remove All Bots</button>
     </div>
-    <div style="font-size:12px;color:#888;margin-top:4px;">Spawns bots with custom bet amounts for testing the arena without real players.</div>
   </div>
   <div class="section">
     <h3>Players</h3>
@@ -1027,7 +1168,19 @@ function auth(){
     document.getElementById('content').style.display = 'block';
     refreshPlayers();
     refreshPromoCodes();
+    fetchAutoBotStatus();
   } else alert('Wrong secret');
+}
+async function fetchAutoBotStatus(){
+  const data = await fetchAdmin('/auto-bot-status');
+  document.getElementById('autoBotToggle').checked = data.enabled;
+  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
+}
+async function toggleAutoBot(enabled){
+  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
+  if(data.ok) {
+    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
+  } else alert('Error: '+data.error);
 }
 async function refreshPlayers(){
   const data = await fetchAdmin('/players');
@@ -1122,6 +1275,20 @@ function adminAuth(req, res, next) {
 
 app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
+});
+
+// ─── Auto-bot toggle endpoint ────────────────────────────────
+app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
+  const { enabled } = req.body;
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
+  }
+  autoBotEnabled = enabled;
+  res.json({ ok: true, enabled: autoBotEnabled });
+});
+
+app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
+  res.json({ enabled: autoBotEnabled });
 });
 
 app.get('/admin/api/players', adminAuth, async (req, res) => {
@@ -1273,13 +1440,11 @@ app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
   }
 });
 
-// ─── BOT ADMIN ENDPOINTS ─────────────────────────────────────────
 app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
   try {
     const { bet, count } = req.body;
     const betAmount = Math.max(10, parseInt(bet) || 100);
     const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
-    
     let spawned = 0;
     for (let i = 0; i < numBots; i++) {
       const player = spawnBot(betAmount);
@@ -1305,7 +1470,6 @@ app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
   }
 });
 
-// ─── PUBLIC PROMO REDEEM ENDPOINT ─────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
@@ -1334,7 +1498,6 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── Health & leaderboard ──────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({ ok: true, players: room.players.length, gameState: room.gameState });
 });
@@ -1347,7 +1510,6 @@ app.get('/leaderboard', async (req, res) => {
   }
 });
 
-// ─── Start server ──────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`bump arena server listening on :${PORT}`);
   if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set — real Telegram login cannot be verified.');
