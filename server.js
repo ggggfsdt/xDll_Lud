@@ -1,6 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
 // dllump · bump arena — multiplayer backend (BSP layout)
-// with admin notifications, shop & inventory
 // ═══════════════════════════════════════════════════════════════
 
 process.on('uncaughtException', (err) => {
@@ -833,21 +832,10 @@ function broadcastState() {
     players: room.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
-      equipped: p.equipped, // equipped border style
     })),
     opening: room.opening,
   });
 }
-
-// ─── SHOP ITEMS ──────────────────────────────────────────────────
-const SHOP_ITEMS = [
-  { id: 'default', name: 'Default', price: 0, sellPrice: 0, borderColor: 'rgba(255,255,255,0.35)', borderWidth: 1.5, glow: 'transparent' },
-  { id: 'gold', name: 'Gold Crown', price: 500, sellPrice: 250, borderColor: '#FFD700', borderWidth: 3.5, glow: 'rgba(255,215,0,0.6)' },
-  { id: 'silver', name: 'Silver Star', price: 300, sellPrice: 150, borderColor: '#C0C0C0', borderWidth: 3.0, glow: 'rgba(192,192,192,0.5)' },
-  { id: 'neon', name: 'Neon Pulse', price: 800, sellPrice: 400, borderColor: '#00ffcc', borderWidth: 4.0, glow: 'rgba(0,255,204,0.8)' },
-  { id: 'flame', name: 'Flame', price: 1200, sellPrice: 600, borderColor: '#ff4500', borderWidth: 4.5, glow: 'rgba(255,69,0,0.9)' },
-  { id: 'rainbow', name: 'Rainbow', price: 2000, sellPrice: 1000, borderColor: '#ff00ff', borderWidth: 4.0, glow: 'rgba(255,0,255,0.7)' },
-];
 
 // ─── Socket.io ────────────────────────────────────────────────
 io.on('connection', (socket) => {
@@ -874,10 +862,6 @@ io.on('connection', (socket) => {
         ack?.({ ok: false, error: 'You have been banned.' });
         return;
       }
-      // Ensure inventory and equipped fields exist
-      if (!user.inventory) user.inventory = [];
-      if (!user.equipped) user.equipped = 'default';
-      await saveUser(user);
 
       const icePlayers = iceRoom.players.map(p => ({
         id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
@@ -888,8 +872,6 @@ io.on('connection', (socket) => {
         ok: true,
         user: {
           ...user,
-          inventory: user.inventory || [],
-          equipped: user.equipped || 'default',
           winHistory: user.winHistory || [],
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
@@ -898,7 +880,6 @@ io.on('connection', (socket) => {
         iceRecentWinners: iceRoom.recentWinners,
         icePlayers: icePlayers,
         icePot: iceRoom.pot,
-        shopItems: SHOP_ITEMS,
       });
       broadcastState();
     } catch (err) {
@@ -966,68 +947,6 @@ io.on('connection', (socket) => {
       broadcastIceState();
     } catch (err) {
       console.error('Ice bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  // ─── SHOP: Buy ──────────────────────────────────────────────────
-  socket.on('shopBuy', async ({ itemId }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      const item = SHOP_ITEMS.find(i => i.id === itemId);
-      if (!item) return ack?.({ ok: false, error: 'Item not found.' });
-      if (user.inventory.includes(itemId)) return ack?.({ ok: false, error: 'Already owned.' });
-      if (user.balance < item.price) return ack?.({ ok: false, error: 'Insufficient balance.' });
-      user.balance -= item.price;
-      user.inventory.push(itemId);
-      await saveUser(user);
-      ack?.({ ok: true, balance: user.balance, inventory: user.inventory });
-      // Broadcast updated user data to all clients? We'll let clients fetch on profile switch.
-    } catch (err) {
-      console.error('Shop buy error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  // ─── SHOP: Sell ──────────────────────────────────────────────────
-  socket.on('shopSell', async ({ itemId }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      const item = SHOP_ITEMS.find(i => i.id === itemId);
-      if (!item) return ack?.({ ok: false, error: 'Item not found.' });
-      if (!user.inventory.includes(itemId)) return ack?.({ ok: false, error: 'Not owned.' });
-      // Cannot sell if equipped
-      if (user.equipped === itemId) return ack?.({ ok: false, error: 'Cannot sell equipped item.' });
-      user.inventory = user.inventory.filter(id => id !== itemId);
-      user.balance += item.sellPrice;
-      await saveUser(user);
-      ack?.({ ok: true, balance: user.balance, inventory: user.inventory });
-    } catch (err) {
-      console.error('Shop sell error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  // ─── SHOP: Wear ──────────────────────────────────────────────────
-  socket.on('shopWear', async ({ itemId }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      if (itemId !== 'default' && !user.inventory.includes(itemId)) {
-        return ack?.({ ok: false, error: 'Not owned.' });
-      }
-      user.equipped = itemId;
-      await saveUser(user);
-      // Broadcast to all clients that this user's equipped border changed
-      io.emit('userEquippedUpdate', { userId: user.id, equipped: itemId });
-      ack?.({ ok: true, equipped: itemId });
-    } catch (err) {
-      console.error('Shop wear error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
@@ -1333,8 +1252,6 @@ app.post('/admin/api/wipe', adminAuth, async (req, res) => {
       u.losses = 0;
       u.banned = false;
       u.winHistory = [];
-      u.inventory = ['default'];
-      u.equipped = 'default';
       await saveUser(u);
     }
     res.json({ ok: true });
