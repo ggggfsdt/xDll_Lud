@@ -411,7 +411,7 @@
         #top-right {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             flex-shrink: 0;
         }
         #balance-wrap {
@@ -424,8 +424,8 @@
             border: 1px solid var(--border);
         }
         #diamond-icon {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             object-fit: contain;
             flex-shrink: 0;
             display: block;
@@ -441,29 +441,29 @@
             }
         }
         #balance {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #fff;
             letter-spacing: 0.2px;
             font-variant-numeric: tabular-nums;
             display: inline-block;
-            min-width: 28px;
+            min-width: 24px;
         }
         /* ─── DEPOSIT BUTTON ─── */
         #deposit-btn {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             border: none;
             background: var(--blue);
             color: #fff;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 300;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 0 18px var(--blue-glow);
+            box-shadow: 0 0 12px var(--blue-glow);
             transition: transform 0.15s ease, box-shadow 0.2s ease;
             flex-shrink: 0;
             line-height: 1;
@@ -471,7 +471,7 @@
         }
         #deposit-btn:active {
             transform: scale(0.88);
-            box-shadow: 0 0 6px var(--blue-glow);
+            box-shadow: 0 0 4px var(--blue-glow);
         }
 
         /* ─── MAIN ─── */
@@ -2376,36 +2376,23 @@
         .wheel-wrapper {
             position: relative;
             width: 100%;
-            max-width: 280px;
+            max-width: 240px;
             aspect-ratio: 1/1;
             margin: 0 auto;
         }
-        #wheel-canvas {
+        #upgrade-wheel-canvas {
             width: 100%;
             height: 100%;
             display: block;
             border-radius: 50%;
             box-shadow: 0 0 40px rgba(74, 124, 247, 0.06);
         }
-        #wheel-arrow {
-            position: absolute;
-            top: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 28px;
-            color: #fff;
-            text-shadow: 0 0 16px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.5);
-            z-index: 10;
-            transition: transform 0.05s linear;
-            pointer-events: none;
-            line-height: 1;
-        }
-        #wheel-center-text {
+        #upgrade-center-text {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 800;
             color: #fff;
             z-index: 10;
@@ -2423,15 +2410,47 @@
             gap: 10px;
             width: 100%;
         }
-        .upgrade-controls .row {
+        .upgrade-controls .input-row {
             display: flex;
             gap: 10px;
             width: 100%;
-            align-items: center;
             justify-content: center;
         }
-        #upgrade-action-btn {
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
             flex: 1;
+            max-width: 110px;
+        }
+        .input-group label {
+            font-size: 10px;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 6px 4px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+            height: 34px;
+        }
+        .input-group input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 16px var(--blue-glow);
+        }
+        #upgrade-action-btn {
+            width: 100%;
             padding: 10px 0;
             border-radius: 30px;
             border: none;
@@ -2440,46 +2459,26 @@
             font-weight: 700;
             font-size: 16px;
             cursor: pointer;
-            box-shadow: 0 0 30px var(--blue-glow);
+            box-shadow: 0 0 24px var(--blue-glow);
             transition: transform 0.15s ease, box-shadow 0.2s ease;
             letter-spacing: 0.3px;
-            min-width: 90px;
+            margin-top: 4px;
         }
         #upgrade-action-btn:active {
             transform: scale(0.94);
-            box-shadow: 0 0 12px var(--blue-glow);
+            box-shadow: 0 0 8px var(--blue-glow);
         }
         #upgrade-action-btn:disabled {
             opacity: 0.5;
             pointer-events: none;
             transform: none;
         }
-        #upgrade-bet-input {
-            flex: 1;
-            max-width: 140px;
-            padding: 8px 12px;
-            height: 42px;
-            border-radius: 30px;
-            border: 1px solid var(--border);
-            background: var(--surface2);
-            color: var(--text);
-            font-size: 16px;
-            font-weight: 700;
-            text-align: center;
-            outline: none;
-            font-variant-numeric: tabular-nums;
-        }
-        #upgrade-bet-input:focus {
-            border-color: var(--blue);
-            box-shadow: 0 0 20px var(--blue-glow);
-        }
         #upgrade-result {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
-            min-height: 28px;
+            min-height: 24px;
             color: var(--text2);
             text-align: center;
-            margin-top: -4px;
         }
         #upgrade-result.win {
             color: #ffd700;
@@ -2490,24 +2489,18 @@
 
         @media (max-width:400px) {
             .wheel-wrapper {
-                max-width: 220px;
+                max-width: 200px;
             }
-            #wheel-center-text {
-                font-size: 26px;
-            }
-            #wheel-arrow {
+            #upgrade-center-text {
                 font-size: 22px;
-                top: -4px;
             }
-            #upgrade-bet-input {
-                font-size: 14px;
-                height: 36px;
-                max-width: 110px;
+            .input-group input {
+                font-size: 12px;
+                height: 30px;
             }
             #upgrade-action-btn {
                 font-size: 14px;
                 padding: 8px 0;
-                min-width: 70px;
             }
         }
     </style>
@@ -2528,12 +2521,10 @@
     <!-- ═══ ORIGINAL APP ─── -->
     <div id="app">
         <div id="topbar">
-            <!-- LEFT: username + status dot -->
             <div id="top-left">
                 <div id="status-dot"></div>
                 <span id="username-display">player</span>
             </div>
-            <!-- RIGHT: balance + deposit -->
             <div id="top-right">
                 <div id="balance-wrap">
                     <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
@@ -2630,7 +2621,7 @@
                 </div>
             </div>
 
-            <!-- Profile (shop/inventory removed) -->
+            <!-- Profile -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -2668,15 +2659,21 @@
             <div id="upgrade-page" class="tab-page">
                 <div class="upgrade-container">
                     <div class="wheel-wrapper">
-                        <canvas id="wheel-canvas" width="400" height="400"></canvas>
-                        <div id="wheel-arrow">▼</div>
-                        <div id="wheel-center-text">90%</div>
+                        <canvas id="upgrade-wheel-canvas" width="400" height="400"></canvas>
+                        <div id="upgrade-center-text">90%</div>
                     </div>
                     <div class="upgrade-controls">
-                        <div class="row">
-                            <button id="upgrade-action-btn">Upgrade</button>
-                            <input type="number" id="upgrade-bet-input" value="10" min="10" max="3000" step="1" />
+                        <div class="input-row">
+                            <div class="input-group">
+                                <label>Bet</label>
+                                <input type="number" id="upgrade-bet-input" value="10" min="1" max="3000" step="1" />
+                            </div>
+                            <div class="input-group">
+                                <label>Desired</label>
+                                <input type="number" id="upgrade-desired-input" value="10" min="1" max="3000" step="1" />
+                            </div>
                         </div>
+                        <button id="upgrade-action-btn">Upgrade</button>
                         <div id="upgrade-result"></div>
                     </div>
                 </div>
@@ -2856,11 +2853,11 @@
 
         // Upgrade DOM
         const depositBtn = document.getElementById('deposit-btn');
-        const wheelCanvas = document.getElementById('wheel-canvas');
-        const wheelCtx = wheelCanvas.getContext('2d');
-        const wheelArrow = document.getElementById('wheel-arrow');
-        const wheelCenterText = document.getElementById('wheel-center-text');
+        const upgradeWheelCanvas = document.getElementById('upgrade-wheel-canvas');
+        const upgradeWheelCtx = upgradeWheelCanvas.getContext('2d');
+        const upgradeCenterText = document.getElementById('upgrade-center-text');
         const upgradeBetInput = document.getElementById('upgrade-bet-input');
+        const upgradeDesiredInput = document.getElementById('upgrade-desired-input');
         const upgradeActionBtn = document.getElementById('upgrade-action-btn');
         const upgradeResult = document.getElementById('upgrade-result');
 
@@ -3136,7 +3133,7 @@
             });
         }
 
-        // ─── applyServerState (unchanged) ─────────────────────────────
+        // ─── applyServerState ─────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState = state.gameState;
             state.gameState = snapshot.gameState;
@@ -4013,116 +4010,134 @@
                 switchTab(this.dataset.tab); });
         });
 
-        // ─── UPGRADE WHEEL ─────────────────────────────────────────────
-        let wheelAngle = 0;
-        let isSpinning = false;
-        let spinTimeout = null;
-        let arrowAngle = 0;
+        // ─── UPGRADE TAB LOGIC ──────────────────────────────────────
 
-        function getChance(amount) {
-            const minBet = 10;
-            const maxBet = 3000;
-            const minChance = 0.02;
-            const maxChance = 0.90;
-            const clamped = Math.max(minBet, Math.min(maxBet, amount));
-            const normalized = (clamped - minBet) / (maxBet - minBet);
-            return maxChance - normalized * (maxChance - minChance);
+        function getChance(bet, desired) {
+            if (bet <= 0 || desired <= 0) return 0.02;
+            const ratio = bet / desired;
+            let chance = 0.90 * ratio;
+            return Math.max(0.02, Math.min(0.98, chance));
         }
 
-        function resizeWheelCanvas() {
+        let upgradeArrowAngle = -Math.PI / 2; // starts at top (12 o'clock)
+        let isUpgradeSpinning = false;
+        let upgradeSpinTimeout = null;
+
+        function resizeUpgradeCanvas() {
             const wrap = document.querySelector('.wheel-wrapper');
-            const size = wrap.clientWidth || 280;
+            const size = wrap.clientWidth || 240;
             const dpr = window.devicePixelRatio || 1;
-            wheelCanvas.width = size * dpr;
-            wheelCanvas.height = size * dpr;
-            wheelCanvas.style.width = size + 'px';
-            wheelCanvas.style.height = size + 'px';
-            wheelCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            drawWheel();
+            upgradeWheelCanvas.width = size * dpr;
+            upgradeWheelCanvas.height = size * dpr;
+            upgradeWheelCanvas.style.width = size + 'px';
+            upgradeWheelCanvas.style.height = size + 'px';
+            upgradeWheelCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawUpgradeWheel();
         }
 
-        function drawWheel() {
-            const w = wheelCanvas.width / (window.devicePixelRatio || 1);
-            const h = wheelCanvas.height / (window.devicePixelRatio || 1);
+        function drawUpgradeWheel() {
+            const w = upgradeWheelCanvas.width / (window.devicePixelRatio || 1);
+            const h = upgradeWheelCanvas.height / (window.devicePixelRatio || 1);
             const cx = w / 2,
                 cy = h / 2;
             const radius = Math.min(w, h) * 0.38;
-            const lineWidth = 18;
+            const lineWidth = 14;
 
-            wheelCtx.clearRect(0, 0, w, h);
+            upgradeWheelCtx.clearRect(0, 0, w, h);
 
-            const amount = parseInt(upgradeBetInput.value) || 10;
-            const chance = getChance(amount);
+            const bet = parseInt(upgradeBetInput.value) || 10;
+            const desired = parseInt(upgradeDesiredInput.value) || 10;
+            const chance = getChance(bet, desired);
 
-            // Background (gray)
-            wheelCtx.beginPath();
-            wheelCtx.arc(cx, cy, radius, 0, Math.PI * 2);
-            wheelCtx.strokeStyle = '#3a3a40';
-            wheelCtx.lineWidth = lineWidth;
-            wheelCtx.stroke();
+            // Gray background
+            upgradeWheelCtx.beginPath();
+            upgradeWheelCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            upgradeWheelCtx.strokeStyle = '#3a3a40';
+            upgradeWheelCtx.lineWidth = lineWidth;
+            upgradeWheelCtx.stroke();
 
-            // Chance fill (green)
+            // Green chance fill
             const startAngle = -Math.PI / 2;
             const endAngle = startAngle + (Math.PI * 2 * Math.min(chance, 1));
-            wheelCtx.beginPath();
-            wheelCtx.arc(cx, cy, radius, startAngle, endAngle);
-            wheelCtx.strokeStyle = '#4CAF50';
-            wheelCtx.lineWidth = lineWidth;
-            wheelCtx.stroke();
+            upgradeWheelCtx.beginPath();
+            upgradeWheelCtx.arc(cx, cy, radius, startAngle, endAngle);
+            upgradeWheelCtx.strokeStyle = '#4CAF50';
+            upgradeWheelCtx.lineWidth = lineWidth;
+            upgradeWheelCtx.stroke();
 
             // Center text
             const pct = Math.round(chance * 100);
-            wheelCenterText.textContent = pct + '%';
+            upgradeCenterText.textContent = pct + '%';
 
-            // Arrow rotation (points down, so default is -PI/2, but we want it to rotate around)
-            // The arrow is at the top, pointing down. We rotate it around its center.
-            // Since it's a downward arrow, 0 rad means it points down.
-            // We want it to spin and stop at the correct angle.
-            // We'll just use the arrowAngle variable directly.
-            wheelArrow.style.transform = `translateX(-50%) rotate(${arrowAngle}rad)`;
+            // Draw small arrow on the perimeter (pointing outward)
+            const arrowLen = 10;
+            const tipX = cx + radius * Math.cos(upgradeArrowAngle);
+            const tipY = cy + radius * Math.sin(upgradeArrowAngle);
+            const baseAngle1 = upgradeArrowAngle + 2.0;
+            const baseAngle2 = upgradeArrowAngle - 2.0;
+            const baseR = radius + 2;
+            const baseX1 = cx + baseR * Math.cos(baseAngle1);
+            const baseY1 = cy + baseR * Math.sin(baseAngle1);
+            const baseX2 = cx + baseR * Math.cos(baseAngle2);
+            const baseY2 = cy + baseR * Math.sin(baseAngle2);
+
+            upgradeWheelCtx.beginPath();
+            upgradeWheelCtx.moveTo(tipX, tipY);
+            upgradeWheelCtx.lineTo(baseX1, baseY1);
+            upgradeWheelCtx.lineTo(baseX2, baseY2);
+            upgradeWheelCtx.closePath();
+            upgradeWheelCtx.fillStyle = '#ffffff';
+            upgradeWheelCtx.shadowColor = 'rgba(0,0,0,0.8)';
+            upgradeWheelCtx.shadowBlur = 6;
+            upgradeWheelCtx.fill();
+            upgradeWheelCtx.shadowBlur = 0;
+            upgradeWheelCtx.strokeStyle = '#000';
+            upgradeWheelCtx.lineWidth = 0.5;
+            upgradeWheelCtx.stroke();
         }
 
-        function spinUpgradeWheel() {
-            if (isSpinning) return;
-            const amount = parseInt(upgradeBetInput.value) || 10;
-            if (amount < 10) { upgradeBetInput.value = 10; return; }
-            if (amount > 3000) { upgradeBetInput.value = 3000; return; }
-            if (amount > state.balance) {
+        function spinUpgrade() {
+            if (isUpgradeSpinning) return;
+            const bet = parseInt(upgradeBetInput.value) || 10;
+            const desired = parseInt(upgradeDesiredInput.value) || 10;
+            if (bet < 1 || desired < 1) {
+                upgradeResult.textContent = 'Enter valid amounts!';
+                return;
+            }
+            if (bet > state.balance) {
                 showNotification('Not enough diamonds!');
                 haptic('light');
                 return;
             }
 
-            isSpinning = true;
+            isUpgradeSpinning = true;
             upgradeActionBtn.disabled = true;
             upgradeResult.textContent = '';
             upgradeResult.className = '';
 
-            const chance = getChance(amount);
+            const chance = getChance(bet, desired);
             const win = Math.random() < chance;
 
             // Deduct bet
-            state.balance -= amount;
+            state.balance -= bet;
             updateBalance();
             updateProfile();
 
-            // Determine final arrow angle
+            // Determine final arrow angle (multiple full spins + target zone)
             const spins = 3 + Math.random() * 3;
             let finalAngle;
             if (win) {
-                // Land in green zone
                 const startAngle = -Math.PI / 2;
                 const endAngle = startAngle + (Math.PI * 2 * chance);
                 finalAngle = startAngle + Math.random() * (endAngle - startAngle);
             } else {
-                // Land in gray zone
                 const startAngle = -Math.PI / 2 + (Math.PI * 2 * chance);
                 const endAngle = startAngle + (Math.PI * 2 * (1 - chance));
                 finalAngle = startAngle + Math.random() * endAngle;
             }
             finalAngle += spins * Math.PI * 2;
 
-            const startArrowAngle = arrowAngle;
+            const startArrowAngle = upgradeArrowAngle;
             const duration = 2200 + Math.random() * 600;
             const startTime = performance.now();
 
@@ -4133,19 +4148,19 @@
                 const progress = Math.min(elapsed / duration, 1);
                 const eased = 1 - Math.pow(1 - progress, 3);
                 const currentAngle = startArrowAngle + (finalAngle - startArrowAngle) * eased;
-                arrowAngle = currentAngle;
-                wheelArrow.style.transform = `translateX(-50%) rotate(${currentAngle}rad)`;
+                upgradeArrowAngle = currentAngle;
+                drawUpgradeWheel();
 
                 if (progress < 1) {
                     requestAnimationFrame(animateArrow);
                 } else {
-                    arrowAngle = finalAngle;
-                    wheelArrow.style.transform = `translateX(-50%) rotate(${finalAngle}rad)`;
-                    isSpinning = false;
+                    upgradeArrowAngle = finalAngle;
+                    drawUpgradeWheel();
+                    isUpgradeSpinning = false;
                     upgradeActionBtn.disabled = false;
 
                     if (win) {
-                        const reward = amount + 10;
+                        const reward = desired;
                         state.balance += reward;
                         updateBalance();
                         updateProfile();
@@ -4155,10 +4170,10 @@
                         haptic('heavy');
                         showNotification(`🎉 You won ${reward} diamonds!`);
                     } else {
-                        upgradeResult.textContent = `😞 Lose... -${amount} 💎`;
+                        upgradeResult.textContent = `😞 Lose... -${bet} 💎`;
                         upgradeResult.className = 'lose';
                         haptic('light');
-                        showNotification(`💔 You lost ${amount} diamonds`);
+                        showNotification(`💔 You lost ${bet} diamonds`);
                     }
 
                     // Sync balance with server
@@ -4168,8 +4183,8 @@
                         });
                     }
 
-                    if (spinTimeout) clearTimeout(spinTimeout);
-                    spinTimeout = setTimeout(() => {
+                    if (upgradeSpinTimeout) clearTimeout(upgradeSpinTimeout);
+                    upgradeSpinTimeout = setTimeout(() => {
                         upgradeResult.textContent = '';
                         upgradeResult.className = '';
                     }, 3500);
@@ -4178,30 +4193,30 @@
             requestAnimationFrame(animateArrow);
         }
 
-        // ─── Upgrade tab controls ──────────────────────────────────
+        // ─── Upgrade controls ──────────────────────────────────────────
         depositBtn.addEventListener('click', () => {
             switchTab('upgrade');
-            setTimeout(resizeWheelCanvas, 50);
+            setTimeout(resizeUpgradeCanvas, 50);
             haptic('light');
         });
 
         upgradeBetInput.addEventListener('input', () => {
-            let val = parseInt(upgradeBetInput.value) || 10;
-            if (val < 10) val = 10;
+            let val = parseInt(upgradeBetInput.value) || 1;
+            if (val < 1) val = 1;
             if (val > 3000) val = 3000;
             upgradeBetInput.value = val;
-            if (!isSpinning) drawWheel();
+            if (!isUpgradeSpinning) drawUpgradeWheel();
         });
 
-        upgradeBetInput.addEventListener('blur', () => {
-            let val = parseInt(upgradeBetInput.value) || 10;
-            if (val < 10) val = 10;
+        upgradeDesiredInput.addEventListener('input', () => {
+            let val = parseInt(upgradeDesiredInput.value) || 1;
+            if (val < 1) val = 1;
             if (val > 3000) val = 3000;
-            upgradeBetInput.value = val;
-            if (!isSpinning) drawWheel();
+            upgradeDesiredInput.value = val;
+            if (!isUpgradeSpinning) drawUpgradeWheel();
         });
 
-        upgradeActionBtn.addEventListener('click', spinUpgradeWheel);
+        upgradeActionBtn.addEventListener('click', spinUpgrade);
 
         // ─── RENDER ──────────────────────────────────────────────────
         function render() {
@@ -4350,7 +4365,7 @@
             });
         }
 
-        // ─── RENDER ICE (same as before) ──────────────────────────────
+        // ─── RENDER ICE ──────────────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -4771,15 +4786,14 @@
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             requestAnimationFrame(renderLoop);
             setOnline(false);
-            // init wheel
-            setTimeout(resizeWheelCanvas, 400);
-            window.addEventListener('resize', resizeWheelCanvas);
+            setTimeout(resizeUpgradeCanvas, 400);
+            window.addEventListener('resize', resizeUpgradeCanvas);
         }
         init();
         window.__state = state;
 
         // expose upgrade functions for debugging
-        window.spinUpgradeWheel = spinUpgradeWheel;
+        window.spinUpgrade = spinUpgrade;
         window.getChance = getChance;
     </script>
 
