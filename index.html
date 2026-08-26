@@ -4026,6 +4026,14 @@
             if (newEl) { newEl.classList.add('active');
                 newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile(); } if (tabId === 'top')
                     refreshLeaderboard(); }
+
+            // Manage wheel animation
+            if (tabId === 'upgrade') {
+                startWheelAnimation();
+            } else {
+                stopWheelAnimation();
+            }
+
             // update tab buttons (only those that exist)
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
             haptic('light');
@@ -4048,6 +4056,26 @@
         let upgradeArrowAngle = -Math.PI / 2; // starts at top (12 o'clock)
         let isUpgradeSpinning = false;
         let upgradeSpinTimeout = null;
+        let currentDisplayChance = 0.9;
+        let targetDisplayChance = 0.9;
+        let wheelAnimationId = null;
+
+        function startWheelAnimation() {
+            if (wheelAnimationId) return;
+            loopWheel();
+        }
+
+        function stopWheelAnimation() {
+            if (wheelAnimationId) {
+                cancelAnimationFrame(wheelAnimationId);
+                wheelAnimationId = null;
+            }
+        }
+
+        function loopWheel() {
+            drawUpgradeWheel();
+            wheelAnimationId = requestAnimationFrame(loopWheel);
+        }
 
         function resizeUpgradeCanvas() {
             const wrap = document.querySelector('.wheel-wrapper');
@@ -4069,11 +4097,13 @@
             const radius = Math.min(w, h) * 0.40;
             const lineWidth = 18;
 
-            upgradeWheelCtx.clearRect(0, 0, w, h);
+            // Smooth chance animation
+            currentDisplayChance += (targetDisplayChance - currentDisplayChance) * 0.08;
+            if (Math.abs(currentDisplayChance - targetDisplayChance) < 0.0005) {
+                currentDisplayChance = targetDisplayChance;
+            }
 
-            const bet = parseInt(upgradeBetInput.value) || 10;
-            const desired = parseInt(upgradeDesiredInput.value) || 10;
-            const chance = getChance(bet, desired);
+            upgradeWheelCtx.clearRect(0, 0, w, h);
 
             // Gray background
             upgradeWheelCtx.beginPath();
@@ -4084,7 +4114,7 @@
 
             // Green chance fill
             const startAngle = -Math.PI / 2;
-            const endAngle = startAngle + (Math.PI * 2 * Math.min(chance, 1));
+            const endAngle = startAngle + (Math.PI * 2 * Math.min(currentDisplayChance, 1));
             upgradeWheelCtx.beginPath();
             upgradeWheelCtx.arc(cx, cy, radius, startAngle, endAngle);
             upgradeWheelCtx.strokeStyle = '#4CAF50';
@@ -4092,16 +4122,17 @@
             upgradeWheelCtx.stroke();
 
             // Center text
-            const pct = Math.round(chance * 100);
+            const pct = Math.round(currentDisplayChance * 100);
             upgradeCenterText.textContent = pct + '%';
 
-            // Draw small arrow on the perimeter (pointing outward) – pivot at center
-            const arrowLen = 8;
-            const tipX = cx + (radius + 2) * Math.cos(upgradeArrowAngle);
-            const tipY = cy + (radius + 2) * Math.sin(upgradeArrowAngle);
-            const baseAngle1 = upgradeArrowAngle + 2.0;
-            const baseAngle2 = upgradeArrowAngle - 2.0;
-            const baseR = radius - 2;
+            // Draw small arrow on the perimeter (pointing outward, pivot at center)
+            const angle = upgradeArrowAngle;
+            const tipR = radius + 4;
+            const tipX = cx + tipR * Math.cos(angle);
+            const tipY = cy + tipR * Math.sin(angle);
+            const baseAngle1 = angle + 0.5;
+            const baseAngle2 = angle - 0.5;
+            const baseR = radius - 10;
             const baseX1 = cx + baseR * Math.cos(baseAngle1);
             const baseY1 = cy + baseR * Math.sin(baseAngle1);
             const baseX2 = cx + baseR * Math.cos(baseAngle2);
@@ -4175,13 +4206,11 @@
                 const eased = 1 - Math.pow(1 - progress, 3);
                 const currentAngle = startArrowAngle + (finalAngle - startArrowAngle) * eased;
                 upgradeArrowAngle = currentAngle;
-                drawUpgradeWheel();
 
                 if (progress < 1) {
                     requestAnimationFrame(animateArrow);
                 } else {
                     upgradeArrowAngle = finalAngle;
-                    drawUpgradeWheel();
                     isUpgradeSpinning = false;
                     upgradeActionBtn.disabled = false;
 
@@ -4235,7 +4264,7 @@
             if (val < 1) val = 1;
             if (val > 3000) val = 3000;
             upgradeBetInput.value = val;
-            if (!isUpgradeSpinning) drawUpgradeWheel();
+            updateTargetChance();
         });
 
         upgradeDesiredInput.addEventListener('input', () => {
@@ -4243,8 +4272,14 @@
             if (val < 1) val = 1;
             if (val > 3000) val = 3000;
             upgradeDesiredInput.value = val;
-            if (!isUpgradeSpinning) drawUpgradeWheel();
+            updateTargetChance();
         });
+
+        function updateTargetChance() {
+            const bet = parseInt(upgradeBetInput.value) || 10;
+            const desired = parseInt(upgradeDesiredInput.value) || 10;
+            targetDisplayChance = getChance(bet, desired);
+        }
 
         upgradeActionBtn.addEventListener('click', spinUpgrade);
 
@@ -4819,6 +4854,9 @@
             setOnline(false);
             setTimeout(resizeUpgradeCanvas, 400);
             window.addEventListener('resize', resizeUpgradeCanvas);
+            // init chance
+            updateTargetChance();
+            currentDisplayChance = targetDisplayChance;
         }
         init();
         window.__state = state;
@@ -4981,7 +5019,7 @@
                     setTimeout(start, 200);
                 });
             }
-        })()
+        })();
     </script>
 
 </body>
