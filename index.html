@@ -3946,17 +3946,17 @@
             return Math.max(0.02, Math.min(0.98, chance));
         }
 
-        // The arrow is fixed at the top (angle = -PI/2). The wheel rotates.
-        let wheelRotation = 0; // rotation of the wheel segments
+        // Arrow rotates around a fixed wheel
+        let upgradeArrowAngle = -Math.PI / 2; // start at top
         let isUpgradeSpinning = false;
         let upgradeSpinTimeout = null;
         let currentDisplayChance = 0.9;
         let targetDisplayChance = 0.9;
         let wheelAnimationId = null;
-        // For return-to-start animation of the wheel
+        // For return-to-start animation of the arrow
         let returnToStart = false;
         let returnStartTime = 0;
-        let returnStartRotation = 0;
+        let returnStartAngle = 0;
         const RETURN_DURATION = 700;
 
         function startWheelAnimation() {
@@ -4004,15 +4004,15 @@
 
             upgradeWheelCtx.clearRect(0, 0, w, h);
 
-            // Gray background ring (full circle)
+            // ─── Fixed wheel: gray ring ───
             upgradeWheelCtx.beginPath();
             upgradeWheelCtx.arc(cx, cy, radius, 0, Math.PI * 2);
             upgradeWheelCtx.strokeStyle = '#3a3a40';
             upgradeWheelCtx.lineWidth = lineWidth;
             upgradeWheelCtx.stroke();
 
-            // Green chance fill (rotates with the wheel)
-            const startAngle = -Math.PI / 2 + wheelRotation;
+            // ─── Fixed green chance arc ───
+            const startAngle = -Math.PI / 2;
             const endAngle = startAngle + (Math.PI * 2 * Math.min(currentDisplayChance, 1));
             upgradeWheelCtx.beginPath();
             upgradeWheelCtx.arc(cx, cy, radius, startAngle, endAngle);
@@ -4024,23 +4024,23 @@
             const pct = Math.round(currentDisplayChance * 100);
             upgradeCenterText.textContent = pct + '%';
 
-            // ─── Arrow: fixed at top, outside the circle, pointing down ───
+            // ─── Arrow: spins around, positioned on perimeter, pointing inward ───
+            const angle = upgradeArrowAngle;
             const arrowW = 16;
-            const arrowH = 24;
+            const arrowH = 26;
             const cornerR = 4;
 
-            // Arrow tip is at the top, outside the circle (extends outward)
-            // The arrow points from outside toward the center
+            // Arrow tip at radius, base further out
             const tipX = 0;
-            const tipY = -radius - 18; // outside the circle
+            const tipY = -radius;
             const leftX = -arrowW / 2;
-            const leftY = -radius + 6; // base on the perimeter
+            const leftY = -radius + arrowH;
             const rightX = arrowW / 2;
-            const rightY = -radius + 6;
+            const rightY = -radius + arrowH;
 
             upgradeWheelCtx.save();
             upgradeWheelCtx.translate(cx, cy);
-            // Arrow is always at the top, no rotation needed
+            upgradeWheelCtx.rotate(angle);
 
             // Rounded triangle
             const r = cornerR;
@@ -4080,13 +4080,6 @@
             upgradeWheelCtx.lineWidth = 1;
             upgradeWheelCtx.stroke();
 
-            // Small glow ring around the arrow base
-            upgradeWheelCtx.beginPath();
-            upgradeWheelCtx.arc(0, -radius + 2, 6, 0, Math.PI * 2);
-            upgradeWheelCtx.strokeStyle = 'rgba(74, 124, 247, 0.3)';
-            upgradeWheelCtx.lineWidth = 2;
-            upgradeWheelCtx.stroke();
-
             upgradeWheelCtx.restore();
         }
 
@@ -4119,40 +4112,36 @@
 
             // Fixed rotations for consistent force
             const spins = 4 + Math.random() * 2;
-            let finalRotation;
+            let finalAngle;
             // Green zone: from -PI/2 to -PI/2 + 2*PI*chance
             const greenStart = -Math.PI / 2;
             const greenEnd = greenStart + (Math.PI * 2 * chance);
             if (win) {
-                finalRotation = greenStart + Math.random() * (greenEnd - greenStart);
+                finalAngle = greenStart + Math.random() * (greenEnd - greenStart);
             } else {
-                finalRotation = greenEnd + Math.random() * (Math.PI * 2 * (1 - chance));
+                finalAngle = greenEnd + Math.random() * (Math.PI * 2 * (1 - chance));
             }
-            // Add full spins so the wheel spins multiple times
-            finalRotation += spins * Math.PI * 2;
+            // Add full spins so the arrow rotates multiple times
+            finalAngle += spins * Math.PI * 2;
 
-            // We want the arrow (fixed at top) to point to the result.
-            // The wheel rotates, so the green segment moves.
-            // We need to align the final rotation with the arrow position.
-
-            const startRotation = wheelRotation;
+            const startAngle = upgradeArrowAngle;
             const duration = 2800 + Math.random() * 500;
             const startTime = performance.now();
 
             haptic('medium');
 
-            function animateWheel(now) {
+            function animateArrow(now) {
                 const elapsed = now - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 // Quintic ease-out for longer deceleration
                 const eased = 1 - Math.pow(1 - progress, 5);
-                const currentRotation = startRotation + (finalRotation - startRotation) * eased;
-                wheelRotation = currentRotation;
+                const currentAngle = startAngle + (finalAngle - startAngle) * eased;
+                upgradeArrowAngle = currentAngle;
 
                 if (progress < 1) {
-                    requestAnimationFrame(animateWheel);
+                    requestAnimationFrame(animateArrow);
                 } else {
-                    wheelRotation = finalRotation;
+                    upgradeArrowAngle = finalAngle;
                     isUpgradeSpinning = false;
                     upgradeActionBtn.disabled = false;
 
@@ -4185,13 +4174,13 @@
                         upgradeResult.className = '';
                     }, 3500);
 
-                    // Smoothly return wheel to start (0 rotation)
+                    // Smoothly return arrow to start (top: -PI/2)
                     returnToStart = true;
                     returnStartTime = performance.now();
-                    returnStartRotation = wheelRotation;
+                    returnStartAngle = upgradeArrowAngle;
                 }
             }
-            requestAnimationFrame(animateWheel);
+            requestAnimationFrame(animateArrow);
         }
 
         // ─── Upgrade controls ──────────────────────────────────────────
@@ -4747,20 +4736,18 @@
         }
 
         function renderLoop() {
-            // Handle return-to-start animation for the wheel
+            // Handle return-to-start animation for the arrow
             if (returnToStart && !isUpgradeSpinning) {
                 const elapsed = performance.now() - returnStartTime;
                 const progress = Math.min(elapsed / RETURN_DURATION, 1);
                 const eased = 1 - Math.pow(1 - progress, 3);
-                const target = 0;
-                const diff = target - returnStartRotation;
+                const target = -Math.PI / 2;
                 // Normalize diff to shortest path
-                let normDiff = diff % (2 * Math.PI);
-                if (normDiff > Math.PI) normDiff -= 2 * Math.PI;
-                if (normDiff < -Math.PI) normDiff += 2 * Math.PI;
-                wheelRotation = returnStartRotation + normDiff * eased;
+                let diff = target - returnStartAngle;
+                diff = ((diff % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI; // clamp to [-PI, PI]
+                upgradeArrowAngle = returnStartAngle + diff * eased;
                 if (progress >= 1) {
-                    wheelRotation = target;
+                    upgradeArrowAngle = target;
                     returnToStart = false;
                 }
             }
