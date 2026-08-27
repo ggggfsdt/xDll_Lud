@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN STYLES ─── */
+        /* ─── LOADING SCREEN ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -303,7 +303,7 @@
             }
         }
 
-        /* ─── ORIGINAL APP STYLES ─── */
+        /* ─── APP ─── */
         * {
             margin: 0;
             padding: 0;
@@ -365,7 +365,6 @@
             position: relative;
             z-index: 1;
         }
-        /* ─── TOPBAR ─── */
         #topbar {
             display: flex;
             align-items: center;
@@ -449,7 +448,6 @@
             display: inline-block;
             min-width: 24px;
         }
-        /* ─── DEPOSIT BUTTON ─── */
         #deposit-btn {
             width: 28px;
             height: 28px;
@@ -474,7 +472,6 @@
             box-shadow: 0 0 4px var(--blue-glow);
         }
 
-        /* ─── MAIN ─── */
         #main {
             flex: 1;
             position: relative;
@@ -511,6 +508,8 @@
             z-index: 1;
             transition: transform 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s;
         }
+
+        /* PvP */
         #pvp-page {
             display: flex;
             flex-direction: column;
@@ -1103,6 +1102,8 @@
             font-size: 12px;
             margin-right: 2px;
         }
+
+        /* Profile */
         #profile-page {
             padding: 20px 16px 10px;
             overflow-y: auto;
@@ -1367,6 +1368,8 @@
             transform: scale(0.94);
             opacity: 0.8;
         }
+
+        /* Top */
         #top-page {
             padding: 14px 14px 10px;
             overflow-y: auto;
@@ -1590,6 +1593,7 @@
             object-fit: contain;
             margin-left: 4px;
         }
+
         #tabs {
             display: flex;
             flex-shrink: 0;
@@ -1667,115 +1671,7 @@
         .tab-btn.active .tab-icon svg {
             stroke: #ffffff !important;
         }
-        .no-players-msg {
-            text-align: center;
-            color: var(--text2);
-            padding: 40px 0;
-            opacity: 0.4;
-            font-size: 14px;
-        }
-        #win-panel {
-            position: absolute;
-            left: 50%;
-            bottom: 0;
-            transform: translateX(-50%) translateY(100%);
-            width: 92%;
-            max-width: 380px;
-            background: rgba(26, 26, 30, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius) var(--radius) 0 0;
-            padding: 20px 18px 24px;
-            border: 1px solid var(--border);
-            border-bottom: none;
-            box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.8);
-            z-index: 25;
-            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            max-height: 75vh;
-            overflow-y: auto;
-        }
-        #win-panel.show {
-            transform: translateX(-50%) translateY(0%);
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #win-gif-container {
-            width: 70%;
-            max-width: 220px;
-            aspect-ratio: 16/9;
-            border-radius: 12px;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: transparent;
-            border: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        #win-gif-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-            border-radius: 8px;
-        }
-        #win-avatar-container {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid var(--gold);
-            flex-shrink: 0;
-            background: var(--surface3);
-        }
-        #win-avatar-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #win-details {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            width: 100%;
-        }
-        #win-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--gold);
-            text-align: center;
-        }
-        #win-multiplier {
-            font-size: 30px;
-            font-weight: 800;
-            color: #fff;
-            text-align: center;
-        }
-        #win-continue-btn {
-            padding: 10px 0;
-            border-radius: 30px;
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            font-weight: 700;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 0 0 20px var(--primary-glow);
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-            width: 100%;
-            text-align: center;
-            margin-top: 4px;
-        }
-        #win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
+
         /* ─── ICE ARENA ───────────────────────────────────── */
         #ice-page {
             display: flex;
@@ -2317,6 +2213,7 @@
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before {
             transform: translateY(-50%) translateX(16px);
         }
+
         /* ─── NOTIFICATION OVERLAY ───────────────────────────────────── */
         #notification-overlay {
             position: fixed;
@@ -2376,7 +2273,7 @@
         .wheel-wrapper {
             position: relative;
             width: 100%;
-            max-width: 300px;
+            max-width: 360px;
             aspect-ratio: 1/1;
             margin: 0 auto;
         }
@@ -2385,21 +2282,21 @@
             height: 100%;
             display: block;
             border-radius: 50%;
-            box-shadow: 0 0 40px rgba(74, 124, 247, 0.06);
+            box-shadow: 0 0 50px rgba(74, 124, 247, 0.06);
         }
         #upgrade-center-text {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 34px;
+            font-size: 38px;
             font-weight: 800;
             color: #fff;
             z-index: 10;
             text-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
             pointer-events: none;
             background: rgba(0, 0, 0, 0.3);
-            padding: 4px 16px;
+            padding: 4px 18px;
             border-radius: 40px;
             backdrop-filter: blur(4px);
         }
@@ -2486,7 +2383,6 @@
         #upgrade-result.lose {
             color: #ff6b6b;
         }
-        /* back button */
         #upgrade-back {
             position: absolute;
             top: 16px;
@@ -2511,10 +2407,10 @@
 
         @media (max-width:400px) {
             .wheel-wrapper {
-                max-width: 240px;
+                max-width: 280px;
             }
             #upgrade-center-text {
-                font-size: 28px;
+                font-size: 30px;
             }
             .input-group input {
                 font-size: 14px;
@@ -2525,11 +2421,19 @@
                 padding: 12px 0;
             }
         }
+        @media (max-width:360px) {
+            .wheel-wrapper {
+                max-width: 220px;
+            }
+            #upgrade-center-text {
+                font-size: 24px;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <!-- ═══ LOADING SCREEN OVERLAY ─── -->
+    <!-- ═══ LOADING SCREEN ─── -->
     <div id="loading-screen">
         <div id="grid-wrapper">
             <div id="loading-grid"></div>
@@ -2540,7 +2444,7 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ ORIGINAL APP ─── -->
+    <!-- ═══ APP ─── -->
     <div id="app">
         <div id="topbar">
             <div id="top-left">
@@ -2556,7 +2460,7 @@
             </div>
         </div>
         <div id="main">
-            <!-- PvP Page -->
+            <!-- PvP -->
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
@@ -2602,7 +2506,7 @@
                 </div>
             </div>
 
-            <!-- Ice Page -->
+            <!-- Ice -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
@@ -2658,7 +2562,6 @@
                     </div>
                     <div class="profile-divider"></div>
                     <div style="font-size:13px;color:var(--text2);opacity:0.6;margin-top:2px;">balance: <span id="p-balance" style="color:var(--gold);font-weight:700;">1000</span></div>
-
                     <div class="anon-row">
                         <div class="anon-label"><span class="anon-title">Anonymous mode</span><span class="anon-sub">hide your avatar from other players</span></div>
                         <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
@@ -2708,11 +2611,10 @@
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
             <button class="tab-btn" data-tab="profile"><span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5"/><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20"/></svg></span>Profile</button>
             <button class="tab-btn" data-tab="top"><span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
-            <!-- no upgrade tab here -->
         </div>
     </div>
 
-    <!-- Notification Overlay -->
+    <!-- Notification -->
     <div id="notification-overlay"></div>
 
     <div id="promo-modal">
@@ -4027,14 +3929,12 @@
                 newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile(); } if (tabId === 'top')
                     refreshLeaderboard(); }
 
-            // Manage wheel animation
             if (tabId === 'upgrade') {
                 startWheelAnimation();
             } else {
                 stopWheelAnimation();
             }
 
-            // update tab buttons (only those that exist)
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
             haptic('light');
         }
@@ -4053,12 +3953,16 @@
             return Math.max(0.02, Math.min(0.98, chance));
         }
 
-        let upgradeArrowAngle = -Math.PI / 2; // starts at top (12 o'clock)
+        let upgradeArrowAngle = -Math.PI / 2;
         let isUpgradeSpinning = false;
         let upgradeSpinTimeout = null;
         let currentDisplayChance = 0.9;
         let targetDisplayChance = 0.9;
         let wheelAnimationId = null;
+        let returnToStart = false;
+        let returnStartTime = 0;
+        let returnStartAngle = 0;
+        const RETURN_DURATION = 700;
 
         function startWheelAnimation() {
             if (wheelAnimationId) return;
@@ -4079,7 +3983,7 @@
 
         function resizeUpgradeCanvas() {
             const wrap = document.querySelector('.wheel-wrapper');
-            const size = wrap.clientWidth || 300;
+            const size = wrap.clientWidth || 360;
             const dpr = window.devicePixelRatio || 1;
             upgradeWheelCanvas.width = size * dpr;
             upgradeWheelCanvas.height = size * dpr;
@@ -4094,7 +3998,7 @@
             const h = upgradeWheelCanvas.height / (window.devicePixelRatio || 1);
             const cx = w / 2,
                 cy = h / 2;
-            const radius = Math.min(w, h) * 0.40;
+            const radius = Math.min(w, h) * 0.42;
             const lineWidth = 18;
 
             // Smooth chance animation
@@ -4105,7 +4009,7 @@
 
             upgradeWheelCtx.clearRect(0, 0, w, h);
 
-            // Gray background
+            // Gray background ring
             upgradeWheelCtx.beginPath();
             upgradeWheelCtx.arc(cx, cy, radius, 0, Math.PI * 2);
             upgradeWheelCtx.strokeStyle = '#3a3a40';
@@ -4125,32 +4029,71 @@
             const pct = Math.round(currentDisplayChance * 100);
             upgradeCenterText.textContent = pct + '%';
 
-            // Draw small arrow on the perimeter (pointing outward, pivot at center)
+            // ─── Arrow: smooth rounded triangle at top, pointing down toward center ───
             const angle = upgradeArrowAngle;
-            const tipR = radius + 4;
-            const tipX = cx + tipR * Math.cos(angle);
-            const tipY = cy + tipR * Math.sin(angle);
-            const baseAngle1 = angle + 0.5;
-            const baseAngle2 = angle - 0.5;
-            const baseR = radius - 10;
-            const baseX1 = cx + baseR * Math.cos(baseAngle1);
-            const baseY1 = cy + baseR * Math.sin(baseAngle1);
-            const baseX2 = cx + baseR * Math.cos(baseAngle2);
-            const baseY2 = cy + baseR * Math.sin(baseAngle2);
+            const arrowW = 9;
+            const arrowH = 16;
+            const cornerR = 3.5;
+
+            // Tip at perimeter, pointing toward center
+            const tipX = 0;
+            const tipY = -radius;
+            const leftX = -arrowW / 2;
+            const leftY = -radius + arrowH;
+            const rightX = arrowW / 2;
+            const rightY = -radius + arrowH;
+
+            upgradeWheelCtx.save();
+            upgradeWheelCtx.translate(cx, cy);
+            upgradeWheelCtx.rotate(angle);
+
+            // Rounded triangle using arcTo (standard rounded polygon algorithm)
+            // Edge vectors and start points for each corner
+            const r = cornerR;
+
+            // Edge tip->left
+            const dx1 = leftX - tipX,
+                dy1 = leftY - tipY;
+            const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+            const startX1 = tipX + dx1 / len1 * r;
+            const startY1 = tipY + dy1 / len1 * r;
+
+            // Edge tip->right
+            const dx2 = rightX - tipX,
+                dy2 = rightY - tipY;
+            const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+            const startX2 = tipX + dx2 / len2 * r;
+            const startY2 = tipY + dy2 / len2 * r;
+
+            // Edge left->right
+            const dx3 = rightX - leftX,
+                dy3 = rightY - leftY;
+            const len3 = Math.sqrt(dx3 * dx3 + dy3 * dy3);
+            const startX3 = leftX + dx3 / len3 * r;
+            const startY3 = leftY + dy3 / len3 * r;
+            const startX4 = rightX - dx3 / len3 * r;
+            const startY4 = rightY - dy3 / len3 * r;
 
             upgradeWheelCtx.beginPath();
-            upgradeWheelCtx.moveTo(tipX, tipY);
-            upgradeWheelCtx.lineTo(baseX1, baseY1);
-            upgradeWheelCtx.lineTo(baseX2, baseY2);
+            upgradeWheelCtx.moveTo(startX1, startY1);
+            // Corner at left
+            upgradeWheelCtx.arcTo(leftX, leftY, startX3, startY3, r);
+            // Corner at right
+            upgradeWheelCtx.arcTo(rightX, rightY, startX2, startY2, r);
+            // Corner at tip
+            upgradeWheelCtx.arcTo(tipX, tipY, startX1, startY1, r);
             upgradeWheelCtx.closePath();
+
             upgradeWheelCtx.fillStyle = '#ffffff';
-            upgradeWheelCtx.shadowColor = 'rgba(0,0,0,0.8)';
-            upgradeWheelCtx.shadowBlur = 6;
+            upgradeWheelCtx.shadowColor = 'rgba(0,0,0,0.7)';
+            upgradeWheelCtx.shadowBlur = 8;
             upgradeWheelCtx.fill();
             upgradeWheelCtx.shadowBlur = 0;
-            upgradeWheelCtx.strokeStyle = '#000';
+            upgradeWheelCtx.strokeStyle = 'rgba(255,255,255,0.3)';
             upgradeWheelCtx.lineWidth = 0.5;
             upgradeWheelCtx.stroke();
+
+            upgradeWheelCtx.restore();
         }
 
         function spinUpgrade() {
@@ -4180,22 +4123,21 @@
             updateBalance();
             updateProfile();
 
-            // Determine final arrow angle (multiple full spins + target zone)
-            const spins = 3 + Math.random() * 3;
+            // Fixed number of rotations for consistent force
+            const spins = 4 + Math.random() * 2;
             let finalAngle;
+            // Green zone: from -PI/2 to -PI/2 + 2*PI*chance
+            const greenStart = -Math.PI / 2;
+            const greenEnd = greenStart + (Math.PI * 2 * chance);
             if (win) {
-                const startAngle = -Math.PI / 2;
-                const endAngle = startAngle + (Math.PI * 2 * chance);
-                finalAngle = startAngle + Math.random() * (endAngle - startAngle);
+                finalAngle = greenStart + Math.random() * (greenEnd - greenStart);
             } else {
-                const startAngle = -Math.PI / 2 + (Math.PI * 2 * chance);
-                const endAngle = startAngle + (Math.PI * 2 * (1 - chance));
-                finalAngle = startAngle + Math.random() * endAngle;
+                finalAngle = greenEnd + Math.random() * (Math.PI * 2 * (1 - chance));
             }
             finalAngle += spins * Math.PI * 2;
 
             const startArrowAngle = upgradeArrowAngle;
-            const duration = 2200 + Math.random() * 600;
+            const duration = 2800 + Math.random() * 500;
             const startTime = performance.now();
 
             haptic('medium');
@@ -4203,7 +4145,8 @@
             function animateArrow(now) {
                 const elapsed = now - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
+                // Stronger easing for longer deceleration: quintic ease-out
+                const eased = 1 - Math.pow(1 - progress, 5);
                 const currentAngle = startArrowAngle + (finalAngle - startArrowAngle) * eased;
                 upgradeArrowAngle = currentAngle;
 
@@ -4231,7 +4174,6 @@
                         showNotification(`💔 You lost ${bet} diamonds`);
                     }
 
-                    // Sync balance with server
                     if (socket && socket.connected) {
                         socket.emit('updateBalance', { balance: state.balance }, (res) => {
                             if (!res?.ok) console.warn('Balance update failed');
@@ -4243,6 +4185,11 @@
                         upgradeResult.textContent = '';
                         upgradeResult.className = '';
                     }, 3500);
+
+                    // Smoothly return to start position (-PI/2)
+                    returnToStart = true;
+                    returnStartTime = performance.now();
+                    returnStartAngle = upgradeArrowAngle;
                 }
             }
             requestAnimationFrame(animateArrow);
@@ -4801,6 +4748,20 @@
         }
 
         function renderLoop() {
+            // Handle return-to-start animation
+            if (returnToStart && !isUpgradeSpinning) {
+                const elapsed = performance.now() - returnStartTime;
+                const progress = Math.min(elapsed / RETURN_DURATION, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const target = -Math.PI / 2;
+                const diff = target - returnStartAngle;
+                upgradeArrowAngle = returnStartAngle + diff * eased;
+                if (progress >= 1) {
+                    upgradeArrowAngle = target;
+                    returnToStart = false;
+                }
+            }
+
             updatePlayerAnimations();
             const now = Date.now();
             if (state.gameState === 'countdown' && state.countdownStartTime) {
@@ -4846,7 +4807,6 @@
             resizeIceCanvas();
             window.addEventListener('resize', () => { resizeCanvas();
                 resizeIceCanvas(); });
-            // set default tab
             Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
@@ -4854,14 +4814,12 @@
             setOnline(false);
             setTimeout(resizeUpgradeCanvas, 400);
             window.addEventListener('resize', resizeUpgradeCanvas);
-            // init chance
             updateTargetChance();
             currentDisplayChance = targetDisplayChance;
         }
         init();
         window.__state = state;
 
-        // expose upgrade functions for debugging
         window.spinUpgrade = spinUpgrade;
         window.getChance = getChance;
     </script>
