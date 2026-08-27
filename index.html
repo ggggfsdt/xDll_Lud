@@ -4029,13 +4029,13 @@
             const pct = Math.round(currentDisplayChance * 100);
             upgradeCenterText.textContent = pct + '%';
 
-            // ─── Arrow: smooth rounded triangle at top, pointing down toward center ───
+            // ─── Arrow: clean rounded triangle on perimeter, pointing inward ───
             const angle = upgradeArrowAngle;
-            const arrowW = 9;
-            const arrowH = 16;
-            const cornerR = 3.5;
+            const arrowW = 14;
+            const arrowH = 22;
+            const cornerR = 4;
 
-            // Tip at perimeter, pointing toward center
+            // Tip on perimeter, base inward
             const tipX = 0;
             const tipY = -radius;
             const leftX = -arrowW / 2;
@@ -4047,10 +4047,8 @@
             upgradeWheelCtx.translate(cx, cy);
             upgradeWheelCtx.rotate(angle);
 
-            // Rounded triangle using arcTo (standard rounded polygon algorithm)
-            // Edge vectors and start points for each corner
+            // Build a rounded triangle using arcTo
             const r = cornerR;
-
             // Edge tip->left
             const dx1 = leftX - tipX,
                 dy1 = leftY - tipY;
@@ -4076,21 +4074,18 @@
 
             upgradeWheelCtx.beginPath();
             upgradeWheelCtx.moveTo(startX1, startY1);
-            // Corner at left
             upgradeWheelCtx.arcTo(leftX, leftY, startX3, startY3, r);
-            // Corner at right
-            upgradeWheelCtx.arcTo(rightX, rightY, startX2, startY2, r);
-            // Corner at tip
+            upgradeWheelCtx.arcTo(rightX, rightY, startX4, startY4, r);
             upgradeWheelCtx.arcTo(tipX, tipY, startX1, startY1, r);
             upgradeWheelCtx.closePath();
 
             upgradeWheelCtx.fillStyle = '#ffffff';
-            upgradeWheelCtx.shadowColor = 'rgba(0,0,0,0.7)';
-            upgradeWheelCtx.shadowBlur = 8;
+            upgradeWheelCtx.shadowColor = 'rgba(0,0,0,0.8)';
+            upgradeWheelCtx.shadowBlur = 10;
             upgradeWheelCtx.fill();
             upgradeWheelCtx.shadowBlur = 0;
-            upgradeWheelCtx.strokeStyle = 'rgba(255,255,255,0.3)';
-            upgradeWheelCtx.lineWidth = 0.5;
+            upgradeWheelCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+            upgradeWheelCtx.lineWidth = 1;
             upgradeWheelCtx.stroke();
 
             upgradeWheelCtx.restore();
@@ -4123,10 +4118,9 @@
             updateBalance();
             updateProfile();
 
-            // Fixed number of rotations for consistent force
+            // Fixed rotations for consistent force
             const spins = 4 + Math.random() * 2;
             let finalAngle;
-            // Green zone: from -PI/2 to -PI/2 + 2*PI*chance
             const greenStart = -Math.PI / 2;
             const greenEnd = greenStart + (Math.PI * 2 * chance);
             if (win) {
@@ -4145,7 +4139,7 @@
             function animateArrow(now) {
                 const elapsed = now - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-                // Stronger easing for longer deceleration: quintic ease-out
+                // Quintic ease-out for longer deceleration
                 const eased = 1 - Math.pow(1 - progress, 5);
                 const currentAngle = startArrowAngle + (finalAngle - startArrowAngle) * eased;
                 upgradeArrowAngle = currentAngle;
@@ -4186,7 +4180,7 @@
                         upgradeResult.className = '';
                     }, 3500);
 
-                    // Smoothly return to start position (-PI/2)
+                    // Smooth return to start
                     returnToStart = true;
                     returnStartTime = performance.now();
                     returnStartAngle = upgradeArrowAngle;
