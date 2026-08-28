@@ -353,13 +353,13 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── launchIcePuck: center start, speed 10 ──────────────────────
+// ─── launchIcePuck: uses spinFinalAngle for direction ───────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 10;
   const x = ICE_SIZE / 2;
   const y = ICE_SIZE / 2;
-  const angle = Math.random() * 2 * Math.PI;
+  const angle = iceRoom.spinFinalAngle; // ← uses the arrow direction
   iceRoom.puck.x = x;
   iceRoom.puck.y = y;
   iceRoom.puck.vx = Math.cos(angle) * speed;
