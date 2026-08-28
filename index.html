@@ -1314,10 +1314,11 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
+        // ─── applyIceServerState (force puck position on sliding) ────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
 
-            // If we just entered 'sliding', force the puck position to avoid lerp from center
+            // Force puck position when entering sliding to avoid lerp from center
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.puckPrevX = snapshot.puck.x;
                 iceState.puckPrevY = snapshot.puck.y;
@@ -1336,7 +1337,6 @@
 
             // Only update puck position if not forcing above
             if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
-                // Keep lerp for smooth movement in sliding
                 iceState.puckPrevX = iceState.puck.x;
                 iceState.puckPrevY = iceState.puck.y;
                 iceState.puck.x = snapshot.puck.x;
@@ -2142,35 +2142,41 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
+            // ─── MODIFIED: Draw spinning arrow (wide triangle, no stick) ──
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
                 const extraSpins = 4;
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
-                const arrowLen = Math.min(w * 0.18, 45);
-                const headSize = Math.min(arrowLen * 0.4, 12);
+
+                // Wide, short triangle
+                const triSize = Math.min(w * 0.12, 30);
+                const tipOffset = triSize * 0.8; // shorter length
+
                 iceCtx.save();
                 iceCtx.translate(half, half);
                 iceCtx.rotate(angle);
-                iceCtx.strokeStyle = '#e8f4ff';
-                iceCtx.lineWidth = 2.5;
-                iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
-                iceCtx.shadowBlur = 12;
+
                 iceCtx.beginPath();
-                iceCtx.moveTo(0, 0);
-                iceCtx.lineTo(arrowLen - headSize * 0.6, 0);
-                iceCtx.stroke();
-                iceCtx.fillStyle = '#e8f4ff';
-                iceCtx.shadowBlur = 16;
-                iceCtx.beginPath();
-                iceCtx.moveTo(arrowLen, 0);
-                iceCtx.lineTo(arrowLen - headSize, -headSize * 0.5);
-                iceCtx.lineTo(arrowLen - headSize, headSize * 0.5);
+                iceCtx.moveTo(tipOffset, 0);
+                iceCtx.lineTo(-tipOffset * 0.4, -triSize * 0.55);
+                iceCtx.lineTo(-tipOffset * 0.4,  triSize * 0.55);
                 iceCtx.closePath();
+
+                iceCtx.fillStyle = '#e8f4ff';
+                iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
+                iceCtx.shadowBlur = 16;
                 iceCtx.fill();
+
+                iceCtx.shadowBlur = 0;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+                iceCtx.lineWidth = 1.5;
+                iceCtx.stroke();
+
                 iceCtx.restore();
             }
 
+            // ─── Draw puck ──────────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
