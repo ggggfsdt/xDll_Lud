@@ -1315,22 +1315,34 @@
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
         function applyIceServerState(snapshot) {
-            const prevGameState=iceState.gameState;
-            const oldPuckX = iceState.puck.x;
-            const oldPuckY = iceState.puck.y;
+            const prevGameState = iceState.gameState;
 
-            iceState.gameState=snapshot.gameState;
-            iceState.pot=snapshot.pot;
-            iceState.countdownStartTime=snapshot.countdownStartTime;
-            iceState.spinStartTime=snapshot.spinStartTime;
-            iceState.spinDuration=snapshot.spinDuration;
-            iceState.spinFinalAngle=snapshot.spinFinalAngle;
+            // If we just entered 'sliding', force the puck position to avoid lerp from center
+            if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
+                iceState.puckPrevX = snapshot.puck.x;
+                iceState.puckPrevY = snapshot.puck.y;
+                iceState.puck.x = snapshot.puck.x;
+                iceState.puck.y = snapshot.puck.y;
+                iceState.puckUpdateTime = Date.now();
+            }
 
-            iceState.puckPrevX = oldPuckX;
-            iceState.puckPrevY = oldPuckY;
-            iceState.puck.x = snapshot.puck.x;
-            iceState.puck.y = snapshot.puck.y;
-            iceState.puckUpdateTime = Date.now();
+            // Update all other fields
+            iceState.gameState = snapshot.gameState;
+            iceState.pot = snapshot.pot;
+            iceState.countdownStartTime = snapshot.countdownStartTime;
+            iceState.spinStartTime = snapshot.spinStartTime;
+            iceState.spinDuration = snapshot.spinDuration;
+            iceState.spinFinalAngle = snapshot.spinFinalAngle;
+
+            // Only update puck position if not forcing above
+            if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
+                // Keep lerp for smooth movement in sliding
+                iceState.puckPrevX = iceState.puck.x;
+                iceState.puckPrevY = iceState.puck.y;
+                iceState.puck.x = snapshot.puck.x;
+                iceState.puck.y = snapshot.puck.y;
+                iceState.puckUpdateTime = Date.now();
+            }
 
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -1937,7 +1949,7 @@
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.lineWidth = 4.5;  // thicker outline
+                iceCtx.lineWidth = 4.5;
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
@@ -2186,7 +2198,7 @@
                 iceCtx.shadowColor = 'rgba(180,220,255,0.9)';
                 iceCtx.shadowBlur = 14;
                 iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.lineWidth = 4.5;  // thicker outline
+                iceCtx.lineWidth = 4.5;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
