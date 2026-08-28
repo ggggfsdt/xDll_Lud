@@ -250,7 +250,6 @@
             z-index: 10;
             gap: 8px;
         }
-        /* Left side: username + status dot */
         #top-left {
             display: flex;
             align-items: center;
@@ -277,8 +276,6 @@
             background: var(--red);
             box-shadow: 0 0 12px var(--red);
         }
-
-        /* Right side: + button + diamond balance */
         #top-right {
             display: flex;
             align-items: center;
@@ -654,12 +651,10 @@
     <!-- ═══ ORIGINAL APP ─── -->
     <div id="app">
         <div id="topbar">
-            <!-- Left: username + status dot -->
             <div id="top-left">
                 <span id="username-display">player</span>
                 <div id="status-dot"></div>
             </div>
-            <!-- Right: + button + diamond balance -->
             <div id="top-right">
                 <button id="plus-btn">+</button>
                 <div id="balance-wrap">
@@ -808,7 +803,6 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ SCRIPT ─── -->
     <script>
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – no shop, top bar rearranged
@@ -1097,7 +1091,6 @@
             socket.on('roundEnd',(payload)=>{ handleRoundEnd(payload); });
             socket.on('iceState',(snapshot)=>{ applyIceServerState(snapshot); });
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
-            // ─── NOTIFICATION listener ─────────────────────────────────
             socket.on('notification', (data) => {
                 if (!data || !data.message) return;
                 showNotification(data.message);
@@ -1318,7 +1311,6 @@
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
 
-            // Force puck position when entering sliding to avoid lerp from center
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.puckPrevX = snapshot.puck.x;
                 iceState.puckPrevY = snapshot.puck.y;
@@ -1327,7 +1319,6 @@
                 iceState.puckUpdateTime = Date.now();
             }
 
-            // Update all other fields
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
             iceState.countdownStartTime = snapshot.countdownStartTime;
@@ -1335,7 +1326,6 @@
             iceState.spinDuration = snapshot.spinDuration;
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
 
-            // Only update puck position if not forcing above
             if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
                 iceState.puckPrevX = iceState.puck.x;
                 iceState.puckPrevY = iceState.puck.y;
@@ -1733,10 +1723,8 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
-        // ─── PLUS BUTTON (for future use) ──────────────────────────────
         plusBtn.addEventListener('click', () => {
             haptic('light');
-            // Placeholder: you can later add a custom action (e.g. quick add 10)
             alert('Coming soon!');
         });
 
@@ -2142,27 +2130,24 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── MODIFIED: spinning arrow orbits around the puck ──────────
+            // ─── MODIFIED: spinning arrow closer to puck ──────────
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
                 const extraSpins = 4;
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
-                // Puck radius (during spinning, scale = 1)
                 const puckRadius = PUCK_RENDER_RADIUS * s;
-                const orbitRadius = puckRadius + 10;   // distance from center
+                const orbitRadius = puckRadius + 4;   // closer
 
-                // Small triangular tip
                 const triSize = Math.min(w * 0.035, 10);
                 const tipOffset = triSize * 0.4;
 
                 iceCtx.save();
                 iceCtx.translate(half, half);
                 iceCtx.rotate(angle);
-                iceCtx.translate(orbitRadius, 0);      // move outward along x
+                iceCtx.translate(orbitRadius, 0);
 
-                // Draw arrow pointing right (tip at positive x)
                 iceCtx.beginPath();
                 iceCtx.moveTo(tipOffset, 0);
                 iceCtx.lineTo(-tipOffset * 0.3, -triSize * 0.5);
@@ -2224,6 +2209,17 @@
                 iceCtx.lineTo(px, py + crossSize);
                 iceCtx.stroke();
                 iceCtx.globalAlpha = 1;
+                iceCtx.restore();
+
+                // ─── ADDED: transparent glow ring around puck ──
+                iceCtx.save();
+                iceCtx.globalAlpha = 0.2;
+                iceCtx.strokeStyle = '#b8dcff';
+                iceCtx.lineWidth = 3;
+                iceCtx.shadowBlur = 0;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, puckRadius + 4, 0, Math.PI * 2);
+                iceCtx.stroke();
                 iceCtx.restore();
 
                 const speedThreshold = 2.0;
