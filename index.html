@@ -2142,21 +2142,27 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── MODIFIED: Draw spinning arrow (very small tip, drawn before puck) ──
+            // ─── MODIFIED: spinning arrow orbits around the puck ──────────
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
                 const extraSpins = 4;
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
-                // Very small triangular tip
-                const triSize = Math.min(w * 0.035, 10);   // tiny
-                const tipOffset = triSize * 0.4;           // short
+                // Puck radius (during spinning, scale = 1)
+                const puckRadius = PUCK_RENDER_RADIUS * s;
+                const orbitRadius = puckRadius + 10;   // distance from center
+
+                // Small triangular tip
+                const triSize = Math.min(w * 0.035, 10);
+                const tipOffset = triSize * 0.4;
 
                 iceCtx.save();
                 iceCtx.translate(half, half);
                 iceCtx.rotate(angle);
+                iceCtx.translate(orbitRadius, 0);      // move outward along x
 
+                // Draw arrow pointing right (tip at positive x)
                 iceCtx.beginPath();
                 iceCtx.moveTo(tipOffset, 0);
                 iceCtx.lineTo(-tipOffset * 0.3, -triSize * 0.5);
@@ -2167,12 +2173,10 @@
                 iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.fill();
-
                 iceCtx.shadowBlur = 0;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
                 iceCtx.lineWidth = 1;
                 iceCtx.stroke();
-
                 iceCtx.restore();
             }
 
