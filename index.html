@@ -6,9 +6,8 @@
     <title>dllump · bump arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
-    <!-- ─── LOADING SCREEN STYLES (unchanged) ─── -->
     <style>
+        /* ─── LOADING SCREEN STYLES ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -229,22 +228,115 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── ORIGINAL APP STYLES (unchanged) ─── */
+        /* ─── ORIGINAL APP STYLES ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
         #app { display:flex; flex-direction:column; height:100%; max-width:440px; margin:0 auto; background:#08080a; background-image:url('https://i.postimg.cc/ncz4Kznn/photo-5202192649983563686-y.jpg'); background-size:cover; background-position:center; background-repeat:no-repeat; overflow:hidden; position:relative; }
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
-        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 14px 8px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); flex-shrink:0; min-height:52px; z-index:10; gap:8px; }
-        #balance-wrap { display:flex; align-items:center; gap:6px; background:var(--surface2); padding:3px 14px 3px 6px; border-radius:28px; border:1px solid var(--border); }
-        #diamond-icon { width:26px; height:26px; object-fit:contain; flex-shrink:0; display:block; animation:glowDiamond 2.8s ease-in-out infinite; }
-        @keyframes glowDiamond { 0%,100% { filter:drop-shadow(0 0 6px rgba(200,168,78,0.3)); } 50% { filter:drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); } }
-        #balance { font-size:17px; font-weight:700; color:#fff; letter-spacing:0.2px; font-variant-numeric:tabular-nums; display:inline-block; min-width:40px; }
-        #top-right { display:flex; align-items:center; gap:8px; }
-        #status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); transition:0.3s; }
-        #status-dot.offline { background:var(--red); box-shadow:0 0 12px var(--red); }
-        #username-display { font-size:13px; font-weight:500; color:var(--text2); max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+        /* ─── TOP BAR ─── */
+        #topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px 8px;
+            background: rgba(18,18,20,0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            min-height: 52px;
+            z-index: 10;
+            gap: 8px;
+        }
+        /* Left side: username + status dot */
+        #top-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #username-display {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text2);
+            max-width: 90px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 12px var(--green);
+            transition: 0.3s;
+        }
+        #status-dot.offline {
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red);
+        }
+
+        /* Right side: + button + diamond balance */
+        #top-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #plus-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #2196F3;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 16px rgba(33,150,243,0.4);
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        #plus-btn:active {
+            transform: scale(0.9);
+            opacity: 0.8;
+        }
+        #balance-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            padding: 3px 14px 3px 6px;
+            border-radius: 28px;
+            border: 1px solid var(--border);
+        }
+        #diamond-icon {
+            width: 26px;
+            height: 26px;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: block;
+            animation: glowDiamond 2.8s ease-in-out infinite;
+        }
+        @keyframes glowDiamond {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(200,168,78,0.3)); }
+            50% { filter: drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); }
+        }
+        #balance {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
+            font-variant-numeric: tabular-nums;
+            display: inline-block;
+            min-width: 40px;
+        }
+
+        /* ─── REST OF APP ─── */
         #main { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; background:transparent; }
         .tab-page { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transform:translateX(30px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease, visibility 0.35s ease; overflow:hidden; background:transparent; will-change:transform,opacity; }
         .tab-page.active { opacity:1; visibility:visible; transform:translateX(0); z-index:2; }
@@ -325,6 +417,8 @@
         #stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
         #stats-bar .stat-item .value { color:#fff; font-weight:700; }
         #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
+
+        /* ─── PROFILE (no shop) ─── */
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
         .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
         .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
@@ -340,6 +434,7 @@
         .stat-item .num.loss { color:var(--red); }
         .stat-item .num.rate { color:var(--primary); }
         #p-balance { color:var(--gold); font-weight:700; }
+
         .anon-row { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 2px; }
         .anon-row .anon-label { display:flex; flex-direction:column; text-align:left; }
         .anon-row .anon-title { font-size:14px; font-weight:600; color:var(--text); }
@@ -350,6 +445,7 @@
         .switch .slider::before { content:""; position:absolute; width:18px; height:18px; left:3px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:transform 0.2s ease; }
         .switch input:checked+.slider { background:var(--primary); }
         .switch input:checked+.slider::before { transform:translateY(-50%) translateX(20px); }
+
         .promo-section { width:100%; display:flex; flex-direction:column; gap:8px; margin-top:8px; }
         .promo-row { display:flex; gap:8px; }
         .promo-row input { flex:1; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:14px; outline:none; text-transform:uppercase; }
@@ -365,6 +461,8 @@
         #promo-modal .promo-sub { font-size:14px; color:var(--text2); text-align:center; }
         #promo-modal .promo-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 30px var(--primary-glow); transition:0.2s; width:100%; text-align:center; margin-top:4px; }
         #promo-modal .promo-btn:active { transform:scale(0.94); opacity:0.8; }
+
+        /* ─── TOP PAGE ─── */
         #top-page { padding:14px 14px 10px; overflow-y:auto; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; background:transparent; }
         #podium { display:flex; align-items:flex-end; justify-content:center; gap:12px; width:100%; max-width:400px; padding:20px 0 10px; flex-wrap:wrap; }
         .podium-col { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:70px; max-width:110px; transition:0.2s; }
@@ -399,6 +497,9 @@
         .top-entry .t-score { font-weight:700; color:var(--gold); font-size:13px; white-space:nowrap; }
         .top-entry .t-prize { font-size:11px; color:#fff; white-space:nowrap; display:flex; align-items:center; gap:4px; background:rgba(255,255,255,0.05); padding:1px 8px; border-radius:12px; }
         .top-entry .t-prize img { width:18px; height:18px; object-fit:contain; }
+        .top-entry .t-flame { width:20px; height:20px; object-fit:contain; margin-left:4px; }
+
+        /* ─── TABS ─── */
         #tabs { display:flex; flex-shrink:0; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-top:1px solid var(--border); padding-bottom:var(--safe-bottom); padding-top:2px; z-index:9999 !important; position:relative; pointer-events:auto !important; }
         .tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 0 8px; border:none; background:transparent; color:var(--text2); font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; gap:1px; position:relative; letter-spacing:0.4px; text-transform:uppercase; pointer-events:auto !important; touch-action:manipulation; }
         .tab-btn .tab-icon { font-size:20px; line-height:1.2; transition:0.2s; opacity:0.7; pointer-events:none; }
@@ -420,6 +521,7 @@
         #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
+
         /* ─── ICE ARENA ───────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
@@ -490,58 +592,49 @@
         .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
-        @media (max-width:400px) {
-            #balance-wrap { padding:2px 10px 2px 4px; }
-            #balance { font-size:15px; }
-            #diamond-icon { width:22px; height:22px; }
-            #bet-overlay-wrap, #ice-bet-overlay-wrap { width:96%; }
-            #bet-overlay, #ice-bet-overlay { padding:6px 10px 8px; }
-            #bet-input, #ice-bet-input { max-width:90px; height:24px; font-size:13px; padding:1px 4px; }
-            #all-in-btn, #ice-all-in-btn { height:24px; font-size:11px; padding:0 6px; }
-            #bet-btn, #ice-bet-btn { height:22px; font-size:12px; }
-            #bet-overlay.collapsed, #ice-bet-overlay.collapsed { padding:4px 8px; }
-            .auto-bet-toggle, .ice-auto-bet-toggle { width:34px; height:34px; font-size:16px; }
-            .auto-bet-panel, .ice-auto-bet-panel { width:140px; padding:10px 12px; }
-            .profile-card { padding:16px 14px 20px; }
-            .profile-pfp { width:60px; height:60px; }
-            .profile-name { font-size:17px; }
-            .stat-item .num { font-size:18px; }
-            #username-display { max-width:60px; font-size:11px; }
-            #countdown-timer { font-size:18px; top:12px; right:12px; }
-            #timer-wrap { top:12px; right:12px; min-width:44px; }
-            #timer-progress-wrap { width:36px; height:2px; }
-            #stats-bar, #ice-stats-bar { font-size:12px; padding:4px 10px; }
-            #stats-bar .stat-item .icon, #ice-stats-bar .stat-item .icon { width:16px; height:16px; }
-            #win-panel { width:96%; padding:16px; }
-            #win-name { font-size:20px; }
-            #win-multiplier { font-size:24px; }
-            #win-gif-container { width:65%; max-width:160px; }
-            #win-avatar-container { width:50px; height:50px; }
-            #player-list-container { max-height:80px; padding:2px 2px; gap:2px; }
-            .pl-entry { font-size:10px; padding:1px 6px 1px 3px; min-width:100px; max-width:150px; }
-            .pl-entry .pl-avatar { width:14px; height:14px; }
-            .pl-entry .pl-name { max-width:40px; font-size:10px; }
-            .pl-entry .pl-bet { font-size:10px; }
-            .pl-entry .pl-chance { font-size:9px; }
-            #win-history, #ice-win-history { top:42px; right:8px; gap:3px; }
-            .win-entry { width:22px; height:22px; }
-            #podium { gap:8px; padding:10px 0 6px; }
-            .podium-col .podium-pfp { width:42px; height:42px; }
-            .podium-col .podium-name { font-size:10px; }
-            .podium-col .podium-prize { font-size:9px; padding:1px 6px; }
-            .podium-col .podium-prize img { width:14px; height:14px; }
-            .podium-col .rank-badge { font-size:11px; padding:1px 8px; }
-            .podium-col .podium-base.gold { height:75px; min-height:75px; }
-            .podium-col .podium-base.silver { height:56px; min-height:56px; }
-            .podium-col .podium-base.bronze { height:38px; min-height:38px; }
-            .top-entry .t-prize img { width:16px; height:16px; }
-            #frog-gif { width:50%; max-width:120px; }
-            #promo-modal { padding:20px 12px 22px; }
-            #promo-modal .promo-gif { max-width:150px; }
-            #promo-modal .promo-msg { font-size:17px; }
-            #promo-modal .promo-sub { font-size:12px; }
-            .promo-row input { font-size:12px; padding:6px 10px; }
-            .promo-row button { font-size:12px; padding:6px 12px; }
+
+        /* ─── NOTIFICATION OVERLAY ───────────────────────────────────── */
+        #notification-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 24px 36px;
+            max-width: 85%;
+            color: #fff;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            z-index: 99999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        #notification-overlay.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: none;
+        }
+        @media (max-width: 420px) {
+            #notification-overlay {
+                font-size: 20px;
+                padding: 18px 24px;
+                max-width: 92%;
+            }
+            #plus-btn { width: 24px; height: 24px; font-size: 15px; }
+            #balance-wrap { padding: 2px 10px 2px 4px; }
+            #balance { font-size: 15px; }
+            #diamond-icon { width: 22px; height: 22px; }
+            #username-display { max-width: 60px; font-size: 11px; }
         }
     </style>
 </head>
@@ -561,15 +654,21 @@
     <!-- ═══ ORIGINAL APP ─── -->
     <div id="app">
         <div id="topbar">
-            <div id="balance-wrap">
-                <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
-                <span id="balance">1000</span>
-            </div>
-            <div id="top-right">
+            <!-- Left: username + status dot -->
+            <div id="top-left">
                 <span id="username-display">player</span>
                 <div id="status-dot"></div>
             </div>
+            <!-- Right: + button + diamond balance -->
+            <div id="top-right">
+                <button id="plus-btn">+</button>
+                <div id="balance-wrap">
+                    <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
+                    <span id="balance">1000</span>
+                </div>
+            </div>
         </div>
+
         <div id="main">
             <!-- PvP Page -->
             <div id="pvp-page" class="tab-page active">
@@ -699,6 +798,9 @@
         </div>
     </div>
 
+    <!-- Notification Overlay -->
+    <div id="notification-overlay"></div>
+
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -706,10 +808,10 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ═══ UPDATED SCRIPT – fixed vibration & no random idle positioning ═══ -->
+    <!-- ═══ SCRIPT ─── -->
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with bet persistence, no PFP ring, no bet text on segments
+        // FULL CLIENT – no shop, top bar rearranged
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -727,6 +829,7 @@
             third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
         };
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
+        const FLAME_GIF = 'https://i.postimg.cc/FHbt292h/fire-flame.gif';
 
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
@@ -741,7 +844,9 @@
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
             winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
+            winStreak: 0,
         };
+
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
 
@@ -827,6 +932,9 @@
         const autoSwitch = document.getElementById('auto-bet-switch');
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
+        const notifOverlay = document.getElementById('notification-overlay');
+        const plusBtn = document.getElementById('plus-btn');
+        let notifTimeout = null;
 
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
@@ -989,8 +1097,31 @@
             socket.on('roundEnd',(payload)=>{ handleRoundEnd(payload); });
             socket.on('iceState',(snapshot)=>{ applyIceServerState(snapshot); });
             socket.on('iceRoundEnd',(payload)=>{ handleIceRoundEnd(payload); });
+            // ─── NOTIFICATION listener ─────────────────────────────────
+            socket.on('notification', (data) => {
+                if (!data || !data.message) return;
+                showNotification(data.message);
+            });
         }
 
+        // ─── NOTIFICATION ──────────────────────────────────────────────
+        function showNotification(text) {
+            if (notifTimeout) {
+                clearTimeout(notifTimeout);
+                notifTimeout = null;
+                notifOverlay.classList.remove('show');
+            }
+            notifOverlay.textContent = text;
+            requestAnimationFrame(() => {
+                notifOverlay.classList.add('show');
+                notifTimeout = setTimeout(() => {
+                    notifOverlay.classList.remove('show');
+                    notifTimeout = null;
+                }, 3000);
+            });
+        }
+
+        // ─── applyServerState ──────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1140,7 +1271,15 @@
             if(!payload){ hideWinPanelAndReset(); return; }
             addWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
-            if(payload.winnerId===state.userId){ state.balance+=payload.winnings; state.wins++; playVictorySound(); } else { state.losses++; }
+            if(payload.winnerId===state.userId){
+                state.balance+=payload.winnings;
+                state.wins++;
+                state.winStreak++;
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0;
+            }
             updateBalance(); updateProfile();
             const randomGif=WIN_GIFS[Math.floor(Math.random()*WIN_GIFS.length)];
             winGif.src=randomGif; winAvatar.src=payload.winnerPfp||state.defaultAvatar;
@@ -1175,11 +1314,10 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-        // ─── ICE SERVER STATE APPLICATION ──────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState=iceState.gameState;
-            const prevPuckX = iceState.puck.x;
-            const prevPuckY = iceState.puck.y;
+            const oldPuckX = iceState.puck.x;
+            const oldPuckY = iceState.puck.y;
 
             iceState.gameState=snapshot.gameState;
             iceState.pot=snapshot.pot;
@@ -1188,24 +1326,14 @@
             iceState.spinDuration=snapshot.spinDuration;
             iceState.spinFinalAngle=snapshot.spinFinalAngle;
 
-            // Store previous position for interpolation
-            const oldPuckX = iceState.puck.x;
-            const oldPuckY = iceState.puck.y;
             iceState.puckPrevX = oldPuckX;
             iceState.puckPrevY = oldPuckY;
             iceState.puck.x = snapshot.puck.x;
             iceState.puck.y = snapshot.puck.y;
             iceState.puckUpdateTime = Date.now();
 
-            // ─── VIBRATION: REMOVED ─────────────────────────────────────
-            // (No haptic feedback for ice arena collisions)
-
-            // Reset idle puck when gameState changes to non-idle or players appear
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
-            } else {
-                // Idle puck will be drawn stationary at center – we don't need to update anything here.
-                // The render function handles it.
             }
 
             if(snapshot.gameState==='spinning' && prevGameState!=='spinning'){
@@ -1233,6 +1361,7 @@
                 iceState.pfpPop.clear();
                 iceState.showOwnerName = false;
                 iceState.currentOwnerName = '';
+                iceState.idlePuckInitialized = false;
             }
 
             const seen=new Set();
@@ -1313,7 +1442,15 @@
             iceState.winnerId=payload.winnerId;
             addIceWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
-            if(payload.winnerId===state.userId){ state.balance+=payload.winnings; state.wins++; playVictorySound(); } else { state.losses++; }
+            if(payload.winnerId===state.userId){
+                state.balance+=payload.winnings;
+                state.wins++;
+                state.winStreak++;
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0;
+            }
             updateBalance(); updateProfile();
             iceWinAvatar.src=payload.winnerPfp||state.defaultAvatar;
             iceWinName.textContent=payload.winnerName+' wins the rink!';
@@ -1393,6 +1530,7 @@
                 updateTopUI();
             });
         }
+
         function updateTopUI(){
             const players=state.topPlayers;
             if(players.length===0){ podiumEl.innerHTML=''; topList.innerHTML=''; return; }
@@ -1407,16 +1545,19 @@
                 const p=info.player; if(!p) return;
                 const prize=getPrizeForRank(p.rank);
                 let prizeHtml=prize?(prize.gif?`<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`:prize.label):'';
+                const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
+                    `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` : '';
                 podiumHtml+=`<div class="podium-col ${info.colClass}">
                             <div class="rank-badge ${info.cls}">${info.label}</div>
                             <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                            <div class="podium-name">${p.name}</div>
+                            <div class="podium-name">${p.name} ${flameHtml}</div>
                             <div class="podium-prize">${prizeHtml}</div>
                             <div class="podium-stats">${p.wins} wins · ${p.score}</div>
                             <div class="podium-base ${info.base}"></div>
                         </div>`;
             });
             podiumEl.innerHTML=podiumHtml;
+
             const rest=players.slice(3);
             if(rest.length===0){ topList.innerHTML=''; return; }
             let listHtml='';
@@ -1428,10 +1569,12 @@
                 else if(rank===6) rClass+=' bronze';
                 const prize=getPrizeForRank(rank);
                 let prizeHtml=prize?(prize.gif?`<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}`:prize.label):'';
+                const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
+                    `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` : '';
                 listHtml+=`<div class="top-entry">
                             <div class="${rClass}">#${rank}</div>
                             <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
-                            <div class="t-name">${p.name}</div>
+                            <div class="t-name">${p.name} ${flameHtml}</div>
                             <div class="t-wins">${p.wins} wins</div>
                             <div class="t-score">${p.score}</div>
                             <div class="t-prize">${prizeHtml}</div>
@@ -1439,6 +1582,7 @@
             });
             topList.innerHTML=listHtml;
         }
+
         function getPrizeForRank(rank){
             if(rank===1) return { label:'Gift Box', gif:PRIZE_GIFS.first };
             if(rank===2||rank===3) return { label:'Bear', gif:PRIZE_GIFS.second };
@@ -1577,6 +1721,14 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
+        // ─── PLUS BUTTON (for future use) ──────────────────────────────
+        plusBtn.addEventListener('click', () => {
+            haptic('light');
+            // Placeholder: you can later add a custom action (e.g. quick add 10)
+            alert('Coming soon!');
+        });
+
+        // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async ()=>{
             const code=promoInput.value.trim().toUpperCase();
             if(!code){ promoMessage.textContent='Please enter a code.'; promoMessage.style.color='var(--red)'; return; }
@@ -1602,6 +1754,7 @@
         });
         promoContinueBtn.addEventListener('click',()=>{ promoModal.classList.remove('show'); });
 
+        // ─── RELOAD PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click',function(){
             const user=getPlayer(state.userId);
             if(user){ pfpCache.delete(user.pfp); loadPlayerPFP(user); haptic('medium'); } else if(state.pfp){
@@ -1612,6 +1765,8 @@
                 img.src=state.pfp;
             }
         });
+
+        // ─── ANONYMOUS ──────────────────────────────────────────────
         anonToggle.addEventListener('change',()=>{
             if(!socket||!socket.connected){ anonToggle.checked=state.anonymous; return; }
             const enabled=anonToggle.checked;
@@ -1623,6 +1778,7 @@
             });
         });
 
+        // ─── TAB SWITCHING ────────────────────────────────────────────
         function switchTab(tabId){
             if(state.currentTab===tabId) return;
             const oldTab=state.currentTab;
@@ -1638,6 +1794,7 @@
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
+        // ─── RENDER ──────────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -1691,6 +1848,7 @@
                 ctx.closePath(); ctx.stroke();
             }
             ctx.restore();
+
             state.players.forEach(p=>{
                 if(!p.alive) return;
                 const px=p.x*s, py=p.y*s;
@@ -1730,7 +1888,7 @@
             });
         }
 
-        // ─── RENDER ICE (idle puck stationary at center) ──────────────
+        // ─── RENDER ICE ──────────────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -1746,11 +1904,35 @@
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
-                // ─── Idle puck – stationary at center ──────────────────────
-                const cx = w / 2;
-                const cy = w / 2;
+                const margin = 20;
+                const r = 10;
+                if (!iceState.idlePuckInitialized) {
+                    iceState.idlePuck.x = w / 2;
+                    iceState.idlePuck.y = w / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2.0 + Math.random() * 1.5;
+                    iceState.idlePuck.vx = Math.cos(angle) * speed;
+                    iceState.idlePuck.vy = Math.sin(angle) * speed;
+                    iceState.idlePuck.radius = r;
+                    iceState.idlePuckInitialized = true;
+                }
+                let x = iceState.idlePuck.x;
+                let y = iceState.idlePuck.y;
+                let vx = iceState.idlePuck.vx;
+                let vy = iceState.idlePuck.vy;
+                x += vx;
+                y += vy;
+                if (x - r < margin) { x = margin + r; vx = -vx; }
+                if (x + r > w - margin) { x = w - margin - r; vx = -vx; }
+                if (y - r < margin) { y = margin + r; vy = -vy; }
+                if (y + r > w - margin) { y = w - margin - r; vy = -vy; }
+                iceState.idlePuck.x = x;
+                iceState.idlePuck.y = y;
+                iceState.idlePuck.vx = vx;
+                iceState.idlePuck.vy = vy;
+                const cx = x;
+                const cy = y;
                 const puckRadius = 10 * s;
-
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
                 iceCtx.shadowBlur = 12;
@@ -1759,8 +1941,6 @@
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-
-                // cross (lineWidth 2.0)
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -1777,7 +1957,6 @@
                 return;
             }
 
-            // ─── Regular game rendering ──────────────────────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -1823,7 +2002,6 @@
                 }
             }
 
-            // ─── Interpolate puck position for smooth rendering ──────
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
@@ -1833,13 +2011,11 @@
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
             }
 
-            // Calculate speed for owner name display
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // ─── Apply zoom ──────────────────────────────────────────
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
@@ -1852,7 +2028,6 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // ─── Draw perimeter and segments ──────────────────────────
             iceCtx.save();
             iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
             iceCtx.shadowBlur = 30;
@@ -1872,29 +2047,40 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                const gradRect = iceCtx.createLinearGradient(x1, y1, x2, y2);
-                gradRect.addColorStop(0, lightenColor(p.color, isWinner ? 70 : 40));
-                gradRect.addColorStop(1, p.color);
+                const angleOptions = [0, Math.PI/4, Math.PI/2];
+                const rotAngle = angleOptions[index % angleOptions.length];
+
+                const cx = (x1 + x2) / 2;
+                const cy = (y1 + y2) / 2;
+
+                const color = isWinner ? lightenColor(p.color, 70) : p.color;
+
+                iceCtx.save();
+                iceCtx.beginPath();
+                iceCtx.rect(x1, y1, segW, segH);
+                iceCtx.clip();
+
+                iceCtx.translate(cx, cy);
+                iceCtx.rotate(rotAngle);
+                const diag = Math.sqrt(segW*segW + segH*segH);
+                const drawW = diag * 1.2;
+                const drawH = diag * 1.2;
+
                 iceCtx.globalAlpha = isWinner ? 1 : 0.93;
-                iceCtx.fillStyle = gradRect;
-                iceCtx.fillRect(x1, y1, segW, segH);
+                iceCtx.fillStyle = color;
+                iceCtx.fillRect(-drawW/2, -drawH/2, drawW, drawH);
                 iceCtx.globalAlpha = 1;
 
                 if (isWinner) {
-                    iceCtx.save();
                     iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
                     iceCtx.lineWidth = 3;
-                    iceCtx.shadowColor = hexToRgba(p.color, 0.8);
+                    iceCtx.shadowColor = hexToRgba(color, 0.8);
                     iceCtx.shadowBlur = 16;
-                    iceCtx.strokeRect(x1 + 1.5, y1 + 1.5, segW - 3, segH - 3);
-                    iceCtx.restore();
+                    iceCtx.strokeRect(-drawW/2, -drawH/2, drawW, drawH);
+                    iceCtx.shadowBlur = 0;
                 }
 
-                // ─── PFP circle ──────────────────────────────────────
-                const centerX = (x1 + x2) / 2;
-                const centerY = (y1 + y2) / 2;
                 const avatarR = Math.min(segW, segH) * 0.32;
-
                 let pfpScale = 1;
                 const popData = iceState.pfpPop.get(p.id);
                 if (popData) {
@@ -1907,25 +2093,22 @@
                         iceState.pfpPop.delete(p.id);
                     }
                 }
-
                 const drawR = avatarR * pfpScale;
-                const cx = centerX;
-                const cy = centerY;
-
                 iceCtx.save();
                 iceCtx.beginPath();
-                iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
+                iceCtx.arc(0, 0, drawR, 0, Math.PI * 2);
                 iceCtx.closePath();
                 iceCtx.clip();
                 if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                    iceCtx.drawImage(p.pfpImg, cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                    iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
                 } else {
                     iceCtx.fillStyle = p.color || '#555';
-                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                    iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
                 }
                 iceCtx.restore();
 
-                // Divider lines
+                iceCtx.restore();
+
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.15;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
@@ -1941,14 +2124,12 @@
             });
             iceCtx.restore();
 
-            // ─── Rink border ──────────────────────────────────────────
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
             iceCtx.lineWidth = 4;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── Spinning arrow ──────────────────────────────────────
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -1978,7 +2159,6 @@
                 iceCtx.restore();
             }
 
-            // ─── Puck ──────────────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2010,7 +2190,6 @@
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Wider cross: lineWidth 2.0
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -2025,27 +2204,21 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // ─── Owner name under puck (when slowed down) ──────────
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
-
                 let ownerName = '';
-                let ownerPfp = '';
                 if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
                     const pxLocal = renderPuckX;
                     const pyLocal = renderPuckY;
                     for (const p of iceState.players) {
                         if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
                             ownerName = p.name || 'Player';
-                            ownerPfp = p.pfp || '';
                             break;
                         }
                     }
                 }
-
                 if (isSlow && ownerName) {
                     iceState.currentOwnerName = ownerName;
-                    iceState.currentOwnerPfp = ownerPfp;
                     iceState.showOwnerName = true;
                     iceState.nameFadeIn = Math.min(1, iceState.nameFadeIn + 0.03);
                 } else if (!isSlow || !ownerName) {
@@ -2054,7 +2227,6 @@
                         iceState.showOwnerName = false;
                     }
                 }
-
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
                     const fontSize = Math.max(9, Math.min(14, puckRadius * 0.9));
@@ -2074,7 +2246,6 @@
                 }
             }
 
-            // Restore zoom transform if used
             if (iceState.zoom > 1.01) {
                 iceCtx.restore();
             }
@@ -2128,27 +2299,23 @@
         window.__state=state;
     </script>
 
-    <!-- ═══ LOADING SCREEN CONTROLLER (unchanged) ═══ -->
+    <!-- ─── LOADING SCREEN CONTROLLER (unchanged) ─── -->
     <script>
         (function() {
             'use strict';
-
             const GIFS = [
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
                 'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
             ];
-
             const loadingScreen = document.getElementById('loading-screen');
             const grid = document.getElementById('loading-grid');
             const mergedSquare = document.getElementById('merged-square');
             const pulseRing = document.getElementById('pulse-ring');
             const loadingText = document.getElementById('loading-text');
-
             const selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
             let squares = [];
             let squareSize = 0, gapSize = 0, gridSize = 0;
-
             function measureGrid() {
                 const rect = grid.getBoundingClientRect();
                 gridSize = rect.width;
@@ -2156,7 +2323,6 @@
                 gapSize = parseFloat(computedStyle.gap) || 8;
                 squareSize = (gridSize - gapSize * 2) / 3;
             }
-
             function buildGrid() {
                 grid.innerHTML = '';
                 squares = [];
@@ -2173,7 +2339,6 @@
                     squares.push(sq);
                 }
             }
-
             function runPop() {
                 return new Promise((resolve) => {
                     let done = 0;
@@ -2190,14 +2355,12 @@
                     setTimeout(resolve, 1400);
                 });
             }
-
             function runSlide() {
                 return new Promise((resolve) => {
                     measureGrid();
                     const gridRect = grid.getBoundingClientRect();
                     const cx = gridRect.left + gridRect.width / 2;
                     const cy = gridRect.top + gridRect.height / 2;
-
                     squares.forEach((sq) => {
                         const r = sq.getBoundingClientRect();
                         const dx = cx - (r.left + r.width / 2);
@@ -2205,7 +2368,6 @@
                         sq.dataset.tx = dx;
                         sq.dataset.ty = dy;
                     });
-
                     squares.forEach((sq, i) => {
                         const dx = parseFloat(sq.dataset.tx);
                         const dy = parseFloat(sq.dataset.ty);
@@ -2218,11 +2380,9 @@
                             sq.classList.add('slide');
                         }, delay);
                     });
-
                     setTimeout(resolve, squares.length * 30 + 950);
                 });
             }
-
             function runMerge() {
                 return new Promise((resolve) => {
                     measureGrid();
@@ -2230,19 +2390,16 @@
                     const cx = gridRect.left + gridRect.width / 2;
                     const cy = gridRect.top + gridRect.height / 2;
                     const mergedSize = squareSize * 1.8;
-
                     mergedSquare.style.width = mergedSize + 'px';
                     mergedSquare.style.height = mergedSize + 'px';
                     mergedSquare.style.left = (cx - mergedSize / 2 - gridRect.left) + 'px';
                     mergedSquare.style.top = (cy - mergedSize / 2 - gridRect.top) + 'px';
-
                     const mergedImg = document.createElement('img');
                     mergedImg.className = 'gif-bg';
                     mergedImg.src = selectedGif;
                     mergedImg.alt = '';
                     mergedSquare.innerHTML = '';
                     mergedSquare.appendChild(mergedImg);
-
                     squares.forEach((sq, i) => {
                         setTimeout(() => {
                             sq.style.transition = 'transform 0.5s ease, opacity 0.4s ease, border-radius 0.4s ease';
@@ -2252,7 +2409,6 @@
                             sq.style.zIndex = '0';
                         }, i * 20);
                     });
-
                     setTimeout(() => {
                         mergedSquare.classList.add('show');
                         setTimeout(() => {
@@ -2263,7 +2419,6 @@
                     }, 500);
                 });
             }
-
             function runFadeOut() {
                 return new Promise((resolve) => {
                     setTimeout(() => {
@@ -2272,7 +2427,6 @@
                     }, 2200);
                 });
             }
-
             async function start() {
                 buildGrid();
                 measureGrid();
@@ -2282,7 +2436,6 @@
                 await runFadeOut();
                 console.log('Loading complete.');
             }
-
             if (document.readyState === 'complete' || document.readyState === 'interactive') {
                 setTimeout(start, 200);
             } else {
@@ -2290,7 +2443,6 @@
                     setTimeout(start, 200);
                 });
             }
-
         })();
     </script>
 
