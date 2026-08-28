@@ -1314,7 +1314,6 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-        // ─── applyIceServerState (includes slideStartTime) ────────────
         function applyIceServerState(snapshot) {
             const prevGameState=iceState.gameState;
             const oldPuckX = iceState.puck.x;
@@ -1326,10 +1325,6 @@
             iceState.spinStartTime=snapshot.spinStartTime;
             iceState.spinDuration=snapshot.spinDuration;
             iceState.spinFinalAngle=snapshot.spinFinalAngle;
-            // store slideStartTime if provided
-            if (snapshot.slideStartTime !== undefined) {
-                iceState.slideStartTime = snapshot.slideStartTime;
-            }
 
             iceState.puckPrevX = oldPuckX;
             iceState.puckPrevY = oldPuckY;
@@ -1799,7 +1794,7 @@
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
-        // ─── RENDER (PvP) ──────────────────────────────────────────────────
+        // ─── RENDER ──────────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -1893,7 +1888,7 @@
             });
         }
 
-        // ─── RENDER ICE (with thick-center outline) ──────────────
+        // ─── RENDER ICE ──────────────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -2164,7 +2159,6 @@
                 iceCtx.restore();
             }
 
-            // ─── DRAW PUCK WITH THICK‑TO‑CENTER OUTLINE ───────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2188,50 +2182,14 @@
                     py = renderPuckY * s;
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * scale;
-
-                // --- Outer glow ring (very thin, faint) ---
                 iceCtx.save();
-                iceCtx.globalAlpha = 0.15;
-                iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.lineWidth = 1.5;
-                iceCtx.shadowBlur = 0;
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, puckRadius * 1.25, 0, Math.PI * 2);
-                iceCtx.stroke();
-                iceCtx.restore();
-
-                // --- Concentric rings: inner = thicker, outer = thinner ---
-                const numRings = 8;
-                for (let i = 0; i < numRings; i++) {
-                    const t = i / (numRings - 1);          // 0 .. 1
-                    const radius = puckRadius * (0.55 + t * 0.45);
-                    const lineWidth = 0.8 + (1 - t) * 3.2;
-                    const alpha = 0.25 + (1 - t) * 0.60;
-
-                    iceCtx.save();
-                    iceCtx.globalAlpha = alpha;
-                    iceCtx.strokeStyle = '#eaf6ff';
-                    iceCtx.lineWidth = lineWidth;
-                    iceCtx.shadowBlur = 0;
-                    iceCtx.beginPath();
-                    iceCtx.arc(px, py, radius, 0, Math.PI * 2);
-                    iceCtx.stroke();
-                    iceCtx.restore();
-                }
-
-                // --- Bright core (inner solid highlight) ---
-                iceCtx.save();
-                iceCtx.globalAlpha = 0.55;
-                iceCtx.fillStyle = '#eaf6ff';
-                iceCtx.shadowBlur = 16;
                 iceCtx.shadowColor = 'rgba(180,220,255,0.9)';
+                iceCtx.shadowBlur = 14;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.lineWidth = 2.5;
                 iceCtx.beginPath();
-                iceCtx.arc(px, py, puckRadius * 0.35, 0, Math.PI * 2);
-                iceCtx.fill();
-                iceCtx.restore();
-
-                // --- Cross ---
-                iceCtx.save();
+                iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
+                iceCtx.stroke();
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.65;
@@ -2243,9 +2201,9 @@
                 iceCtx.moveTo(px, py - crossSize);
                 iceCtx.lineTo(px, py + crossSize);
                 iceCtx.stroke();
+                iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // ─── Owner name (if slow) ──────────────────────────
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
