@@ -168,7 +168,7 @@ function createIceRoom(id) {
     spinFinalAngle: 0,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
-    slideStartTime: 0,    // ← added for delayed friction
+    slideStartTime: 0,
   };
 }
 const iceRoom = createIceRoom('ice');
@@ -352,11 +352,11 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── NEW launchIcePuck: random position, higher speed ──────────
+// ─── UPDATED launchIcePuck: random position, speed 12 ──────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 14;                     // higher initial speed
-  const margin = 20;
+  const speed = 12;                     // reduced from 14 to avoid wall glitches
+  const margin = 30;                    // extra margin from walls
   const x = margin + Math.random() * (ICE_SIZE - 2 * margin);
   const y = margin + Math.random() * (ICE_SIZE - 2 * margin);
   const angle = Math.random() * 2 * Math.PI;
@@ -364,7 +364,7 @@ function launchIcePuck() {
   iceRoom.puck.y = y;
   iceRoom.puck.vx = Math.cos(angle) * speed;
   iceRoom.puck.vy = Math.sin(angle) * speed;
-  iceRoom.slideStartTime = Date.now();  // record start time for friction delay
+  iceRoom.slideStartTime = Date.now();
 }
 
 function getIceWinner() {
@@ -461,7 +461,7 @@ function updateIcePhysics(dt) {
   const puck = iceRoom.puck;
 
   const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  const initialSpeed = 14; // match new launch speed
+  const initialSpeed = 12; // match new launch speed
   const speedRatio = Math.min(1, currentSpeed / initialSpeed);
   const dynamicRadius = 3 + 7 * speedRatio;
 
