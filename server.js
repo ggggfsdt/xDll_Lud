@@ -166,7 +166,6 @@ function createIceRoom(id) {
     spinStartTime: 0,
     spinDuration: 0,
     spinFinalAngle: 0,
-    slideStartTime: 0,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
   };
@@ -352,29 +351,13 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── launchIcePuck (random position, boosted speed later) ──────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  iceRoom.slideStartTime = Date.now();   // needed for boost timing
-
   const speed = 11;
-
-  // ─── Random position, away from edges ───
-  const margin = 35;  // keep puck away from walls
-  const minX = margin;
-  const maxX = ICE_SIZE - margin;
-  const minY = margin;
-  const maxY = ICE_SIZE - margin;
-
-  iceRoom.puck.x = minX + Math.random() * (maxX - minX);
-  iceRoom.puck.y = minY + Math.random() * (maxY - minY);
-
-  // direction still determined by the spin final angle
+  iceRoom.puck.x = ICE_SIZE / 2;
+  iceRoom.puck.y = ICE_SIZE / 2;
   iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
   iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
-
-  // Reset any previous bounce state
-  iceRoom.puckLastBounceTime = 0;
 }
 
 function getIceWinner() {
@@ -462,31 +445,13 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── updateIcePhysics (boosted speed for first 3.5s) ──────────
-const BOOST_DURATION = 3.5;   // seconds of boosted speed
-
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
-
-  const now = Date.now();
-  const elapsed = (now - (iceRoom.slideStartTime || now)) / 1000;
-
-  // ─── Determine friction ──────────────────────────
-  let frictionPerSecond;
-  if (elapsed < BOOST_DURATION) {
-    // Very low friction → speed stays high
-    frictionPerSecond = 0.10;
-  } else {
-    // Normal friction after boost
-    frictionPerSecond = 0.75;
-  }
-
   const totalPts = ICE_PERIMETER.length;
   const subSteps = 6;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
-  // current speed for dynamic radius
   const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
   const initialSpeed = 11;
   const speedRatio = Math.min(1, currentSpeed / initialSpeed);
@@ -523,7 +488,7 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── Apply friction ──────────────────────────────
+    const frictionPerSecond = 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
@@ -541,7 +506,6 @@ function broadcastIceState() {
     spinStartTime: iceRoom.spinStartTime,
     spinDuration: iceRoom.spinDuration,
     spinFinalAngle: iceRoom.spinFinalAngle,
-    slideStartTime: iceRoom.slideStartTime || 0,
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
