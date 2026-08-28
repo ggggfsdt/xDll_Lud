@@ -168,6 +168,7 @@ function createIceRoom(id) {
     spinFinalAngle: 0,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
+    slideStartTime: 0,    // ← added for delayed friction
   };
 }
 const iceRoom = createIceRoom('ice');
@@ -351,13 +352,19 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
+// ─── NEW launchIcePuck: random position, higher speed ──────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 11;
-  iceRoom.puck.x = ICE_SIZE / 2;
-  iceRoom.puck.y = ICE_SIZE / 2;
-  iceRoom.puck.vx = Math.cos(iceRoom.spinFinalAngle) * speed;
-  iceRoom.puck.vy = Math.sin(iceRoom.spinFinalAngle) * speed;
+  const speed = 14;                     // higher initial speed
+  const margin = 20;
+  const x = margin + Math.random() * (ICE_SIZE - 2 * margin);
+  const y = margin + Math.random() * (ICE_SIZE - 2 * margin);
+  const angle = Math.random() * 2 * Math.PI;
+  iceRoom.puck.x = x;
+  iceRoom.puck.y = y;
+  iceRoom.puck.vx = Math.cos(angle) * speed;
+  iceRoom.puck.vy = Math.sin(angle) * speed;
+  iceRoom.slideStartTime = Date.now();  // record start time for friction delay
 }
 
 function getIceWinner() {
@@ -445,6 +452,7 @@ async function endIceGame() {
   }, 3000);
 }
 
+// ─── UPDATED ice physics: delayed friction ──────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
@@ -453,7 +461,7 @@ function updateIcePhysics(dt) {
   const puck = iceRoom.puck;
 
   const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  const initialSpeed = 11;
+  const initialSpeed = 14; // match new launch speed
   const speedRatio = Math.min(1, currentSpeed / initialSpeed);
   const dynamicRadius = 3 + 7 * speedRatio;
 
@@ -488,7 +496,10 @@ function updateIcePhysics(dt) {
       }
     }
 
-    const frictionPerSecond = 0.75;
+    // ─── Delayed friction ────────────────────────────────────
+    const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
+    // low friction for first 3 seconds, then normal
+    const frictionPerSecond = elapsed < 3.0 ? 0.98 : 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
