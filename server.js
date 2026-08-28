@@ -305,7 +305,7 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  // ─── widened clamp for fairer segment sizes ───
+  // widened clamp for fairer segment sizes
   const clampedRatio = Math.max(0.10, Math.min(0.90, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
@@ -452,15 +452,20 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── UPDATED ice physics: robust collision ──────────────────────
+// ─── UPDATED ice physics: speed‑dependent collision radius ──────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 8;                       // more substeps for better wall collision
+  const subSteps = 8;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
-  const dynamicRadius = 15;                 // increased from 12 to prevent escape
+  // Compute current speed
+  const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+  const initialSpeed = 10; // match launch speed
+  const speedRatio = Math.min(1, speed / initialSpeed);
+  // Dynamic radius: fast → 15, slow → 8
+  const dynamicRadius = 8 + 7 * speedRatio;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -501,8 +506,8 @@ function updateIcePhysics(dt) {
     puck.vy *= decay;
   }
 
-  const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (speed < 0.12) endIceGame();
+  const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+  if (finalSpeed < 0.12) endIceGame();
 }
 
 function broadcastIceState() {
