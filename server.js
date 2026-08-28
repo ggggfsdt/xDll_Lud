@@ -352,13 +352,12 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── UPDATED launchIcePuck: speed 10, margin 35 ────────────────
+// ─── UPDATED: puck always starts at center ──────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 10;
-  const margin = 35;
-  const x = margin + Math.random() * (ICE_SIZE - 2 * margin);
-  const y = margin + Math.random() * (ICE_SIZE - 2 * margin);
+  const x = ICE_SIZE / 2;   // always center
+  const y = ICE_SIZE / 2;
   const angle = Math.random() * 2 * Math.PI;
   iceRoom.puck.x = x;
   iceRoom.puck.y = y;
