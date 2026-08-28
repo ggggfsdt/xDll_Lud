@@ -305,6 +305,7 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
+  // ─── widened clamp for fairer segment sizes ───
   const clampedRatio = Math.max(0.10, Math.min(0.90, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
@@ -352,11 +353,11 @@ function startIceSpin() {
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
 }
 
-// ─── UPDATED: puck always starts at center ──────────────────────
+// ─── launchIcePuck: center start, speed 10 ──────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 10;
-  const x = ICE_SIZE / 2;   // always center
+  const x = ICE_SIZE / 2;
   const y = ICE_SIZE / 2;
   const angle = Math.random() * 2 * Math.PI;
   iceRoom.puck.x = x;
@@ -451,15 +452,15 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── UPDATED ice physics: fixed dynamicRadius ───────────────────
+// ─── UPDATED ice physics: robust collision ──────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 6;
+  const subSteps = 8;                       // more substeps for better wall collision
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
-  const dynamicRadius = 12;              // fixed collision radius
+  const dynamicRadius = 15;                 // increased from 12 to prevent escape
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -492,7 +493,7 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // Delayed friction
+    // Delayed friction (high speed for first 3 seconds)
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     const frictionPerSecond = elapsed < 3.0 ? 0.98 : 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
