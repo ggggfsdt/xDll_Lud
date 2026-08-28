@@ -355,8 +355,8 @@ function startIceSpin() {
 // ─── UPDATED launchIcePuck: speed 10, margin 35 ────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 10;                     // reduced to avoid glitches
-  const margin = 35;                    // larger margin from walls
+  const speed = 10;
+  const margin = 35;
   const x = margin + Math.random() * (ICE_SIZE - 2 * margin);
   const y = margin + Math.random() * (ICE_SIZE - 2 * margin);
   const angle = Math.random() * 2 * Math.PI;
@@ -460,8 +460,7 @@ function updateIcePhysics(dt) {
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
-  // Fixed collision radius to prevent corner escape
-  const dynamicRadius = 12;              // larger, constant radius
+  const dynamicRadius = 12;              // fixed collision radius
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -494,7 +493,7 @@ function updateIcePhysics(dt) {
       }
     }
 
-    // ─── Delayed friction ────────────────────────────────────
+    // Delayed friction
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     const frictionPerSecond = elapsed < 3.0 ? 0.98 : 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
