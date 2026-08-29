@@ -805,7 +805,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – no shop, top bar rearranged
+        // FULL CLIENT – with random spawn position and thinner glow
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -942,6 +942,8 @@
             spinStartTime: 0,
             spinDuration: 0,
             spinFinalAngle: 0,
+            spinStartX: 200,
+            spinStartY: 200,
             puck: { x: 200, y: 200 },
             winnerId: null,
             winHistory: [],
@@ -1307,7 +1309,7 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-        // ─── applyIceServerState (force puck position on sliding) ────
+        // ─── applyIceServerState ───────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
 
@@ -1325,6 +1327,8 @@
             iceState.spinStartTime = snapshot.spinStartTime;
             iceState.spinDuration = snapshot.spinDuration;
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
+            iceState.spinStartX = snapshot.spinStartX || iceState.arenaSize / 2;
+            iceState.spinStartY = snapshot.spinStartY || iceState.arenaSize / 2;
 
             if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
                 iceState.puckPrevX = iceState.puck.x;
@@ -2130,21 +2134,23 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── MODIFIED: spinning arrow closer to puck ──────────
+            // ─── MODIFIED: spinning arrow at random position ──────────
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
                 const extraSpins = 4;
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
 
+                const centerX = iceState.spinStartX * s;
+                const centerY = iceState.spinStartY * s;
                 const puckRadius = PUCK_RENDER_RADIUS * s;
-                const orbitRadius = puckRadius + 4;   // closer
+                const orbitRadius = puckRadius + 4;
 
                 const triSize = Math.min(w * 0.035, 10);
                 const tipOffset = triSize * 0.4;
 
                 iceCtx.save();
-                iceCtx.translate(half, half);
+                iceCtx.translate(centerX, centerY);
                 iceCtx.rotate(angle);
                 iceCtx.translate(orbitRadius, 0);
 
@@ -2182,8 +2188,8 @@
                 }
                 let px, py;
                 if (iceState.gameState === 'spinning') {
-                    px = half;
-                    py = half;
+                    px = iceState.spinStartX * s;
+                    py = iceState.spinStartY * s;
                 } else {
                     px = renderPuckX * s;
                     py = renderPuckY * s;
@@ -2211,11 +2217,11 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // ─── ADDED: transparent glow ring around puck ──
+                // ─── Thinner glow ring ──────────────────────────────────
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.2;
                 iceCtx.strokeStyle = '#b8dcff';
-                iceCtx.lineWidth = 3;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius + 4, 0, Math.PI * 2);
