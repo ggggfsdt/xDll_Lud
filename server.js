@@ -305,7 +305,6 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
   const ratio = leftBet / (leftBet + rightBet);
-  // widened clamp for fairer segment sizes
   const clampedRatio = Math.max(0.10, Math.min(0.90, ratio));
   const dir = Math.random() < 0.5 ? 'h' : 'v';
   if (dir === 'h') {
@@ -359,7 +358,7 @@ function launchIcePuck() {
   const speed = 10;
   const x = ICE_SIZE / 2;
   const y = ICE_SIZE / 2;
-  const angle = iceRoom.spinFinalAngle; // ← uses the arrow direction
+  const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = x;
   iceRoom.puck.y = y;
   iceRoom.puck.vx = Math.cos(angle) * speed;
@@ -452,53 +451,64 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── UPDATED ice physics: speed‑dependent collision radius ──────
+// ─── IMPROVED ice physics: smooth sliding with corner handling ──
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 8;
+  const subSteps = 10;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
 
-  // Compute current speed
   const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  const initialSpeed = 10; // match launch speed
+  const initialSpeed = 10;
   const speedRatio = Math.min(1, speed / initialSpeed);
-  // Dynamic radius: fast → 15, slow → 8
   const dynamicRadius = 8 + 7 * speedRatio;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    for (let i = 0; i < totalPts; i++) {
-      const j = (i + 1) % totalPts;
-      const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
-      const bx = ICE_PERIMETER[j].x, by = ICE_PERIMETER[j].y;
-      const dx = bx - ax, dy = by - ay;
-      const lenSq = dx * dx + dy * dy;
-      if (lenSq === 0) continue;
-      let t = ((puck.x - ax) * dx + (puck.y - ay) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-      const nearX = ax + t * dx, nearY = ay + t * dy;
-      const distX = puck.x - nearX, distY = puck.y - nearY;
-      const dist = Math.sqrt(distX * distX + distY * distY);
-      if (dist < dynamicRadius) {
-        const nx = distX / dist, ny = distY / dist;
-        const overlap = dynamicRadius - dist;
-        puck.x += nx * overlap;
-        puck.y += ny * overlap;
-        const vn = puck.vx * nx + puck.vy * ny;
-        if (vn < 0) {
-          const restitution = 0.95;
-          puck.vx -= (1 + restitution) * vn * nx;
-          puck.vy -= (1 + restitution) * vn * ny;
+    let collisionCount = 0;
+    const maxCollisions = 3;
+    while (collisionCount < maxCollisions) {
+      let collided = false;
+      for (let i = 0; i < totalPts; i++) {
+        const j = (i + 1) % totalPts;
+        const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
+        const bx = ICE_PERIMETER[j].x, by = ICE_PERIMETER[j].y;
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        if (lenSq === 0) continue;
+        let t = ((puck.x - ax) * dx + (puck.y - ay) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const nearX = ax + t * dx, nearY = ay + t * dy;
+        const distX = puck.x - nearX, distY = puck.y - nearY;
+        const dist = Math.sqrt(distX * distX + distY * distY);
+        if (dist < dynamicRadius) {
+          const nx = distX / dist, ny = distY / dist;
+          const overlap = dynamicRadius - dist;
+          puck.x += nx * overlap;
+          puck.y += ny * overlap;
+          const vn = puck.vx * nx + puck.vy * ny;
+          if (vn < 0) {
+            const restitution = 0.95;
+            puck.vx -= (1 + restitution) * vn * nx;
+            puck.vy -= (1 + restitution) * vn * ny;
+            // Tangential friction for ice sliding
+            const vt = -puck.vx * ny + puck.vy * nx;
+            const friction = 0.995;
+            const newVt = vt * friction;
+            puck.vx += (-newVt * ny) - (-vt * ny);
+            puck.vy += (newVt * nx) - (vt * nx);
+          }
+          collided = true;
+          break;
         }
-        break;
       }
+      if (!collided) break;
+      collisionCount++;
     }
 
-    // Delayed friction (high speed for first 3 seconds)
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     const frictionPerSecond = elapsed < 3.0 ? 0.98 : 0.75;
     const decay = Math.pow(frictionPerSecond, subDt);
