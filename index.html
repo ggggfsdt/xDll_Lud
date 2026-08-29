@@ -428,7 +428,7 @@
             border-right: 2px solid var(--gold);
         }
 
-        /* ─── PVP WIN HISTORY LIST ─── */
+        /* ─── PVP WIN HISTORY LIST (recent winners) ─── */
         #pvp-win-history {
             position: absolute;
             bottom: 52px;
@@ -559,7 +559,7 @@
             color: var(--text2);
         }
 
-        /* ─── PLAYER LIST (rounded, slide-up) ─── */
+        /* ─── PLAYER LIST (slides from top) ─── */
         #player-list-wrap {
             width: 100%;
             flex-shrink: 0;
@@ -570,26 +570,26 @@
                         opacity 0.4s ease,
                         padding 0.4s ease,
                         margin 0.4s ease;
-            max-height: 120px;
+            max-height: 0; /* hidden by default */
             overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #player-list-wrap.show {
+            max-height: 120px;
             opacity: 1;
             pointer-events: auto;
         }
-        #player-list-wrap.shift-up {
-            max-height: 0 !important;
-            padding: 0 10px 0 10px !important;
-            margin-top: 0 !important;
-            opacity: 0 !important;
-            pointer-events: none !important;
+        #player-list-wrap.show #player-list-container {
+            border-radius: 0 0 var(--radius) var(--radius);
+            border-top: none;
         }
         #player-list-container {
             background: rgba(18, 18, 22, 0.85);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border);
             border-top: none;
-            border-radius: 0 0 var(--radius) var(--radius);
-            border-top-left-radius: 0;
-            border-top-right-radius: 0;
+            border-radius: 0;
             padding: 4px 8px 6px 8px;
             display: flex;
             flex-direction: row;
@@ -602,6 +602,7 @@
             flex-wrap: nowrap;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             border-top: none;
+            border-radius: 0 0 var(--radius) var(--radius);
         }
         .pl-entry {
             display: flex;
@@ -1230,7 +1231,7 @@
                     </div>
                 </div>
 
-                <!-- PLAYER LIST (PvP) -->
+                <!-- PLAYER LIST (PvP) – slides from top -->
                 <div id="player-list-wrap">
                     <div id="player-list-container">
                         <div class="pl-empty">no players yet</div>
@@ -1364,7 +1365,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with win history list, small avatars, top slide
+        // FULL CLIENT – with win history, top-slide panel, small avatars
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -1791,12 +1792,12 @@
             const shouldHide=state.gameState==='playing'||state.gameState==='finished';
             betOverlayWrap.classList.toggle('hidden',shouldHide);
             const hasPlayers = getAlive().length > 0;
-            let shouldHidePlayers = (state.gameState==='finished') || (!hasPlayers && state.gameState!=='playing');
-            if(state.gameState==='idle'||state.gameState==='countdown'||state.gameState==='prestart') {
-                shouldHidePlayers = !hasPlayers;
-            }
-            if(state.gameState==='playing') shouldHidePlayers = false;
-            playerListWrap.classList.toggle('shift-up', shouldHidePlayers);
+            // Show player list if there is at least one player and game not finished
+            const shouldShow = hasPlayers && state.gameState !== 'finished' && state.gameState !== 'idle' ? true : (hasPlayers && state.gameState === 'idle');
+            // Actually we want to show it during idle, countdown, prestart, playing (but not finished)
+            // We'll toggle the 'show' class based on presence of players and game state
+            const showList = hasPlayers && state.gameState !== 'finished';
+            playerListWrap.classList.toggle('show', showList);
         }
         function updatePlayerList(){
             const alive=getAlive();
