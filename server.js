@@ -166,6 +166,8 @@ function createIceRoom(id) {
     spinStartTime: 0,
     spinDuration: 0,
     spinFinalAngle: 0,
+    spinStartX: ICE_SIZE / 2,
+    spinStartY: ICE_SIZE / 2,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
     slideStartTime: 0,
@@ -350,17 +352,19 @@ function startIceSpin() {
   iceRoom.spinStartTime = Date.now();
   iceRoom.spinDuration = 2.6 + Math.random() * 1.6;
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
+  // Random starting position
+  const margin = 30;
+  iceRoom.spinStartX = margin + Math.random() * (ICE_SIZE - 2 * margin);
+  iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck: uses spinFinalAngle for direction ───────────
+// ─── launchIcePuck: uses spinStartX/Y and spinFinalAngle ──────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 10;
-  const x = ICE_SIZE / 2;
-  const y = ICE_SIZE / 2;
   const angle = iceRoom.spinFinalAngle;
-  iceRoom.puck.x = x;
-  iceRoom.puck.y = y;
+  iceRoom.puck.x = iceRoom.spinStartX;
+  iceRoom.puck.y = iceRoom.spinStartY;
   iceRoom.puck.vx = Math.cos(angle) * speed;
   iceRoom.puck.vy = Math.sin(angle) * speed;
   iceRoom.slideStartTime = Date.now();
@@ -528,6 +532,8 @@ function broadcastIceState() {
     spinStartTime: iceRoom.spinStartTime,
     spinDuration: iceRoom.spinDuration,
     spinFinalAngle: iceRoom.spinFinalAngle,
+    spinStartX: iceRoom.spinStartX,
+    spinStartY: iceRoom.spinStartY,
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
