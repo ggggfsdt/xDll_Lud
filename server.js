@@ -1,5 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // dllump · bump arena — multiplayer backend (BSP layout)
+// Now with mixed rectangles & right triangles (no gaps)
 // ═══════════════════════════════════════════════════════════════
 
 process.on('uncaughtException', (err) => {
@@ -150,7 +151,7 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
+// ICE ARENA — mixed rectangles & right triangles
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
@@ -244,24 +245,48 @@ function stopAutoBot() {
   }
 }
 
-// ─── BSP Partition ──────────────────────────────────────────────
+// ─── BSP Partition (rectangles only, then optional diagonal split) ──
 function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
+
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
+
   partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
-  const map = {};
-  shuffled.forEach(p => { map[p.id] = p; });
+
   players.forEach(p => {
-    const assigned = map[p.id];
-    if (assigned) {
-      p.x1 = assigned.x1; p.y1 = assigned.y1;
-      p.x2 = assigned.x2; p.y2 = assigned.y2;
+    const shapes = [];
+    const rect = { x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2 };
+    if (Math.random() < 0.5) {
+      // Split into two right triangles
+      const tri1 = [
+        { x: rect.x1, y: rect.y1 },
+        { x: rect.x2, y: rect.y1 },
+        { x: rect.x2, y: rect.y2 }
+      ];
+      const tri2 = [
+        { x: rect.x1, y: rect.y1 },
+        { x: rect.x1, y: rect.y2 },
+        { x: rect.x2, y: rect.y2 }
+      ];
+      shapes.push({ type: 'tri', vertices: tri1 });
+      shapes.push({ type: 'tri', vertices: tri2 });
+    } else {
+      shapes.push({
+        type: 'rect',
+        vertices: [
+          { x: rect.x1, y: rect.y1 },
+          { x: rect.x2, y: rect.y1 },
+          { x: rect.x2, y: rect.y2 },
+          { x: rect.x1, y: rect.y2 }
+        ]
+      });
     }
+    p.shapes = shapes;
   });
 }
 
@@ -320,13 +345,14 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   }
 }
 
-// ─── Player management ──────────────────────────────────────────
+// ─── Player management (ice) ────────────────────────────────────
 function makeIcePlayer(id, bet, name, pfp) {
   const colorIdx = iceRoom.players.length % COLORS.length;
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx],
     x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
+    shapes: [],
   };
   iceRoom.players.push(p);
   repartitionIceArena();
@@ -352,13 +378,11 @@ function startIceSpin() {
   iceRoom.spinStartTime = Date.now();
   iceRoom.spinDuration = 2.6 + Math.random() * 1.6;
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
-  // Random starting position
   const margin = 30;
   iceRoom.spinStartX = margin + Math.random() * (ICE_SIZE - 2 * margin);
   iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck: uses spinStartX/Y and spinFinalAngle ──────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const speed = 10;
@@ -370,21 +394,41 @@ function launchIcePuck() {
   iceRoom.slideStartTime = Date.now();
 }
 
+function pointInPolygon(px, py, vertices) {
+  const n = vertices.length;
+  let inside = false;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = vertices[i].x, yi = vertices[i].y;
+    const xj = vertices[j].x, yj = vertices[j].y;
+    if ((yi > py) !== (yj > py) &&
+        px < (xj - xi) * (py - yi) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
 function getIceWinner() {
   const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
   const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
   for (const p of iceRoom.players) {
-    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) {
-      return p;
+    for (const shape of p.shapes) {
+      if (pointInPolygon(px, py, shape.vertices)) {
+        return p;
+      }
     }
   }
   let closest = null;
   let minDist = Infinity;
   for (const p of iceRoom.players) {
-    const cx = (p.x1 + p.x2) / 2;
-    const cy = (p.y1 + p.y2) / 2;
-    const d = Math.hypot(px - cx, py - cy);
-    if (d < minDist) { minDist = d; closest = p; }
+    for (const shape of p.shapes) {
+      let cx = 0, cy = 0;
+      const verts = shape.vertices;
+      for (const v of verts) { cx += v.x; cy += v.y; }
+      cx /= verts.length; cy /= verts.length;
+      const d = Math.hypot(px - cx, py - cy);
+      if (d < minDist) { minDist = d; closest = p; }
+    }
   }
   return closest;
 }
@@ -455,7 +499,6 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── IMPROVED ice physics: smooth sliding with corner handling ──
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
@@ -498,7 +541,6 @@ function updateIcePhysics(dt) {
             const restitution = 0.95;
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
-            // Tangential friction for ice sliding
             const vt = -puck.vx * ny + puck.vy * nx;
             const friction = 0.995;
             const newVt = vt * friction;
@@ -536,8 +578,12 @@ function broadcastIceState() {
     spinStartY: iceRoom.spinStartY,
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
-      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-      x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+      id: p.id,
+      name: p.name,
+      pfp: p.pfp,
+      bet: p.bet,
+      color: p.color,
+      shapes: p.shapes,
     })),
   });
 }
@@ -892,8 +938,12 @@ io.on('connection', (socket) => {
       }
 
       const icePlayers = iceRoom.players.map(p => ({
-        id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-        x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+        id: p.id,
+        name: p.name,
+        pfp: p.pfp,
+        bet: p.bet,
+        color: p.color,
+        shapes: p.shapes,
       }));
 
       ack?.({
