@@ -707,10 +707,188 @@
             margin-right: 2px;
         }
 
-        /* ─── REST OF APP (unchanged) ─── */
-        /* Keep all remaining styles for tabs, bet overlay, profile, top, etc. */
-        /* They are included in the final file below. */
+        /* ─── WIN PANEL (slides from top) ─── */
+        #win-panel {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%) translateY(-100%);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(26, 26, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 0 0 var(--radius) var(--radius);
+            padding: 20px 18px 24px;
+            border: 1px solid var(--border);
+            border-top: none;
+            box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
+            z-index: 25;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        #win-panel.show {
+            transform: translateX(-50%) translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #win-gif-container {
+            width: 70%;
+            max-width: 220px;
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: transparent;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        #win-gif-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 8px;
+        }
+        #win-avatar-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--gold);
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        #win-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #win-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            width: 100%;
+        }
+        #win-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gold);
+            text-align: center;
+        }
+        #win-multiplier {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+        }
+        #win-continue-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--primary-glow);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
 
+        /* ─── ICE WIN PANEL (same top slide) ─── */
+        #ice-win-panel {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%) translateY(-100%);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(26, 26, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 0 0 var(--radius) var(--radius);
+            padding: 20px 18px 24px;
+            border: 1px solid var(--border);
+            border-top: none;
+            box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
+            z-index: 25;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #ice-win-panel.show {
+            transform: translateX(-50%) translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #ice-win-avatar-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #5b8def;
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        #ice-win-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #ice-win-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5b8def;
+            text-align: center;
+        }
+        #ice-win-multiplier {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+        }
+        #ice-win-continue-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: #5b8def;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(91, 141, 239, 0.4);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #ice-win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+
+        /* ─── REST OF APP (unchanged) ─── */
         #main { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; background:transparent; }
         .tab-page { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transform:translateX(30px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease, visibility 0.35s ease; overflow:hidden; background:transparent; will-change:transform,opacity; }
         .tab-page.active { opacity:1; visibility:visible; transform:translateX(0); z-index:2; }
@@ -771,17 +949,6 @@
         .auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .auto-bet-panel .switch-sm input:checked+.slider-sm { background:var(--primary); }
         .auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
-        #win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; max-height:75vh; overflow-y:auto; }
-        #win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
-        #win-gif-container { width:70%; max-width:220px; aspect-ratio:16/9; border-radius:12px; overflow:hidden; flex-shrink:0; background:transparent; border:none; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
-        #win-gif-container img { width:100%; height:100%; object-fit:contain; display:block; border-radius:8px; }
-        #win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid var(--gold); flex-shrink:0; background:var(--surface3); }
-        #win-avatar-container img { width:100%; height:100%; object-fit:cover; display:block; }
-        #win-details { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; }
-        #win-name { font-size:24px; font-weight:700; color:var(--gold); text-align:center; }
-        #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
-        #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
-        #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
 
         /* ─── ICE ARENA ─── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
@@ -840,14 +1007,6 @@
         .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
-        #ice-win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
-        #ice-win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
-        #ice-win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid #5b8def; flex-shrink:0; background:var(--surface3); }
-        #ice-win-avatar-container img { width:100%; height:100%; object-fit:cover; display:block; }
-        #ice-win-name { font-size:24px; font-weight:700; color:#5b8def; text-align:center; }
-        #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
-        #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
-        #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
 
         /* ─── PROFILE ─── */
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
@@ -1169,11 +1328,12 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with all fixes and compact UI
+        // FULL CLIENT – with win panel sliding from top, new GIFs
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
+            'https://i.postimg.cc/90sfZfSh/ezgif-3f0e907be807d1cc.gif', // new victory GIF
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
@@ -1188,6 +1348,9 @@
         };
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
         const FLAME_GIF = 'https://i.postimg.cc/FHbt292h/fire-flame.gif';
+
+        // Add the new loading GIF to the list used in the loading screen controller
+        // (we'll update the loading screen's GIF array later in the loading script)
 
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
@@ -1712,13 +1875,19 @@
                 state.winStreak = 0;
             }
             updateBalance(); updateProfile();
-            const randomGif=WIN_GIFS[Math.floor(Math.random()*WIN_GIFS.length)];
-            winGif.src=randomGif; winAvatar.src=payload.winnerPfp||state.defaultAvatar;
-            winName.textContent=payload.winnerName+' wins!'; winMultiplier.textContent='x'+payload.multiplier.toFixed(1);
-            winPanel.classList.add('show'); haptic('heavy');
-            countdownTimer.style.display='none'; timerProgressWrap.classList.remove('visible'); waitingText.style.display='none';
+            // Use the new victory GIF – we already have it in WIN_GIFS array, pick a random one (first is the new one)
+            const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+            winGif.src = randomGif;
+            winAvatar.src = payload.winnerPfp || state.defaultAvatar;
+            winName.textContent = payload.winnerName + ' wins!';
+            winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
+            winPanel.classList.add('show');
+            haptic('heavy');
+            countdownTimer.style.display = 'none';
+            timerProgressWrap.classList.remove('visible');
+            waitingText.style.display = 'none';
             if(window.winTimeout) clearTimeout(window.winTimeout);
-            window.winTimeout=setTimeout(hideWinPanelAndReset,5000);
+            window.winTimeout = setTimeout(hideWinPanelAndReset, 5000);
         }
         function hideWinPanelAndReset(){
             winPanel.classList.remove('show'); stopVictorySound();
@@ -1817,13 +1986,16 @@
                 state.winStreak = 0;
             }
             updateBalance(); updateProfile();
-            iceWinAvatar.src=payload.winnerPfp||state.defaultAvatar;
-            iceWinName.textContent=payload.winnerName+' wins the rink!';
-            iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
-            iceWinPanel.classList.add('show'); haptic('heavy');
+            // Use the new victory GIF for ice as well
+            const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+            iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
+            iceWinName.textContent = payload.winnerName + ' wins the rink!';
+            iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
+            iceWinPanel.classList.add('show');
+            haptic('heavy');
             iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
             if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
-            window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
+            window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
         }
         function hideIceWinPanelAndReset(){
             iceWinPanel.classList.remove('show');
@@ -2779,11 +2951,12 @@
         window.__state=state;
     </script>
 
-    <!-- ─── LOADING SCREEN CONTROLLER ─── -->
+    <!-- ─── LOADING SCREEN CONTROLLER (with new GIF) ─── -->
     <script>
         (function() {
             'use strict';
             const GIFS = [
+                'https://i.postimg.cc/X7ZGJRP2/ezgif-4c0407329eb1bee2.gif', // new loading GIF
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
                 'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
@@ -2925,5 +3098,6 @@
             }
         })();
     </script>
+
 </body>
 </html>
