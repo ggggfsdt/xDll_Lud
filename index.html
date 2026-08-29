@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN STYLES ─── */
+        /* ─── LOADING SCREEN ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -428,7 +428,40 @@
             border-right: 2px solid var(--gold);
         }
 
-        /* ─── ICE TOP CARDS (smaller, higher) ─── */
+        /* ─── PVP WIN HISTORY LIST ─── */
+        #pvp-win-history {
+            position: absolute;
+            bottom: 52px;
+            left: 12px;
+            right: 12px;
+            z-index: 4;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+            max-width: 60%;
+            overflow-x: auto;
+            scrollbar-width: none;
+            flex-direction: row-reverse;
+        }
+        #pvp-win-history::-webkit-scrollbar { display: none; }
+        #pvp-win-history .win-entry {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--gold);
+            background: var(--surface3);
+        }
+        #pvp-win-history .win-entry img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* ─── ICE TOP CARDS ─── */
         #ice-top-cards {
             position: absolute;
             top: 6px;
@@ -718,7 +751,7 @@
             background: rgba(26, 26, 30, 0.95);
             backdrop-filter: blur(20px);
             border-radius: 0 0 var(--radius) var(--radius);
-            padding: 20px 18px 24px;
+            padding: 16px 18px 20px;
             border: 1px solid var(--border);
             border-top: none;
             box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
@@ -729,7 +762,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             max-height: 75vh;
             overflow-y: auto;
         }
@@ -739,10 +772,10 @@
             pointer-events: auto;
         }
         #win-gif-container {
-            width: 70%;
-            max-width: 220px;
+            width: 60%;
+            max-width: 160px;
             aspect-ratio: 16/9;
-            border-radius: 12px;
+            border-radius: 10px;
             overflow: hidden;
             flex-shrink: 0;
             background: transparent;
@@ -757,8 +790,8 @@
             border-radius: 8px;
         }
         #win-avatar-container {
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             overflow: hidden;
             border: 2px solid var(--gold);
@@ -779,32 +812,32 @@
             width: 100%;
         }
         #win-name {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: var(--gold);
             text-align: center;
         }
         #win-multiplier {
-            font-size: 30px;
+            font-size: 24px;
             font-weight: 800;
             color: #fff;
             text-align: center;
         }
         #win-continue-btn {
-            padding: 10px 0;
+            padding: 8px 0;
             border-radius: 30px;
             border: none;
             background: var(--primary);
             color: #fff;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             box-shadow: 0 0 20px var(--primary-glow);
             transition: 0.2s;
             letter-spacing: 0.3px;
             width: 100%;
             text-align: center;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         #win-continue-btn:active {
             transform: scale(0.94);
@@ -822,7 +855,7 @@
             background: rgba(26, 26, 30, 0.95);
             backdrop-filter: blur(20px);
             border-radius: 0 0 var(--radius) var(--radius);
-            padding: 20px 18px 24px;
+            padding: 16px 18px 20px;
             border: 1px solid var(--border);
             border-top: none;
             box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
@@ -833,7 +866,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
         #ice-win-panel.show {
             transform: translateX(-50%) translateY(0%);
@@ -841,8 +874,8 @@
             pointer-events: auto;
         }
         #ice-win-avatar-container {
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             overflow: hidden;
             border: 2px solid #5b8def;
@@ -856,39 +889,39 @@
             display: block;
         }
         #ice-win-name {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
             color: #5b8def;
             text-align: center;
         }
         #ice-win-multiplier {
-            font-size: 30px;
+            font-size: 24px;
             font-weight: 800;
             color: #fff;
             text-align: center;
         }
         #ice-win-continue-btn {
-            padding: 10px 0;
+            padding: 8px 0;
             border-radius: 30px;
             border: none;
             background: #5b8def;
             color: #fff;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             box-shadow: 0 0 20px rgba(91, 141, 239, 0.4);
             transition: 0.2s;
             letter-spacing: 0.3px;
             width: 100%;
             text-align: center;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         #ice-win-continue-btn:active {
             transform: scale(0.94);
             opacity: 0.8;
         }
 
-        /* ─── REST OF APP (unchanged) ─── */
+        /* ─── REST OF APP ─── */
         #main { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; background:transparent; }
         .tab-page { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transform:translateX(30px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease, visibility 0.35s ease; overflow:hidden; background:transparent; will-change:transform,opacity; }
         .tab-page.active { opacity:1; visibility:visible; transform:translateX(0); z-index:2; }
@@ -1160,6 +1193,9 @@
                         </div>
                     </div>
 
+                    <!-- PVP WIN HISTORY LIST (recent winners) -->
+                    <div id="pvp-win-history"></div>
+
                     <div id="timer-wrap">
                         <div id="countdown-timer">10.00</div>
                         <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
@@ -1328,12 +1364,12 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with win panel sliding from top, new GIFs
+        // FULL CLIENT – with win history list, small avatars, top slide
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
-            'https://i.postimg.cc/90sfZfSh/ezgif-3f0e907be807d1cc.gif', // new victory GIF
+            'https://i.postimg.cc/90sfZfSh/ezgif-3f0e907be807d1cc.gif',
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
@@ -1348,9 +1384,6 @@
         };
         const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
         const FLAME_GIF = 'https://i.postimg.cc/FHbt292h/fire-flame.gif';
-
-        // Add the new loading GIF to the list used in the loading screen controller
-        // (we'll update the loading screen's GIF array later in the loading script)
 
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
@@ -1469,6 +1502,8 @@
         const biggestWinAvatar = document.getElementById('biggest-win-avatar');
         const biggestWinName = document.getElementById('biggest-win-name');
         const biggestWinAmount = document.getElementById('biggest-win-amount');
+        // PvP win history
+        const pvpWinHistoryEl = document.getElementById('pvp-win-history');
 
         // ice top cards
         const iceLastGame = document.getElementById('ice-last-game');
@@ -1610,6 +1645,7 @@
                     if(Array.isArray(res.recentWinners)&&res.recentWinners.length){
                         state.winHistory = res.recentWinners.slice(0,state.maxHistory).map(w=>({name:w.name, pfp:w.pfp, amount:0, timestamp:Date.now()}));
                         updateWinHistoryUI();
+                        updatePvpWinHistory();
                     }
                     if(Array.isArray(res.iceRecentWinners)&&res.iceRecentWinners.length){
                         iceState.winHistory = res.iceRecentWinners.slice(0,8).map(w=>({name:w.name, pfp:w.pfp, amount:0}));
@@ -1713,7 +1749,7 @@
                 if(state.gameState==='playing') timerProgressWrap.classList.remove('visible');
             }
             updateStatsBar(); updateBetUI(); updateWaitingText(); updateBetOverlayVisibility(); updatePlayerList(); updateFrogVisibility();
-            updateWinHistoryUI();
+            updateWinHistoryUI(); updatePvpWinHistory();
         }
 
         function detectBumpsForHaptics() {
@@ -1832,6 +1868,7 @@
             state.biggestWinEntry = best;
             state.lastGameEntry = state.winHistory.length > 0 ? state.winHistory[0] : null;
             updateWinHistoryUI();
+            updatePvpWinHistory();
         }
 
         function updateWinHistoryUI() {
@@ -1861,6 +1898,20 @@
             }
         }
 
+        // ─── PVP WIN HISTORY LIST ─────────────────────────────────────
+        function updatePvpWinHistory() {
+            if (state.winHistory.length === 0) {
+                pvpWinHistoryEl.innerHTML = '';
+                return;
+            }
+            let html = '';
+            state.winHistory.slice(0, 8).forEach(entry => {
+                const avatarSrc = entry.pfp || state.defaultAvatar;
+                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            pvpWinHistoryEl.innerHTML = html;
+        }
+
         function handleRoundEnd(payload){
             if(!payload){ hideWinPanelAndReset(); return; }
             addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
@@ -1875,7 +1926,6 @@
                 state.winStreak = 0;
             }
             updateBalance(); updateProfile();
-            // Use the new victory GIF – we already have it in WIN_GIFS array, pick a random one (first is the new one)
             const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
             winGif.src = randomGif;
             winAvatar.src = payload.winnerPfp || state.defaultAvatar;
@@ -1986,7 +2036,6 @@
                 state.winStreak = 0;
             }
             updateBalance(); updateProfile();
-            // Use the new victory GIF for ice as well
             const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
             iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
             iceWinName.textContent = payload.winnerName + ' wins the rink!';
@@ -2956,7 +3005,7 @@
         (function() {
             'use strict';
             const GIFS = [
-                'https://i.postimg.cc/X7ZGJRP2/ezgif-4c0407329eb1bee2.gif', // new loading GIF
+                'https://i.postimg.cc/X7ZGJRP2/ezgif-4c0407329eb1bee2.gif',
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
                 'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
