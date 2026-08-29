@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // dllump · bump arena — multiplayer backend (BSP layout)
 // Now with mixed rectangles & right triangles (no gaps)
+// Fixed: single player gets full rectangle, shapes always sent
 // ═══════════════════════════════════════════════════════════════
 
 process.on('uncaughtException', (err) => {
@@ -250,19 +251,42 @@ function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
 
+  // If only one player, give them the whole arena as a single rectangle
+  if (players.length === 1) {
+    const p = players[0];
+    p.x1 = 0;
+    p.y1 = 0;
+    p.x2 = ICE_SIZE;
+    p.y2 = ICE_SIZE;
+    p.shapes = [{
+      type: 'rect',
+      vertices: [
+        { x: 0, y: 0 },
+        { x: ICE_SIZE, y: 0 },
+        { x: ICE_SIZE, y: ICE_SIZE },
+        { x: 0, y: ICE_SIZE }
+      ]
+    }];
+    return;
+  }
+
+  // Shuffle to avoid bias
   const shuffled = [...players];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
+  // Recursively partition into rectangles
   partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
 
+  // Now for each player, optionally split rectangle into two right triangles
   players.forEach(p => {
     const shapes = [];
     const rect = { x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2 };
-    if (Math.random() < 0.5) {
-      // Split into two right triangles
+    // For more than 2 players, splitting adds variety, but we can skip if only 2 players to keep them as rectangles
+    if (players.length > 2 && Math.random() < 0.5) {
+      // Split along diagonal from top-left to bottom-right
       const tri1 = [
         { x: rect.x1, y: rect.y1 },
         { x: rect.x2, y: rect.y1 },
@@ -1037,7 +1061,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API
+// ADMIN API (unchanged)
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -1258,7 +1282,6 @@ app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
-// ─── Auto-bot endpoints ──────────────────────────────────────
 app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
   const { enabled } = req.body;
   if (typeof enabled !== 'boolean') {
@@ -1271,7 +1294,6 @@ app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
   res.json({ enabled: autoBotEnabled });
 });
 
-// ─── Notification endpoint ──────────────────────────────────
 app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   const { message } = req.body;
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -1281,7 +1303,6 @@ app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Existing admin endpoints ──────────────────────────────
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
