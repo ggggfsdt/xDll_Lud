@@ -236,65 +236,65 @@
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
 
-        /* ─── TOP BAR ─── */
+        /* ─── TOP BAR (THINNER) ─── */
         #topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 14px 8px;
+            padding: 4px 12px 4px;
             background: rgba(18,18,20,0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
-            min-height: 52px;
+            min-height: 36px;
             z-index: 10;
-            gap: 8px;
+            gap: 6px;
         }
         #top-left {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         #username-display {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 500;
             color: var(--text2);
-            max-width: 90px;
+            max-width: 70px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         #status-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: var(--green);
-            box-shadow: 0 0 12px var(--green);
+            box-shadow: 0 0 8px var(--green);
             transition: 0.3s;
         }
         #status-dot.offline {
             background: var(--red);
-            box-shadow: 0 0 12px var(--red);
+            box-shadow: 0 0 8px var(--red);
         }
         #top-right {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         #plus-btn {
-            width: 28px;
-            height: 28px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: #2196F3;
             border: none;
             color: #fff;
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 0 16px rgba(33,150,243,0.4);
+            box-shadow: 0 0 12px rgba(33,150,243,0.3);
             transition: 0.2s;
             font-family: inherit;
         }
@@ -305,32 +305,32 @@
         #balance-wrap {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background: var(--surface2);
-            padding: 3px 14px 3px 6px;
-            border-radius: 28px;
+            padding: 2px 10px 2px 4px;
+            border-radius: 20px;
             border: 1px solid var(--border);
         }
         #diamond-icon {
-            width: 26px;
-            height: 26px;
+            width: 20px;
+            height: 20px;
             object-fit: contain;
             flex-shrink: 0;
             display: block;
             animation: glowDiamond 2.8s ease-in-out infinite;
         }
         @keyframes glowDiamond {
-            0%, 100% { filter: drop-shadow(0 0 6px rgba(200,168,78,0.3)); }
-            50% { filter: drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); }
+            0%, 100% { filter: drop-shadow(0 0 4px rgba(200,168,78,0.3)); }
+            50% { filter: drop-shadow(0 0 16px rgba(200,168,78,0.6)) brightness(1.15); }
         }
         #balance {
-            font-size: 17px;
+            font-size: 14px;
             font-weight: 700;
             color: #fff;
             letter-spacing: 0.2px;
             font-variant-numeric: tabular-nums;
             display: inline-block;
-            min-width: 40px;
+            min-width: 30px;
         }
 
         /* ─── REST OF APP ─── */
@@ -349,20 +349,20 @@
         #timer-progress-wrap.visible { display:block; }
         #timer-progress { width:0%; height:100%; background:#ffffff; border-radius:4px; box-shadow:0 0 10px rgba(255,255,255,0.25); transition:width 0.06s linear; }
 
-        /* ─── NEW WIN PANELS ─── */
+        /* ─── WIN PANELS (WIDER & TALLER) ─── */
         .win-panel {
             position: absolute;
-            top: 52px;
+            top: 36px;
             z-index: 4;
             background: rgba(18,18,22,0.85);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 6px 12px;
+            border-radius: 16px;
+            padding: 8px 14px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 80px;
+            min-width: 110px;
             pointer-events: none;
             transition: opacity 0.3s ease;
             box-shadow: 0 4px 16px rgba(0,0,0,0.6);
@@ -374,24 +374,24 @@
             right: 12px;
         }
         .win-panel .win-panel-label {
-            font-size: 9px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text2);
             opacity: 0.6;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
             font-weight: 600;
         }
         .win-panel .win-panel-content {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             width: 100%;
             justify-content: center;
         }
         .win-panel .win-panel-avatar {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: var(--surface2);
             border: 1.5px solid var(--gold);
@@ -399,7 +399,7 @@
             flex-shrink: 0;
         }
         .win-panel .win-panel-amount {
-            font-size: 15px;
+            font-size: 17px;
             font-weight: 700;
             color: var(--gold);
             white-space: nowrap;
@@ -409,13 +409,13 @@
             color: var(--text2);
             opacity: 0.4;
             font-weight: 400;
-            font-size: 12px;
+            font-size: 13px;
         }
         @media (max-width: 420px) {
-            .win-panel { padding: 4px 8px; min-width: 60px; top: 44px; }
-            .win-panel .win-panel-avatar { width: 22px; height: 22px; }
-            .win-panel .win-panel-amount { font-size: 13px; }
-            .win-panel .win-panel-label { font-size: 8px; }
+            .win-panel { padding: 6px 10px; min-width: 80px; top: 32px; }
+            .win-panel .win-panel-avatar { width: 26px; height: 26px; }
+            .win-panel .win-panel-amount { font-size: 14px; }
+            .win-panel .win-panel-label { font-size: 9px; }
         }
 
         #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
@@ -589,16 +589,74 @@
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
-        #ice-timer-wrap { position:absolute; top:16px; right:16px; z-index:3; pointer-events:none; display:none; flex-direction:column; align-items:flex-end; gap:5px; }
-        #ice-countdown-timer { font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.8); font-variant-numeric:tabular-nums; letter-spacing:0.5px; line-height:1; }
-        #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
-        #ice-timer-progress-wrap.visible { display:block; }
-        #ice-timer-progress { height:100%; width:0%; border-radius:3px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.8); }
 
-        /* Ice win panels (same style as PvP) */
-        .ice-win-panel { /* same as .win-panel but we can reuse class */ }
-        #ice-last-win-panel { left: 12px; }
-        #ice-best-win-panel { right: 12px; }
+        /* Removed old ice timer wrap (now using sliding panel) */
+        #ice-timer-wrap { display:none; }
+
+        /* ─── ICE TIMER PANEL (slides up) ─── */
+        #ice-timer-panel {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            z-index: 4;
+            background: rgba(18,18,22,0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            min-width: 100px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #ice-timer-panel.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: none;
+        }
+        #ice-timer-panel .timer-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text2);
+            opacity: 0.5;
+            font-weight: 600;
+        }
+        #ice-timer-panel .timer-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            font-variant-numeric: tabular-nums;
+            text-shadow: 0 0 20px rgba(0,0,0,0.8);
+            line-height: 1.2;
+        }
+        #ice-timer-panel .timer-progress {
+            width: 80px;
+            height: 3px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        #ice-timer-panel .timer-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #5b8def;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(91,141,239,0.4);
+            transition: width 0.06s linear;
+        }
+        @media (max-width: 420px) {
+            #ice-timer-panel { padding: 6px 14px; min-width: 70px; bottom: 60px; }
+            #ice-timer-panel .timer-value { font-size: 20px; }
+            #ice-timer-panel .timer-progress { width: 60px; }
+        }
 
         #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
@@ -631,11 +689,10 @@
         #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
         #ice-current-bet-display span { color:var(--gold); font-weight:700; }
         #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
-        #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
-        #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
-        #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
-        #ice-stats-bar .stat-item .value { color:#fff; font-weight:700; }
-        #ice-stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
+
+        /* Removed ice stats bar */
+        #ice-stats-bar { display:none; }
+
         #ice-win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
         #ice-win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
         #ice-win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid #5b8def; flex-shrink:0; background:var(--surface3); }
@@ -698,15 +755,18 @@
                 padding: 18px 24px;
                 max-width: 92%;
             }
-            #plus-btn { width: 24px; height: 24px; font-size: 15px; }
-            #balance-wrap { padding: 2px 10px 2px 4px; }
-            #balance { font-size: 15px; }
-            #diamond-icon { width: 22px; height: 22px; }
-            #username-display { max-width: 60px; font-size: 11px; }
-            .win-panel { padding: 4px 8px; min-width: 60px; top: 44px; }
+            #plus-btn { width: 20px; height: 20px; font-size: 12px; }
+            #balance-wrap { padding: 2px 8px 2px 3px; }
+            #balance { font-size: 12px; min-width: 24px; }
+            #diamond-icon { width: 16px; height: 16px; }
+            #username-display { max-width: 50px; font-size: 10px; }
+            .win-panel { padding: 4px 8px; min-width: 70px; top: 28px; }
             .win-panel .win-panel-avatar { width: 22px; height: 22px; }
             .win-panel .win-panel-amount { font-size: 13px; }
             .win-panel .win-panel-label { font-size: 8px; }
+            #ice-timer-panel { padding: 4px 10px; min-width: 60px; bottom: 50px; }
+            #ice-timer-panel .timer-value { font-size: 18px; }
+            #ice-timer-panel .timer-progress { width: 50px; }
         }
     </style>
 </head>
@@ -750,7 +810,7 @@
                         <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
                     </div>
 
-                    <!-- NEW WIN PANELS -->
+                    <!-- WIN PANELS (wider, taller) -->
                     <div id="last-win-panel" class="win-panel left-panel">
                         <div class="win-panel-label">Last Game</div>
                         <div class="win-panel-content">
@@ -806,12 +866,15 @@
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
-                    <div id="ice-timer-wrap">
-                        <div id="ice-countdown-timer">10.00</div>
-                        <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
+
+                    <!-- ICE TIMER PANEL (slides up) -->
+                    <div id="ice-timer-panel">
+                        <div class="timer-label">Round starts in</div>
+                        <div class="timer-value" id="ice-countdown-display">10.00</div>
+                        <div class="timer-progress"><div class="timer-progress-bar" id="ice-timer-progress-bar" style="width:0%"></div></div>
                     </div>
 
-                    <!-- ICE WIN PANELS -->
+                    <!-- ICE WIN PANELS (same as PvP) -->
                     <div id="ice-last-win-panel" class="win-panel left-panel">
                         <div class="win-panel-label">Last Game</div>
                         <div class="win-panel-content">
@@ -853,10 +916,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="ice-stats-bar">
-                    <div class="stat-item"><span class="label">Players</span><span class="value" id="ice-stats-players">0</span></div>
-                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="ice-stats-pot">0</span></div>
-                </div>
+                <!-- No stats bar for ice -->
             </div>
 
             <!-- Profile -->
@@ -1011,17 +1071,9 @@
         const iceBetBtn = document.getElementById('ice-bet-btn');
         const iceAllInBtn = document.getElementById('ice-all-in-btn');
         const iceCurrentBetDisplay = document.getElementById('ice-current-bet-value');
-        const iceCountdownTimer = document.getElementById('ice-countdown-timer');
-        const iceTimerWrap = document.getElementById('ice-timer-wrap');
-        const iceTimerProgressWrap = document.getElementById('ice-timer-progress-wrap');
-        const iceTimerProgress = document.getElementById('ice-timer-progress');
-        const iceStatsPlayers = document.getElementById('ice-stats-players');
-        const iceStatsPot = document.getElementById('ice-stats-pot');
-        const iceWinPanel = document.getElementById('ice-win-panel');
-        const iceWinAvatar = document.getElementById('ice-win-avatar');
-        const iceWinName = document.getElementById('ice-win-name');
-        const iceWinMultiplier = document.getElementById('ice-win-multiplier');
-        const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
+        const iceTimerPanel = document.getElementById('ice-timer-panel');
+        const iceCountdownDisplay = document.getElementById('ice-countdown-display');
+        const iceTimerProgressBar = document.getElementById('ice-timer-progress-bar');
         const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
         const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
         const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
@@ -1196,11 +1248,10 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
-                        updateIceStatsBar();
+                        // No stats bar to update
                         updateIceBetUI();
                         updateIceWaitingText();
                         updateIceBetOverlayVisibility();
-                        document.getElementById('ice-stats-pot').textContent = iceState.pot;
                     }
                     usernameDisplay.textContent='@'+state.username; profileName.textContent=state.username;
                     profileUsername.textContent='@'+state.username; profilePfp.src=state.pfp||state.defaultAvatar;
@@ -1284,7 +1335,6 @@
                 if(state.gameState==='playing') timerProgressWrap.classList.remove('visible');
             }
             updateStatsBar(); updateBetUI(); updateWaitingText(); updateBetOverlayVisibility(); updatePlayerList(); updateFrogVisibility();
-            // Also update win panels in case we have new history? (won't happen here, but safe)
             updatePvPWinPanels();
         }
 
@@ -1388,7 +1438,6 @@
 
         function handleRoundEnd(payload){
             if(!payload){ hideWinPanelAndReset(); return; }
-            // Store win with amount
             addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
             refreshLeaderboard();
             if(payload.winnerId===state.userId){
@@ -1426,7 +1475,6 @@
 
         function updatePvPWinPanels() {
             const history = state.winHistory;
-            // Last game (most recent)
             if (history.length > 0) {
                 const last = history[0];
                 lastWinAvatar.src = last.pfp || state.defaultAvatar;
@@ -1443,7 +1491,6 @@
                 lastWinAmount.className = 'win-panel-amount placeholder';
             }
 
-            // Best win (max amount)
             let best = null;
             for (const entry of history) {
                 if (entry.amount !== null && entry.amount !== undefined) {
@@ -1542,10 +1589,15 @@
                 iceState.puckPopStart=performance.now();
                 iceState.puckScale=0;
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
+                // Show timer panel with spinning indicator
+                iceTimerPanel.classList.add('show');
+                iceCountdownDisplay.textContent = '🌀';
+                iceTimerProgressBar.style.width = '100%';
             }
             if(snapshot.gameState==='sliding' && prevGameState!=='sliding'){
                 iceState.slideStartTime=performance.now();
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
+                iceTimerPanel.classList.remove('show');
             }
             if(snapshot.gameState==='finished' && prevGameState!=='finished'){
                 if(iceState.zoom>1.1 && !iceState.zoomOutTriggered){
@@ -1555,6 +1607,7 @@
                     iceState.zoomStartTime=performance.now();
                     iceState.zoomTarget=1;
                 }
+                iceTimerPanel.classList.remove('show');
             }
             if(snapshot.gameState==='idle' && prevGameState!=='idle'){
                 iceState.puckVisible=false; iceState.puckScale=1;
@@ -1563,6 +1616,7 @@
                 iceState.showOwnerName = false;
                 iceState.currentOwnerName = '';
                 iceState.idlePuckInitialized = false;
+                iceTimerPanel.classList.remove('show');
             }
 
             const seen=new Set();
@@ -1590,21 +1644,29 @@
             if(prevGameState!=='idle' && iceState.gameState==='idle'){
                 iceState.winnerId=null;
                 iceWaitingText.style.display='block';
-                iceTimerWrap.style.display='none';
-                iceTimerProgressWrap.classList.remove('visible');
             }
-            iceTimerWrap.style.display=(iceState.gameState==='countdown'||iceState.gameState==='spinning')?'flex':'none';
-            if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
 
-            updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
-            updateIceWinPanels(); // ensure panels reflect history (though round end handles it)
+            // Show timer panel during countdown
+            if (iceState.gameState === 'countdown') {
+                iceTimerPanel.classList.add('show');
+                // update timer value later in render loop
+            } else if (iceState.gameState === 'spinning') {
+                iceTimerPanel.classList.add('show');
+            } else {
+                // hide when not in countdown/spinning (except sliding we hide it already)
+                if (iceState.gameState !== 'sliding' && iceState.gameState !== 'finished') {
+                    // Keep hidden if idle
+                }
+            }
+
+            updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
+            updateIceWinPanels();
         }
 
         function updateIceBetOverlayVisibility(){
             const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
             iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
         }
-        function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
         function updateIceWaitingText(){
             if (iceState.players.length >= 1) {
                 iceWaitingText.style.display = 'none';
@@ -1644,7 +1706,7 @@
             iceWinName.textContent=payload.winnerName+' wins the rink!';
             iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
             iceWinPanel.classList.add('show'); haptic('heavy');
-            iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
+            iceTimerPanel.classList.remove('show');
             if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
             window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
         }
@@ -1652,7 +1714,7 @@
             iceWinPanel.classList.remove('show');
             if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
             iceState.winnerId=null;
-            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
+            updateIceWaitingText(); updateIceBetUI(); updateIceBetOverlayVisibility();
         }
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
@@ -2460,6 +2522,8 @@
         function renderLoop(){
             updatePlayerAnimations();
             const now=Date.now();
+
+            // PvP timer
             if(state.gameState==='countdown'&&state.countdownStartTime){
                 const elapsed=(now-state.countdownStartTime)/1000;
                 const remaining=Math.max(0,10.0-elapsed);
@@ -2472,16 +2536,26 @@
             } else if(state.gameState==='prestart'){ countdownTimer.textContent='GO!'; timerProgress.style.width='100%'; timerProgressWrap.classList.add('visible'); }
             else if(state.gameState==='idle'){ timerProgressWrap.classList.remove('visible'); }
 
-            if(iceState.gameState==='countdown'&&iceState.countdownStartTime){
+            // Ice timer panel
+            if(iceState.gameState==='countdown' && iceState.countdownStartTime){
                 const elapsed=(now-iceState.countdownStartTime)/1000;
                 const remaining=Math.max(0,10.0-elapsed);
                 const secs=Math.floor(remaining);
                 const ms=Math.floor((remaining-secs)*100);
-                iceCountdownTimer.textContent=secs+'.'+String(ms).padStart(2,'0');
-                iceTimerProgress.style.width=(Math.min(1,elapsed/10.0)*100)+'%';
-                iceTimerProgressWrap.classList.add('visible');
-            } else if(iceState.gameState==='spinning'){ iceCountdownTimer.textContent='🌀'; iceTimerProgress.style.width='100%'; }
-            else if(iceState.gameState==='idle'){ iceTimerProgressWrap.classList.remove('visible'); }
+                iceCountdownDisplay.textContent=secs+'.'+String(ms).padStart(2,'0');
+                iceTimerProgressBar.style.width=(Math.min(1,elapsed/10.0)*100)+'%';
+                // ensure panel is shown
+                iceTimerPanel.classList.add('show');
+            } else if(iceState.gameState==='spinning') {
+                iceCountdownDisplay.textContent='🌀';
+                iceTimerProgressBar.style.width='100%';
+                iceTimerPanel.classList.add('show');
+            } else {
+                // hide panel if not countdown or spinning
+                if (iceState.gameState !== 'sliding' && iceState.gameState !== 'finished') {
+                    iceTimerPanel.classList.remove('show');
+                }
+            }
 
             render(); renderIce();
             requestAnimationFrame(renderLoop);
@@ -2498,9 +2572,10 @@
             Object.keys(tabPages).forEach(key=>tabPages[key].classList.toggle('active',key==='pvp'));
             document.getElementById('tabs').style.pointerEvents='auto';
             tabBtns.forEach(b=>b.style.pointerEvents='auto');
-            // init win panels (empty)
             updatePvPWinPanels();
             updateIceWinPanels();
+            // Ice timer panel initially hidden
+            iceTimerPanel.classList.remove('show');
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
