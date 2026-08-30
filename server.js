@@ -361,7 +361,8 @@ function startIceSpin() {
 // ─── launchIcePuck: uses spinStartX/Y and spinFinalAngle ──────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 10;
+  const baseSpeed = 14;               // higher base speed
+  const speed = baseSpeed + Math.random() * 4; // 14–18
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
@@ -409,7 +410,11 @@ async function endIceGame() {
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
 
-    iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
+    iceRoom.recentWinners.unshift({ 
+      name: winner.name, 
+      pfp: winner.pfp, 
+      amount: winnings   // amount included
+    });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
 
     if (!isBot(winner.id)) {
@@ -513,8 +518,14 @@ function updateIcePhysics(dt) {
       collisionCount++;
     }
 
+    // ─── Friction: keep speed longer, then stop faster ──────────
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    const frictionPerSecond = elapsed < 3.0 ? 0.98 : 0.75;
+    let frictionPerSecond;
+    if (elapsed < 4.5) {
+      frictionPerSecond = 0.992;   // very low friction – holds speed
+    } else {
+      frictionPerSecond = 0.50;    // high friction – stops quickly
+    }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
@@ -633,7 +644,11 @@ async function endGame(winnerId) {
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
 
-    room.recentWinners.unshift({ name: winner.name, pfp: winner.pfp });
+    room.recentWinners.unshift({ 
+      name: winner.name, 
+      pfp: winner.pfp, 
+      amount: winnings 
+    });
     if (room.recentWinners.length > 8) room.recentWinners.length = 8;
 
     try {
