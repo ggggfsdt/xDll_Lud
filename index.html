@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN STYLES ─── */
+        /* ─── LOADING SCREEN (unchanged) ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -228,7 +228,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── ORIGINAL APP STYLES ─── */
+        /* ─── MAIN APP STYLES ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -236,7 +236,7 @@
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
 
-        /* ─── TOP BAR (THINNER) ─── */
+        /* ─── THINNER TOP BAR ─── */
         #topbar {
             display: flex;
             align-items: center;
@@ -481,7 +481,7 @@
         #stats-bar .stat-item .value { color:#fff; font-weight:700; }
         #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
 
-        /* ─── PROFILE (no shop) ─── */
+        /* ─── PROFILE ─── */
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
         .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
         .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
@@ -589,9 +589,6 @@
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
-
-        /* Removed old ice timer wrap (now using sliding panel) */
-        #ice-timer-wrap { display:none; }
 
         /* ─── ICE TIMER PANEL (slides up) ─── */
         #ice-timer-panel {
@@ -783,7 +780,7 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ ORIGINAL APP ─── -->
+    <!-- ═══ APP ─── -->
     <div id="app">
         <div id="topbar">
             <div id="top-left">
@@ -971,10 +968,7 @@
     </div>
 
     <script>
-        // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with random spawn position and thinner glow
-        // ═══════════════════════════════════════════════════════════════
-
+        // ─── FULL CLIENT ───────────────────────────────────────────────
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -1003,7 +997,7 @@
             balance: 0, username: 'player', userId: null, pfp: '', wins: 0, losses: 0, anonymous: false,
             gameState: 'idle', players: [], pot: 0, arenaSize: 0, cornerRadius: 0, perimeterPoints: [], opening: null,
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-            winHistory: [], // now stores {name, pfp, amount}
+            winHistory: [], // {name, pfp, amount}
             maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
             winStreak: 0,
@@ -1088,7 +1082,7 @@
         const plusBtn = document.getElementById('plus-btn');
         let notifTimeout = null;
 
-        // DOM refs for new win panels
+        // DOM refs for win panels
         const lastWinPanel = document.getElementById('last-win-panel');
         const lastWinAvatar = lastWinPanel.querySelector('.win-panel-avatar');
         const lastWinAmount = lastWinPanel.querySelector('.win-panel-amount');
@@ -1119,7 +1113,7 @@
             spinStartY: 200,
             puck: { x: 200, y: 200 },
             winnerId: null,
-            winHistory: [], // now stores {name, pfp, amount}
+            winHistory: [], // {name, pfp, amount}
             puckScale: 1,
             puckPopStart: 0,
             puckVisible: false,
@@ -1145,11 +1139,10 @@
             showOwnerName: false,
         };
 
-        // ─── SHARED HELPERS ────────────────────────────────────────────
+        // ─── HELPERS ────────────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
         function easeOutBack(t) { const c1=1.70158,c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); }
-        function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
         function lightenColor(hex,amt) {
             let r=parseInt(hex.slice(1,2),16)*17||parseInt(hex.slice(1,3),16);
             let g=parseInt(hex.slice(2,3),16)*17||parseInt(hex.slice(3,5),16);
@@ -1230,7 +1223,6 @@
                     state.anonymous=!!res.user.anonymous; anonToggle.checked=state.anonymous;
                     SERVER_ARENA_SIZE=res.arena.size; state.perimeterPoints=res.arena.perimeter; state.cornerRadius=res.arena.cornerRadius;
                     if(res.iceArena){ iceState.perimeterPoints=res.iceArena.perimeter; iceState.cornerRadius=res.iceArena.cornerRadius; }
-                    // Initial win history (without amounts)
                     if(Array.isArray(res.recentWinners)&&res.recentWinners.length){
                         state.winHistory = res.recentWinners.slice(0,state.maxHistory).map(w => ({ name:w.name, pfp:w.pfp, amount: null }));
                         updatePvPWinPanels();
@@ -1248,7 +1240,6 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
-                        // No stats bar to update
                         updateIceBetUI();
                         updateIceWaitingText();
                         updateIceBetOverlayVisibility();
@@ -1289,7 +1280,7 @@
             });
         }
 
-        // ─── applyServerState ──────────────────────────────────────────
+        // ─── PvP STATE HANDLING ────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState=state.gameState;
             state.gameState=snapshot.gameState; state.pot=snapshot.pot; state.countdownStartTime=snapshot.countdownStartTime;
@@ -1551,7 +1542,7 @@
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-        // ─── applyIceServerState ───────────────────────────────────────
+        // ─── ICE STATE HANDLING ────────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
 
@@ -1589,7 +1580,6 @@
                 iceState.puckPopStart=performance.now();
                 iceState.puckScale=0;
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
-                // Show timer panel with spinning indicator
                 iceTimerPanel.classList.add('show');
                 iceCountdownDisplay.textContent = '🌀';
                 iceTimerProgressBar.style.width = '100%';
@@ -1646,16 +1636,13 @@
                 iceWaitingText.style.display='block';
             }
 
-            // Show timer panel during countdown
             if (iceState.gameState === 'countdown') {
                 iceTimerPanel.classList.add('show');
-                // update timer value later in render loop
             } else if (iceState.gameState === 'spinning') {
                 iceTimerPanel.classList.add('show');
             } else {
-                // hide when not in countdown/spinning (except sliding we hide it already)
                 if (iceState.gameState !== 'sliding' && iceState.gameState !== 'finished') {
-                    // Keep hidden if idle
+                    // do nothing – will be hidden in render loop
                 }
             }
 
@@ -1770,6 +1757,7 @@
             haptic('light');
         });
 
+        // ─── LEADERBOARD ───────────────────────────────────────────────
         function refreshLeaderboard(){
             if(!socket) return;
             socket.emit('leaderboard',{},(res)=>{
@@ -1841,6 +1829,7 @@
             return null;
         }
 
+        // ─── BALANCE / PROFILE ────────────────────────────────────────
         let balanceAnimInterval=null;
         function animateBalanceTo(target){
             const current=parseInt(balanceEl.textContent)||0;
@@ -1874,6 +1863,7 @@
             updateBalance();
         }
 
+        // ─── SOUND ─────────────────────────────────────────────────────
         let audioCtx=null, victorySoundPlaying=false;
         function playVictorySound(){
             try {
@@ -1901,6 +1891,7 @@
         }
         function stopVictorySound(){ victorySoundPlaying=false; }
 
+        // ─── BET LOGIC ─────────────────────────────────────────────────
         betBtn.addEventListener('click', ()=>{
             if(!socket||!socket.connected) return;
             let addAmount=parseInt(betInput.value)||10;
@@ -1946,6 +1937,7 @@
         }
         setupInputWithClear(betInput,10); setupInputWithClear(autoAmount,10); setupInputWithClear(iceAutoAmount,10);
 
+        // ─── AUTO BET (PvP) ──────────────────────────────────────────
         let autoBetInterval=null, autoBetEnabled=false;
         function toggleAutoBet(enable){
             if(enable&&!autoBetEnabled){
@@ -1971,6 +1963,7 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
+        // ─── PLUS BUTTON ──────────────────────────────────────────────
         plusBtn.addEventListener('click', () => {
             haptic('light');
             alert('Coming soon!');
@@ -2042,7 +2035,7 @@
             btn.addEventListener('click',function(e){ e.stopPropagation(); switchTab(this.dataset.tab); });
         });
 
-        // ─── RENDER ──────────────────────────────────────────────────
+        // ─── RENDER PVP ────────────────────────────────────────────────
         function render(){
             const w=state.arenaSize;
             const half=w/2;
@@ -2519,6 +2512,7 @@
             }
         }
 
+        // ─── GAME LOOP ──────────────────────────────────────────────────
         function renderLoop(){
             updatePlayerAnimations();
             const now=Date.now();
@@ -2544,14 +2538,12 @@
                 const ms=Math.floor((remaining-secs)*100);
                 iceCountdownDisplay.textContent=secs+'.'+String(ms).padStart(2,'0');
                 iceTimerProgressBar.style.width=(Math.min(1,elapsed/10.0)*100)+'%';
-                // ensure panel is shown
                 iceTimerPanel.classList.add('show');
             } else if(iceState.gameState==='spinning') {
                 iceCountdownDisplay.textContent='🌀';
                 iceTimerProgressBar.style.width='100%';
                 iceTimerPanel.classList.add('show');
             } else {
-                // hide panel if not countdown or spinning
                 if (iceState.gameState !== 'sliding' && iceState.gameState !== 'finished') {
                     iceTimerPanel.classList.remove('show');
                 }
@@ -2561,6 +2553,7 @@
             requestAnimationFrame(renderLoop);
         }
 
+        // ─── INIT ─────────────────────────────────────────────────────
         function init(){
             if(tg?.initDataUnsafe?.user){ const u=tg.initDataUnsafe.user; state.username=u.username||u.first_name||'player'; state.pfp=u.photo_url||''; } else state.username='player';
             usernameDisplay.textContent='@'+state.username;
@@ -2574,7 +2567,6 @@
             tabBtns.forEach(b=>b.style.pointerEvents='auto');
             updatePvPWinPanels();
             updateIceWinPanels();
-            // Ice timer panel initially hidden
             iceTimerPanel.classList.remove('show');
             requestAnimationFrame(renderLoop);
             setOnline(false);
@@ -2583,7 +2575,7 @@
         window.__state=state;
     </script>
 
-    <!-- ─── LOADING SCREEN CONTROLLER (unchanged) ─── -->
+    <!-- ─── LOADING SCREEN CONTROLLER ─── -->
     <script>
         (function() {
             'use strict';
