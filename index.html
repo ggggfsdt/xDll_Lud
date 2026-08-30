@@ -348,10 +348,76 @@
         #timer-progress-wrap { width:44px; height:3px; background:rgba(255,255,255,0.12); border-radius:4px; overflow:hidden; display:none; box-shadow:0 0 8px rgba(0,0,0,0.5); }
         #timer-progress-wrap.visible { display:block; }
         #timer-progress { width:0%; height:100%; background:#ffffff; border-radius:4px; box-shadow:0 0 10px rgba(255,255,255,0.25); transition:width 0.06s linear; }
-        #win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
-        #win-history::-webkit-scrollbar { display:none; }
-        .win-entry { flex-shrink:0; width:28px; height:28px; border-radius:50%; overflow:hidden; border:2px solid var(--gold); background:var(--surface3); }
-        .win-entry img { width:100%; height:100%; object-fit:cover; display:block; }
+
+        /* ─── NEW WIN PANELS ─── */
+        .win-panel {
+            position: absolute;
+            top: 52px;
+            z-index: 4;
+            background: rgba(18,18,22,0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 6px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 80px;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+        }
+        .win-panel.left-panel {
+            left: 12px;
+        }
+        .win-panel.right-panel {
+            right: 12px;
+        }
+        .win-panel .win-panel-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text2);
+            opacity: 0.6;
+            margin-bottom: 2px;
+            font-weight: 600;
+        }
+        .win-panel .win-panel-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            justify-content: center;
+        }
+        .win-panel .win-panel-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 1.5px solid var(--gold);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .win-panel .win-panel-amount {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--gold);
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+        .win-panel .win-panel-amount.placeholder {
+            color: var(--text2);
+            opacity: 0.4;
+            font-weight: 400;
+            font-size: 12px;
+        }
+        @media (max-width: 420px) {
+            .win-panel { padding: 4px 8px; min-width: 60px; top: 44px; }
+            .win-panel .win-panel-avatar { width: 22px; height: 22px; }
+            .win-panel .win-panel-amount { font-size: 13px; }
+            .win-panel .win-panel-label { font-size: 8px; }
+        }
+
         #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
         #bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; transform:translateX(-50%) translateY(0); }
@@ -528,10 +594,15 @@
         #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
         #ice-timer-progress-wrap.visible { display:block; }
         #ice-timer-progress { height:100%; width:0%; border-radius:3px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.8); }
+
+        /* Ice win panels (same style as PvP) */
+        .ice-win-panel { /* same as .win-panel but we can reuse class */ }
+        #ice-last-win-panel { left: 12px; }
+        #ice-best-win-panel { right: 12px; }
+
         #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
-        #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
-        #ice-win-history::-webkit-scrollbar { display:none; }
+
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
@@ -632,6 +703,10 @@
             #balance { font-size: 15px; }
             #diamond-icon { width: 22px; height: 22px; }
             #username-display { max-width: 60px; font-size: 11px; }
+            .win-panel { padding: 4px 8px; min-width: 60px; top: 44px; }
+            .win-panel .win-panel-avatar { width: 22px; height: 22px; }
+            .win-panel .win-panel-amount { font-size: 13px; }
+            .win-panel .win-panel-label { font-size: 8px; }
         }
     </style>
 </head>
@@ -674,7 +749,23 @@
                         <div id="countdown-timer">10.00</div>
                         <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
                     </div>
-                    <div id="win-history"></div>
+
+                    <!-- NEW WIN PANELS -->
+                    <div id="last-win-panel" class="win-panel left-panel">
+                        <div class="win-panel-label">Last Game</div>
+                        <div class="win-panel-content">
+                            <img class="win-panel-avatar" src="" alt="">
+                            <span class="win-panel-amount placeholder">—</span>
+                        </div>
+                    </div>
+                    <div id="best-win-panel" class="win-panel right-panel">
+                        <div class="win-panel-label">Best Win</div>
+                        <div class="win-panel-content">
+                            <img class="win-panel-avatar" src="" alt="">
+                            <span class="win-panel-amount placeholder">—</span>
+                        </div>
+                    </div>
+
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="" /></div>
@@ -719,7 +810,23 @@
                         <div id="ice-countdown-timer">10.00</div>
                         <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
                     </div>
-                    <div id="ice-win-history"></div>
+
+                    <!-- ICE WIN PANELS -->
+                    <div id="ice-last-win-panel" class="win-panel left-panel">
+                        <div class="win-panel-label">Last Game</div>
+                        <div class="win-panel-content">
+                            <img class="win-panel-avatar" src="" alt="">
+                            <span class="win-panel-amount placeholder">—</span>
+                        </div>
+                    </div>
+                    <div id="ice-best-win-panel" class="win-panel right-panel">
+                        <div class="win-panel-label">Best Win</div>
+                        <div class="win-panel-content">
+                            <img class="win-panel-avatar" src="" alt="">
+                            <span class="win-panel-amount placeholder">—</span>
+                        </div>
+                    </div>
+
                     <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
                     <div id="ice-win-panel">
                         <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
@@ -836,7 +943,8 @@
             balance: 0, username: 'player', userId: null, pfp: '', wins: 0, losses: 0, anonymous: false,
             gameState: 'idle', players: [], pot: 0, arenaSize: 0, cornerRadius: 0, perimeterPoints: [], opening: null,
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-            winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
+            winHistory: [], // now stores {name, pfp, amount}
+            maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
             winStreak: 0,
         };
@@ -883,7 +991,6 @@
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
-        const winHistoryEl = document.getElementById('win-history');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
         const anonToggle = document.getElementById('anon-toggle');
         const promoInput = document.getElementById('promo-input');
@@ -915,7 +1022,6 @@
         const iceWinName = document.getElementById('ice-win-name');
         const iceWinMultiplier = document.getElementById('ice-win-multiplier');
         const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
-        const iceWinHistoryEl = document.getElementById('ice-win-history');
         const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
         const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
         const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
@@ -929,6 +1035,21 @@
         const notifOverlay = document.getElementById('notification-overlay');
         const plusBtn = document.getElementById('plus-btn');
         let notifTimeout = null;
+
+        // DOM refs for new win panels
+        const lastWinPanel = document.getElementById('last-win-panel');
+        const lastWinAvatar = lastWinPanel.querySelector('.win-panel-avatar');
+        const lastWinAmount = lastWinPanel.querySelector('.win-panel-amount');
+        const bestWinPanel = document.getElementById('best-win-panel');
+        const bestWinAvatar = bestWinPanel.querySelector('.win-panel-avatar');
+        const bestWinAmount = bestWinPanel.querySelector('.win-panel-amount');
+
+        const iceLastWinPanel = document.getElementById('ice-last-win-panel');
+        const iceLastWinAvatar = iceLastWinPanel.querySelector('.win-panel-avatar');
+        const iceLastWinAmount = iceLastWinPanel.querySelector('.win-panel-amount');
+        const iceBestWinPanel = document.getElementById('ice-best-win-panel');
+        const iceBestWinAvatar = iceBestWinPanel.querySelector('.win-panel-avatar');
+        const iceBestWinAmount = iceBestWinPanel.querySelector('.win-panel-amount');
 
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
@@ -946,7 +1067,7 @@
             spinStartY: 200,
             puck: { x: 200, y: 200 },
             winnerId: null,
-            winHistory: [],
+            winHistory: [], // now stores {name, pfp, amount}
             puckScale: 1,
             puckPopStart: 0,
             puckVisible: false,
@@ -1057,13 +1178,14 @@
                     state.anonymous=!!res.user.anonymous; anonToggle.checked=state.anonymous;
                     SERVER_ARENA_SIZE=res.arena.size; state.perimeterPoints=res.arena.perimeter; state.cornerRadius=res.arena.cornerRadius;
                     if(res.iceArena){ iceState.perimeterPoints=res.iceArena.perimeter; iceState.cornerRadius=res.iceArena.cornerRadius; }
+                    // Initial win history (without amounts)
                     if(Array.isArray(res.recentWinners)&&res.recentWinners.length){
-                        state.winHistory=res.recentWinners.slice(0,state.maxHistory).map(w=>({name:w.name,pfp:w.pfp,timestamp:Date.now()}));
-                        updateWinHistoryUI();
+                        state.winHistory = res.recentWinners.slice(0,state.maxHistory).map(w => ({ name:w.name, pfp:w.pfp, amount: null }));
+                        updatePvPWinPanels();
                     }
                     if(Array.isArray(res.iceRecentWinners)&&res.iceRecentWinners.length){
-                        iceState.winHistory=res.iceRecentWinners.slice(0,8).map(w=>({name:w.name,pfp:w.pfp}));
-                        updateIceWinHistoryUI();
+                        iceState.winHistory = res.iceRecentWinners.slice(0,8).map(w => ({ name:w.name, pfp:w.pfp, amount: null }));
+                        updateIceWinPanels();
                     }
                     if (res.icePlayers && Array.isArray(res.icePlayers)) {
                         iceState.players = res.icePlayers.map(p => ({
@@ -1162,6 +1284,8 @@
                 if(state.gameState==='playing') timerProgressWrap.classList.remove('visible');
             }
             updateStatsBar(); updateBetUI(); updateWaitingText(); updateBetOverlayVisibility(); updatePlayerList(); updateFrogVisibility();
+            // Also update win panels in case we have new history? (won't happen here, but safe)
+            updatePvPWinPanels();
         }
 
         function detectBumpsForHaptics() {
@@ -1264,7 +1388,8 @@
 
         function handleRoundEnd(payload){
             if(!payload){ hideWinPanelAndReset(); return; }
-            addWinToHistory(payload.winnerName, payload.winnerPfp);
+            // Store win with amount
+            addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
             refreshLeaderboard();
             if(payload.winnerId===state.userId){
                 state.balance+=payload.winnings;
@@ -1292,19 +1417,89 @@
         }
         winContinueBtn.addEventListener('click', hideWinPanelAndReset);
 
-        function addWinToHistory(name,pfp){
-            state.winHistory.unshift({name,pfp,timestamp:Date.now()});
-            if(state.winHistory.length>state.maxHistory) state.winHistory.pop();
-            updateWinHistoryUI();
+        // ─── WIN PANEL UPDATE FUNCTIONS ──────────────────────────────
+        function addWinToHistory(name, pfp, amount) {
+            state.winHistory.unshift({ name, pfp, amount: amount || null });
+            if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
+            updatePvPWinPanels();
         }
-        function updateWinHistoryUI(){
-            if(state.winHistory.length===0){ winHistoryEl.innerHTML=''; return; }
-            let html='';
-            state.winHistory.forEach(entry=>{
-                const avatarSrc=entry.pfp||state.defaultAvatar;
-                html+=`<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-            });
-            winHistoryEl.innerHTML=html;
+
+        function updatePvPWinPanels() {
+            const history = state.winHistory;
+            // Last game (most recent)
+            if (history.length > 0) {
+                const last = history[0];
+                lastWinAvatar.src = last.pfp || state.defaultAvatar;
+                if (last.amount !== null && last.amount !== undefined) {
+                    lastWinAmount.textContent = '+' + last.amount;
+                    lastWinAmount.className = 'win-panel-amount';
+                } else {
+                    lastWinAmount.textContent = '—';
+                    lastWinAmount.className = 'win-panel-amount placeholder';
+                }
+            } else {
+                lastWinAvatar.src = state.defaultAvatar;
+                lastWinAmount.textContent = '—';
+                lastWinAmount.className = 'win-panel-amount placeholder';
+            }
+
+            // Best win (max amount)
+            let best = null;
+            for (const entry of history) {
+                if (entry.amount !== null && entry.amount !== undefined) {
+                    if (!best || entry.amount > best.amount) best = entry;
+                }
+            }
+            if (best) {
+                bestWinAvatar.src = best.pfp || state.defaultAvatar;
+                bestWinAmount.textContent = '+' + best.amount;
+                bestWinAmount.className = 'win-panel-amount';
+            } else {
+                bestWinAvatar.src = state.defaultAvatar;
+                bestWinAmount.textContent = '—';
+                bestWinAmount.className = 'win-panel-amount placeholder';
+            }
+        }
+
+        function addIceWinToHistory(name, pfp, amount) {
+            iceState.winHistory.unshift({ name, pfp, amount: amount || null });
+            if (iceState.winHistory.length > 8) iceState.winHistory.pop();
+            updateIceWinPanels();
+        }
+
+        function updateIceWinPanels() {
+            const history = iceState.winHistory;
+            if (history.length > 0) {
+                const last = history[0];
+                iceLastWinAvatar.src = last.pfp || state.defaultAvatar;
+                if (last.amount !== null && last.amount !== undefined) {
+                    iceLastWinAmount.textContent = '+' + last.amount;
+                    iceLastWinAmount.className = 'win-panel-amount';
+                } else {
+                    iceLastWinAmount.textContent = '—';
+                    iceLastWinAmount.className = 'win-panel-amount placeholder';
+                }
+            } else {
+                iceLastWinAvatar.src = state.defaultAvatar;
+                iceLastWinAmount.textContent = '—';
+                iceLastWinAmount.className = 'win-panel-amount placeholder';
+            }
+
+            let best = null;
+            for (const entry of history) {
+                if (entry.amount !== null && entry.amount !== undefined) {
+                    if (!best || entry.amount > best.amount) best = entry;
+                }
+            }
+            if (best) {
+                iceBestWinAvatar.src = best.pfp || state.defaultAvatar;
+                iceBestWinAmount.textContent = '+' + best.amount;
+                iceBestWinAmount.className = 'win-panel-amount';
+            } else {
+                iceBestWinAvatar.src = state.defaultAvatar;
+                iceBestWinAmount.textContent = '—';
+                iceBestWinAmount.className = 'win-panel-amount placeholder';
+            }
         }
 
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
@@ -1402,6 +1597,7 @@
             if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
 
             updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
+            updateIceWinPanels(); // ensure panels reflect history (though round end handles it)
         }
 
         function updateIceBetOverlayVisibility(){
@@ -1429,24 +1625,10 @@
             if(iceBetInput.dataset.empty==='true'){ iceBetInput.value=10; delete iceBetInput.dataset.empty; }
         }
 
-        function addIceWinToHistory(name,pfp){
-            iceState.winHistory.unshift({name,pfp});
-            if(iceState.winHistory.length>8) iceState.winHistory.pop();
-            updateIceWinHistoryUI();
-        }
-        function updateIceWinHistoryUI(){
-            if(iceState.winHistory.length===0){ iceWinHistoryEl.innerHTML=''; return; }
-            let html='';
-            iceState.winHistory.forEach(entry=>{
-                const avatarSrc=entry.pfp||state.defaultAvatar;
-                html+=`<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-            });
-            iceWinHistoryEl.innerHTML=html;
-        }
         function handleIceRoundEnd(payload){
             if(!payload){ hideIceWinPanelAndReset(); return; }
             iceState.winnerId=payload.winnerId;
-            addIceWinToHistory(payload.winnerName, payload.winnerPfp);
+            addIceWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
             refreshLeaderboard();
             if(payload.winnerId===state.userId){
                 state.balance+=payload.winnings;
@@ -2134,7 +2316,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── MODIFIED: spinning arrow at random position ──────────
+            // spinning arrow at random position
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -2171,7 +2353,7 @@
                 iceCtx.restore();
             }
 
-            // ─── Draw puck ──────────────────────────────────────────────
+            // Draw puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2217,7 +2399,7 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // ─── Thinner glow ring ──────────────────────────────────
+                // Thinner glow ring
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.2;
                 iceCtx.strokeStyle = '#b8dcff';
@@ -2316,6 +2498,9 @@
             Object.keys(tabPages).forEach(key=>tabPages[key].classList.toggle('active',key==='pvp'));
             document.getElementById('tabs').style.pointerEvents='auto';
             tabBtns.forEach(b=>b.style.pointerEvents='auto');
+            // init win panels (empty)
+            updatePvPWinPanels();
+            updateIceWinPanels();
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
