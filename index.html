@@ -236,84 +236,64 @@
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
 
-        /* ─── TOP BAR ─── */
+        /* ─── TOP BAR (thinner, plus button removed) ─── */
         #topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 14px 8px;
+            padding: 6px 12px 6px 12px;   /* reduced padding */
             background: rgba(18,18,20,0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
-            min-height: 52px;
+            min-height: 40px;             /* thinner */
             z-index: 10;
-            gap: 8px;
+            gap: 6px;
         }
         #top-left {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
         #username-display {
-            font-size: 13px;
+            font-size: 12px;              /* smaller */
             font-weight: 500;
             color: var(--text2);
-            max-width: 90px;
+            max-width: 80px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         #status-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;                   /* smaller */
+            height: 6px;
             border-radius: 50%;
             background: var(--green);
-            box-shadow: 0 0 12px var(--green);
+            box-shadow: 0 0 10px var(--green);
             transition: 0.3s;
         }
         #status-dot.offline {
             background: var(--red);
-            box-shadow: 0 0 12px var(--red);
+            box-shadow: 0 0 10px var(--red);
         }
         #top-right {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        #plus-btn {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            background: #2196F3;
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 0 16px rgba(33,150,243,0.4);
-            transition: 0.2s;
-            font-family: inherit;
-        }
-        #plus-btn:active {
-            transform: scale(0.9);
-            opacity: 0.8;
-        }
+        /* ─── plus-btn removed ─── */
         #balance-wrap {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             background: var(--surface2);
-            padding: 3px 14px 3px 6px;
+            padding: 2px 10px 2px 4px;    /* thinner */
             border-radius: 28px;
             border: 1px solid var(--border);
         }
         #diamond-icon {
-            width: 26px;
-            height: 26px;
+            width: 22px;                  /* slightly smaller */
+            height: 22px;
             object-fit: contain;
             flex-shrink: 0;
             display: block;
@@ -324,13 +304,13 @@
             50% { filter: drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); }
         }
         #balance {
-            font-size: 17px;
+            font-size: 15px;              /* smaller */
             font-weight: 700;
             color: #fff;
             letter-spacing: 0.2px;
             font-variant-numeric: tabular-nums;
             display: inline-block;
-            min-width: 40px;
+            min-width: 36px;
         }
 
         /* ─── REST OF APP ─── */
@@ -451,7 +431,7 @@
         /* ─── THINNER PLAYER LIST ─── */
         #player-list-container {
             width:100%;
-            max-height:56px !important;  /* reduced from 100px */
+            max-height:56px !important;  /* reduced */
             overflow-y:auto;
             display:flex;
             flex-direction:column;
@@ -717,11 +697,10 @@
                 padding: 18px 24px;
                 max-width: 92%;
             }
-            #plus-btn { width: 24px; height: 24px; font-size: 15px; }
-            #balance-wrap { padding: 2px 10px 2px 4px; }
-            #balance { font-size: 15px; }
-            #diamond-icon { width: 22px; height: 22px; }
-            #username-display { max-width: 60px; font-size: 11px; }
+            #balance-wrap { padding: 2px 8px 2px 4px; }
+            #balance { font-size: 13px; }
+            #diamond-icon { width: 18px; height: 18px; }
+            #username-display { max-width: 60px; font-size: 10px; }
             .win-panel .panel-pfp { width: 22px; height: 22px; }
             .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
             .win-panel .panel-amount { font-size: 11px; }
@@ -749,7 +728,7 @@
                 <div id="status-dot"></div>
             </div>
             <div id="top-right">
-                <button id="plus-btn">+</button>
+                <!-- plus button removed -->
                 <div id="balance-wrap">
                     <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
                     <span id="balance">1000</span>
@@ -1048,7 +1027,7 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
         const notifOverlay = document.getElementById('notification-overlay');
-        const plusBtn = document.getElementById('plus-btn');
+        // plus button removed – no need to reference it
         const lastGamePfp = document.getElementById('last-game-pfp');
         const lastGameAmount = document.getElementById('last-game-amount');
         const bestWinPfp = document.getElementById('best-win-pfp');
@@ -1887,10 +1866,7 @@
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
 
-        plusBtn.addEventListener('click', () => {
-            haptic('light');
-            alert('Coming soon!');
-        });
+        // plusBtn removed – no event listener
 
         // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async ()=>{
