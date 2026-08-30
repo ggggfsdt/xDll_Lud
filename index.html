@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN ─── */
+        /* ─── LOADING SCREEN STYLES ─── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -228,7 +228,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── MAIN APP STYLES ─── */
+        /* ─── ORIGINAL APP STYLES ─── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -236,65 +236,65 @@
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
 
-        /* ─── TOP BAR (thinner) ─── */
+        /* ─── TOP BAR ─── */
         #topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 4px 12px 4px;
+            padding: 10px 14px 8px;
             background: rgba(18,18,20,0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
-            min-height: 38px;
+            min-height: 52px;
             z-index: 10;
-            gap: 6px;
+            gap: 8px;
         }
         #top-left {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }
         #username-display {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 500;
             color: var(--text2);
-            max-width: 80px;
+            max-width: 90px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
         #status-dot {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             background: var(--green);
-            box-shadow: 0 0 10px var(--green);
+            box-shadow: 0 0 12px var(--green);
             transition: 0.3s;
         }
         #status-dot.offline {
             background: var(--red);
-            box-shadow: 0 0 10px var(--red);
+            box-shadow: 0 0 12px var(--red);
         }
         #top-right {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
         #plus-btn {
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: #2196F3;
             border: none;
             color: #fff;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 0 12px rgba(33,150,243,0.4);
+            box-shadow: 0 0 16px rgba(33,150,243,0.4);
             transition: 0.2s;
             font-family: inherit;
         }
@@ -305,620 +305,32 @@
         #balance-wrap {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             background: var(--surface2);
-            padding: 2px 10px 2px 4px;
-            border-radius: 20px;
+            padding: 3px 14px 3px 6px;
+            border-radius: 28px;
             border: 1px solid var(--border);
         }
         #diamond-icon {
-            width: 20px;
-            height: 20px;
+            width: 26px;
+            height: 26px;
             object-fit: contain;
             flex-shrink: 0;
             display: block;
             animation: glowDiamond 2.8s ease-in-out infinite;
         }
         @keyframes glowDiamond {
-            0%, 100% { filter: drop-shadow(0 0 4px rgba(200,168,78,0.3)); }
-            50% { filter: drop-shadow(0 0 16px rgba(200,168,78,0.7)) brightness(1.2); }
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(200,168,78,0.3)); }
+            50% { filter: drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); }
         }
         #balance {
-            font-size: 15px;
+            font-size: 17px;
             font-weight: 700;
             color: #fff;
             letter-spacing: 0.2px;
             font-variant-numeric: tabular-nums;
             display: inline-block;
-            min-width: 30px;
-        }
-
-        /* ─── WIN CARDS (smaller, higher) ─── */
-        #win-cards {
-            position: absolute;
-            top: 6px;
-            left: 8px;
-            right: 8px;
-            z-index: 4;
-            display: flex;
-            justify-content: space-between;
-            pointer-events: none;
-            gap: 6px;
-        }
-        .win-card {
-            background: rgba(18, 18, 22, 0.82);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            padding: 4px 8px 4px 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            min-width: 0;
-            flex: 1;
-            max-width: 48%;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-            pointer-events: auto;
-            transition: opacity 0.4s ease, transform 0.4s ease;
-        }
-        .win-card.hidden-card {
-            opacity: 0;
-            transform: scale(0.92);
-            pointer-events: none;
-        }
-        .win-card .wc-avatar {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            flex-shrink: 0;
-            overflow: hidden;
-            border: 1.5px solid var(--gold);
-            background: var(--surface3);
-        }
-        .win-card .wc-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .win-card .wc-info {
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
-            flex: 1;
-        }
-        .win-card .wc-label {
-            font-size: 7px;
-            text-transform: uppercase;
-            letter-spacing: 0.6px;
-            color: var(--text2);
-            opacity: 0.6;
-            font-weight: 600;
-            line-height: 1.1;
-        }
-        .win-card .wc-name {
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.2;
-        }
-        .win-card .wc-amount {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--gold);
-            white-space: nowrap;
-            margin-left: auto;
-            flex-shrink: 0;
-            padding-left: 2px;
-        }
-        .win-card .wc-amount.positive::before {
-            content: '+';
-        }
-        .win-card .wc-amount.big {
-            color: #ffd866;
-            text-shadow: 0 0 12px rgba(200, 168, 78, 0.3);
-        }
-        .win-card.wc-left {
-            border-left: 2px solid var(--gold);
-        }
-        .win-card.wc-right {
-            border-right: 2px solid var(--gold);
-        }
-
-        /* ─── PVP WIN HISTORY LIST (recent winners) ─── */
-        #pvp-win-history {
-            position: absolute;
-            bottom: 56px; /* above bet overlay */
-            left: 12px;
-            right: 12px;
-            z-index: 4;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            pointer-events: none;
-            max-width: 60%;
-            overflow-x: auto;
-            scrollbar-width: none;
-            flex-direction: row-reverse;
-        }
-        #pvp-win-history::-webkit-scrollbar { display: none; }
-        #pvp-win-history .win-entry {
-            flex-shrink: 0;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid var(--gold);
-            background: var(--surface3);
-        }
-        #pvp-win-history .win-entry img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        /* ─── ICE TOP CARDS ─── */
-        #ice-top-cards {
-            position: absolute;
-            top: 6px;
-            left: 8px;
-            right: 8px;
-            z-index: 4;
-            display: flex;
-            justify-content: space-between;
-            pointer-events: none;
-            gap: 6px;
-        }
-        .ice-info-card {
-            background: rgba(18,18,22,0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 4px 8px 4px 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            min-width: 0;
-            flex: 1;
-            max-width: 45%;
-            pointer-events: none;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.5);
-            transition: opacity 0.3s;
-        }
-        .ice-info-card .card-label {
-            font-size: 7px;
-            font-weight: 600;
-            color: var(--text2);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.6;
-            white-space: nowrap;
-        }
-        .ice-info-card .card-avatar {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            border: 1.5px solid var(--gold);
-            background: var(--surface3);
-        }
-        .ice-info-card .card-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .ice-info-card .card-amount {
-            font-size: 12px;
-            font-weight: 700;
-            color: #fff;
-            white-space: nowrap;
-            margin-left: auto;
-        }
-        .ice-info-card .card-amount.positive {
-            color: var(--green);
-        }
-        .ice-info-card .card-name {
-            font-size: 10px;
-            font-weight: 500;
-            color: var(--text);
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 50px;
-        }
-        .ice-info-card .card-details {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            min-width: 0;
-        }
-        .ice-info-card .card-row {
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
-        .ice-info-card .card-amount-text {
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--gold);
-            margin-left: auto;
-        }
-        .ice-info-card.empty {
-            opacity: 0.4;
-        }
-        .ice-info-card.empty .card-avatar {
-            border-color: var(--border);
-        }
-        .ice-info-card.empty .card-amount {
-            color: var(--text2);
-        }
-
-        /* ─── PLAYER LIST (slides from top) ─── */
-        #player-list-wrap {
-            width: 100%;
-            flex-shrink: 0;
-            position: relative;
-            padding: 0 10px 0 10px;
-            margin-top: 0;
-            transition: max-height 0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        opacity 0.4s ease,
-                        padding 0.4s ease,
-                        margin 0.4s ease;
-            max-height: 0;
-            overflow: hidden;
-            opacity: 0;
-            pointer-events: none;
-        }
-        #player-list-wrap.show {
-            max-height: 120px;
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #player-list-wrap.show #player-list-container {
-            border-radius: 0 0 var(--radius) var(--radius);
-            border-top: none;
-        }
-        #player-list-container {
-            background: rgba(18, 18, 22, 0.85);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-top: none;
-            border-radius: 0;
-            padding: 4px 8px 6px 8px;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            gap: 4px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            scrollbar-width: thin;
-            min-height: 32px;
-            flex-wrap: nowrap;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            border-radius: 0 0 var(--radius) var(--radius);
-        }
-        .pl-entry {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(30, 30, 36, 0.70);
-            border-radius: 16px;
-            padding: 1px 8px 1px 3px;
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            font-size: 10px;
-            color: #ccc;
-            white-space: nowrap;
-            flex-shrink: 0;
-            transition: 0.2s;
-            height: 24px;
-        }
-        .pl-entry.you {
-            border-color: var(--primary);
-            background: rgba(76, 175, 80, 0.15);
-        }
-        .pl-entry .pl-avatar {
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: var(--surface3);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-        .pl-entry .pl-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        .pl-entry .pl-name {
-            font-weight: 600;
-            max-width: 45px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 10px;
-            color: var(--text);
-        }
-        .pl-entry .pl-bet {
-            color: var(--gold);
-            font-weight: 700;
-            font-size: 10px;
-            margin-left: 2px;
-        }
-        .pl-entry .pl-chance {
-            color: var(--text2);
-            font-size: 8px;
-            margin-left: 1px;
-            opacity: 0.7;
-        }
-        .pl-entry .pl-crown {
-            font-size: 10px;
-            margin-right: 1px;
-        }
-        #player-list-wrap .pl-empty {
-            color: var(--text2);
-            font-size: 10px;
-            opacity: 0.4;
-            padding: 4px 12px;
-            text-align: center;
-            width: 100%;
-        }
-
-        /* ─── STATS BARS ─── */
-        #stats-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 14px 6px 14px;
-            flex-shrink: 0;
-            color: var(--text2);
-            font-size: 12px;
-            font-weight: 600;
-            background: rgba(18,18,20,0.80);
-            backdrop-filter: blur(8px);
-            border-top: 1px solid var(--border);
-            margin-top: 0;
-        }
-        #stats-bar .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        #stats-bar .stat-item .icon {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
-        }
-        #stats-bar .stat-item .value {
-            color: #fff;
-            font-weight: 700;
-            font-size: 13px;
-        }
-        #stats-bar .stat-item .label {
-            color: var(--text2);
-            font-size: 10px;
-            margin-right: 2px;
-        }
-
-        #ice-stats-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 14px 6px 14px;
-            flex-shrink: 0;
-            color: var(--text2);
-            font-size: 12px;
-            font-weight: 600;
-            background: rgba(18,18,20,0.80);
-            backdrop-filter: blur(8px);
-            border-top: 1px solid var(--border);
-        }
-        #ice-stats-bar .stat-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        #ice-stats-bar .stat-item .icon {
-            width: 18px;
-            height: 18px;
-            object-fit: contain;
-        }
-        #ice-stats-bar .stat-item .value {
-            color: #fff;
-            font-weight: 700;
-            font-size: 13px;
-        }
-        #ice-stats-bar .stat-item .label {
-            color: var(--text2);
-            font-size: 10px;
-            margin-right: 2px;
-        }
-
-        /* ─── WIN PANEL (slides from top) ─── */
-        #win-panel {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            transform: translateX(-50%) translateY(-100%);
-            width: 92%;
-            max-width: 380px;
-            background: rgba(26, 26, 30, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 0 0 var(--radius) var(--radius);
-            padding: 16px 18px 20px;
-            border: 1px solid var(--border);
-            border-top: none;
-            box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
-            z-index: 25;
-            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            max-height: 75vh;
-            overflow-y: auto;
-        }
-        #win-panel.show {
-            transform: translateX(-50%) translateY(0%);
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #win-gif-container {
-            width: 60%;
-            max-width: 160px;
-            aspect-ratio: 16/9;
-            border-radius: 10px;
-            overflow: hidden;
-            flex-shrink: 0;
-            background: transparent;
-            border: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-        #win-gif-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            display: block;
-            border-radius: 8px;
-        }
-        #win-avatar-container {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid var(--gold);
-            flex-shrink: 0;
-            background: var(--surface3);
-        }
-        #win-avatar-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #win-details {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-            width: 100%;
-        }
-        #win-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--gold);
-            text-align: center;
-        }
-        #win-multiplier {
-            font-size: 24px;
-            font-weight: 800;
-            color: #fff;
-            text-align: center;
-        }
-        #win-continue-btn {
-            padding: 8px 0;
-            border-radius: 30px;
-            border: none;
-            background: var(--primary);
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 0 20px var(--primary-glow);
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-            width: 100%;
-            text-align: center;
-            margin-top: 2px;
-        }
-        #win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
-
-        /* ─── ICE WIN PANEL (same top slide) ─── */
-        #ice-win-panel {
-            position: absolute;
-            left: 50%;
-            top: 0;
-            transform: translateX(-50%) translateY(-100%);
-            width: 92%;
-            max-width: 380px;
-            background: rgba(26, 26, 30, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 0 0 var(--radius) var(--radius);
-            padding: 16px 18px 20px;
-            border: 1px solid var(--border);
-            border-top: none;
-            box-shadow: 0 8px 60px rgba(0, 0, 0, 0.8);
-            z-index: 25;
-            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
-            opacity: 0;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-        #ice-win-panel.show {
-            transform: translateX(-50%) translateY(0%);
-            opacity: 1;
-            pointer-events: auto;
-        }
-        #ice-win-avatar-container {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid #5b8def;
-            flex-shrink: 0;
-            background: var(--surface3);
-        }
-        #ice-win-avatar-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-        #ice-win-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #5b8def;
-            text-align: center;
-        }
-        #ice-win-multiplier {
-            font-size: 24px;
-            font-weight: 800;
-            color: #fff;
-            text-align: center;
-        }
-        #ice-win-continue-btn {
-            padding: 8px 0;
-            border-radius: 30px;
-            border: none;
-            background: #5b8def;
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(91, 141, 239, 0.4);
-            transition: 0.2s;
-            letter-spacing: 0.3px;
-            width: 100%;
-            text-align: center;
-            margin-top: 2px;
-        }
-        #ice-win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
+            min-width: 40px;
         }
 
         /* ─── REST OF APP ─── */
@@ -936,9 +348,13 @@
         #timer-progress-wrap { width:44px; height:3px; background:rgba(255,255,255,0.12); border-radius:4px; overflow:hidden; display:none; box-shadow:0 0 8px rgba(0,0,0,0.5); }
         #timer-progress-wrap.visible { display:block; }
         #timer-progress { width:0%; height:100%; background:#ffffff; border-radius:4px; box-shadow:0 0 10px rgba(255,255,255,0.25); transition:width 0.06s linear; }
+        #win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
+        #win-history::-webkit-scrollbar { display:none; }
+        .win-entry { flex-shrink:0; width:28px; height:28px; border-radius:50%; overflow:hidden; border:2px solid var(--gold); background:var(--surface3); }
+        .win-entry img { width:100%; height:100%; object-fit:cover; display:block; }
         #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
-        #bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
+        #bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; transform:translateX(-50%) translateY(0); }
         #bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
         #bet-overlay::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.20); border-radius:12px; z-index:0; pointer-events:none; }
@@ -982,66 +398,24 @@
         .auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
         .auto-bet-panel .switch-sm input:checked+.slider-sm { background:var(--primary); }
         .auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
+        #player-list-container { width:100%; max-height:100px; overflow-y:auto; display:flex; flex-direction:column; align-items:center; gap:2px; padding:2px 4px 2px 4px; flex-shrink:0; scrollbar-width:thin; transition:max-height 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease; margin-top:0; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-bottom:1px solid var(--border); }
+        #player-list-container.shift-up { max-height:0 !important; padding:0 !important; border:none !important; overflow:hidden !important; opacity:0 !important; pointer-events:none !important; margin-top:0 !important; }
+        #player-list-container::-webkit-scrollbar { width:3px; }
+        #player-list-container::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
+        .pl-entry { display:flex; align-items:center; gap:6px; background:rgba(26,26,30,0.80); border-radius:20px; padding:2px 10px 2px 4px; border:1px solid var(--border); font-size:12px; color:#ccc; opacity:0.85; width:auto; min-width:140px; max-width:200px; justify-content:center; flex-shrink:0; }
+        .pl-entry.you { border-color:var(--primary); opacity:1; }
+        .pl-entry .pl-avatar { width:18px; height:18px; border-radius:50%; overflow:hidden; flex-shrink:0; background:var(--surface3); }
+        .pl-entry .pl-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+        .pl-entry .pl-name { font-weight:600; max-width:60px; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+        .pl-entry .pl-bet { color:var(--gold); font-weight:700; font-size:12px; }
+        .pl-entry .pl-chance { color:var(--text2); font-size:10px; margin-left:2px; }
+        #stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); margin-top:0; }
+        #stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
+        #stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
+        #stats-bar .stat-item .value { color:#fff; font-weight:700; }
+        #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
 
-        /* ─── ICE ARENA ─── */
-        #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
-        #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
-        #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
-        #ice-timer-wrap { position:absolute; top:16px; right:16px; z-index:3; pointer-events:none; display:none; flex-direction:column; align-items:flex-end; gap:5px; }
-        #ice-countdown-timer { font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.8); font-variant-numeric:tabular-nums; letter-spacing:0.5px; line-height:1; }
-        #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
-        #ice-timer-progress-wrap.visible { display:block; }
-        #ice-timer-progress { height:100%; width:0%; border-radius:3px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.8); }
-        #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
-        #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
-        #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
-        #ice-win-history::-webkit-scrollbar { display:none; }
-        #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
-        #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
-        #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
-        #ice-bet-overlay::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.20); border-radius:12px; z-index:0; pointer-events:none; }
-        #ice-bet-overlay>* { position:relative; z-index:1; }
-        #ice-bet-overlay.collapsed { padding:6px 12px; gap:4px; cursor:pointer; flex-direction:row; justify-content:center; }
-        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) { display:none; }
-        #ice-bet-overlay.collapsed .ice-bet-toggle { display:flex; width:100%; justify-content:center; color:var(--text2); font-size:13px; font-weight:500; letter-spacing:0.5px; gap:6px; align-items:center; }
-        .ice-bet-toggle { display:none; cursor:pointer; user-select:none; background:none; border:none; color:var(--text2); font-size:16px; padding:2px 8px; transition:0.2s; font-family:monospace; }
-        .ice-bet-toggle:active { opacity:0.6; }
-        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle { display:flex; position:absolute; top:4px; right:8px; font-size:16px; color:var(--text2); opacity:0.6; padding:2px; transform:rotate(0deg); z-index:2; }
-        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle::before { content:'>'; display:inline-block; transform:rotate(90deg); }
-        #ice-bet-overlay.collapsed .ice-bet-toggle { display:flex; font-size:14px; gap:6px; color:var(--text2); }
-        #ice-bet-overlay.collapsed .ice-bet-toggle span { font-size:11px; opacity:0.5; }
-        #ice-bet-overlay.collapsed .ice-bet-toggle::before { content:'>'; display:inline-block; transform:rotate(-90deg); margin-right:4px; }
-        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text { display:none; }
-        #ice-bet-overlay.collapsed .ice-bet-toggle-text { display:inline; }
-        .ice-bet-row { display:flex; align-items:center; gap:6px; justify-content:center; margin-top:2px; }
-        #ice-bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.10); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
-        #ice-bet-input:focus { border-color:#5b8def; box-shadow:0 0 20px rgba(91,141,239,0.35); }
-        #ice-all-in-btn { height:28px; padding:0 10px; border-radius:8px; border:none; background:var(--gold); color:#000; font-weight:700; font-size:12px; cursor:pointer; transition:0.2s; white-space:nowrap; box-shadow:0 0 20px rgba(200,168,78,0.3); flex-shrink:0; }
-        #ice-all-in-btn:active { transform:scale(0.94); opacity:0.8; }
-        #ice-bet-btn { padding:2px 0; height:26px; border-radius:8px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:13px; cursor:pointer; transition:0.2s; box-shadow:0 0 24px rgba(91,141,239,0.4); letter-spacing:0.2px; width:100%; text-align:center; margin-top:2px; }
-        #ice-bet-btn:active { transform:scale(0.96); opacity:0.8; }
-        #ice-bet-btn:disabled { opacity:0.4; transform:none; pointer-events:none; }
-        #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
-        #ice-current-bet-display span { color:var(--gold); font-weight:700; }
-        #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
-        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
-        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
-        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
-        .ice-auto-bet-toggle:active { transform:scale(0.9); }
-        .ice-auto-bet-panel { background:rgba(18,18,22,0.95); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:12px; padding:12px 14px; width:160px; display:none; flex-direction:column; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.7); }
-        .ice-auto-bet-panel.open { display:flex; }
-        .ice-auto-bet-panel .row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-        .ice-auto-bet-panel .row label { font-size:12px; color:var(--text2); white-space:nowrap; }
-        .ice-auto-bet-panel .row input { width:70px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:13px; text-align:center; outline:none; }
-        .ice-auto-bet-panel .row input:focus { border-color:#5b8def; }
-        .ice-auto-bet-panel .switch-sm { position:relative; width:34px; height:18px; flex-shrink:0; cursor:pointer; }
-        .ice-auto-bet-panel .switch-sm input { opacity:0; width:0; height:0; }
-        .ice-auto-bet-panel .switch-sm .slider-sm { position:absolute; cursor:pointer; inset:0; background:var(--surface3); border:1px solid var(--border); border-radius:999px; transition:0.2s; }
-        .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
-        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
-        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
-
-        /* ─── PROFILE ─── */
+        /* ─── PROFILE (no shop) ─── */
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
         .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
         .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
@@ -1057,6 +431,7 @@
         .stat-item .num.loss { color:var(--red); }
         .stat-item .num.rate { color:var(--primary); }
         #p-balance { color:var(--gold); font-weight:700; }
+
         .anon-row { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 2px; }
         .anon-row .anon-label { display:flex; flex-direction:column; text-align:left; }
         .anon-row .anon-title { font-size:14px; font-weight:600; color:var(--text); }
@@ -1067,6 +442,7 @@
         .switch .slider::before { content:""; position:absolute; width:18px; height:18px; left:3px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:transform 0.2s ease; }
         .switch input:checked+.slider { background:var(--primary); }
         .switch input:checked+.slider::before { transform:translateY(-50%) translateX(20px); }
+
         .promo-section { width:100%; display:flex; flex-direction:column; gap:8px; margin-top:8px; }
         .promo-row { display:flex; gap:8px; }
         .promo-row input { flex:1; padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:14px; outline:none; text-transform:uppercase; }
@@ -1130,16 +506,138 @@
         .tab-btn.active::after { opacity:1; left:15%; right:15%; }
         .tab-icon svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
         .tab-btn.active .tab-icon svg { stroke:#ffffff !important; }
+        .no-players-msg { text-align:center; color:var(--text2); padding:40px 0; opacity:0.4; font-size:14px; }
+        #win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; max-height:75vh; overflow-y:auto; }
+        #win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
+        #win-gif-container { width:70%; max-width:220px; aspect-ratio:16/9; border-radius:12px; overflow:hidden; flex-shrink:0; background:transparent; border:none; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
+        #win-gif-container img { width:100%; height:100%; object-fit:contain; display:block; border-radius:8px; }
+        #win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid var(--gold); flex-shrink:0; background:var(--surface3); }
+        #win-avatar-container img { width:100%; height:100%; object-fit:cover; display:block; }
+        #win-details { display:flex; flex-direction:column; align-items:center; gap:2px; width:100%; }
+        #win-name { font-size:24px; font-weight:700; color:var(--gold); text-align:center; }
+        #win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
+        #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
+        #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
 
-        /* ─── NOTIFICATION ─── */
-        #notification-overlay { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.8); background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.15); border-radius:20px; padding:24px 36px; max-width:85%; color:#fff; font-size:28px; font-weight:700; text-align:center; z-index:99999; pointer-events:none; opacity:0; transition:opacity 0.3s ease, transform 0.3s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 20px 80px rgba(0,0,0,0.9); text-shadow:0 0 20px rgba(255,255,255,0.2); line-height:1.4; white-space:pre-wrap; word-break:break-word; }
-        #notification-overlay.show { opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:none; }
-        @media (max-width:420px) { #notification-overlay { font-size:20px; padding:18px 24px; max-width:92%; } }
+        /* ─── ICE ARENA ───────────────────────────────────── */
+        #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
+        #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
+        #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
+        #ice-timer-wrap { position:absolute; top:16px; right:16px; z-index:3; pointer-events:none; display:none; flex-direction:column; align-items:flex-end; gap:5px; }
+        #ice-countdown-timer { font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.8); font-variant-numeric:tabular-nums; letter-spacing:0.5px; line-height:1; }
+        #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
+        #ice-timer-progress-wrap.visible { display:block; }
+        #ice-timer-progress { height:100%; width:0%; border-radius:3px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.8); }
+        #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
+        #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
+        #ice-win-history { position:absolute; top:52px; right:12px; z-index:4; display:flex; align-items:center; gap:4px; pointer-events:none; max-width:60%; overflow-x:auto; scrollbar-width:none; flex-direction:row-reverse; }
+        #ice-win-history::-webkit-scrollbar { display:none; }
+        #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
+        #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
+        #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
+        #ice-bet-overlay::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.20); border-radius:12px; z-index:0; pointer-events:none; }
+        #ice-bet-overlay>* { position:relative; z-index:1; }
+        #ice-bet-overlay.collapsed { padding:6px 12px; gap:4px; cursor:pointer; flex-direction:row; justify-content:center; }
+        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) { display:none; }
+        #ice-bet-overlay.collapsed .ice-bet-toggle { display:flex; width:100%; justify-content:center; color:var(--text2); font-size:13px; font-weight:500; letter-spacing:0.5px; gap:6px; align-items:center; }
+        .ice-bet-toggle { display:none; cursor:pointer; user-select:none; background:none; border:none; color:var(--text2); font-size:16px; padding:2px 8px; transition:0.2s; font-family:monospace; }
+        .ice-bet-toggle:active { opacity:0.6; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle { display:flex; position:absolute; top:4px; right:8px; font-size:16px; color:var(--text2); opacity:0.6; padding:2px; transform:rotate(0deg); z-index:2; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle::before { content:'>'; display:inline-block; transform:rotate(90deg); }
+        #ice-bet-overlay.collapsed .ice-bet-toggle { display:flex; font-size:14px; gap:6px; color:var(--text2); }
+        #ice-bet-overlay.collapsed .ice-bet-toggle span { font-size:11px; opacity:0.5; }
+        #ice-bet-overlay.collapsed .ice-bet-toggle::before { content:'>'; display:inline-block; transform:rotate(-90deg); margin-right:4px; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text { display:none; }
+        #ice-bet-overlay.collapsed .ice-bet-toggle-text { display:inline; }
+        .ice-bet-row { display:flex; align-items:center; gap:6px; justify-content:center; margin-top:2px; }
+        #ice-bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.10); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
+        #ice-bet-input:focus { border-color:#5b8def; box-shadow:0 0 20px rgba(91,141,239,0.35); }
+        #ice-all-in-btn { height:28px; padding:0 10px; border-radius:8px; border:none; background:var(--gold); color:#000; font-weight:700; font-size:12px; cursor:pointer; transition:0.2s; white-space:nowrap; box-shadow:0 0 20px rgba(200,168,78,0.3); flex-shrink:0; }
+        #ice-all-in-btn:active { transform:scale(0.94); opacity:0.8; }
+        #ice-bet-btn { padding:2px 0; height:26px; border-radius:8px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:13px; cursor:pointer; transition:0.2s; box-shadow:0 0 24px rgba(91,141,239,0.4); letter-spacing:0.2px; width:100%; text-align:center; margin-top:2px; }
+        #ice-bet-btn:active { transform:scale(0.96); opacity:0.8; }
+        #ice-bet-btn:disabled { opacity:0.4; transform:none; pointer-events:none; }
+        #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
+        #ice-current-bet-display span { color:var(--gold); font-weight:700; }
+        #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
+        #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
+        #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
+        #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
+        #ice-stats-bar .stat-item .value { color:#fff; font-weight:700; }
+        #ice-stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
+        #ice-win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
+        #ice-win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
+        #ice-win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid #5b8def; flex-shrink:0; background:var(--surface3); }
+        #ice-win-avatar-container img { width:100%; height:100%; object-fit:cover; display:block; }
+        #ice-win-name { font-size:24px; font-weight:700; color:#5b8def; text-align:center; }
+        #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
+        #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
+        #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
+        #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+        .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
+        .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
+        .ice-auto-bet-toggle:active { transform:scale(0.9); }
+        .ice-auto-bet-panel { background:rgba(18,18,22,0.95); backdrop-filter:blur(16px); border:1px solid var(--border); border-radius:12px; padding:12px 14px; width:160px; display:none; flex-direction:column; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,0.7); }
+        .ice-auto-bet-panel.open { display:flex; }
+        .ice-auto-bet-panel .row { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .ice-auto-bet-panel .row label { font-size:12px; color:var(--text2); white-space:nowrap; }
+        .ice-auto-bet-panel .row input { width:70px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--surface3); color:var(--text); font-size:13px; text-align:center; outline:none; }
+        .ice-auto-bet-panel .row input:focus { border-color:#5b8def; }
+        .ice-auto-bet-panel .switch-sm { position:relative; width:34px; height:18px; flex-shrink:0; cursor:pointer; }
+        .ice-auto-bet-panel .switch-sm input { opacity:0; width:0; height:0; }
+        .ice-auto-bet-panel .switch-sm .slider-sm { position:absolute; cursor:pointer; inset:0; background:var(--surface3); border:1px solid var(--border); border-radius:999px; transition:0.2s; }
+        .ice-auto-bet-panel .switch-sm .slider-sm::before { content:""; position:absolute; width:12px; height:12px; left:2px; top:50%; transform:translateY(-50%); background:#fff; border-radius:50%; transition:0.2s; }
+        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
+        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
+
+        /* ─── NOTIFICATION OVERLAY ───────────────────────────────────── */
+        #notification-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 24px 36px;
+            max-width: 85%;
+            color: #fff;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            z-index: 99999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        #notification-overlay.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: none;
+        }
+        @media (max-width: 420px) {
+            #notification-overlay {
+                font-size: 20px;
+                padding: 18px 24px;
+                max-width: 92%;
+            }
+            #plus-btn { width: 24px; height: 24px; font-size: 15px; }
+            #balance-wrap { padding: 2px 10px 2px 4px; }
+            #balance { font-size: 15px; }
+            #diamond-icon { width: 22px; height: 22px; }
+            #username-display { max-width: 60px; font-size: 11px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- ═══ LOADING SCREEN ─── -->
+    <!-- ═══ LOADING SCREEN OVERLAY ─── -->
     <div id="loading-screen">
         <div id="grid-wrapper">
             <div id="loading-grid"></div>
@@ -1150,7 +648,7 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ APP ─── -->
+    <!-- ═══ ORIGINAL APP ─── -->
     <div id="app">
         <div id="topbar">
             <div id="top-left">
@@ -1172,34 +670,11 @@
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
                     <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
-
-                    <!-- WIN CARDS (PvP) -->
-                    <div id="win-cards">
-                        <div class="win-card wc-left hidden-card" id="last-game-card">
-                            <div class="wc-avatar"><img id="last-game-avatar" src="" alt="" /></div>
-                            <div class="wc-info">
-                                <span class="wc-label">Last game</span>
-                                <span class="wc-name" id="last-game-name">—</span>
-                            </div>
-                            <span class="wc-amount positive" id="last-game-amount">+0</span>
-                        </div>
-                        <div class="win-card wc-right hidden-card" id="biggest-win-card">
-                            <div class="wc-avatar"><img id="biggest-win-avatar" src="" alt="" /></div>
-                            <div class="wc-info">
-                                <span class="wc-label">Best win</span>
-                                <span class="wc-name" id="biggest-win-name">—</span>
-                            </div>
-                            <span class="wc-amount positive big" id="biggest-win-amount">+0</span>
-                        </div>
-                    </div>
-
-                    <!-- PVP WIN HISTORY LIST (recent winners) -->
-                    <div id="pvp-win-history"></div>
-
                     <div id="timer-wrap">
                         <div id="countdown-timer">10.00</div>
                         <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
                     </div>
+                    <div id="win-history"></div>
                     <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
                     <div id="win-panel">
                         <div id="win-gif-container"><img id="win-gif" src="" alt="" /></div>
@@ -1229,14 +704,7 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- PLAYER LIST (PvP) – slides from top -->
-                <div id="player-list-wrap">
-                    <div id="player-list-container">
-                        <div class="pl-empty">no players yet</div>
-                    </div>
-                </div>
-
+                <div id="player-list-container"></div>
                 <div id="stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="stats-pot">0</span></div>
@@ -1247,31 +715,6 @@
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
-
-                    <!-- ICE TOP CARDS -->
-                    <div id="ice-top-cards">
-                        <div class="ice-info-card empty" id="ice-last-game">
-                            <div class="card-avatar"><img src="" alt="" /></div>
-                            <div class="card-details">
-                                <div class="card-label">Last game</div>
-                                <div class="card-row">
-                                    <span class="card-name">—</span>
-                                    <span class="card-amount positive" id="ice-last-amount">+0</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="ice-info-card empty" id="ice-best-win">
-                            <div class="card-avatar"><img src="" alt="" /></div>
-                            <div class="card-details">
-                                <div class="card-label">Best win</div>
-                                <div class="card-row">
-                                    <span class="card-name">—</span>
-                                    <span class="card-amount positive" id="ice-best-amount">+0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="ice-timer-wrap">
                         <div id="ice-countdown-timer">10.00</div>
                         <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
@@ -1303,7 +746,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div id="ice-stats-bar">
                     <div class="stat-item"><span class="label">Players</span><span class="value" id="ice-stats-players">0</span></div>
                     <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="ice-stats-pot">0</span></div>
@@ -1343,7 +785,6 @@
                 <div id="top-list"></div>
             </div>
         </div>
-
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
@@ -1364,12 +805,11 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FINAL VERSION – all fixes applied
+        // FULL CLIENT – with random spawn position and thinner glow
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
-            'https://i.postimg.cc/90sfZfSh/ezgif-3f0e907be807d1cc.gif', // new victory GIF
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
@@ -1387,7 +827,6 @@
 
         const tg = window.Telegram?.WebApp;
         if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
-
         function haptic(style) {
             try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light'); else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
         }
@@ -1397,12 +836,9 @@
             balance: 0, username: 'player', userId: null, pfp: '', wins: 0, losses: 0, anonymous: false,
             gameState: 'idle', players: [], pot: 0, arenaSize: 0, cornerRadius: 0, perimeterPoints: [], opening: null,
             countdownStartTime: 0, currentTab: 'pvp', defaultAvatar: 'https://i.pravatar.cc/150?img=0',
-            winHistory: [], maxHistory: 20, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
+            winHistory: [], maxHistory: 8, topPlayers: [], colors: ['#e74c3c','#2ecc71','#3498db','#f1c40f','#9b59b6','#e67e22','#1abc9c','#e84393'],
             topPlayerIds: new Map(),
             winStreak: 0,
-            biggestWin: 0,
-            biggestWinEntry: null,
-            lastGameEntry: null,
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -1446,8 +882,8 @@
         const winName = document.getElementById('win-name');
         const winMultiplier = document.getElementById('win-multiplier');
         const winContinueBtn = document.getElementById('win-continue-btn');
-        const playerListWrap = document.getElementById('player-list-wrap');
         const playerListContainer = document.getElementById('player-list-container');
+        const winHistoryEl = document.getElementById('win-history');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
         const anonToggle = document.getElementById('anon-toggle');
         const promoInput = document.getElementById('promo-input');
@@ -1492,29 +928,6 @@
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
         const notifOverlay = document.getElementById('notification-overlay');
         const plusBtn = document.getElementById('plus-btn');
-
-        // win cards (PvP)
-        const lastGameCard = document.getElementById('last-game-card');
-        const lastGameAvatar = document.getElementById('last-game-avatar');
-        const lastName = document.getElementById('last-game-name');
-        const lastAmount = document.getElementById('last-game-amount');
-        const biggestWinCard = document.getElementById('biggest-win-card');
-        const biggestWinAvatar = document.getElementById('biggest-win-avatar');
-        const biggestWinName = document.getElementById('biggest-win-name');
-        const biggestWinAmount = document.getElementById('biggest-win-amount');
-        // PvP win history
-        const pvpWinHistoryEl = document.getElementById('pvp-win-history');
-
-        // ice top cards
-        const iceLastGame = document.getElementById('ice-last-game');
-        const iceLastAvatar = iceLastGame.querySelector('.card-avatar img');
-        const iceLastName = iceLastGame.querySelector('.card-name');
-        const iceLastAmount = document.getElementById('ice-last-amount');
-        const iceBestWin = document.getElementById('ice-best-win');
-        const iceBestAvatar = iceBestWin.querySelector('.card-avatar img');
-        const iceBestName = iceBestWin.querySelector('.card-name');
-        const iceBestAmount = document.getElementById('ice-best-amount');
-
         let notifTimeout = null;
 
         // ─── ICE STATE ──────────────────────────────────────────────────
@@ -1552,6 +965,7 @@
             puckPrevX: 200,
             puckPrevY: 200,
             puckUpdateTime: 0,
+            puckLastBounceTime: 0,
             currentOwnerName: '',
             currentOwnerPfp: '',
             nameFadeIn: 0,
@@ -1562,6 +976,7 @@
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
         function easeOutBack(t) { const c1=1.70158,c3=c1+1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); }
+        function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
         function lightenColor(hex,amt) {
             let r=parseInt(hex.slice(1,2),16)*17||parseInt(hex.slice(1,3),16);
             let g=parseInt(hex.slice(2,3),16)*17||parseInt(hex.slice(3,5),16);
@@ -1643,14 +1058,12 @@
                     SERVER_ARENA_SIZE=res.arena.size; state.perimeterPoints=res.arena.perimeter; state.cornerRadius=res.arena.cornerRadius;
                     if(res.iceArena){ iceState.perimeterPoints=res.iceArena.perimeter; iceState.cornerRadius=res.iceArena.cornerRadius; }
                     if(Array.isArray(res.recentWinners)&&res.recentWinners.length){
-                        state.winHistory = res.recentWinners.slice(0,state.maxHistory).map(w=>({name:w.name, pfp:w.pfp, amount:0, timestamp:Date.now()}));
+                        state.winHistory=res.recentWinners.slice(0,state.maxHistory).map(w=>({name:w.name,pfp:w.pfp,timestamp:Date.now()}));
                         updateWinHistoryUI();
-                        updatePvpWinHistory();
                     }
                     if(Array.isArray(res.iceRecentWinners)&&res.iceRecentWinners.length){
-                        iceState.winHistory = res.iceRecentWinners.slice(0,8).map(w=>({name:w.name, pfp:w.pfp, amount:0}));
+                        iceState.winHistory=res.iceRecentWinners.slice(0,8).map(w=>({name:w.name,pfp:w.pfp}));
                         updateIceWinHistoryUI();
-                        updateIceTopCards();
                     }
                     if (res.icePlayers && Array.isArray(res.icePlayers)) {
                         iceState.players = res.icePlayers.map(p => ({
@@ -1749,7 +1162,6 @@
                 if(state.gameState==='playing') timerProgressWrap.classList.remove('visible');
             }
             updateStatsBar(); updateBetUI(); updateWaitingText(); updateBetOverlayVisibility(); updatePlayerList(); updateFrogVisibility();
-            updateWinHistoryUI(); updatePvpWinHistory();
         }
 
         function detectBumpsForHaptics() {
@@ -1790,15 +1202,12 @@
         function updateBetOverlayVisibility(){
             const shouldHide=state.gameState==='playing'||state.gameState==='finished';
             betOverlayWrap.classList.toggle('hidden',shouldHide);
-            const hasPlayers = getAlive().length > 0;
-            // Show player list if there is at least one player and game not finished
-            const showList = hasPlayers && state.gameState !== 'finished';
-            playerListWrap.classList.toggle('show', showList);
+            playerListContainer.classList.toggle('shift-up',shouldHide);
         }
         function updatePlayerList(){
             const alive=getAlive();
             const totalBet=state.players.reduce((s,p)=>s+p.bet,0);
-            if(alive.length===0){ playerListContainer.innerHTML='<div class="pl-empty">no players yet</div>'; return; }
+            if(alive.length===0){ playerListContainer.innerHTML=''; return; }
             let html='';
             alive.forEach(p=>{
                 const chance=totalBet>0?((p.bet/totalBet)*100).toFixed(1):0;
@@ -1806,10 +1215,9 @@
                 const topInfo=state.topPlayerIds.get(p.id);
                 let crown='';
                 if(topInfo){ if(topInfo.rank===1) crown='👑'; else if(topInfo.rank===2) crown='👑'; }
-                const flameHtml = (p.id===state.userId && state.winStreak>=3) ? '🔥' : '';
                 html+=`<div class="pl-entry ${isYou?'you':''}">
                             <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${crown} ${p.name} ${flameHtml}</span>
+                            <span class="pl-name">${crown} ${p.name}</span>
                             <span class="pl-bet">${p.bet}</span>
                             <span class="pl-chance">${chance}%</span>
                         </div>`;
@@ -1854,64 +1262,9 @@
             if(betInput.dataset.empty==='true'){ betInput.value=10; delete betInput.dataset.empty; }
         }
 
-        // ─── WIN HISTORY (PvP) ────────────────────────────────────────
-        function addWinToHistory(name, pfp, amount) {
-            const entry = { name, pfp: pfp || state.defaultAvatar, amount: amount || 0, timestamp: Date.now() };
-            state.winHistory.unshift(entry);
-            if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
-            let best = null, maxAmt = 0;
-            state.winHistory.forEach(e => { if(e.amount > maxAmt) { maxAmt=e.amount; best=e; } });
-            state.biggestWin = maxAmt;
-            state.biggestWinEntry = best;
-            state.lastGameEntry = state.winHistory.length > 0 ? state.winHistory[0] : null;
-            updateWinHistoryUI();
-            updatePvpWinHistory();
-        }
-
-        function updateWinHistoryUI() {
-            const last = state.lastGameEntry || state.winHistory[0] || null;
-            if (last && last.name && last.amount > 0) {
-                lastGameCard.classList.remove('hidden-card');
-                lastGameAvatar.src = last.pfp || state.defaultAvatar;
-                lastName.textContent = last.name;
-                lastAmount.textContent = '+' + last.amount;
-            } else {
-                lastGameCard.classList.add('hidden-card');
-                lastGameAvatar.src = '';
-                lastName.textContent = '—';
-                lastAmount.textContent = '+0';
-            }
-            const big = state.biggestWinEntry || null;
-            if (big && big.name && big.amount > 0) {
-                biggestWinCard.classList.remove('hidden-card');
-                biggestWinAvatar.src = big.pfp || state.defaultAvatar;
-                biggestWinName.textContent = big.name;
-                biggestWinAmount.textContent = '+' + big.amount;
-            } else {
-                biggestWinCard.classList.add('hidden-card');
-                biggestWinAvatar.src = '';
-                biggestWinName.textContent = '—';
-                biggestWinAmount.textContent = '+0';
-            }
-        }
-
-        // ─── PVP WIN HISTORY LIST ─────────────────────────────────────
-        function updatePvpWinHistory() {
-            if (state.winHistory.length === 0) {
-                pvpWinHistoryEl.innerHTML = '';
-                return;
-            }
-            let html = '';
-            state.winHistory.slice(0, 8).forEach(entry => {
-                const avatarSrc = entry.pfp || state.defaultAvatar;
-                html += `<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
-            });
-            pvpWinHistoryEl.innerHTML = html;
-        }
-
         function handleRoundEnd(payload){
             if(!payload){ hideWinPanelAndReset(); return; }
-            addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
+            addWinToHistory(payload.winnerName, payload.winnerPfp);
             refreshLeaderboard();
             if(payload.winnerId===state.userId){
                 state.balance+=payload.winnings;
@@ -1923,18 +1276,13 @@
                 state.winStreak = 0;
             }
             updateBalance(); updateProfile();
-            const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-            winGif.src = randomGif;
-            winAvatar.src = payload.winnerPfp || state.defaultAvatar;
-            winName.textContent = payload.winnerName + ' wins!';
-            winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
-            winPanel.classList.add('show');
-            haptic('heavy');
-            countdownTimer.style.display = 'none';
-            timerProgressWrap.classList.remove('visible');
-            waitingText.style.display = 'none';
+            const randomGif=WIN_GIFS[Math.floor(Math.random()*WIN_GIFS.length)];
+            winGif.src=randomGif; winAvatar.src=payload.winnerPfp||state.defaultAvatar;
+            winName.textContent=payload.winnerName+' wins!'; winMultiplier.textContent='x'+payload.multiplier.toFixed(1);
+            winPanel.classList.add('show'); haptic('heavy');
+            countdownTimer.style.display='none'; timerProgressWrap.classList.remove('visible'); waitingText.style.display='none';
             if(window.winTimeout) clearTimeout(window.winTimeout);
-            window.winTimeout = setTimeout(hideWinPanelAndReset, 5000);
+            window.winTimeout=setTimeout(hideWinPanelAndReset,5000);
         }
         function hideWinPanelAndReset(){
             winPanel.classList.remove('show'); stopVictorySound();
@@ -1944,166 +1292,24 @@
         }
         winContinueBtn.addEventListener('click', hideWinPanelAndReset);
 
-        // ─── ICE HELPERS ──────────────────────────────────────────────
-        function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
-
-        function updateIceBetOverlayVisibility(){
-            const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
-            iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
+        function addWinToHistory(name,pfp){
+            state.winHistory.unshift({name,pfp,timestamp:Date.now()});
+            if(state.winHistory.length>state.maxHistory) state.winHistory.pop();
+            updateWinHistoryUI();
         }
-        function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
-        function updateIceWaitingText(){
-            if (iceState.players.length >= 1) { iceWaitingText.style.display = 'none'; } else { iceWaitingText.style.display = 'block'; }
-            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
-                iceWaitingText.style.display = 'none';
-            }
-        }
-        function updateIceBetUI(){
-            const existing=getIcePlayerLocal(state.userId);
-            const inGame=!!existing;
-            const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
-            iceBetBtn.textContent=canBet?(inGame?'increase':'join'):(inGame?'in game':'waiting');
-            iceBetBtn.disabled=!canBet; iceBetInput.disabled=!canBet; iceAllInBtn.disabled=!canBet;
-            iceCurrentBetDisplay.textContent=existing?existing.bet:'0';
-            if(iceBetInput.dataset.empty==='true'){ iceBetInput.value=10; delete iceBetInput.dataset.empty; }
-        }
-
-        // ─── ICE WIN HISTORY & TOP CARDS ─────────────────────────────
-        function addIceWinToHistory(name, pfp, amount) {
-            const entry = { name, pfp: pfp || state.defaultAvatar, amount: amount || 0, timestamp: Date.now() };
-            iceState.winHistory.unshift(entry);
-            if (iceState.winHistory.length > 8) iceState.winHistory.pop();
-            updateIceWinHistoryUI();
-            updateIceTopCards();
-        }
-
-        function updateIceWinHistoryUI() {
-            if(iceState.winHistory.length===0){ iceWinHistoryEl.innerHTML=''; return; }
+        function updateWinHistoryUI(){
+            if(state.winHistory.length===0){ winHistoryEl.innerHTML=''; return; }
             let html='';
-            iceState.winHistory.forEach(entry=>{
+            state.winHistory.forEach(entry=>{
                 const avatarSrc=entry.pfp||state.defaultAvatar;
                 html+=`<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
             });
-            iceWinHistoryEl.innerHTML=html;
+            winHistoryEl.innerHTML=html;
         }
 
-        function updateIceTopCards() {
-            if (iceState.winHistory.length > 0) {
-                const last = iceState.winHistory[0];
-                iceLastAvatar.src = last.pfp || state.defaultAvatar;
-                iceLastName.textContent = last.name || '?';
-                iceLastAmount.textContent = '+' + last.amount;
-                iceLastGame.classList.remove('empty');
-            } else {
-                iceLastAvatar.src = '';
-                iceLastName.textContent = '—';
-                iceLastAmount.textContent = '+0';
-                iceLastGame.classList.add('empty');
-            }
+        function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
 
-            let best = null;
-            for (const entry of iceState.winHistory) {
-                if (!best || entry.amount > best.amount) best = entry;
-            }
-            if (best) {
-                iceBestAvatar.src = best.pfp || state.defaultAvatar;
-                iceBestName.textContent = best.name || '?';
-                iceBestAmount.textContent = '+' + best.amount;
-                iceBestWin.classList.remove('empty');
-            } else {
-                iceBestAvatar.src = '';
-                iceBestName.textContent = '—';
-                iceBestAmount.textContent = '+0';
-                iceBestWin.classList.add('empty');
-            }
-        }
-
-        function handleIceRoundEnd(payload){
-            if(!payload){ hideIceWinPanelAndReset(); return; }
-            iceState.winnerId = payload.winnerId;
-            addIceWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
-            refreshLeaderboard();
-            if(payload.winnerId===state.userId){
-                state.balance+=payload.winnings;
-                state.wins++;
-                state.winStreak++;
-                playVictorySound();
-            } else {
-                state.losses++;
-                state.winStreak = 0;
-            }
-            updateBalance(); updateProfile();
-            const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
-            iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
-            iceWinName.textContent = payload.winnerName + ' wins the rink!';
-            iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
-            iceWinPanel.classList.add('show');
-            haptic('heavy');
-            iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
-            if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
-            window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
-        }
-        function hideIceWinPanelAndReset(){
-            iceWinPanel.classList.remove('show');
-            if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
-            iceState.winnerId=null;
-            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
-        }
-        iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
-
-        function placeIceBet(amount){
-            if(!socket||!socket.connected) return;
-            let addAmount=parseInt(amount)||10;
-            if(addAmount<10) addAmount=10;
-            if(addAmount>state.balance) addAmount=state.balance;
-            if(addAmount<=0){ haptic('light'); return; }
-            socket.emit('icePlaceBet',{amount:addAmount},(res)=>{
-                if(!res?.ok){ haptic('light'); console.warn('Ice bet rejected:',res?.error); return; }
-                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
-            });
-            iceBetInput.value=''; updateIceBetUI();
-        }
-        iceBetBtn.addEventListener('click',()=>placeIceBet(iceBetInput.value));
-        iceAllInBtn.addEventListener('click',()=>{ iceBetInput.value=state.balance; placeIceBet(state.balance); });
-        iceBetInput.addEventListener('blur',()=>{
-            let val=parseInt(iceBetInput.value);
-            if(isNaN(val)||val<10) val=10;
-            if(val>state.balance) val=state.balance;
-            iceBetInput.value=val;
-        });
-
-        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
-        function toggleIceAutoBet(enable){
-            if(enable&&!iceAutoBetEnabled){
-                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
-                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
-                iceAutoBetInterval=setInterval(()=>{
-                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
-                    if(!canBet) return;
-                    const existing=getIcePlayerLocal(state.userId);
-                    if(existing) return;
-                    const amount=parseInt(iceAutoAmount.value)||10;
-                    if(amount<10||amount>state.balance) return;
-                    placeIceBet(amount);
-                },2000);
-            } else if(!enable&&iceAutoBetEnabled){
-                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
-                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
-            }
-        }
-        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
-        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
-        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
-
-        let iceBetCollapsed = false;
-        iceBetToggleBtn.addEventListener('click', function(e){
-            e.stopPropagation();
-            iceBetCollapsed = !iceBetCollapsed;
-            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
-            haptic('light');
-        });
-
-        // ─── applyIceServerState ──────────────────────────────────────
+        // ─── applyIceServerState ───────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
 
@@ -2196,10 +1402,130 @@
             if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
 
             updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
-            updateIceTopCards();
         }
 
-        // ─── REFRESH LEADERBOARD ──────────────────────────────────────
+        function updateIceBetOverlayVisibility(){
+            const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
+            iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
+        }
+        function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
+        function updateIceWaitingText(){
+            if (iceState.players.length >= 1) {
+                iceWaitingText.style.display = 'none';
+            } else {
+                iceWaitingText.style.display = 'block';
+            }
+            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                iceWaitingText.style.display = 'none';
+            }
+        }
+        function updateIceBetUI(){
+            const existing=getIcePlayerLocal(state.userId);
+            const inGame=!!existing;
+            const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
+            iceBetBtn.textContent=canBet?(inGame?'increase':'join'):(inGame?'in game':'waiting');
+            iceBetBtn.disabled=!canBet; iceBetInput.disabled=!canBet; iceAllInBtn.disabled=!canBet;
+            iceCurrentBetDisplay.textContent=existing?existing.bet:'0';
+            if(iceBetInput.dataset.empty==='true'){ iceBetInput.value=10; delete iceBetInput.dataset.empty; }
+        }
+
+        function addIceWinToHistory(name,pfp){
+            iceState.winHistory.unshift({name,pfp});
+            if(iceState.winHistory.length>8) iceState.winHistory.pop();
+            updateIceWinHistoryUI();
+        }
+        function updateIceWinHistoryUI(){
+            if(iceState.winHistory.length===0){ iceWinHistoryEl.innerHTML=''; return; }
+            let html='';
+            iceState.winHistory.forEach(entry=>{
+                const avatarSrc=entry.pfp||state.defaultAvatar;
+                html+=`<div class="win-entry"><img src="${avatarSrc}" onerror="this.src='${state.defaultAvatar}'" /></div>`;
+            });
+            iceWinHistoryEl.innerHTML=html;
+        }
+        function handleIceRoundEnd(payload){
+            if(!payload){ hideIceWinPanelAndReset(); return; }
+            iceState.winnerId=payload.winnerId;
+            addIceWinToHistory(payload.winnerName, payload.winnerPfp);
+            refreshLeaderboard();
+            if(payload.winnerId===state.userId){
+                state.balance+=payload.winnings;
+                state.wins++;
+                state.winStreak++;
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0;
+            }
+            updateBalance(); updateProfile();
+            iceWinAvatar.src=payload.winnerPfp||state.defaultAvatar;
+            iceWinName.textContent=payload.winnerName+' wins the rink!';
+            iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
+            iceWinPanel.classList.add('show'); haptic('heavy');
+            iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
+            if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
+            window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
+        }
+        function hideIceWinPanelAndReset(){
+            iceWinPanel.classList.remove('show');
+            if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
+            iceState.winnerId=null;
+            updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
+        }
+        iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
+
+        function placeIceBet(amount){
+            if(!socket||!socket.connected) return;
+            let addAmount=parseInt(amount)||10;
+            if(addAmount<10) addAmount=10;
+            if(addAmount>state.balance) addAmount=state.balance;
+            if(addAmount<=0){ haptic('light'); return; }
+            socket.emit('icePlaceBet',{amount:addAmount},(res)=>{
+                if(!res?.ok){ haptic('light'); console.warn('Ice bet rejected:',res?.error); return; }
+                state.balance=res.balance; updateBalance(); updateProfile(); haptic('medium');
+            });
+            iceBetInput.value=''; updateIceBetUI();
+        }
+        iceBetBtn.addEventListener('click',()=>placeIceBet(iceBetInput.value));
+        iceAllInBtn.addEventListener('click',()=>{ iceBetInput.value=state.balance; placeIceBet(state.balance); });
+        iceBetInput.addEventListener('blur',()=>{
+            let val=parseInt(iceBetInput.value);
+            if(isNaN(val)||val<10) val=10;
+            if(val>state.balance) val=state.balance;
+            iceBetInput.value=val;
+        });
+
+        let iceAutoBetInterval=null, iceAutoBetEnabled=false;
+        function toggleIceAutoBet(enable){
+            if(enable&&!iceAutoBetEnabled){
+                iceAutoBetEnabled=true; iceAutoToggle.classList.add('active'); iceAutoToggle.textContent='▶';
+                if(iceAutoBetInterval) clearInterval(iceAutoBetInterval);
+                iceAutoBetInterval=setInterval(()=>{
+                    const canBet=(iceState.gameState==='idle'||iceState.gameState==='countdown');
+                    if(!canBet) return;
+                    const existing=getIcePlayerLocal(state.userId);
+                    if(existing) return;
+                    const amount=parseInt(iceAutoAmount.value)||10;
+                    if(amount<10||amount>state.balance) return;
+                    placeIceBet(amount);
+                },2000);
+            } else if(!enable&&iceAutoBetEnabled){
+                iceAutoBetEnabled=false; iceAutoToggle.classList.remove('active'); iceAutoToggle.textContent='⏱';
+                if(iceAutoBetInterval){ clearInterval(iceAutoBetInterval); iceAutoBetInterval=null; }
+            }
+        }
+        iceAutoToggle.addEventListener('click',()=>{ iceAutoPanel.classList.toggle('open'); });
+        iceAutoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!iceAutoSwitch.checked; iceAutoSwitch.checked=checked; toggleIceAutoBet(checked); haptic('light'); });
+        iceAutoSwitch.addEventListener('change',()=>{ toggleIceAutoBet(iceAutoSwitch.checked); });
+
+        let iceBetCollapsed = false;
+        iceBetToggleBtn.addEventListener('click', function(e){
+            e.stopPropagation();
+            iceBetCollapsed = !iceBetCollapsed;
+            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
+            haptic('light');
+        });
+
         function refreshLeaderboard(){
             if(!socket) return;
             socket.emit('leaderboard',{},(res)=>{
@@ -2808,7 +2134,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // spinning arrow
+            // ─── MODIFIED: spinning arrow at random position ──────────
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -2845,7 +2171,7 @@
                 iceCtx.restore();
             }
 
-            // Draw puck
+            // ─── Draw puck ──────────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2891,7 +2217,7 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // thinner glow ring
+                // ─── Thinner glow ring ──────────────────────────────────
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.2;
                 iceCtx.strokeStyle = '#b8dcff';
@@ -2997,12 +2323,11 @@
         window.__state=state;
     </script>
 
-    <!-- ─── LOADING SCREEN CONTROLLER (with new GIF) ─── -->
+    <!-- ─── LOADING SCREEN CONTROLLER (unchanged) ─── -->
     <script>
         (function() {
             'use strict';
             const GIFS = [
-                'https://i.postimg.cc/X7ZGJRP2/ezgif-4c0407329eb1bee2.gif', // new loading GIF
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
                 'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
