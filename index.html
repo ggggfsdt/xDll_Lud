@@ -431,7 +431,7 @@
         /* ─── PVP WIN HISTORY LIST (recent winners) ─── */
         #pvp-win-history {
             position: absolute;
-            bottom: 52px;
+            bottom: 56px; /* above bet overlay */
             left: 12px;
             right: 12px;
             z-index: 4;
@@ -570,7 +570,7 @@
                         opacity 0.4s ease,
                         padding 0.4s ease,
                         margin 0.4s ease;
-            max-height: 0; /* hidden by default */
+            max-height: 0;
             overflow: hidden;
             opacity: 0;
             pointer-events: none;
@@ -601,7 +601,6 @@
             min-height: 32px;
             flex-wrap: nowrap;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            border-top: none;
             border-radius: 0 0 var(--radius) var(--radius);
         }
         .pl-entry {
@@ -1365,12 +1364,12 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with win history, top-slide panel, small avatars
+        // FINAL VERSION – all fixes applied
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
-            'https://i.postimg.cc/90sfZfSh/ezgif-3f0e907be807d1cc.gif',
+            'https://i.postimg.cc/90sfZfSh/ezgif-3f0e907be807d1cc.gif', // new victory GIF
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
             'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
             'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
@@ -1793,9 +1792,6 @@
             betOverlayWrap.classList.toggle('hidden',shouldHide);
             const hasPlayers = getAlive().length > 0;
             // Show player list if there is at least one player and game not finished
-            const shouldShow = hasPlayers && state.gameState !== 'finished' && state.gameState !== 'idle' ? true : (hasPlayers && state.gameState === 'idle');
-            // Actually we want to show it during idle, countdown, prestart, playing (but not finished)
-            // We'll toggle the 'show' class based on presence of players and game state
             const showList = hasPlayers && state.gameState !== 'finished';
             playerListWrap.classList.toggle('show', showList);
         }
@@ -3006,7 +3002,7 @@
         (function() {
             'use strict';
             const GIFS = [
-                'https://i.postimg.cc/X7ZGJRP2/ezgif-4c0407329eb1bee2.gif',
+                'https://i.postimg.cc/X7ZGJRP2/ezgif-4c0407329eb1bee2.gif', // new loading GIF
                 'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
                 'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
                 'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
