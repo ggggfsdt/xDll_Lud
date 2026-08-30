@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN STYLES (unchanged) ─── */
+        /* ─── LOADING SCREEN ───────────────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -228,7 +228,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── ORIGINAL APP STYLES ─── */
+        /* ─── APP STYLES ──────────────────────────────────────── */
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         :root { --bg:#08080a; --surface:#121214; --surface2:#1a1a1e; --surface3:#242428; --primary:#4CAF50; --primary-glow:rgba(76,175,80,0.45); --text:#e8e8e8; --text2:#888; --border:#2a2a2e; --gold:#c8a84e; --gold-dim:rgba(200,168,78,0.2); --red:#d45a5a; --green:#5ac88a; --radius:16px; --safe-bottom:env(safe-area-inset-bottom,0px); }
         html,body { height:100%; overflow:hidden; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#08080a; color:var(--text); touch-action:none; }
@@ -236,17 +236,17 @@
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
 
-        /* ─── TOP BAR (thinner, plus button removed) ─── */
+        /* ─── TOP BAR (thinner, plus removed) ────────────────── */
         #topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 6px 12px 6px 12px;   /* reduced padding */
+            padding: 6px 12px 6px 12px;
             background: rgba(18,18,20,0.85);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
-            min-height: 40px;             /* thinner */
+            min-height: 40px;
             z-index: 10;
             gap: 6px;
         }
@@ -256,7 +256,7 @@
             gap: 6px;
         }
         #username-display {
-            font-size: 12px;              /* smaller */
+            font-size: 12px;
             font-weight: 500;
             color: var(--text2);
             max-width: 80px;
@@ -265,7 +265,7 @@
             white-space: nowrap;
         }
         #status-dot {
-            width: 6px;                   /* smaller */
+            width: 6px;
             height: 6px;
             border-radius: 50%;
             background: var(--green);
@@ -281,18 +281,17 @@
             align-items: center;
             gap: 6px;
         }
-        /* ─── plus-btn removed ─── */
         #balance-wrap {
             display: flex;
             align-items: center;
             gap: 4px;
             background: var(--surface2);
-            padding: 2px 10px 2px 4px;    /* thinner */
+            padding: 2px 10px 2px 4px;
             border-radius: 28px;
             border: 1px solid var(--border);
         }
         #diamond-icon {
-            width: 22px;                  /* slightly smaller */
+            width: 22px;
             height: 22px;
             object-fit: contain;
             flex-shrink: 0;
@@ -304,7 +303,7 @@
             50% { filter: drop-shadow(0 0 24px rgba(200,168,78,0.7)) brightness(1.2); }
         }
         #balance {
-            font-size: 15px;              /* smaller */
+            font-size: 15px;
             font-weight: 700;
             color: #fff;
             letter-spacing: 0.2px;
@@ -313,11 +312,13 @@
             min-width: 36px;
         }
 
-        /* ─── REST OF APP ─── */
+        /* ─── MAIN PAGES ──────────────────────────────────────── */
         #main { flex:1; position:relative; overflow:hidden; display:flex; flex-direction:column; background:transparent; }
         .tab-page { position:absolute; top:0; left:0; right:0; bottom:0; display:flex; flex-direction:column; opacity:0; visibility:hidden; transform:translateX(30px); transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease, visibility 0.35s ease; overflow:hidden; background:transparent; will-change:transform,opacity; }
         .tab-page.active { opacity:1; visibility:visible; transform:translateX(0); z-index:2; }
         .tab-page.exit { opacity:0; transform:translateX(-30px); z-index:1; transition:transform 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s; }
+
+        /* ─── PVP ARENA ────────────────────────────────────────── */
         #pvp-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #game-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(76,175,80,0.05); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
@@ -329,7 +330,7 @@
         #timer-progress-wrap.visible { display:block; }
         #timer-progress { width:0%; height:100%; background:#ffffff; border-radius:4px; box-shadow:0 0 10px rgba(255,255,255,0.25); transition:width 0.06s linear; }
 
-        /* ─── NEW WIN PANELS ─── */
+        /* ─── WIN PANELS (PvP + Ice) ──────────────────────────── */
         .win-panel {
             position: absolute;
             top: 10px;
@@ -383,6 +384,8 @@
 
         #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
+
+        /* ─── BET OVERLAY ──────────────────────────────────────── */
         #bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; transform:translateX(-50%) translateY(0); }
         #bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
@@ -411,6 +414,8 @@
         #current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
         #current-bet-display span { color:var(--gold); font-weight:700; }
         #bet-overlay.collapsed #current-bet-display, #bet-overlay.collapsed .bet-row, #bet-overlay.collapsed #bet-btn { display:none; }
+
+        /* ─── AUTO-BET ──────────────────────────────────────────── */
         .auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
         .auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
         .auto-bet-toggle.active { border-color:var(--primary); background:var(--primary); color:#fff; box-shadow:0 0 24px var(--primary-glow); }
@@ -428,10 +433,10 @@
         .auto-bet-panel .switch-sm input:checked+.slider-sm { background:var(--primary); }
         .auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
 
-        /* ─── THINNER PLAYER LIST ─── */
+        /* ─── THINNER PLAYER LIST ─────────────────────────────── */
         #player-list-container {
             width:100%;
-            max-height:56px !important;  /* reduced */
+            max-height:56px !important;
             overflow-y:auto;
             display:flex;
             flex-direction:column;
@@ -463,7 +468,7 @@
             gap:6px;
             background:rgba(26,26,30,0.80);
             border-radius:20px;
-            padding:1px 8px 1px 4px;  /* thinner */
+            padding:1px 8px 1px 4px;
             border:1px solid var(--border);
             font-size:11px;
             color:#ccc;
@@ -487,7 +492,7 @@
         #stats-bar .stat-item .value { color:#fff; font-weight:700; }
         #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
 
-        /* ─── PROFILE (no shop) ─── */
+        /* ─── PROFILE ───────────────────────────────────────────── */
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
         .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
         .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
@@ -531,7 +536,7 @@
         #promo-modal .promo-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 30px var(--primary-glow); transition:0.2s; width:100%; text-align:center; margin-top:4px; }
         #promo-modal .promo-btn:active { transform:scale(0.94); opacity:0.8; }
 
-        /* ─── TOP PAGE ─── */
+        /* ─── TOP PAGE ──────────────────────────────────────────── */
         #top-page { padding:14px 14px 10px; overflow-y:auto; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; background:transparent; }
         #podium { display:flex; align-items:flex-end; justify-content:center; gap:12px; width:100%; max-width:400px; padding:20px 0 10px; flex-wrap:wrap; }
         .podium-col { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; min-width:70px; max-width:110px; transition:0.2s; }
@@ -568,7 +573,7 @@
         .top-entry .t-prize img { width:18px; height:18px; object-fit:contain; }
         .top-entry .t-flame { width:20px; height:20px; object-fit:contain; margin-left:4px; }
 
-        /* ─── TABS ─── */
+        /* ─── TABS ──────────────────────────────────────────────── */
         #tabs { display:flex; flex-shrink:0; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-top:1px solid var(--border); padding-bottom:var(--safe-bottom); padding-top:2px; z-index:9999 !important; position:relative; pointer-events:auto !important; }
         .tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 0 8px; border:none; background:transparent; color:var(--text2); font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; gap:1px; position:relative; letter-spacing:0.4px; text-transform:uppercase; pointer-events:auto !important; touch-action:manipulation; }
         .tab-btn .tab-icon { font-size:20px; line-height:1.2; transition:0.2s; opacity:0.7; pointer-events:none; }
@@ -578,7 +583,8 @@
         .tab-btn.active::after { opacity:1; left:15%; right:15%; }
         .tab-icon svg { width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; pointer-events:none; }
         .tab-btn.active .tab-icon svg { stroke:#ffffff !important; }
-        .no-players-msg { text-align:center; color:var(--text2); padding:40px 0; opacity:0.4; font-size:14px; }
+
+        /* ─── WIN PANEL ──────────────────────────────────────────── */
         #win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; max-height:75vh; overflow-y:auto; }
         #win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
         #win-gif-container { width:70%; max-width:220px; aspect-ratio:16/9; border-radius:12px; overflow:hidden; flex-shrink:0; background:transparent; border:none; box-shadow:0 4px 20px rgba(0,0,0,0.3); }
@@ -591,17 +597,104 @@
         #win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:var(--primary); color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px var(--primary-glow); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
 
-        /* ─── ICE ARENA ───────────────────────────────────── */
+        /* ─── ICE ARENA ──────────────────────────────────────────── */
         #ice-page { display:flex; flex-direction:column; flex:1; height:100%; overflow:hidden; background:transparent; }
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
-        #ice-timer-wrap { position:absolute; top:16px; right:16px; z-index:3; pointer-events:none; display:none; flex-direction:column; align-items:flex-end; gap:5px; }
-        #ice-countdown-timer { font-size:22px; font-weight:700; color:#fff; text-shadow:0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.8); font-variant-numeric:tabular-nums; letter-spacing:0.5px; line-height:1; }
-        #ice-timer-progress-wrap { width:46px; height:3px; border-radius:3px; background:rgba(255,255,255,0.18); overflow:hidden; display:none; }
-        #ice-timer-progress-wrap.visible { display:block; }
-        #ice-timer-progress { height:100%; width:0%; border-radius:3px; background:#fff; box-shadow:0 0 6px rgba(255,255,255,0.8); }
+
+        /* ─── ICE TOP PANEL (slides in from top) ───────────────── */
+        #ice-top-panel {
+            position: absolute;
+            top: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 92%;
+            max-width: 400px;
+            background: rgba(18,18,22,0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 14px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            z-index: 10;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+            transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #ice-top-panel.show {
+            top: 10px;
+            opacity: 1;
+            pointer-events: none;
+        }
+        #ice-top-panel .panel-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            flex: 1;
+        }
+        #ice-top-panel .panel-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text2);
+            opacity: 0.6;
+            font-weight: 600;
+        }
+        #ice-top-panel .panel-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+        }
+        #ice-top-panel .panel-value.gold {
+            color: var(--gold);
+        }
+        #ice-timer-section {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 60px;
+        }
+        #ice-countdown-timer {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.3px;
+            line-height: 1.2;
+            display: block;
+        }
+        #ice-timer-progress-wrap {
+            width: 100%;
+            height: 3px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.15);
+            overflow: hidden;
+        }
+        #ice-timer-progress {
+            height: 100%;
+            width: 0%;
+            border-radius: 4px;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(255,255,255,0.3);
+            transition: width 0.1s linear;
+        }
+        #ice-stats-bar {
+            display: none !important;
+        }
+
         #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
+
+        /* ─── ICE BET OVERLAY ───────────────────────────────────── */
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
         #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
@@ -630,11 +723,8 @@
         #ice-current-bet-display { color:rgba(255,255,255,0.7); font-size:12px; text-align:center; margin-top:2px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px; }
         #ice-current-bet-display span { color:var(--gold); font-weight:700; }
         #ice-bet-overlay.collapsed #ice-current-bet-display, #ice-bet-overlay.collapsed .ice-bet-row, #ice-bet-overlay.collapsed #ice-bet-btn { display:none; }
-        #ice-stats-bar { display:flex; justify-content:space-between; align-items:center; padding:6px 14px 10px 14px; flex-shrink:0; color:var(--text2); font-size:14px; font-weight:600; background:rgba(18,18,20,0.80); backdrop-filter:blur(8px); border-top:1px solid var(--border); }
-        #ice-stats-bar .stat-item { display:flex; align-items:center; gap:6px; }
-        #ice-stats-bar .stat-item .icon { width:20px; height:20px; object-fit:contain; }
-        #ice-stats-bar .stat-item .value { color:#fff; font-weight:700; }
-        #ice-stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
+
+        /* ─── ICE WIN PANEL ──────────────────────────────────────── */
         #ice-win-panel { position:absolute; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:92%; max-width:380px; background:rgba(26,26,30,0.95); backdrop-filter:blur(20px); border-radius:var(--radius) var(--radius) 0 0; padding:20px 18px 24px; border:1px solid var(--border); border-bottom:none; box-shadow:0 -8px 60px rgba(0,0,0,0.8); z-index:25; transition:transform 0.55s cubic-bezier(0.34,1.56,0.64,1), opacity 0.35s ease; opacity:0; pointer-events:none; display:flex; flex-direction:column; align-items:center; gap:10px; }
         #ice-win-panel.show { transform:translateX(-50%) translateY(0%); opacity:1; pointer-events:auto; }
         #ice-win-avatar-container { width:60px; height:60px; border-radius:50%; overflow:hidden; border:2px solid #5b8def; flex-shrink:0; background:var(--surface3); }
@@ -643,6 +733,8 @@
         #ice-win-multiplier { font-size:30px; font-weight:800; color:#fff; text-align:center; }
         #ice-win-continue-btn { padding:10px 0; border-radius:30px; border:none; background:#5b8def; color:#fff; font-weight:700; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(91,141,239,0.4); transition:0.2s; letter-spacing:0.3px; width:100%; text-align:center; margin-top:4px; }
         #ice-win-continue-btn:active { transform:scale(0.94); opacity:0.8; }
+
+        /* ─── ICE AUTO-BET ───────────────────────────────────────── */
         #ice-auto-bet-container { position:absolute; bottom:16px; right:16px; z-index:6; display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
         .ice-auto-bet-toggle { width:40px; height:40px; border-radius:50%; border:1px solid var(--border); background:rgba(26,26,30,0.85); backdrop-filter:blur(12px); color:var(--text); font-size:18px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:0.2s; box-shadow:0 4px 16px rgba(0,0,0,0.5); }
         .ice-auto-bet-toggle.active { border-color:#5b8def; background:#5b8def; color:#fff; box-shadow:0 0 24px rgba(91,141,239,0.4); }
@@ -660,7 +752,7 @@
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm { background:#5b8def; }
         .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before { transform:translateY(-50%) translateX(16px); }
 
-        /* ─── NOTIFICATION OVERLAY ───────────────────────────────────── */
+        /* ─── NOTIFICATION ────────────────────────────────────────── */
         #notification-overlay {
             position: fixed;
             top: 50%;
@@ -691,6 +783,8 @@
             transform: translate(-50%, -50%) scale(1);
             pointer-events: none;
         }
+
+        /* ─── RESPONSIVE ──────────────────────────────────────────── */
         @media (max-width: 420px) {
             #notification-overlay {
                 font-size: 20px;
@@ -704,12 +798,33 @@
             .win-panel .panel-pfp { width: 22px; height: 22px; }
             .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
             .win-panel .panel-amount { font-size: 11px; }
+            #ice-top-panel {
+                padding: 6px 10px 8px;
+                gap: 4px;
+            }
+            #ice-top-panel .panel-value {
+                font-size: 14px;
+            }
+            #ice-countdown-timer {
+                font-size: 16px;
+            }
+            #ice-top-panel .panel-label {
+                font-size: 8px;
+            }
+        }
+        @media (max-width: 360px) {
+            #ice-top-panel .panel-value {
+                font-size: 12px;
+            }
+            #ice-countdown-timer {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- ═══ LOADING SCREEN OVERLAY ─── -->
+    <!-- ═══ LOADING SCREEN ─────────────────────────────────────── -->
     <div id="loading-screen">
         <div id="grid-wrapper">
             <div id="loading-grid"></div>
@@ -720,15 +835,15 @@
         <div id="brand-mark">Dllump</div>
     </div>
 
-    <!-- ═══ ORIGINAL APP ─── -->
+    <!-- ═══ APP ──────────────────────────────────────────────────── -->
     <div id="app">
+        <!-- TOP BAR -->
         <div id="topbar">
             <div id="top-left">
                 <span id="username-display">player</span>
                 <div id="status-dot"></div>
             </div>
             <div id="top-right">
-                <!-- plus button removed -->
                 <div id="balance-wrap">
                     <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
                     <span id="balance">1000</span>
@@ -737,11 +852,11 @@
         </div>
 
         <div id="main">
-            <!-- PvP Page -->
+            <!-- PVP PAGE -->
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
-                    <!-- NEW WIN PANELS -->
+                    <!-- Win panels -->
                     <div id="last-game-panel" class="win-panel left">
                         <span class="panel-label">Last Game</span>
                         <div class="panel-content">
@@ -797,11 +912,28 @@
                 </div>
             </div>
 
-            <!-- Ice Page -->
+            <!-- ICE PAGE -->
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
-                    <!-- ICE WIN PANELS -->
+
+                    <!-- ICE TOP PANEL (new) -->
+                    <div id="ice-top-panel">
+                        <div class="panel-section">
+                            <span class="panel-label">Players</span>
+                            <span class="panel-value" id="ice-stats-players">0</span>
+                        </div>
+                        <div id="ice-timer-section">
+                            <span id="ice-countdown-timer">10.00</span>
+                            <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
+                        </div>
+                        <div class="panel-section">
+                            <span class="panel-label">Pot</span>
+                            <span class="panel-value gold" id="ice-stats-pot">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Win panels for ice -->
                     <div id="ice-last-game-panel" class="win-panel left">
                         <span class="panel-label">Last Game</span>
                         <div class="panel-content">
@@ -816,10 +948,7 @@
                             <span class="panel-amount big" id="ice-best-win-amount">+0</span>
                         </div>
                     </div>
-                    <div id="ice-timer-wrap">
-                        <div id="ice-countdown-timer">10.00</div>
-                        <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
-                    </div>
+
                     <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
                     <div id="ice-win-panel">
                         <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
@@ -846,13 +975,10 @@
                         </div>
                     </div>
                 </div>
-                <div id="ice-stats-bar">
-                    <div class="stat-item"><span class="label">Players</span><span class="value" id="ice-stats-players">0</span></div>
-                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="ice-stats-pot">0</span></div>
-                </div>
+                <!-- old stats bar removed -->
             </div>
 
-            <!-- Profile -->
+            <!-- PROFILE PAGE -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-card">
                     <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -879,12 +1005,14 @@
                 </div>
             </div>
 
-            <!-- Top -->
+            <!-- TOP PAGE -->
             <div id="top-page" class="tab-page">
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
         </div>
+
+        <!-- TABS -->
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
@@ -896,6 +1024,7 @@
     <!-- Notification Overlay -->
     <div id="notification-overlay"></div>
 
+    <!-- Promo Modal -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -904,8 +1033,19 @@
     </div>
 
     <script>
+        // ─── FULL CLIENT SCRIPT ──────────────────────────────────────
+        // (identical to the one we built earlier, with the ice top panel integration)
+        // To keep the message within limits, we include the script inline.
+        // The script is the same as in the previous stable version, with these modifications:
+        //  - Replaced ice timer DOM refs with new ones.
+        //  - Added updateIceTopPanelVisibility() and called it in renderLoop and applyIceServerState.
+        //  - Removed references to old ice-stats-bar.
+
+        // We'll embed the whole script here. For brevity, we show the key changes.
+        // In practice, you can reuse the script from the previous answer; just update the ice timer elements.
+
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT – with win panels and thinner list
+        // FULL CLIENT – with win panels, thinner UI, ice top panel
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
@@ -1005,8 +1145,9 @@
         const iceBetBtn = document.getElementById('ice-bet-btn');
         const iceAllInBtn = document.getElementById('ice-all-in-btn');
         const iceCurrentBetDisplay = document.getElementById('ice-current-bet-value');
+        // new ice top panel elements
+        const iceTopPanel = document.getElementById('ice-top-panel');
         const iceCountdownTimer = document.getElementById('ice-countdown-timer');
-        const iceTimerWrap = document.getElementById('ice-timer-wrap');
         const iceTimerProgressWrap = document.getElementById('ice-timer-progress-wrap');
         const iceTimerProgress = document.getElementById('ice-timer-progress');
         const iceStatsPlayers = document.getElementById('ice-stats-players');
@@ -1027,7 +1168,6 @@
         const autoAmount = document.getElementById('auto-bet-amount');
         const autoSwitchWrap = document.getElementById('auto-switch-wrap');
         const notifOverlay = document.getElementById('notification-overlay');
-        // plus button removed – no need to reference it
         const lastGamePfp = document.getElementById('last-game-pfp');
         const lastGameAmount = document.getElementById('last-game-amount');
         const bestWinPfp = document.getElementById('best-win-pfp');
@@ -1078,7 +1218,6 @@
             currentOwnerPfp: '',
             nameFadeIn: 0,
             showOwnerName: false,
-            // ice win panels
             bestWin: { amount: 0, pfp: '', name: '' },
         };
 
@@ -1169,10 +1308,8 @@
                     if(res.iceArena){ iceState.perimeterPoints=res.iceArena.perimeter; iceState.cornerRadius=res.iceArena.cornerRadius; }
                     if(Array.isArray(res.recentWinners)&&res.recentWinners.length){
                         state.winHistory=res.recentWinners.slice(0,state.maxHistory);
-                        // Update panels
                         const last = state.winHistory[0];
                         if(last) updateLastGamePanel(last);
-                        // Find best
                         let best = state.winHistory.reduce((max, e) => (e.amount || 0) > (max.amount || 0) ? e : max, { amount: 0 });
                         if(best.amount > 0) {
                             state.bestWin = best;
@@ -1202,7 +1339,7 @@
                         updateIceBetUI();
                         updateIceWaitingText();
                         updateIceBetOverlayVisibility();
-                        document.getElementById('ice-stats-pot').textContent = iceState.pot;
+                        updateIceTopPanelVisibility();
                     }
                     usernameDisplay.textContent='@'+state.username; profileName.textContent=state.username;
                     profileUsername.textContent='@'+state.username; profilePfp.src=state.pfp||state.defaultAvatar;
@@ -1477,7 +1614,7 @@
             iceWinName.textContent=payload.winnerName+' wins the rink!';
             iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
             iceWinPanel.classList.add('show'); haptic('heavy');
-            iceTimerWrap.style.display='none'; iceTimerProgressWrap.classList.remove('visible');
+            // hide timer panel during win display – we keep it visible, but it's fine
             if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
             window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
         }
@@ -1486,6 +1623,7 @@
             if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
             iceState.winnerId=null;
             updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
+            updateIceTopPanelVisibility();
         }
         iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
 
@@ -1578,20 +1716,24 @@
             if(prevGameState!=='idle' && iceState.gameState==='idle'){
                 iceState.winnerId=null;
                 iceWaitingText.style.display='block';
-                iceTimerWrap.style.display='none';
-                iceTimerProgressWrap.classList.remove('visible');
+                // timer panel will hide via visibility update
             }
-            iceTimerWrap.style.display=(iceState.gameState==='countdown'||iceState.gameState==='spinning')?'flex':'none';
-            if(iceState.gameState==='countdown') iceTimerProgressWrap.classList.add('visible');
-
-            updateIceStatsBar(); updateIceBetUI(); updateIceWaitingText(); updateIceBetOverlayVisibility();
+            // update ice stats and visibility
+            updateIceStatsBar();
+            updateIceBetUI();
+            updateIceWaitingText();
+            updateIceBetOverlayVisibility();
+            updateIceTopPanelVisibility();
         }
 
         function updateIceBetOverlayVisibility(){
             const shouldHide=iceState.gameState==='spinning'||iceState.gameState==='sliding'||iceState.gameState==='finished';
             iceBetOverlayWrap.classList.toggle('hidden',shouldHide);
         }
-        function updateIceStatsBar(){ iceStatsPlayers.textContent=iceState.players.length; iceStatsPot.textContent=iceState.pot; }
+        function updateIceStatsBar(){
+            iceStatsPlayers.textContent = iceState.players.length;
+            iceStatsPot.textContent = iceState.pot;
+        }
         function updateIceWaitingText(){
             if (iceState.players.length >= 1) {
                 iceWaitingText.style.display = 'none';
@@ -1601,6 +1743,13 @@
             if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
                 iceWaitingText.style.display = 'none';
             }
+        }
+        function updateIceTopPanelVisibility(){
+            const show = (iceState.gameState === 'countdown' ||
+                          iceState.gameState === 'spinning' ||
+                          iceState.gameState === 'sliding' ||
+                          iceState.gameState === 'finished');
+            iceTopPanel.classList.toggle('show', show);
         }
         function updateIceBetUI(){
             const existing=getIcePlayerLocal(state.userId);
@@ -1865,8 +2014,6 @@
         autoToggle.addEventListener('click',()=>{ autoPanel.classList.toggle('open'); });
         autoSwitchWrap.addEventListener('click',(e)=>{ e.stopPropagation(); const checked=!autoSwitch.checked; autoSwitch.checked=checked; toggleAutoBet(checked); haptic('light'); });
         autoSwitch.addEventListener('change',()=>{ toggleAutoBet(autoSwitch.checked); });
-
-        // plusBtn removed – no event listener
 
         // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async ()=>{
@@ -2270,7 +2417,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── spinning arrow ──────────────────────────
+            // spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -2307,7 +2454,7 @@
                 iceCtx.restore();
             }
 
-            // ─── Draw puck ──────────────────────────────────────────────
+            // Draw puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -2353,7 +2500,7 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // ─── Thinner glow ring ──────────────────────────────────
+                // Thinner glow ring
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.2;
                 iceCtx.strokeStyle = '#b8dcff';
@@ -2411,55 +2558,81 @@
             }
         }
 
-        function renderLoop(){
+        // ─── RENDER LOOP ─────────────────────────────────────────────
+        function renderLoop() {
             updatePlayerAnimations();
-            const now=Date.now();
-            if(state.gameState==='countdown'&&state.countdownStartTime){
-                const elapsed=(now-state.countdownStartTime)/1000;
-                const remaining=Math.max(0,10.0-elapsed);
-                const secs=Math.floor(remaining);
-                const ms=Math.floor((remaining-secs)*100);
-                countdownTimer.textContent=secs+'.'+String(ms).padStart(2,'0');
-                const progress=Math.min(1,elapsed/10.0)*100;
-                timerProgress.style.width=progress+'%';
+            const now = Date.now();
+
+            // PvP timer
+            if (state.gameState === 'countdown' && state.countdownStartTime) {
+                const elapsed = (now - state.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                const progress = Math.min(1, elapsed / 10.0) * 100;
+                timerProgress.style.width = progress + '%';
                 timerProgressWrap.classList.add('visible');
-            } else if(state.gameState==='prestart'){ countdownTimer.textContent='GO!'; timerProgress.style.width='100%'; timerProgressWrap.classList.add('visible'); }
-            else if(state.gameState==='idle'){ timerProgressWrap.classList.remove('visible'); }
+            } else if (state.gameState === 'prestart') {
+                countdownTimer.textContent = 'GO!';
+                timerProgress.style.width = '100%';
+                timerProgressWrap.classList.add('visible');
+            } else if (state.gameState === 'idle') {
+                timerProgressWrap.classList.remove('visible');
+            }
 
-            if(iceState.gameState==='countdown'&&iceState.countdownStartTime){
-                const elapsed=(now-iceState.countdownStartTime)/1000;
-                const remaining=Math.max(0,10.0-elapsed);
-                const secs=Math.floor(remaining);
-                const ms=Math.floor((remaining-secs)*100);
-                iceCountdownTimer.textContent=secs+'.'+String(ms).padStart(2,'0');
-                iceTimerProgress.style.width=(Math.min(1,elapsed/10.0)*100)+'%';
-                iceTimerProgressWrap.classList.add('visible');
-            } else if(iceState.gameState==='spinning'){ iceCountdownTimer.textContent='🌀'; iceTimerProgress.style.width='100%'; }
-            else if(iceState.gameState==='idle'){ iceTimerProgressWrap.classList.remove('visible'); }
+            // ICE timer (new panel)
+            if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
+                const elapsed = (now - iceState.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
+                iceTimerProgressWrap.style.display = 'block';
+            } else if (iceState.gameState === 'spinning') {
+                iceCountdownTimer.textContent = '🌀';
+                iceTimerProgress.style.width = '100%';
+                iceTimerProgressWrap.style.display = 'block';
+            } else if (iceState.gameState === 'idle') {
+                iceTimerProgressWrap.style.display = 'none';
+            }
 
-            render(); renderIce();
+            // Update ice top panel visibility
+            updateIceTopPanelVisibility();
+
+            render();
+            renderIce();
             requestAnimationFrame(renderLoop);
         }
 
-        function init(){
-            if(tg?.initDataUnsafe?.user){ const u=tg.initDataUnsafe.user; state.username=u.username||u.first_name||'player'; state.pfp=u.photo_url||''; } else state.username='player';
-            usernameDisplay.textContent='@'+state.username;
-            profilePfp.src=state.pfp||state.defaultAvatar;
-            profileName.textContent=state.username;
-            profileUsername.textContent='@'+state.username;
-            resizeCanvas(); resizeIceCanvas();
-            window.addEventListener('resize',()=>{ resizeCanvas(); resizeIceCanvas(); });
-            Object.keys(tabPages).forEach(key=>tabPages[key].classList.toggle('active',key==='pvp'));
-            document.getElementById('tabs').style.pointerEvents='auto';
-            tabBtns.forEach(b=>b.style.pointerEvents='auto');
+        // ─── INIT ─────────────────────────────────────────────────────
+        function init() {
+            if (tg?.initDataUnsafe?.user) {
+                const u = tg.initDataUnsafe.user;
+                state.username = u.username || u.first_name || 'player';
+                state.pfp = u.photo_url || '';
+            } else {
+                state.username = 'player';
+            }
+            usernameDisplay.textContent = '@' + state.username;
+            profilePfp.src = state.pfp || state.defaultAvatar;
+            profileName.textContent = state.username;
+            profileUsername.textContent = '@' + state.username;
+            resizeCanvas();
+            resizeIceCanvas();
+            window.addEventListener('resize', () => { resizeCanvas(); resizeIceCanvas(); });
+            Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
+            document.getElementById('tabs').style.pointerEvents = 'auto';
+            tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
         init();
-        window.__state=state;
+        window.__state = state;
     </script>
 
-    <!-- ─── LOADING SCREEN CONTROLLER (unchanged) ─── -->
+    <!-- ─── LOADING SCREEN CONTROLLER ──────────────────────────── -->
     <script>
         (function() {
             'use strict';
