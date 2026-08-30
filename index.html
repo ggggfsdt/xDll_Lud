@@ -349,20 +349,20 @@
         #timer-progress-wrap.visible { display:block; }
         #timer-progress { width:0%; height:100%; background:#ffffff; border-radius:4px; box-shadow:0 0 10px rgba(255,255,255,0.25); transition:width 0.06s linear; }
 
-        /* ─── WIN PANELS (WIDER & TALLER) ─── */
+        /* ─── WIN PANELS (WIDER, SHORTER) ─── */
         .win-panel {
             position: absolute;
-            top: 36px;
+            top: 34px;
             z-index: 4;
             background: rgba(18,18,22,0.85);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 8px 14px;
+            border-radius: 14px;
+            padding: 4px 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            min-width: 110px;
+            min-width: 140px;
             pointer-events: none;
             transition: opacity 0.3s ease;
             box-shadow: 0 4px 16px rgba(0,0,0,0.6);
@@ -374,12 +374,12 @@
             right: 12px;
         }
         .win-panel .win-panel-label {
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text2);
             opacity: 0.6;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             font-weight: 600;
         }
         .win-panel .win-panel-content {
@@ -390,8 +390,8 @@
             justify-content: center;
         }
         .win-panel .win-panel-avatar {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: var(--surface2);
             border: 1.5px solid var(--gold);
@@ -399,7 +399,7 @@
             flex-shrink: 0;
         }
         .win-panel .win-panel-amount {
-            font-size: 17px;
+            font-size: 15px;
             font-weight: 700;
             color: var(--gold);
             white-space: nowrap;
@@ -409,13 +409,13 @@
             color: var(--text2);
             opacity: 0.4;
             font-weight: 400;
-            font-size: 13px;
+            font-size: 12px;
         }
         @media (max-width: 420px) {
-            .win-panel { padding: 6px 10px; min-width: 80px; top: 32px; }
-            .win-panel .win-panel-avatar { width: 26px; height: 26px; }
-            .win-panel .win-panel-amount { font-size: 14px; }
-            .win-panel .win-panel-label { font-size: 9px; }
+            .win-panel { padding: 3px 10px; min-width: 100px; top: 30px; }
+            .win-panel .win-panel-avatar { width: 22px; height: 22px; }
+            .win-panel .win-panel-amount { font-size: 13px; }
+            .win-panel .win-panel-label { font-size: 8px; }
         }
 
         #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
@@ -757,7 +757,7 @@
             #balance { font-size: 12px; min-width: 24px; }
             #diamond-icon { width: 16px; height: 16px; }
             #username-display { max-width: 50px; font-size: 10px; }
-            .win-panel { padding: 4px 8px; min-width: 70px; top: 28px; }
+            .win-panel { padding: 3px 10px; min-width: 100px; top: 30px; }
             .win-panel .win-panel-avatar { width: 22px; height: 22px; }
             .win-panel .win-panel-amount { font-size: 13px; }
             .win-panel .win-panel-label { font-size: 8px; }
@@ -807,7 +807,7 @@
                         <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
                     </div>
 
-                    <!-- WIN PANELS (wider, taller) -->
+                    <!-- WIN PANELS (wider, shorter) -->
                     <div id="last-win-panel" class="win-panel left-panel">
                         <div class="win-panel-label">Last Game</div>
                         <div class="win-panel-content">
@@ -871,7 +871,7 @@
                         <div class="timer-progress"><div class="timer-progress-bar" id="ice-timer-progress-bar" style="width:0%"></div></div>
                     </div>
 
-                    <!-- ICE WIN PANELS (same as PvP) -->
+                    <!-- ICE WIN PANELS (same style) -->
                     <div id="ice-last-win-panel" class="win-panel left-panel">
                         <div class="win-panel-label">Last Game</div>
                         <div class="win-panel-content">
