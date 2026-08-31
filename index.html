@@ -236,15 +236,25 @@
         #app::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.70); z-index:0; pointer-events:none; }
         #app>* { position:relative; z-index:1; }
 
-        /* ─── TOP BAR (thinner, plus removed) ────────────────── */
+        /* ─── GLASSMORPHISM BASE ────────────────────────────────────── */
+        .glass {
+            background: rgba(18, 18, 22, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ─── TOP BAR (glass) ────────────────────────────────── */
         #topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             padding: 6px 12px 6px 12px;
-            background: rgba(18,18,20,0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
+            background: rgba(18, 18, 20, 0.70);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             flex-shrink: 0;
             min-height: 40px;
             z-index: 10;
@@ -285,10 +295,10 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            background: var(--surface2);
+            background: rgba(255, 255, 255, 0.08);
             padding: 2px 10px 2px 4px;
             border-radius: 28px;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         #diamond-icon {
             width: 22px;
@@ -330,20 +340,21 @@
         #timer-progress-wrap.visible { display:block; }
         #timer-progress { width:0%; height:100%; background:#ffffff; border-radius:4px; box-shadow:0 0 10px rgba(255,255,255,0.25); transition:width 0.06s linear; }
 
-        /* ─── WIN PANELS (PvP + Ice) ──────────────────────────── */
+        /* ─── WIN PANELS (glass) ─────────────────────────────── */
         .win-panel {
             position: absolute;
             top: 10px;
-            background: rgba(18,18,22,0.80);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--border);
+            background: rgba(18, 18, 22, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
             border-radius: 14px;
             padding: 6px 12px 6px 8px;
             display: flex;
             align-items: center;
             gap: 6px;
             z-index: 6;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             pointer-events: none;
             font-size: 11px;
             color: var(--text2);
@@ -385,11 +396,25 @@
         #waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
 
-        /* ─── BET OVERLAY ──────────────────────────────────────── */
+        /* ─── BET OVERLAY (glass) ────────────────────────────── */
         #bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; transform:translateX(-50%) translateY(0); }
         #bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
-        #bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
-        #bet-overlay::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.20); border-radius:12px; z-index:0; pointer-events:none; }
+        #bet-overlay {
+            background: rgba(18, 18, 22, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 8px 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: 0.3s;
+            position: relative;
+            background-image: none;
+        }
+        #bet-overlay::before { display: none; }
         #bet-overlay>* { position:relative; z-index:1; }
         #bet-overlay.collapsed { padding:6px 12px; gap:4px; cursor:pointer; flex-direction:row; justify-content:center; }
         #bet-overlay.collapsed>*:not(.bet-toggle) { display:none; }
@@ -404,7 +429,7 @@
         #bet-overlay:not(.collapsed) .bet-toggle-text { display:none; }
         #bet-overlay.collapsed .bet-toggle-text { display:inline; }
         .bet-row { display:flex; align-items:center; gap:6px; justify-content:center; margin-top:2px; }
-        #bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.10); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
+        #bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.08); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
         #bet-input:focus { border-color:var(--primary); box-shadow:0 0 24px var(--primary-glow); }
         #all-in-btn { height:28px; padding:0 10px; border-radius:8px; border:none; background:var(--gold); color:#000; font-weight:700; font-size:12px; cursor:pointer; transition:0.2s; white-space:nowrap; box-shadow:0 0 20px rgba(200,168,78,0.3); flex-shrink:0; }
         #all-in-btn:active { transform:scale(0.94); opacity:0.8; }
@@ -492,9 +517,23 @@
         #stats-bar .stat-item .value { color:#fff; font-weight:700; }
         #stats-bar .stat-item .label { color:var(--text2); font-size:12px; margin-right:2px; }
 
-        /* ─── PROFILE ───────────────────────────────────────────── */
+        /* ─── PROFILE (glass) ──────────────────────────────────── */
         #profile-page { padding:20px 16px 10px; overflow-y:auto; align-items:center; background:transparent; }
-        .profile-card { width:100%; max-width:360px; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-radius:var(--radius); border:1px solid var(--border); padding:24px 20px 28px; display:flex; flex-direction:column; align-items:center; gap:8px; box-shadow:0 8px 48px rgba(0,0,0,0.8); }
+        .profile-card {
+            width:100%;
+            max-width:360px;
+            background: rgba(18, 18, 20, 0.70);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-radius: var(--radius);
+            padding: 24px 20px 28px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:8px;
+        }
         .profile-pfp { width:72px; height:72px; border-radius:50%; background:var(--surface2); border:2px solid var(--primary); object-fit:cover; box-shadow:0 0 40px var(--primary-glow); }
         .profile-name { font-size:20px; font-weight:700; margin-top:2px; }
         .profile-username { font-size:14px; color:var(--text2); }
@@ -573,8 +612,20 @@
         .top-entry .t-prize img { width:18px; height:18px; object-fit:contain; }
         .top-entry .t-flame { width:20px; height:20px; object-fit:contain; margin-left:4px; }
 
-        /* ─── TABS ──────────────────────────────────────────────── */
-        #tabs { display:flex; flex-shrink:0; background:rgba(18,18,20,0.85); backdrop-filter:blur(12px); border-top:1px solid var(--border); padding-bottom:var(--safe-bottom); padding-top:2px; z-index:9999 !important; position:relative; pointer-events:auto !important; }
+        /* ─── TABS (glass) ──────────────────────────────────────────── */
+        #tabs {
+            display:flex;
+            flex-shrink:0;
+            background: rgba(18, 18, 20, 0.70);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-bottom:var(--safe-bottom);
+            padding-top:2px;
+            z-index:9999 !important;
+            position:relative;
+            pointer-events:auto !important;
+        }
         .tab-btn { flex:1; display:flex; flex-direction:column; align-items:center; padding:4px 0 8px; border:none; background:transparent; color:var(--text2); font-size:10px; font-weight:600; cursor:pointer; transition:0.2s; gap:1px; position:relative; letter-spacing:0.4px; text-transform:uppercase; pointer-events:auto !important; touch-action:manipulation; }
         .tab-btn .tab-icon { font-size:20px; line-height:1.2; transition:0.2s; opacity:0.7; pointer-events:none; }
         .tab-btn.active { color:#ffffff !important; }
@@ -602,31 +653,32 @@
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
 
-        /* ─── ICE TOP PANEL – compact, sits at arena top ───────── */
+        /* ─── ICE TOP PANEL – glass, slides from top of screen ── */
         #ice-top-panel {
             position: absolute;
-            top: -60px;
+            top: -100px; /* starts off-screen above the arena */
             left: 50%;
             transform: translateX(-50%);
             width: 92%;
             max-width: 380px;
-            background: rgba(18,18,22,0.88);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-            border-radius: 14px 14px 0 0;
-            padding: 4px 10px 6px;
+            border-radius: 16px 16px 0 0;
+            padding: 6px 12px 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 4px;
+            gap: 6px;
             z-index: 10;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-            transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            transition: top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
             opacity: 0;
             pointer-events: none;
+            background: rgba(18, 18, 22, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
         #ice-top-panel.show {
-            top: 4px;
+            top: 4px;  /* lands at the top of the arena square */
             opacity: 1;
             pointer-events: none;
         }
@@ -650,6 +702,7 @@
             font-weight: 700;
             color: #fff;
             line-height: 1.1;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         #ice-top-panel .panel-value.gold {
             color: var(--gold);
@@ -666,7 +719,7 @@
             font-size: 16px;
             font-weight: 700;
             color: #fff;
-            text-shadow: 0 0 16px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 8px rgba(0,0,0,0.5);
             font-variant-numeric: tabular-nums;
             letter-spacing: 0.2px;
             line-height: 1.1;
@@ -694,11 +747,25 @@
         #ice-waiting-text { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:2; text-align:center; color:var(--text2); font-size:18px; font-weight:500; letter-spacing:0.5px; opacity:0.8; text-shadow:0 0 40px rgba(0,0,0,0.9); line-height:1.6; display:block; }
         #ice-waiting-text .sub { font-size:13px; font-weight:400; opacity:0.5; margin-top:2px; }
 
-        /* ─── ICE BET OVERLAY ───────────────────────────────────── */
+        /* ─── ICE BET OVERLAY (glass) ──────────────────────────── */
         #ice-bet-overlay-wrap { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:5; width:92%; max-width:360px; transition:opacity 0.4s ease, transform 0.4s ease; opacity:1; }
         #ice-bet-overlay-wrap.hidden { opacity:0; pointer-events:none; transform:translateX(-50%) translateY(20px); }
-        #ice-bet-overlay { background:rgba(18,18,22,0.92); border:1px solid var(--border); border-radius:12px; padding:8px 12px 10px; box-shadow:0 8px 32px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:6px; transition:0.3s; position:relative; background-image:url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg'); background-size:cover; background-position:center; background-blend-mode:overlay; }
-        #ice-bet-overlay::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.20); border-radius:12px; z-index:0; pointer-events:none; }
+        #ice-bet-overlay {
+            background: rgba(18, 18, 22, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            padding: 8px 12px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: 0.3s;
+            position: relative;
+            background-image: none;
+        }
+        #ice-bet-overlay::before { display: none; }
         #ice-bet-overlay>* { position:relative; z-index:1; }
         #ice-bet-overlay.collapsed { padding:6px 12px; gap:4px; cursor:pointer; flex-direction:row; justify-content:center; }
         #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) { display:none; }
@@ -713,7 +780,7 @@
         #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text { display:none; }
         #ice-bet-overlay.collapsed .ice-bet-toggle-text { display:inline; }
         .ice-bet-row { display:flex; align-items:center; gap:6px; justify-content:center; margin-top:2px; }
-        #ice-bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,0.10); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
+        #ice-bet-input { flex:1; max-width:120px; padding:2px 6px; height:28px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.08); color:var(--text); font-size:14px; font-weight:600; text-align:center; outline:none; font-variant-numeric:tabular-nums; }
         #ice-bet-input:focus { border-color:#5b8def; box-shadow:0 0 20px rgba(91,141,239,0.35); }
         #ice-all-in-btn { height:28px; padding:0 10px; border-radius:8px; border:none; background:var(--gold); color:#000; font-weight:700; font-size:12px; cursor:pointer; transition:0.2s; white-space:nowrap; box-shadow:0 0 20px rgba(200,168,78,0.3); flex-shrink:0; }
         #ice-all-in-btn:active { transform:scale(0.94); opacity:0.8; }
@@ -799,8 +866,8 @@
             .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
             .win-panel .panel-amount { font-size: 11px; }
             #ice-top-panel {
-                padding: 3px 8px 4px;
-                gap: 2px;
+                padding: 4px 8px 6px;
+                gap: 3px;
             }
             #ice-top-panel .panel-value {
                 font-size: 12px;
@@ -856,7 +923,7 @@
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
-                    <!-- Win panels -->
+                    <!-- Win panels (glass) -->
                     <div id="last-game-panel" class="win-panel left">
                         <span class="panel-label">Last Game</span>
                         <div class="panel-content">
@@ -917,7 +984,7 @@
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
 
-                    <!-- ICE TOP PANEL (compact, at arena top) -->
+                    <!-- ICE TOP PANEL – glass, slides from top -->
                     <div id="ice-top-panel">
                         <div class="panel-section">
                             <span class="panel-label">Players</span>
@@ -933,7 +1000,7 @@
                         </div>
                     </div>
 
-                    <!-- Win panels for ice -->
+                    <!-- Win panels for ice (glass) -->
                     <div id="ice-last-game-panel" class="win-panel left">
                         <span class="panel-label">Last Game</span>
                         <div class="panel-content">
@@ -1034,7 +1101,7 @@
 
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // FULL CLIENT SCRIPT – with compact panel and stable physics
+        // FULL CLIENT SCRIPT – with glass UI and stable physics
         // ═══════════════════════════════════════════════════════════════
 
         const SERVER_URL = 'https://dllump-production.up.railway.app';
