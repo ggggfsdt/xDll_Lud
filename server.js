@@ -357,11 +357,11 @@ function startIceSpin() {
   iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck – moderate speed ──────────────────────────
+// ─── launchIcePuck – faster but smooth ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const baseSpeed = 8;
-  const speed = baseSpeed + Math.random() * 3; // 8–11
+  const baseSpeed = 10;
+  const speed = baseSpeed + Math.random() * 2; // 10–12
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
