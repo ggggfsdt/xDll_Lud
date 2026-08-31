@@ -357,11 +357,11 @@ function startIceSpin() {
   iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck – slower speed ──────────────────────────────
+// ─── launchIcePuck – moderate speed ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const baseSpeed = 9;               // reduced from 13
-  const speed = baseSpeed + Math.random() * 3; // 9–12
+  const baseSpeed = 8;
+  const speed = baseSpeed + Math.random() * 3; // 8–11
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
@@ -409,9 +409,9 @@ async function endIceGame() {
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
 
-    iceRoom.recentWinners.unshift({ 
-      name: winner.name, 
-      pfp: winner.pfp, 
+    iceRoom.recentWinners.unshift({
+      name: winner.name,
+      pfp: winner.pfp,
       amount: winnings
     });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
@@ -459,22 +459,22 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── IMPROVED ice physics – smooth, stable, correct corner bounces ──
+// ─── SMOOTH ICE PHYSICS ──────────────────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 20;                    // more steps = smoother
+  const subSteps = 40;                    // many sub-steps = smooth
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 12;                  // slightly larger for corner detection
+  const puckRadius = 10;                  // smaller = less aggressive collisions
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // Resolve all wall collisions per sub-step (handles corners correctly)
+    // Resolve collisions iteratively (handles corners perfectly)
     let iter = 0;
-    const maxIter = 8;
+    const maxIter = 10;
     while (iter < maxIter) {
       let collided = false;
       for (let i = 0; i < totalPts; i++) {
@@ -496,25 +496,25 @@ function updateIcePhysics(dt) {
           puck.y += ny * overlap;
           const vn = puck.vx * nx + puck.vy * ny;
           if (vn < 0) {
-            const restitution = 0.98;
+            const restitution = 0.99;
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
           }
           collided = true;
-          break; // restart wall loop after position correction
+          break;
         }
       }
       if (!collided) break;
       iter++;
     }
 
-    // ─── Friction: keep speed longer, then stop ──────────
+    // ─── Friction ──────────────────────────────────────────────
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     let frictionPerSecond;
-    if (elapsed < 4.0) {
-      frictionPerSecond = 0.995;   // very low friction
+    if (elapsed < 3.5) {
+      frictionPerSecond = 0.996;
     } else {
-      frictionPerSecond = 0.60;    // high friction to stop
+      frictionPerSecond = 0.70;
     }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
@@ -522,7 +522,7 @@ function updateIcePhysics(dt) {
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.10) endIceGame();
+  if (finalSpeed < 0.08) endIceGame();
 }
 
 function broadcastIceState() {
@@ -634,9 +634,9 @@ async function endGame(winnerId) {
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
 
-    room.recentWinners.unshift({ 
-      name: winner.name, 
-      pfp: winner.pfp, 
+    room.recentWinners.unshift({
+      name: winner.name,
+      pfp: winner.pfp,
       amount: winnings
     });
     if (room.recentWinners.length > 8) room.recentWinners.length = 8;
