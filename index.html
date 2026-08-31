@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN ───────────────────────────────────── */
+        /* ─── LOADING SCREEN (unchanged) ──────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -612,7 +612,7 @@
         .top-entry .t-prize img { width:18px; height:18px; object-fit:contain; }
         .top-entry .t-flame { width:20px; height:20px; object-fit:contain; margin-left:4px; }
 
-        /* ─── TABS (glass) ──────────────────────────────────────────── */
+        /* ─── TABS (glass) ─────────────────────────────────────── */
         #tabs {
             display:flex;
             flex-shrink:0;
@@ -653,10 +653,10 @@
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
 
-        /* ─── ICE TOP PANEL – glass, slides from top of screen ── */
+        /* ─── ICE TOP PANEL – glass, slides from above arena ── */
         #ice-top-panel {
             position: absolute;
-            top: -100px; /* starts off-screen above the arena */
+            top: -80px; /* starts above the canvas (hidden) */
             left: 50%;
             transform: translateX(-50%);
             width: 92%;
@@ -678,7 +678,7 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
         #ice-top-panel.show {
-            top: 4px;  /* lands at the top of the arena square */
+            top: 10px;  /* lands exactly at the top of the canvas (respecting padding) */
             opacity: 1;
             pointer-events: none;
         }
@@ -984,7 +984,7 @@
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
 
-                    <!-- ICE TOP PANEL – glass, slides from top -->
+                    <!-- ICE TOP PANEL – glass, slides from above canvas -->
                     <div id="ice-top-panel">
                         <div class="panel-section">
                             <span class="panel-label">Players</span>
