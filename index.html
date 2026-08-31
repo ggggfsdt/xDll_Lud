@@ -616,7 +616,189 @@
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
 
-        /* ─── ICE TOP PANEL – final tweaks ─────────────────────── */
+        /* ─── POWER-UP INDICATOR ───────────────────────────────── */
+        #powerup-indicator {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18,18,22,0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,215,0,0.4);
+            border-radius: 30px;
+            padding: 4px 16px 4px 12px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 8;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(255,215,0,0.15);
+            pointer-events: none;
+        }
+        #powerup-indicator .pu-icon {
+            font-size: 20px;
+        }
+        #powerup-indicator .pu-label {
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        #powerup-indicator .pu-name {
+            color: #FFD700;
+        }
+        #powerup-indicator.show {
+            display: flex;
+        }
+
+        /* ─── ROULETTE OVERLAY ──────────────────────────────────── */
+        #roulette-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px);
+            border-radius: var(--radius);
+            animation: rouletteFadeIn 0.5s ease;
+        }
+        #roulette-overlay.show {
+            display: flex;
+        }
+        @keyframes rouletteFadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .roulette-container {
+            position: relative;
+            width: 85%;
+            max-width: 360px;
+            aspect-ratio: 1/1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .roulette-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            text-shadow: 0 0 30px rgba(255,215,0,0.3);
+        }
+        .roulette-title span {
+            color: #FFD700;
+        }
+        .roulette-wheel-wrap {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 320px;
+        }
+        .roulette-wheel-wrap canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 60px rgba(255,215,0,0.15), inset 0 0 60px rgba(0,0,0,0.5);
+        }
+        .roulette-pointer {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            color: #FFD700;
+            text-shadow: 0 0 20px rgba(255,215,0,0.6);
+            z-index: 5;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.8));
+            line-height: 1;
+        }
+        .roulette-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16%;
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            background: radial-gradient(circle, #2a2a32, #121214);
+            border: 2px solid rgba(255,215,0,0.3);
+            box-shadow: 0 0 30px rgba(255,215,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFD700;
+            pointer-events: none;
+        }
+        .roulette-result {
+            margin-top: 16px;
+            display: none;
+            align-items: center;
+            gap: 12px;
+            background: rgba(18,18,22,0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,215,0,0.4);
+            border-radius: 30px;
+            padding: 8px 24px 8px 16px;
+            box-shadow: 0 4px 30px rgba(255,215,0,0.15);
+            animation: resultPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes resultPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .roulette-result.show {
+            display: flex;
+        }
+        .roulette-result .ri-icon {
+            font-size: 32px;
+        }
+        .roulette-result .ri-text {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .roulette-result .ri-text span {
+            color: #FFD700;
+        }
+        .roulette-result .ri-sub {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            font-weight: 400;
+        }
+        .roulette-continue-btn {
+            margin-top: 10px;
+            padding: 6px 28px;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(135deg, #FFD700, #f0a030);
+            color: #000;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 30px rgba(255,215,0,0.2);
+            display: none;
+        }
+        .roulette-continue-btn:hover {
+            transform: scale(1.05);
+        }
+        .roulette-continue-btn:active {
+            transform: scale(0.94);
+        }
+        .roulette-continue-btn.show {
+            display: block;
+        }
+
+        /* ─── ICE TOP PANEL ─────────────────────────────────────── */
         #ice-top-panel {
             position: absolute;
             top: 82px;
@@ -927,6 +1109,19 @@
             #ice-top-panel .panel-label {
                 font-size: 7px;
             }
+            .roulette-title {
+                font-size: 14px;
+            }
+            .roulette-pointer {
+                font-size: 24px;
+                top: -4px;
+            }
+            .roulette-result .ri-icon {
+                font-size: 24px;
+            }
+            .roulette-result .ri-text {
+                font-size: 13px;
+            }
         }
         @media (max-width: 360px) {
             #ice-top-panel {
@@ -1038,7 +1233,34 @@
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
 
-                    <!-- ICE TOP PANEL – final version -->
+                    <!-- POWER-UP INDICATOR -->
+                    <div id="powerup-indicator">
+                        <span class="pu-icon" id="pu-icon">⚡</span>
+                        <span class="pu-label">Power-up:</span>
+                        <span class="pu-name" id="pu-name">Fast End</span>
+                    </div>
+
+                    <!-- ROULETTE OVERLAY -->
+                    <div id="roulette-overlay">
+                        <div class="roulette-container">
+                            <div class="roulette-title">🎰 <span>Power</span> Spin</div>
+                            <div class="roulette-wheel-wrap">
+                                <canvas id="roulette-canvas"></canvas>
+                                <div class="roulette-pointer">▼</div>
+                                <div class="roulette-center">?</div>
+                            </div>
+                            <div class="roulette-result" id="roulette-result">
+                                <span class="ri-icon" id="ri-icon">⚡</span>
+                                <div>
+                                    <div class="ri-text">You got <span id="ri-name">Fast End</span>!</div>
+                                    <div class="ri-sub" id="ri-desc">Puck moves faster</div>
+                                </div>
+                            </div>
+                            <button class="roulette-continue-btn" id="roulette-continue-btn">▶ Continue</button>
+                        </div>
+                    </div>
+
+                    <!-- ICE TOP PANEL -->
                     <div id="ice-top-panel">
                         <div class="panel-section">
                             <span class="panel-label">Players</span>
@@ -1290,7 +1512,29 @@
         const iceLastGameAmount = document.getElementById('ice-last-game-amount');
         const iceBestWinPfp = document.getElementById('ice-best-win-pfp');
         const iceBestWinAmount = document.getElementById('ice-best-win-amount');
+
+        // ─── ROULETTE DOM REFS ─────────────────────────────────────────
+        const rouletteOverlay = document.getElementById('roulette-overlay');
+        const rouletteCanvas = document.getElementById('roulette-canvas');
+        const rouletteCtx = rouletteCanvas.getContext('2d');
+        const rouletteResult = document.getElementById('roulette-result');
+        const riIcon = document.getElementById('ri-icon');
+        const riName = document.getElementById('ri-name');
+        const riDesc = document.getElementById('ri-desc');
+        const rouletteContinueBtn = document.getElementById('roulette-continue-btn');
+        const powerupIndicator = document.getElementById('powerup-indicator');
+        const puIcon = document.getElementById('pu-icon');
+        const puName = document.getElementById('pu-name');
+
         let notifTimeout = null;
+
+        // ─── POWER-UP DEFINITIONS ──────────────────────────────────────
+        const POWERUPS = [
+            { id: 'big', icon: '🔵', name: 'Big Puck', desc: 'Puck grows 2x size', color: '#4A90D9' },
+            { id: 'small', icon: '🔴', name: 'Small Puck', desc: 'Puck shrinks 0.5x size', color: '#D94A4A' },
+            { id: 'fast', icon: '⚡', name: 'Fast End', desc: 'Puck moves 40% faster', color: '#F5C842' },
+            { id: 'darkness', icon: '🌑', name: 'Darkness', desc: 'Arena dims with spotlight', color: '#6A4A9A' },
+        ];
 
         // ─── ICE STATE ──────────────────────────────────────────────────
         const iceState = {
@@ -1336,6 +1580,11 @@
             winnerPuckPop: false,
             winnerPuckPopStart: 0,
             winnerPuckPopDuration: 600,
+            // Power-up state
+            activePowerUp: null, // null or power-up object
+            powerUpStartTime: 0,
+            powerUpDuration: 0,
+            darknessActive: false,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -1760,6 +2009,8 @@
             if(window.iceWinTimeout){ clearTimeout(window.iceWinTimeout); window.iceWinTimeout=null; }
             iceState.winnerId=null;
             iceState.winnerPuckPop = false;
+            // Clear power-up on round end
+            clearPowerUp();
             updateIceWaitingText(); updateIceBetUI(); updateIceStatsBar(); updateIceBetOverlayVisibility();
             updateIceTopPanelVisibility();
         }
@@ -1767,6 +2018,227 @@
 
         // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id){ return iceState.players.find(p=>p.id===id); }
+
+        // ─── POWER-UP FUNCTIONS ─────────────────────────────────────────
+
+        function triggerRoulette() {
+            // Random chance: 10% to trigger
+            if (Math.random() > 0.10) return false;
+            // Don't trigger if already active
+            if (iceState.activePowerUp) return false;
+            // Don't trigger if game is already sliding or finished
+            if (iceState.gameState !== 'sliding' && iceState.gameState !== 'spinning') return false;
+
+            // Show roulette
+            showRoulette();
+            return true;
+        }
+
+        function showRoulette() {
+            rouletteOverlay.classList.add('show');
+            rouletteResult.classList.remove('show');
+            rouletteContinueBtn.classList.remove('show');
+            // Disable background interactions
+            rouletteOverlay.style.pointerEvents = 'auto';
+            // Start spin
+            startRouletteSpin();
+        }
+
+        function startRouletteSpin() {
+            const canvas = rouletteCanvas;
+            const ctx = rouletteCtx;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const size = Math.min(rect.width, rect.height);
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size / 2 - 10;
+            const numSegments = POWERUPS.length;
+            const segmentAngle = (2 * Math.PI) / numSegments;
+
+            // Pick random power-up
+            const winIndex = Math.floor(Math.random() * numSegments);
+            const winPowerUp = POWERUPS[winIndex];
+
+            // Spin animation
+            let rotation = 0;
+            const totalRotation = 4 * 2 * Math.PI + (2 * Math.PI - winIndex * segmentAngle);
+            const duration = 4000;
+            const startTime = performance.now();
+
+            // Disable continue button during spin
+            rouletteContinueBtn.classList.remove('show');
+
+            function drawWheel(rot) {
+                ctx.clearRect(0, 0, size, size);
+
+                // Draw segments
+                for (let i = 0; i < numSegments; i++) {
+                    const startAngle = i * segmentAngle + rot;
+                    const endAngle = startAngle + segmentAngle;
+                    const pu = POWERUPS[i];
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+                    ctx.closePath();
+
+                    // Color gradient
+                    const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                    const color = pu.color;
+                    grad.addColorStop(0, lightenColor(color, 60));
+                    grad.addColorStop(0.5, color);
+                    grad.addColorStop(1, darkenColor(color, 40));
+                    ctx.fillStyle = grad;
+                    ctx.fill();
+
+                    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                    ctx.restore();
+
+                    // Draw icon and label
+                    const midAngle = startAngle + segmentAngle / 2;
+                    const textRadius = radius * 0.65;
+                    const x = centerX + Math.cos(midAngle) * textRadius;
+                    const y = centerY + Math.sin(midAngle) * textRadius;
+
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    // Icon
+                    ctx.font = `${radius * 0.28}px system-ui, sans-serif`;
+                    ctx.fillStyle = '#fff';
+                    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+                    ctx.shadowBlur = 8;
+                    ctx.fillText(pu.icon, 0, -radius * 0.1);
+
+                    // Label
+                    ctx.font = `bold ${radius * 0.1}px system-ui, sans-serif`;
+                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+                    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(pu.name, 0, radius * 0.15);
+                    ctx.restore();
+                }
+
+                // Draw outer ring
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.restore();
+
+                // Draw inner ring with glow
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius * 0.15, 0, 2 * Math.PI);
+                const innerGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 0.15);
+                innerGrad.addColorStop(0, 'rgba(255,215,0,0.3)');
+                innerGrad.addColorStop(1, 'rgba(18,18,22,0.9)');
+                ctx.fillStyle = innerGrad;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,215,0,0.2)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            function darkenColor(hex, amt) {
+                let r = parseInt(hex.slice(1,3), 16);
+                let g = parseInt(hex.slice(3,5), 16);
+                let b = parseInt(hex.slice(5,7), 16);
+                r = Math.max(0, r - amt);
+                g = Math.max(0, g - amt);
+                b = Math.max(0, b - amt);
+                return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+            }
+
+            function animateSpin() {
+                const elapsed = performance.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Easing: ease out cubic
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const currentRotation = totalRotation * eased;
+
+                drawWheel(currentRotation);
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    // Spin complete - show result
+                    drawWheel(totalRotation);
+
+                    // Highlight winning segment
+                    const winAngle = totalRotation + winIndex * segmentAngle + segmentAngle / 2;
+                    const highlightX = centerX + Math.cos(winAngle) * radius * 0.5;
+                    const highlightY = centerY + Math.sin(winAngle) * radius * 0.5;
+
+                    // Show result
+                    setTimeout(() => {
+                        riIcon.textContent = winPowerUp.icon;
+                        riName.textContent = winPowerUp.name;
+                        riDesc.textContent = winPowerUp.desc;
+                        rouletteResult.classList.add('show');
+                        rouletteContinueBtn.classList.add('show');
+
+                        // Apply power-up
+                        applyPowerUp(winPowerUp);
+
+                        haptic('heavy');
+                    }, 400);
+                }
+            }
+
+            animateSpin();
+
+            // Store the result for continue button
+            rouletteContinueBtn._winPowerUp = winPowerUp;
+        }
+
+        function applyPowerUp(powerUp) {
+            iceState.activePowerUp = powerUp;
+            iceState.powerUpStartTime = performance.now();
+            iceState.powerUpDuration = 8000; // 8 seconds
+
+            // Show indicator
+            puIcon.textContent = powerUp.icon;
+            puName.textContent = powerUp.name;
+            powerupIndicator.classList.add('show');
+
+            // Apply specific effects
+            if (powerUp.id === 'darkness') {
+                iceState.darknessActive = true;
+            }
+
+            // Show notification
+            showNotification(`🎰 ${powerUp.icon} ${powerUp.name} activated!`);
+        }
+
+        function clearPowerUp() {
+            iceState.activePowerUp = null;
+            iceState.darknessActive = false;
+            powerupIndicator.classList.remove('show');
+        }
+
+        // ─── ROULETTE CONTINUE BUTTON ────────────────────────────────
+        rouletteContinueBtn.addEventListener('click', function() {
+            rouletteOverlay.classList.remove('show');
+            rouletteOverlay.style.pointerEvents = 'none';
+            // Resume game
+        });
 
         // ─── applyIceServerState ───────────────────────────────────────
         function applyIceServerState(snapshot) {
@@ -1778,6 +2250,14 @@
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
+
+                // Trigger roulette with small chance when puck launches
+                if (snapshot.gameState === 'sliding' && prevGameState === 'spinning') {
+                    // Small delay to let the sliding start, then check for roulette
+                    setTimeout(() => {
+                        triggerRoulette();
+                    }, 600);
+                }
             }
 
             iceState.gameState = snapshot.gameState;
@@ -1807,6 +2287,8 @@
                 iceState.puckScale=0;
                 iceState.zoom=1; iceState.isZoomingIn=false; iceState.isZoomingOut=false; iceState.zoomLocked=false; iceState.zoomOutTriggered=false;
                 iceState.winnerPuckPop = false;
+                // Clear power-up on new round
+                clearPowerUp();
             }
             if(snapshot.gameState==='sliding' && prevGameState!=='sliding'){
                 iceState.slideStartTime=performance.now();
@@ -1814,7 +2296,6 @@
                 iceState.winnerPuckPop = false;
             }
             if(snapshot.gameState==='finished' && prevGameState!=='finished'){
-                // Trigger pop will happen via iceRoundEnd
                 if(iceState.zoom>1.1 && !iceState.zoomOutTriggered){
                     iceState.zoomOutTriggered=true;
                     iceState.isZoomingOut=true;
@@ -1831,6 +2312,7 @@
                 iceState.currentOwnerName = '';
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
+                clearPowerUp();
             }
 
             const seen=new Set();
@@ -1891,7 +2373,6 @@
                           iceState.gameState === 'finished');
             iceTopPanel.classList.toggle('show', show);
 
-            // Hide timer when not in countdown
             const timerSection = document.getElementById('ice-timer-section');
             if (iceState.gameState === 'countdown') {
                 timerSection.style.display = 'flex';
@@ -2334,12 +2815,54 @@
             const half = w / 2;
             const s = iceScaleFactor();
 
+            // Apply darkness effect
+            let darknessAlpha = 0;
+            if (iceState.darknessActive && iceState.activePowerUp) {
+                const elapsed = (performance.now() - iceState.powerUpStartTime) / 1000;
+                const duration = iceState.powerUpDuration / 1000;
+                const progress = Math.min(elapsed / duration, 1);
+                // Fade in darkness, then fade out
+                if (progress < 0.3) {
+                    darknessAlpha = progress / 0.3 * 0.7;
+                } else if (progress < 0.7) {
+                    darknessAlpha = 0.7;
+                } else {
+                    darknessAlpha = 0.7 * (1 - (progress - 0.7) / 0.3);
+                }
+            }
+
             iceCtx.clearRect(0, 0, w, w);
+
+            // Base gradient with darkness overlay
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
-            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
+            const darkenFactor = 1 - darknessAlpha * 0.5;
+            grad.addColorStop(0, `rgba(12,16,22,${0.85 * darkenFactor})`);
+            grad.addColorStop(1, `rgba(2,4,8,${0.95 * darkenFactor})`);
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
+
+            // Darkness overlay
+            if (darknessAlpha > 0.05) {
+                iceCtx.save();
+                iceCtx.fillStyle = `rgba(0,0,0,${darknessAlpha})`;
+                iceCtx.fillRect(0, 0, w, w);
+                iceCtx.restore();
+
+                // Spotlight on puck if visible
+                if (iceState.puckVisible) {
+                    const px = iceState.puck.x * s;
+                    const py = iceState.puck.y * s;
+                    const spotlightRadius = Math.min(w, w) * 0.25;
+                    const spotGrad = iceCtx.createRadialGradient(px, py, 0, px, py, spotlightRadius);
+                    spotGrad.addColorStop(0, `rgba(255,255,255,${0.15 * (1 - darknessAlpha)})`);
+                    spotGrad.addColorStop(0.5, `rgba(255,255,255,${0.05 * (1 - darknessAlpha)})`);
+                    spotGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                    iceCtx.save();
+                    iceCtx.fillStyle = spotGrad;
+                    iceCtx.fillRect(0, 0, w, w);
+                    iceCtx.restore();
+                }
+            }
 
             const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
             if (showIdle) {
@@ -2606,7 +3129,7 @@
                 iceCtx.restore();
             }
 
-            // Draw puck with winner pop animation
+            // Draw puck with power-up effects
             if (iceState.puckVisible) {
                 let scale = 1;
                 // Puck pop-in animation
@@ -2622,6 +3145,14 @@
                         iceState.puckPopStart = 0;
                     }
                 }
+
+                // Power-up size effect
+                let sizeMultiplier = 1;
+                if (iceState.activePowerUp) {
+                    if (iceState.activePowerUp.id === 'big') sizeMultiplier = 2.0;
+                    if (iceState.activePowerUp.id === 'small') sizeMultiplier = 0.5;
+                }
+
                 // Winner pop animation (bounce)
                 let winnerScale = 1;
                 if (iceState.winnerPuckPop) {
@@ -2629,7 +3160,6 @@
                     const duration = iceState.winnerPuckPopDuration / 1000;
                     const progress = Math.min(elapsed / duration, 1);
                     if (progress < 1) {
-                        // Overshoot bounce: scale up to 1.6 then back to 1
                         const bounceProgress = progress * 3;
                         if (bounceProgress < 1) {
                             winnerScale = 1 + 0.6 * easeOutBack(bounceProgress);
@@ -2643,7 +3173,7 @@
                         iceState.winnerPuckPop = false;
                     }
                 }
-                const totalScale = scale * winnerScale;
+                const totalScale = scale * sizeMultiplier * winnerScale;
 
                 let px, py;
                 if (iceState.gameState === 'spinning') {
@@ -2655,25 +3185,34 @@
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
 
-                // Glow when winner pop is active
+                // Glow color based on power-up
                 let glowColor = 'rgba(180,220,255,0.9)';
+                let strokeColor = '#eaf6ff';
+                let glowIntensity = 14;
+                if (iceState.activePowerUp) {
+                    glowColor = hexToRgba(iceState.activePowerUp.color, 0.8);
+                    strokeColor = iceState.activePowerUp.color;
+                    glowIntensity = 20;
+                }
                 if (iceState.winnerPuckPop) {
                     glowColor = 'rgba(255,215,0,0.9)';
+                    strokeColor = '#FFD700';
+                    glowIntensity = 24;
                 }
 
                 iceCtx.save();
                 iceCtx.shadowColor = glowColor;
-                iceCtx.shadowBlur = iceState.winnerPuckPop ? 24 : 14;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#eaf6ff';
-                iceCtx.lineWidth = iceState.winnerPuckPop ? 5.5 : 4.5;
+                iceCtx.shadowBlur = glowIntensity;
+                iceCtx.strokeStyle = strokeColor;
+                iceCtx.lineWidth = iceState.winnerPuckPop ? 5.5 : (iceState.activePowerUp ? 5 : 4.5);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 const crossSize = puckRadius * 0.75;
                 iceCtx.shadowBlur = 0;
-                iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.9 : 0.65;
-                iceCtx.lineWidth = iceState.winnerPuckPop ? 2.5 : 2.0;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#eaf6ff';
+                iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.9 : (iceState.activePowerUp ? 0.8 : 0.65);
+                iceCtx.lineWidth = iceState.winnerPuckPop ? 2.5 : (iceState.activePowerUp ? 2.5 : 2.0);
+                iceCtx.strokeStyle = strokeColor;
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
                 iceCtx.lineTo(px + crossSize, py);
@@ -2685,9 +3224,9 @@
 
                 // Thinner glow ring
                 iceCtx.save();
-                iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.5 : 0.2;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#b8dcff';
-                iceCtx.lineWidth = iceState.winnerPuckPop ? 3 : 1.5;
+                iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.5 : (iceState.activePowerUp ? 0.4 : 0.2);
+                iceCtx.strokeStyle = strokeColor;
+                iceCtx.lineWidth = iceState.winnerPuckPop ? 3 : (iceState.activePowerUp ? 2.5 : 1.5);
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius + 4, 0, Math.PI * 2);
@@ -2764,7 +3303,7 @@
                 timerProgressWrap.classList.remove('visible');
             }
 
-            // ICE timer – hide when not counting down
+            // ICE timer
             if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
                 const elapsed = (now - iceState.countdownStartTime) / 1000;
                 const remaining = Math.max(0, 10.0 - elapsed);
@@ -2772,10 +3311,16 @@
                 const ms = Math.floor((remaining - secs) * 100);
                 iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
                 iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
-                // Timer section is shown/hidden via updateIceTopPanelVisibility
             }
 
-            // Update ice top panel visibility (handles timer hide)
+            // Auto-clear power-up after duration
+            if (iceState.activePowerUp) {
+                const elapsed = (now - iceState.powerUpStartTime) / 1000;
+                if (elapsed > iceState.powerUpDuration / 1000) {
+                    clearPowerUp();
+                }
+            }
+
             updateIceTopPanelVisibility();
 
             render();
