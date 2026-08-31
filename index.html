@@ -602,7 +602,7 @@
         #ice-arena-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:10px 10px 0 10px; min-height:0; overflow:visible; flex-shrink:0; }
         #ice-canvas { width:100%; aspect-ratio:1/1; max-width:100%; max-height:100%; border-radius:var(--radius); background:rgba(18,18,20,0.60); backdrop-filter:blur(6px); touch-action:none; display:block; box-shadow:inset 0 0 80px rgba(0,0,0,0.9), 0 0 50px rgba(91,141,239,0.06); flex-shrink:0; border:1px solid rgba(255,255,255,0.04); }
 
-        /* ─── ICE TOP PANEL (slides in from top) ───────────────── */
+        /* ─── ICE TOP PANEL – slides from arena top, only top corners rounded ─── */
         #ice-top-panel {
             position: absolute;
             top: -80px;
@@ -613,7 +613,7 @@
             background: rgba(18,18,22,0.88);
             backdrop-filter: blur(12px);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 16px 16px 0 0;  /* only top corners rounded */
             padding: 8px 14px 10px;
             display: flex;
             align-items: center;
@@ -626,7 +626,7 @@
             pointer-events: none;
         }
         #ice-top-panel.show {
-            top: 10px;
+            top: 8px;
             opacity: 1;
             pointer-events: none;
         }
@@ -917,7 +917,7 @@
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
 
-                    <!-- ICE TOP PANEL (new) -->
+                    <!-- ICE TOP PANEL (slides from arena top) -->
                     <div id="ice-top-panel">
                         <div class="panel-section">
                             <span class="panel-label">Players</span>
@@ -1033,17 +1033,6 @@
     </div>
 
     <script>
-        // ─── FULL CLIENT SCRIPT ──────────────────────────────────────
-        // (identical to the one we built earlier, with the ice top panel integration)
-        // To keep the message within limits, we include the script inline.
-        // The script is the same as in the previous stable version, with these modifications:
-        //  - Replaced ice timer DOM refs with new ones.
-        //  - Added updateIceTopPanelVisibility() and called it in renderLoop and applyIceServerState.
-        //  - Removed references to old ice-stats-bar.
-
-        // We'll embed the whole script here. For brevity, we show the key changes.
-        // In practice, you can reuse the script from the previous answer; just update the ice timer elements.
-
         // ═══════════════════════════════════════════════════════════════
         // FULL CLIENT – with win panels, thinner UI, ice top panel
         // ═══════════════════════════════════════════════════════════════
@@ -1614,7 +1603,6 @@
             iceWinName.textContent=payload.winnerName+' wins the rink!';
             iceWinMultiplier.textContent='x'+payload.multiplier.toFixed(1);
             iceWinPanel.classList.add('show'); haptic('heavy');
-            // hide timer panel during win display – we keep it visible, but it's fine
             if(window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
             window.iceWinTimeout=setTimeout(hideIceWinPanelAndReset,5000);
         }
@@ -1716,9 +1704,7 @@
             if(prevGameState!=='idle' && iceState.gameState==='idle'){
                 iceState.winnerId=null;
                 iceWaitingText.style.display='block';
-                // timer panel will hide via visibility update
             }
-            // update ice stats and visibility
             updateIceStatsBar();
             updateIceBetUI();
             updateIceWaitingText();
