@@ -357,7 +357,7 @@ function startIceSpin() {
   iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck – faster but smooth ──────────────────────────
+// ─── launchIcePuck – bouncy and smooth ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const baseSpeed = 10;
@@ -459,20 +459,20 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH ICE PHYSICS ──────────────────────────────────────────
+// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 40;                    // many sub-steps = smooth
+  const subSteps = 50;                    // even smoother
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 10;                  // smaller = less aggressive collisions
+  const puckRadius = 8;                   // smaller = more responsive
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // Resolve collisions iteratively (handles corners perfectly)
+    // Resolve collisions iteratively
     let iter = 0;
     const maxIter = 10;
     while (iter < maxIter) {
@@ -496,7 +496,7 @@ function updateIcePhysics(dt) {
           puck.y += ny * overlap;
           const vn = puck.vx * nx + puck.vy * ny;
           if (vn < 0) {
-            const restitution = 0.99;
+            const restitution = 1.0;     // perfect bounce
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
           }
@@ -512,9 +512,9 @@ function updateIcePhysics(dt) {
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     let frictionPerSecond;
     if (elapsed < 3.5) {
-      frictionPerSecond = 0.996;
+      frictionPerSecond = 0.997;   // very low friction
     } else {
-      frictionPerSecond = 0.70;
+      frictionPerSecond = 0.65;    // moderate friction to stop
     }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
