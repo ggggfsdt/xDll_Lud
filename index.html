@@ -1000,7 +1000,7 @@
             margin-right: 2px;
         }
 
-        /* ─── PROFILE TAB – enhanced with more features ────────── */
+        /* ─── PROFILE TAB – clean, no emojis, smooth animations ── */
         #profile-page {
             display: flex;
             flex-direction: column;
@@ -1290,58 +1290,11 @@
         }
         #reload-pfp-btn:active { transform: scale(0.94); }
 
-        /* ─── NEW: Achievements section ──────────────────────────── */
-        .achievements-section {
-            padding: 10px 0 6px;
-            border-top: 1px solid rgba(255, 255, 255, 0.04);
-            animation: fadeSlideUp 0.6s ease 0.20s forwards;
-            opacity: 0;
-            transform: translateY(12px);
-        }
-        .achievements-section .ach-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-        .achievements-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
-        }
-        .achievement-badge {
-            text-align: center;
-            padding: 8px 4px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            transition: 0.2s;
-            opacity: 0.5;
-            filter: grayscale(0.7);
-        }
-        .achievement-badge.unlocked {
-            opacity: 1;
-            filter: grayscale(0);
-            border-color: rgba(255, 215, 0, 0.15);
-        }
-        .achievement-badge .ach-icon {
-            font-size: 22px;
-            line-height: 1.2;
-        }
-        .achievement-badge .ach-label {
-            font-size: 8px;
-            color: rgba(255, 255, 255, 0.25);
-            margin-top: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-
-        /* ─── NEW: Recent games ──────────────────────────────────── */
+        /* ─── Recent games ────────────────────────────────────────── */
         .recent-games {
             padding: 10px 0 6px;
             border-top: 1px solid rgba(255, 255, 255, 0.04);
-            animation: fadeSlideUp 0.6s ease 0.24s forwards;
+            animation: fadeSlideUp 0.6s ease 0.20s forwards;
             opacity: 0;
             transform: translateY(12px);
         }
@@ -1408,7 +1361,7 @@
             align-items: center;
             width: 92%;
             max-width: 420px;
-            gap: 14px;
+            gap: 12px;
         }
 
         .card-container {
@@ -1644,7 +1597,7 @@
         /* ─── TRANSACTION HISTORY ────────────────────────────────── */
         .tx-history {
             width: 100%;
-            max-height: 180px;
+            max-height: 150px;
             overflow-y: auto;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 14px;
@@ -1718,6 +1671,57 @@
             font-size: 12px;
             color: rgba(255, 255, 255, 0.1);
             letter-spacing: 0.5px;
+        }
+
+        /* ─── Card stats – financial metrics ───────────────────── */
+        .card-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 14px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .card-stats .cs-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card-stats .cs-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .card-stats .cs-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+        .card-stats .cs-value.positive { color: var(--green); }
+        .card-stats .cs-value.negative { color: var(--red); }
+        .card-stats .cs-value.neutral { color: rgba(255,255,255,0.5); }
+
+        /* ─── Payment methods ───────────────────────────────────── */
+        .payment-methods {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 4px 0;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 0.5px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .payment-methods span {
+            background: rgba(255,255,255,0.03);
+            padding: 2px 10px;
+            border-radius: 12px;
         }
 
         /* ─── PARTICLES ───────────────────────────────────────────── */
@@ -2756,15 +2760,16 @@
             .card-face.front { padding: 16px 18px; }
             .card-face.back { padding: 16px 18px; }
             .tx-entry { font-size: 11px; padding: 4px 10px; }
-            .tx-history { max-height: 140px; }
+            .tx-history { max-height: 120px; }
             .card-welcome { font-size: 11px; }
+            .card-stats { grid-template-columns: 1fr 1fr; padding: 6px 8px; }
+            .card-stats .cs-value { font-size: 12px; }
 
             .profile-header-section .pfp-wrap .prof-pfp { width: 52px;
                 height: 52px; }
             .profile-header-section .prof-info .prof-name { font-size: 17px; }
             .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
             .profile-balance-row .bal-amount { font-size: 17px; }
-            .achievements-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 380px) {
             #ice-top-panel { top: 86px;
@@ -2782,7 +2787,7 @@
             #ice-top-panel .panel-value { font-size: 10px; }
             #ice-countdown-timer { font-size: 12px; }
             .card-face.front .card-balance .amount { font-size: 24px; }
-            .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+            .card-stats .cs-value { font-size: 11px; }
         }
     </style>
 </head>
@@ -2946,7 +2951,7 @@
                 <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – enhanced with achievements, recent games, member since -->
+            <!-- PROFILE TAB – clean, recent games only (no achievements) -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -2983,14 +2988,6 @@
                     <div class="profile-balance-row" id="profile-balance-row">
                         <span class="bal-label">Balance</span>
                         <span class="bal-amount" id="p-balance">1000</span>
-                    </div>
-
-                    <!-- Achievements -->
-                    <div class="achievements-section">
-                        <div class="ach-title">Achievements</div>
-                        <div class="achievements-grid" id="achievements-grid">
-                            <!-- Filled by JS -->
-                        </div>
                     </div>
 
                     <!-- Recent Games -->
@@ -3122,6 +3119,33 @@
                 </div>
                 <div id="tx-list"></div>
             </div>
+
+            <!-- Card Stats – financial metrics -->
+            <div class="card-stats" id="card-stats">
+                <div class="cs-item">
+                    <span class="cs-label">Total Wagered</span>
+                    <span class="cs-value" id="cs-wagered">0</span>
+                </div>
+                <div class="cs-item">
+                    <span class="cs-label">Biggest Win</span>
+                    <span class="cs-value positive" id="cs-biggest">0</span>
+                </div>
+                <div class="cs-item">
+                    <span class="cs-label">Net Profit</span>
+                    <span class="cs-value neutral" id="cs-net">0</span>
+                </div>
+                <div class="cs-item">
+                    <span class="cs-label">Currency</span>
+                    <span class="cs-value" id="cs-currency">💎</span>
+                </div>
+            </div>
+
+            <!-- Payment Methods placeholder -->
+            <div class="payment-methods">
+                <span>Visa</span>
+                <span>Mastercard</span>
+                <span>dllump Pay</span>
+            </div>
         </div>
     </div>
 
@@ -3224,7 +3248,6 @@
         const pWinrate = document.getElementById('p-winrate');
         const pBalance = document.getElementById('p-balance');
         const totalGames = document.getElementById('total-games');
-        const achievementsGrid = document.getElementById('achievements-grid');
         const recentGamesList = document.getElementById('recent-games-list');
         const soundToggle = document.getElementById('sound-toggle');
         const topList = document.getElementById('top-list');
@@ -3303,44 +3326,18 @@
         const particleCanvas = document.getElementById('particle-canvas');
         const particleCtx = particleCanvas.getContext('2d');
         const txList = document.getElementById('tx-list');
+        const csWagered = document.getElementById('cs-wagered');
+        const csBiggest = document.getElementById('cs-biggest');
+        const csNet = document.getElementById('cs-net');
 
         let notifTimeout = null;
         let particles = [];
         let particleAnimId = null;
 
-        // ─── ACHIEVEMENTS ──────────────────────────────────────────────
-        const ACHIEVEMENTS = [
-            { id: 'first_win', label: 'First Win', icon: '🏆', condition: () => state.wins >= 1 },
-            { id: 'win_10', label: '10 Wins', icon: '🎯', condition: () => state.wins >= 10 },
-            { id: 'win_50', label: '50 Wins', icon: '👑', condition: () => state.wins >= 50 },
-            { id: 'win_100', label: 'Centurion', icon: '💎', condition: () => state.wins >= 100 },
-            { id: 'streak_3', label: 'On Fire', icon: '🔥', condition: () => state.winStreak >= 3 },
-            { id: 'streak_5', label: 'Unstoppable', icon: '⚡', condition: () => state.winStreak >= 5 },
-            { id: 'balanced', label: 'Balanced', icon: '⚖️', condition: () => Math.abs(state.wins - state.losses) <= 2 &&
-                    state.wins + state.losses >= 10 },
-            { id: 'grinder', label: 'Grinder', icon: '⛏️', condition: () => state.wins + state.losses >= 50 },
-        ];
-
-        function renderAchievements() {
-            let html = '';
-            ACHIEVEMENTS.forEach(ach => {
-                const unlocked = ach.condition();
-                html += `<div class="achievement-badge ${unlocked ? 'unlocked' : ''}">
-                            <div class="ach-icon">${ach.icon}</div>
-                            <div class="ach-label">${ach.label}</div>
-                        </div>`;
-            });
-            achievementsGrid.innerHTML = html;
-        }
-
-        function updateAchievements() {
-            renderAchievements();
-        }
-
         // ─── RECENT GAMES ──────────────────────────────────────────────
         function addRecentGame(type, opponent, amount, result) {
             const entry = {
-                type: type, // 'pvp' or 'ice'
+                type: type,
                 opponent: opponent || 'Unknown',
                 amount: amount || 0,
                 result: result || (amount >= 0 ? 'win' : 'loss'),
@@ -3462,11 +3459,35 @@
                 const span = document.createElement('span');
                 span.className = 'cw-char';
                 if (char === ' ') span.classList.add('space');
-                if (index > 8) span.classList.add('highlight'); // highlight the name part
+                if (index > 8) span.classList.add('highlight');
                 span.textContent = char;
                 span.style.animationDelay = `${index * 0.06}s`;
                 cardWelcome.appendChild(span);
             });
+        }
+
+        // ─── Card stats update (financial metrics) ────────────────────
+        function updateCardStats() {
+            const txs = state.transactions;
+            let totalWagered = 0;
+            let biggestWin = 0;
+            let netProfit = 0;
+
+            txs.forEach(tx => {
+                if (tx.type === 'bet') {
+                    totalWagered += Math.abs(tx.amount);
+                } else if (tx.type === 'win') {
+                    netProfit += tx.amount;
+                    if (tx.amount > biggestWin) biggestWin = tx.amount;
+                } else if (tx.type === 'loss') {
+                    netProfit += tx.amount; // tx.amount is negative
+                }
+            });
+
+            csWagered.textContent = totalWagered;
+            csBiggest.textContent = biggestWin;
+            csNet.textContent = netProfit >= 0 ? `+${netProfit}` : `${netProfit}`;
+            csNet.className = 'cs-value' + (netProfit > 0 ? ' positive' : netProfit < 0 ? ' negative' : ' neutral');
         }
 
         function openCard() {
@@ -3484,6 +3505,7 @@
             cardIdlePhase = 0;
             cardDrag = false;
             renderTransactions();
+            updateCardStats();
             initParticles();
             requestAnimationFrame(startCardIdleAnimation);
             haptic('medium');
@@ -3569,7 +3591,7 @@
         // ─── TRANSACTIONS ──────────────────────────────────────────────
         function addTransaction(type, amount, label) {
             const entry = {
-                type: type, // 'win', 'loss', 'bet'
+                type: type,
                 amount: amount,
                 label: label || (type === 'win' ? 'Win' : type === 'loss' ? 'Loss' : 'Bet'),
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -3577,6 +3599,7 @@
             state.transactions.unshift(entry);
             if (state.transactions.length > state.maxTx) state.transactions.pop();
             renderTransactions();
+            updateCardStats();
         }
 
         function renderTransactions() {
@@ -3876,8 +3899,8 @@
                         addRecentGame('ice', 'CryptoKing', -30, 'loss');
                         addRecentGame('pvp', 'LuckyDuck', 50, 'win');
                     }
-                    // Achievements
-                    renderAchievements();
+                    // Init card stats
+                    updateCardStats();
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
                 });
@@ -4147,7 +4170,6 @@
             }
             addTransaction('win', amount, `Win vs ${name}`);
             addRecentGame('pvp', name, amount, 'win');
-            updateAchievements();
         }
 
         function addIceWinToHistory(name, pfp, amount) {
@@ -4161,7 +4183,6 @@
             }
             addTransaction('win', amount, `Ice Win vs ${name}`);
             addRecentGame('ice', name, amount, 'win');
-            updateAchievements();
         }
 
         // ─── ROUND END HANDLERS ─────────────────────────────────────
@@ -4179,7 +4200,6 @@
                 state.winStreak = 0;
                 addTransaction('loss', -payload.winnings, `Loss vs ${payload.winnerName}`);
                 addRecentGame('pvp', payload.winnerName, -payload.winnings, 'loss');
-                updateAchievements();
             }
             updateBalance();
             updateProfile();
@@ -4229,7 +4249,6 @@
                 state.winStreak = 0;
                 addTransaction('loss', -payload.winnings, `Ice Loss vs ${payload.winnerName}`);
                 addRecentGame('ice', payload.winnerName, -payload.winnings, 'loss');
-                updateAchievements();
             }
             updateBalance();
             updateProfile();
@@ -4630,7 +4649,6 @@
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
             renderRecentGames();
-            updateAchievements();
         }
 
         let audioCtx = null,
@@ -5477,9 +5495,9 @@
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             setupBalanceCardTriggers();
-            renderAchievements();
             renderRecentGames();
             renderTransactions();
+            updateCardStats();
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
