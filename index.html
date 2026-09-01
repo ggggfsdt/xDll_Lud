@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN ───────────────────────────────────── */
+        /* ─── LOADING SCREEN (unchanged) ──────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -252,9 +252,6 @@
             --green: #5ac88a;
             --radius: 16px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
-            --blue1: #1a3a6a;
-            --blue2: #3a6a9a;
-            --blue3: #5a8aba;
         }
         html,
         body {
@@ -1003,7 +1000,7 @@
             margin-right: 2px;
         }
 
-        /* ─── PROFILE TAB – CLEAN, NO EMOJIS, SMOOTH ──────────── */
+        /* ─── PROFILE TAB – enhanced with more features ────────── */
         #profile-page {
             display: flex;
             flex-direction: column;
@@ -1087,6 +1084,11 @@
             margin-top: 2px;
             letter-spacing: 0.5px;
         }
+        .profile-header-section .prof-info .member-since {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.15);
+            margin-top: 2px;
+        }
 
         .profile-stats-grid {
             display: grid;
@@ -1094,7 +1096,7 @@
             gap: 10px;
             padding: 14px 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-            animation: fadeSlideUp 0.6s ease 0.08s forwards;
+            animation: fadeSlideUp 0.6s ease 0.06s forwards;
             opacity: 0;
             transform: translateY(12px);
         }
@@ -1133,7 +1135,7 @@
             border-radius: 14px;
             cursor: pointer;
             transition: 0.25s;
-            animation: fadeSlideUp 0.6s ease 0.12s forwards;
+            animation: fadeSlideUp 0.6s ease 0.10s forwards;
             opacity: 0;
             transform: translateY(12px);
             margin: 6px 0 2px;
@@ -1157,7 +1159,7 @@
             flex-direction: column;
             gap: 2px;
             padding: 12px 0 6px;
-            animation: fadeSlideUp 0.6s ease 0.16s forwards;
+            animation: fadeSlideUp 0.6s ease 0.14s forwards;
             opacity: 0;
             transform: translateY(12px);
         }
@@ -1228,7 +1230,7 @@
             display: flex;
             gap: 8px;
             padding: 6px 0 10px;
-            animation: fadeSlideUp 0.6s ease 0.20s forwards;
+            animation: fadeSlideUp 0.6s ease 0.18s forwards;
             opacity: 0;
             transform: translateY(12px);
         }
@@ -1268,7 +1270,7 @@
             color: rgba(255, 255, 255, 0.25);
             text-align: center;
             min-height: 18px;
-            animation: fadeSlideUp 0.6s ease 0.24s forwards;
+            animation: fadeSlideUp 0.6s ease 0.22s forwards;
             opacity: 0;
             transform: translateY(12px);
         }
@@ -1281,12 +1283,93 @@
             font-size: 12px;
             cursor: pointer;
             transition: 0.2s;
-            animation: fadeSlideUp 0.6s ease 0.28s forwards;
+            animation: fadeSlideUp 0.6s ease 0.26s forwards;
             opacity: 0;
             transform: translateY(12px);
             margin-top: 4px;
         }
         #reload-pfp-btn:active { transform: scale(0.94); }
+
+        /* ─── NEW: Achievements section ──────────────────────────── */
+        .achievements-section {
+            padding: 10px 0 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease 0.20s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .achievements-section .ach-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .achievement-badge {
+            text-align: center;
+            padding: 8px 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: 0.2s;
+            opacity: 0.5;
+            filter: grayscale(0.7);
+        }
+        .achievement-badge.unlocked {
+            opacity: 1;
+            filter: grayscale(0);
+            border-color: rgba(255, 215, 0, 0.15);
+        }
+        .achievement-badge .ach-icon {
+            font-size: 22px;
+            line-height: 1.2;
+        }
+        .achievement-badge .ach-label {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.25);
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        /* ─── NEW: Recent games ──────────────────────────────────── */
+        .recent-games {
+            padding: 10px 0 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease 0.24s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .recent-games .rg-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .rg-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 2px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .rg-entry .rg-result {
+            font-weight: 600;
+        }
+        .rg-entry .rg-result.win { color: var(--green); }
+        .rg-entry .rg-result.loss { color: var(--red); }
+        .rg-entry .rg-amount {
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
 
         .profile-footer {
             font-size: 10px;
@@ -1390,6 +1473,7 @@
             object-fit: contain;
         }
 
+        /* ─── Card welcome with letter animation ────────────────── */
         .card-welcome {
             position: relative;
             z-index: 2;
@@ -1399,11 +1483,27 @@
             letter-spacing: 0.5px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            flex-wrap: wrap;
         }
-        .card-welcome .cw-name {
-            color: rgba(255, 255, 255, 0.6);
+        .card-welcome .cw-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(6px) scale(0.9);
+            animation: cwPop 0.5s ease forwards;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .card-welcome .cw-char.highlight {
+            color: rgba(255, 255, 255, 0.8);
             font-weight: 600;
+        }
+        .card-welcome .cw-char.space {
+            width: 6px;
+        }
+        @keyframes cwPop {
+            0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+            60% { opacity: 1; transform: translateY(-2px) scale(1.05); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .card-face.front .card-brand {
@@ -2664,6 +2764,7 @@
             .profile-header-section .prof-info .prof-name { font-size: 17px; }
             .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
             .profile-balance-row .bal-amount { font-size: 17px; }
+            .achievements-grid { grid-template-columns: repeat(3, 1fr); }
         }
         @media (max-width: 380px) {
             #ice-top-panel { top: 86px;
@@ -2681,6 +2782,7 @@
             #ice-top-panel .panel-value { font-size: 10px; }
             #ice-countdown-timer { font-size: 12px; }
             .card-face.front .card-balance .amount { font-size: 24px; }
+            .achievements-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -2844,7 +2946,7 @@
                 <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – clean, no emojis, smooth animations -->
+            <!-- PROFILE TAB – enhanced with achievements, recent games, member since -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -2857,6 +2959,7 @@
                             <div class="prof-name" id="profile-name">Player</div>
                             <div class="prof-username" id="profile-username">@username</div>
                             <div class="prof-status" id="profile-status">online</div>
+                            <div class="member-since" id="member-since">Member since today</div>
                         </div>
                     </div>
 
@@ -2882,6 +2985,22 @@
                         <span class="bal-amount" id="p-balance">1000</span>
                     </div>
 
+                    <!-- Achievements -->
+                    <div class="achievements-section">
+                        <div class="ach-title">Achievements</div>
+                        <div class="achievements-grid" id="achievements-grid">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Games -->
+                    <div class="recent-games">
+                        <div class="rg-title">Recent Games</div>
+                        <div id="recent-games-list">
+                            <div class="rg-entry"><span>No recent games</span></div>
+                        </div>
+                    </div>
+
                     <!-- Settings -->
                     <div class="profile-settings">
                         <div class="setting-row">
@@ -2904,6 +3023,13 @@
                                 <span class="set-sub">Total rounds</span>
                             </div>
                             <span class="set-value" id="total-games">0</span>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Sound effects</div>
+                                <span class="set-sub">Game audio feedback</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="sound-toggle" checked /><span class="slider"></span></label>
                         </div>
                     </div>
 
@@ -2958,7 +3084,7 @@
                     <div class="card-face front">
                         <img class="card-diamond-bg" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;">
-                            <div class="card-welcome">Welcome, <span class="cw-name" id="card-welcome-name">Player</span></div>
+                            <div class="card-welcome" id="card-welcome"></div>
                             <div class="card-brand">dllump</div>
                         </div>
                         <div class="card-balance">
@@ -3059,6 +3185,10 @@
             iceBestWin: { amount: 0, pfp: '', name: '' },
             transactions: [],
             maxTx: 15,
+            recentGames: [],
+            maxRecent: 5,
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            soundEnabled: true,
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -3088,11 +3218,15 @@
         const profileName = document.getElementById('profile-name');
         const profileUsername = document.getElementById('profile-username');
         const profileStatus = document.getElementById('profile-status');
+        const memberSince = document.getElementById('member-since');
         const pWins = document.getElementById('p-wins');
         const pLosses = document.getElementById('p-losses');
         const pWinrate = document.getElementById('p-winrate');
         const pBalance = document.getElementById('p-balance');
         const totalGames = document.getElementById('total-games');
+        const achievementsGrid = document.getElementById('achievements-grid');
+        const recentGamesList = document.getElementById('recent-games-list');
+        const soundToggle = document.getElementById('sound-toggle');
         const topList = document.getElementById('top-list');
         const podiumEl = document.getElementById('podium');
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -3164,7 +3298,7 @@
         const card3d = document.getElementById('card-3d');
         const cardBalanceAmount = document.getElementById('card-balance-amount');
         const cardHolderName = document.getElementById('card-holder-name');
-        const cardWelcomeName = document.getElementById('card-welcome-name');
+        const cardWelcome = document.getElementById('card-welcome');
         const profileBalanceRow = document.getElementById('profile-balance-row');
         const particleCanvas = document.getElementById('particle-canvas');
         const particleCtx = particleCanvas.getContext('2d');
@@ -3173,6 +3307,69 @@
         let notifTimeout = null;
         let particles = [];
         let particleAnimId = null;
+
+        // ─── ACHIEVEMENTS ──────────────────────────────────────────────
+        const ACHIEVEMENTS = [
+            { id: 'first_win', label: 'First Win', icon: '🏆', condition: () => state.wins >= 1 },
+            { id: 'win_10', label: '10 Wins', icon: '🎯', condition: () => state.wins >= 10 },
+            { id: 'win_50', label: '50 Wins', icon: '👑', condition: () => state.wins >= 50 },
+            { id: 'win_100', label: 'Centurion', icon: '💎', condition: () => state.wins >= 100 },
+            { id: 'streak_3', label: 'On Fire', icon: '🔥', condition: () => state.winStreak >= 3 },
+            { id: 'streak_5', label: 'Unstoppable', icon: '⚡', condition: () => state.winStreak >= 5 },
+            { id: 'balanced', label: 'Balanced', icon: '⚖️', condition: () => Math.abs(state.wins - state.losses) <= 2 &&
+                    state.wins + state.losses >= 10 },
+            { id: 'grinder', label: 'Grinder', icon: '⛏️', condition: () => state.wins + state.losses >= 50 },
+        ];
+
+        function renderAchievements() {
+            let html = '';
+            ACHIEVEMENTS.forEach(ach => {
+                const unlocked = ach.condition();
+                html += `<div class="achievement-badge ${unlocked ? 'unlocked' : ''}">
+                            <div class="ach-icon">${ach.icon}</div>
+                            <div class="ach-label">${ach.label}</div>
+                        </div>`;
+            });
+            achievementsGrid.innerHTML = html;
+        }
+
+        function updateAchievements() {
+            renderAchievements();
+        }
+
+        // ─── RECENT GAMES ──────────────────────────────────────────────
+        function addRecentGame(type, opponent, amount, result) {
+            const entry = {
+                type: type, // 'pvp' or 'ice'
+                opponent: opponent || 'Unknown',
+                amount: amount || 0,
+                result: result || (amount >= 0 ? 'win' : 'loss'),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            state.recentGames.unshift(entry);
+            if (state.recentGames.length > state.maxRecent) state.recentGames.pop();
+            renderRecentGames();
+        }
+
+        function renderRecentGames() {
+            if (state.recentGames.length === 0) {
+                recentGamesList.innerHTML = `<div class="rg-entry"><span>No recent games</span></div>`;
+                return;
+            }
+            let html = '';
+            state.recentGames.forEach(g => {
+                const resultClass = g.result === 'win' ? 'win' : 'loss';
+                const sign = g.amount > 0 ? '+' : '';
+                html += `<div class="rg-entry">
+                            <span>${g.type.toUpperCase()} vs ${g.opponent}</span>
+                            <span>
+                                <span class="rg-result ${resultClass}">${g.result}</span>
+                                <span class="rg-amount" style="color:${g.result === 'win' ? 'var(--green)' : 'var(--red)'}">${sign}${g.amount}</span>
+                            </span>
+                        </div>`;
+            });
+            recentGamesList.innerHTML = html;
+        }
 
         // ─── PARTICLES ──────────────────────────────────────────────────
         function initParticles() {
@@ -3256,6 +3453,22 @@
             requestAnimationFrame(startCardIdleAnimation);
         }
 
+        // ─── Card welcome animation ──────────────────────────────────
+        function animateCardWelcome(name) {
+            const text = `Welcome, ${name}`;
+            cardWelcome.innerHTML = '';
+            const chars = text.split('');
+            chars.forEach((char, index) => {
+                const span = document.createElement('span');
+                span.className = 'cw-char';
+                if (char === ' ') span.classList.add('space');
+                if (index > 8) span.classList.add('highlight'); // highlight the name part
+                span.textContent = char;
+                span.style.animationDelay = `${index * 0.06}s`;
+                cardWelcome.appendChild(span);
+            });
+        }
+
         function openCard() {
             cardOverlay.classList.add('show');
             cardCloseBtn.classList.add('show');
@@ -3267,7 +3480,7 @@
             cardBalanceAmount.textContent = bal;
             const name = state.username || 'Player';
             cardHolderName.textContent = name.toUpperCase();
-            cardWelcomeName.textContent = name;
+            animateCardWelcome(name);
             cardIdlePhase = 0;
             cardDrag = false;
             renderTransactions();
@@ -3645,10 +3858,11 @@
                     profileName.textContent = state.username;
                     profileUsername.textContent = '@' + state.username;
                     profilePfp.src = state.pfp || state.defaultAvatar;
+                    memberSince.textContent = `Member since ${state.memberSince}`;
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
-                    // Init transactions with some demo data
+                    // Init transactions with demo data
                     if (state.transactions.length === 0) {
                         addTransaction('win', 120, 'PvP Win');
                         addTransaction('bet', -50, 'PvP Bet');
@@ -3656,6 +3870,14 @@
                         addTransaction('win', 200, 'Ice Win');
                         addTransaction('bet', -75, 'PvP Bet');
                     }
+                    // Demo recent games
+                    if (state.recentGames.length === 0) {
+                        addRecentGame('pvp', 'Bot_007', 120, 'win');
+                        addRecentGame('ice', 'CryptoKing', -30, 'loss');
+                        addRecentGame('pvp', 'LuckyDuck', 50, 'win');
+                    }
+                    // Achievements
+                    renderAchievements();
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
                 });
@@ -3923,8 +4145,9 @@
                 state.bestWin = { amount, pfp, name };
                 updateBestWinPanel(state.bestWin);
             }
-            // Add transaction
             addTransaction('win', amount, `Win vs ${name}`);
+            addRecentGame('pvp', name, amount, 'win');
+            updateAchievements();
         }
 
         function addIceWinToHistory(name, pfp, amount) {
@@ -3937,6 +4160,8 @@
                 updateIceBestWinPanel(iceState.bestWin);
             }
             addTransaction('win', amount, `Ice Win vs ${name}`);
+            addRecentGame('ice', name, amount, 'win');
+            updateAchievements();
         }
 
         // ─── ROUND END HANDLERS ─────────────────────────────────────
@@ -3953,6 +4178,8 @@
                 state.losses++;
                 state.winStreak = 0;
                 addTransaction('loss', -payload.winnings, `Loss vs ${payload.winnerName}`);
+                addRecentGame('pvp', payload.winnerName, -payload.winnings, 'loss');
+                updateAchievements();
             }
             updateBalance();
             updateProfile();
@@ -4001,6 +4228,8 @@
                 state.losses++;
                 state.winStreak = 0;
                 addTransaction('loss', -payload.winnings, `Ice Loss vs ${payload.winnerName}`);
+                addRecentGame('ice', payload.winnerName, -payload.winnings, 'loss');
+                updateAchievements();
             }
             updateBalance();
             updateProfile();
@@ -4400,12 +4629,15 @@
             profileUsername.textContent = '@' + state.username;
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
+            renderRecentGames();
+            updateAchievements();
         }
 
         let audioCtx = null,
             victorySoundPlaying = false;
 
         function playVictorySound() {
+            if (!state.soundEnabled) return;
             try {
                 if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)();
                 if (victorySoundPlaying) return;
@@ -4607,6 +4839,11 @@
             });
         });
 
+        // ─── SOUND TOGGLE ────────────────────────────────────────────
+        soundToggle.addEventListener('change', () => {
+            state.soundEnabled = soundToggle.checked;
+        });
+
         // ─── TAB SWITCHING ────────────────────────────────────────────
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
@@ -4618,7 +4855,7 @@
                 setTimeout(() => { oldEl.classList.remove('exit'); }, 350); }
             const newEl = tabPages[tabId];
             if (newEl) { newEl.classList.add('active');
-                newEl.classList.remove('exit'); if (tabId === 'profile') updateProfile(); if (tabId === 'top')
+                newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile(); } if (tabId === 'top')
                     refreshLeaderboard(); }
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
             haptic('light');
@@ -5231,6 +5468,7 @@
             profilePfp.src = state.pfp || state.defaultAvatar;
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
+            memberSince.textContent = `Member since ${state.memberSince}`;
             resizeCanvas();
             resizeIceCanvas();
             window.addEventListener('resize', () => { resizeCanvas();
@@ -5239,6 +5477,9 @@
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             setupBalanceCardTriggers();
+            renderAchievements();
+            renderRecentGames();
+            renderTransactions();
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
