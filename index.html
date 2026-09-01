@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN (unchanged) ──────────────────────────── */
+        /* ─── LOADING SCREEN ───────────────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -1003,213 +1003,192 @@
             margin-right: 2px;
         }
 
-        /* ─── PROFILE TAB – FULL SCREEN BLUE THEME ────────────── */
+        /* ─── PROFILE TAB – CLEAN, NO EMOJIS, SMOOTH ──────────── */
         #profile-page {
             display: flex;
             flex-direction: column;
             flex: 1;
             height: 100%;
             overflow: hidden;
-            background: linear-gradient(145deg, #0a1a2a, #0d2a4a, #1a3a6a);
+            background: #0a0f18;
             padding: 0 16px 10px;
             align-items: center;
             justify-content: flex-start;
         }
-
-        #profile-page .profile-header {
+        #profile-page .profile-scroll {
+            flex: 1;
             width: 100%;
             max-width: 400px;
-            padding: 20px 0 10px 0;
-            text-align: center;
+            overflow-y: auto;
+            padding: 12px 0 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.05) transparent;
         }
+        #profile-page .profile-scroll::-webkit-scrollbar { width: 3px; }
+        #profile-page .profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08);
+            border-radius: 10px; }
 
-        .welcome-text {
-            font-size: 28px;
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-            letter-spacing: 0.5px;
-            min-height: 44px;
+        .profile-header-section {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 2px;
-        }
-        .welcome-text .char {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(30px) scale(0.8);
-            transition: none;
-            animation: charPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            color: #fff;
-        }
-        .welcome-text .char.space {
-            width: 8px;
-        }
-        .welcome-text .char.highlight {
-            color: #8ab8e8;
-            text-shadow: 0 0 30px rgba(138, 184, 232, 0.3);
-        }
-        @keyframes charPop {
-            0% {
-                opacity: 0;
-                transform: translateY(30px) scale(0.8);
-            }
-            60% {
-                opacity: 1;
-                transform: translateY(-4px) scale(1.08);
-            }
-            80% {
-                transform: translateY(2px) scale(0.97);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .profile-sub {
-            font-size: 13px;
-            color: rgba(255, 255, 255, 0.5);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-top: 2px;
-            font-weight: 400;
-        }
-
-        .profile-card {
-            width: 100%;
-            max-width: 380px;
-            background: rgba(255, 255, 255, 0.06);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 24px 20px 28px;
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 12px;
-            box-shadow: 0 8px 48px rgba(0, 0, 0, 0.5);
-            flex-shrink: 0;
-            margin-top: 4px;
+            gap: 14px;
+            padding: 8px 4px 14px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease forwards;
+            opacity: 0;
+            transform: translateY(12px);
         }
-        .profile-pfp {
-            width: 80px;
-            height: 80px;
+        @keyframes fadeSlideUp {
+            to { opacity: 1;
+                transform: translateY(0); }
+        }
+        .profile-header-section .pfp-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .profile-header-section .pfp-wrap .prof-pfp {
+            width: 64px;
+            height: 64px;
             border-radius: 50%;
             background: var(--surface2);
-            border: 2.5px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.12);
             object-fit: cover;
-            box-shadow: 0 0 40px rgba(100, 180, 255, 0.15);
+            transition: 0.3s;
         }
-        .profile-name {
-            font-size: 22px;
+        .profile-header-section .pfp-wrap .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--green);
+            border: 2px solid #0a0f18;
+            box-shadow: 0 0 12px var(--green);
+        }
+        .profile-header-section .prof-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .profile-header-section .prof-info .prof-name {
+            font-size: 20px;
             font-weight: 700;
             color: #fff;
-            margin-top: 2px;
+            letter-spacing: 0.3px;
         }
-        .profile-username {
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: -2px;
+        .profile-header-section .prof-info .prof-username {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 1px;
         }
-        .profile-status {
-            font-size: 12px;
-            padding: 3px 20px;
-            border-radius: 30px;
-            background: rgba(255, 255, 255, 0.06);
-            color: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-        }
-        .profile-divider {
-            width: 70%;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.08);
-            margin: 4px 0 2px;
-        }
-        .profile-stats {
-            display: flex;
-            gap: 32px;
-            margin-top: 4px;
-            width: 100%;
-            justify-content: center;
-        }
-        .profile-stats .stat-item {
-            text-align: center;
-        }
-        .profile-stats .stat-item .num {
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--gold);
-        }
-        .profile-stats .stat-item .lbl {
+        .profile-header-section .prof-info .prof-status {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.25);
             margin-top: 2px;
+            letter-spacing: 0.5px;
         }
-        .profile-stats .stat-item .num.win { color: var(--green); }
-        .profile-stats .stat-item .num.loss { color: var(--red); }
-        .profile-stats .stat-item .num.rate { color: #6ab8f0; }
+
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease 0.08s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .profile-stats-grid .stat-box {
+            text-align: center;
+            padding: 10px 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: 0.2s;
+        }
+        .profile-stats-grid .stat-box .stat-num {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .profile-stats-grid .stat-box .stat-num.win { color: var(--green); }
+        .profile-stats-grid .stat-box .stat-num.loss { color: var(--red); }
+        .profile-stats-grid .stat-box .stat-num.rate { color: #6ab8f0; }
+        .profile-stats-grid .stat-box .stat-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+        }
 
         .profile-balance-row {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: rgba(255, 215, 0, 0.08);
-            border: 1px solid rgba(255, 215, 0, 0.15);
-            border-radius: 30px;
-            padding: 6px 20px 6px 16px;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(255, 215, 0, 0.06);
+            border: 1px solid rgba(255, 215, 0, 0.10);
+            border-radius: 14px;
             cursor: pointer;
-            transition: 0.2s;
-            margin-top: 2px;
+            transition: 0.25s;
+            animation: fadeSlideUp 0.6s ease 0.12s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+            margin: 6px 0 2px;
         }
-        .profile-balance-row:active {
-            transform: scale(0.94);
-        }
-        .profile-balance-row .pbr-icon {
-            font-size: 18px;
-        }
-        .profile-balance-row .pbr-label {
-            font-size: 12px;
+        .profile-balance-row:active { transform: scale(0.97); }
+        .profile-balance-row .bal-label {
+            font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.3px;
         }
-        .profile-balance-row .pbr-amount {
-            font-size: 18px;
+        .profile-balance-row .bal-amount {
+            font-size: 20px;
             font-weight: 700;
             color: var(--gold);
+            margin-left: auto;
+            font-variant-numeric: tabular-nums;
         }
 
-        .anon-row {
-            width: 100%;
+        .profile-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 12px 0 6px;
+            animation: fadeSlideUp 0.6s ease 0.16s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .profile-settings .setting-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 10px;
-            padding: 10px 2px;
-            margin-top: 4px;
+            padding: 10px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
-        .anon-row .anon-label {
-            display: flex;
-            flex-direction: column;
-            text-align: left;
-        }
-        .anon-row .anon-title {
+        .profile-settings .setting-row .set-label {
             font-size: 14px;
-            font-weight: 600;
-            color: #fff;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
         }
-        .anon-row .anon-sub {
+        .profile-settings .setting-row .set-sub {
             font-size: 11px;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.25);
+            display: block;
+            font-weight: 400;
         }
+        .profile-settings .setting-row .set-value {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
         .switch {
             position: relative;
             flex-shrink: 0;
-            width: 46px;
-            height: 26px;
+            width: 44px;
+            height: 24px;
         }
         .switch input {
             opacity: 0;
@@ -1220,22 +1199,23 @@
             position: absolute;
             cursor: pointer;
             inset: 0;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             border-radius: 999px;
-            transition: background 0.2s ease;
+            transition: background 0.25s ease;
         }
         .switch .slider::before {
             content: "";
             position: absolute;
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             left: 3px;
             top: 50%;
             transform: translateY(-50%);
             background: #fff;
             border-radius: 50%;
-            transition: transform 0.2s ease;
+            transition: transform 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .switch input:checked+.slider {
             background: var(--primary);
@@ -1245,72 +1225,78 @@
         }
 
         .promo-section {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 4px;
-        }
-        .promo-row {
             display: flex;
             gap: 8px;
+            padding: 6px 0 10px;
+            animation: fadeSlideUp 0.6s ease 0.20s forwards;
+            opacity: 0;
+            transform: translateY(12px);
         }
-        .promo-row input {
+        .promo-section input {
             flex: 1;
             padding: 8px 12px;
             border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
             color: #fff;
-            font-size: 14px;
+            font-size: 13px;
             outline: none;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
         }
-        .promo-row input:focus {
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-        .promo-row input::placeholder {
-            color: rgba(255, 255, 255, 0.3);
-        }
-        .promo-row button {
-            padding: 8px 16px;
+        .promo-section input:focus { border-color: rgba(255, 255, 255, 0.15); }
+        .promo-section input::placeholder { color: rgba(255, 255, 255, 0.15); }
+        .promo-section button {
+            padding: 8px 18px;
             border-radius: 10px;
             border: none;
             background: var(--gold);
             color: #000;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: 0.2s;
             white-space: nowrap;
         }
-        .promo-row button:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
-        .promo-row button:disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
+        .promo-section button:active { transform: scale(0.94);
+            opacity: 0.8; }
+        .promo-section button:disabled { opacity: 0.4;
+            pointer-events: none; }
         .promo-message {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255, 255, 255, 0.25);
             text-align: center;
             min-height: 18px;
+            animation: fadeSlideUp 0.6s ease 0.24s forwards;
+            opacity: 0;
+            transform: translateY(12px);
         }
         #reload-pfp-btn {
-            margin-top: 8px;
             padding: 6px 16px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.6);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.3);
             font-size: 12px;
             cursor: pointer;
             transition: 0.2s;
+            animation: fadeSlideUp 0.6s ease 0.28s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+            margin-top: 4px;
         }
-        #reload-pfp-btn:active {
-            transform: scale(0.94);
+        #reload-pfp-btn:active { transform: scale(0.94); }
+
+        .profile-footer {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.08);
+            text-align: center;
+            padding: 12px 0 4px;
+            letter-spacing: 1px;
+            animation: fadeSlideUp 0.6s ease 0.32s forwards;
+            opacity: 0;
+            transform: translateY(12px);
         }
 
         /* ─── 3D BANK CARD OVERLAY ────────────────────────────── */
@@ -1321,8 +1307,8 @@
             display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(16px);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
             animation: cardFadeIn 0.4s ease;
         }
         #card-overlay.show {
@@ -1333,9 +1319,17 @@
             100% { opacity: 1; }
         }
 
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 92%;
+            max-width: 420px;
+            gap: 14px;
+        }
+
         .card-container {
-            width: 88%;
-            max-width: 380px;
+            width: 100%;
             aspect-ratio: 1.6 / 1;
             perspective: 900px;
             touch-action: none;
@@ -1366,12 +1360,12 @@
             border-radius: 20px;
             backface-visibility: hidden;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
         .card-face.front {
             background: linear-gradient(145deg, #1a3a6a, #0d2a4a, #2a5a8a);
-            padding: 24px 28px;
+            padding: 20px 24px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -1380,28 +1374,43 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+            background: radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
             pointer-events: none;
         }
 
-        /* Diamond GIF on card */
         .card-diamond-bg {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) scale(1.2);
-            width: 60%;
-            height: 60%;
-            opacity: 0.08;
+            width: 55%;
+            height: 55%;
+            opacity: 0.06;
             pointer-events: none;
             object-fit: contain;
         }
 
+        .card-welcome {
+            position: relative;
+            z-index: 2;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .card-welcome .cw-name {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 600;
+        }
+
         .card-face.front .card-brand {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             letter-spacing: 2px;
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.25);
             text-transform: uppercase;
             text-align: right;
             position: relative;
@@ -1415,16 +1424,16 @@
             margin: auto 0;
         }
         .card-face.front .card-balance .amount {
-            font-size: 48px;
+            font-size: 42px;
             font-weight: 800;
             color: #fff;
             text-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             font-variant-numeric: tabular-nums;
         }
         .card-face.front .card-balance .label {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.3);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
             text-transform: uppercase;
             letter-spacing: 4px;
             margin-top: 2px;
@@ -1438,27 +1447,27 @@
             z-index: 2;
         }
         .card-face.front .card-bottom .card-holder {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.5);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .card-face.front .card-bottom .card-holder .label {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 400;
             opacity: 0.3;
             letter-spacing: 1px;
             display: block;
         }
         .card-face.front .card-bottom .card-expiry {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.5);
             text-align: right;
         }
         .card-face.front .card-bottom .card-expiry .label {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 400;
             opacity: 0.3;
             letter-spacing: 1px;
@@ -1468,24 +1477,24 @@
         .card-face.back {
             background: linear-gradient(145deg, #1a2a4a, #0a1a2a);
             transform: rotateY(180deg);
-            padding: 24px 28px;
+            padding: 20px 24px;
         }
         .card-face.back .card-stripe {
             position: absolute;
-            top: 40px;
+            top: 35px;
             left: 0;
             right: 0;
-            height: 40px;
+            height: 35px;
             background: rgba(0, 0, 0, 0.5);
         }
         .card-face.back .card-cvv {
             position: absolute;
-            bottom: 50px;
-            right: 30px;
+            bottom: 45px;
+            right: 25px;
             background: rgba(255, 255, 255, 0.85);
-            padding: 4px 16px;
+            padding: 3px 14px;
             border-radius: 4px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             color: #1a2a4a;
             font-family: 'Courier New', monospace;
@@ -1493,9 +1502,9 @@
             box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
         }
         .card-face.back .card-cvv .label {
-            font-size: 8px;
+            font-size: 7px;
             font-weight: 400;
-            color: rgba(0, 0, 0, 0.3);
+            color: rgba(0, 0, 0, 0.25);
             display: block;
             text-align: center;
             letter-spacing: 1px;
@@ -1503,40 +1512,115 @@
         }
         .card-face.back .card-back-text {
             position: absolute;
-            bottom: 30px;
-            left: 30px;
-            font-size: 10px;
-            color: rgba(255, 255, 255, 0.15);
+            bottom: 25px;
+            left: 25px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.10);
             letter-spacing: 0.5px;
         }
 
         .card-close-btn {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 44px;
-            height: 44px;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(18, 18, 22, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(18, 18, 22, 0.5);
             backdrop-filter: blur(8px);
-            color: #fff;
-            font-size: 22px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
             cursor: pointer;
             z-index: 99999;
             display: none;
             align-items: center;
             justify-content: center;
-            transition: 0.2s;
+            transition: 0.25s;
         }
-        .card-close-btn:active {
-            transform: scale(0.9);
+        .card-close-btn:active { transform: scale(0.88); }
+        .card-close-btn.show { display: flex; }
+
+        /* ─── TRANSACTION HISTORY ────────────────────────────────── */
+        .tx-history {
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 14px;
+            padding: 6px 4px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.04) transparent;
         }
-        .card-close-btn.show {
+        .tx-history::-webkit-scrollbar { width: 3px; }
+        .tx-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05);
+            border-radius: 10px; }
+
+        .tx-header {
             display: flex;
+            justify-content: space-between;
+            padding: 4px 12px 6px 12px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .tx-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.4);
+            transition: 0.15s;
+            animation: txSlide 0.4s ease forwards;
+            opacity: 0;
+            transform: translateX(-8px);
+        }
+        .tx-entry:nth-child(2) { animation-delay: 0.04s; }
+        .tx-entry:nth-child(3) { animation-delay: 0.08s; }
+        .tx-entry:nth-child(4) { animation-delay: 0.12s; }
+        .tx-entry:nth-child(5) { animation-delay: 0.16s; }
+        .tx-entry:nth-child(6) { animation-delay: 0.20s; }
+        .tx-entry:nth-child(7) { animation-delay: 0.24s; }
+        .tx-entry:nth-child(8) { animation-delay: 0.28s; }
+        .tx-entry:nth-child(9) { animation-delay: 0.32s; }
+        .tx-entry:nth-child(10) { animation-delay: 0.36s; }
+
+        @keyframes txSlide {
+            to { opacity: 1;
+                transform: translateX(0); }
+        }
+        .tx-entry .tx-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .tx-entry .tx-amount {
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            font-size: 13px;
+        }
+        .tx-entry .tx-amount.win { color: var(--green); }
+        .tx-entry .tx-amount.loss { color: var(--red); }
+        .tx-entry .tx-amount.bet { color: #f0c040; }
+        .tx-entry .tx-time {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.12);
+            margin-left: 8px;
+        }
+        .tx-empty {
+            text-align: center;
+            padding: 16px 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.1);
+            letter-spacing: 0.5px;
         }
 
-        /* ─── PARTICLE CANVAS ───────────────────────────────────── */
+        /* ─── PARTICLES ───────────────────────────────────────────── */
         #particle-canvas {
             position: fixed;
             inset: 0;
@@ -2568,17 +2652,18 @@
             #ice-countdown-timer { font-size: 14px; }
             #ice-top-panel .panel-label { font-size: 7px; }
 
-            .card-face.front .card-balance .amount { font-size: 36px; }
-            .card-face.front { padding: 18px 20px; }
-            .card-face.back { padding: 18px 20px; }
+            .card-face.front .card-balance .amount { font-size: 32px; }
+            .card-face.front { padding: 16px 18px; }
+            .card-face.back { padding: 16px 18px; }
+            .tx-entry { font-size: 11px; padding: 4px 10px; }
+            .tx-history { max-height: 140px; }
+            .card-welcome { font-size: 11px; }
 
-            .welcome-text { font-size: 22px; }
-            .profile-card { padding: 18px 16px 22px; }
-            .profile-pfp { width: 64px;
-                height: 64px; }
-            .profile-name { font-size: 18px; }
-            .profile-stats { gap: 20px; }
-            .profile-stats .stat-item .num { font-size: 20px; }
+            .profile-header-section .pfp-wrap .prof-pfp { width: 52px;
+                height: 52px; }
+            .profile-header-section .prof-info .prof-name { font-size: 17px; }
+            .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
+            .profile-balance-row .bal-amount { font-size: 17px; }
         }
         @media (max-width: 380px) {
             #ice-top-panel { top: 86px;
@@ -2586,7 +2671,8 @@
                 width: 96%; }
             #ice-top-panel .panel-value { font-size: 11px; }
             #ice-countdown-timer { font-size: 13px; }
-            .welcome-text { font-size: 18px; }
+            .card-face.front .card-balance .amount { font-size: 28px; }
+            .tx-entry { font-size: 10px; padding: 3px 8px; }
         }
         @media (max-width: 360px) {
             #ice-top-panel { top: 80px;
@@ -2594,8 +2680,7 @@
                 width: 96%; }
             #ice-top-panel .panel-value { font-size: 10px; }
             #ice-countdown-timer { font-size: 12px; }
-            .card-face.front .card-balance .amount { font-size: 28px; }
-            .welcome-text { font-size: 16px; }
+            .card-face.front .card-balance .amount { font-size: 24px; }
         }
     </style>
 </head>
@@ -2759,46 +2844,79 @@
                 <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE PAGE – FULL SCREEN BLUE THEME -->
+            <!-- PROFILE TAB – clean, no emojis, smooth animations -->
             <div id="profile-page" class="tab-page">
-                <div class="profile-header">
-                    <div class="welcome-text" id="welcome-text"></div>
-                    <div class="profile-sub">Your gaming profile</div>
-                </div>
+                <div class="profile-scroll">
+                    <!-- Header -->
+                    <div class="profile-header-section">
+                        <div class="pfp-wrap">
+                            <img class="prof-pfp" id="profile-pfp" src="" alt="avatar" />
+                            <div class="online-dot"></div>
+                        </div>
+                        <div class="prof-info">
+                            <div class="prof-name" id="profile-name">Player</div>
+                            <div class="prof-username" id="profile-username">@username</div>
+                            <div class="prof-status" id="profile-status">online</div>
+                        </div>
+                    </div>
 
-                <div class="profile-card">
-                    <img class="profile-pfp" id="profile-pfp" src="" alt="avatar" />
-                    <div class="profile-name" id="profile-name">Player</div>
-                    <div class="profile-username" id="profile-username">@username</div>
-                    <div class="profile-status" id="profile-status">online</div>
+                    <!-- Stats Grid -->
+                    <div class="profile-stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-num win" id="p-wins">0</div>
+                            <div class="stat-label">Wins</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-num loss" id="p-losses">0</div>
+                            <div class="stat-label">Losses</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-num rate" id="p-winrate">0%</div>
+                            <div class="stat-label">Winrate</div>
+                        </div>
+                    </div>
 
+                    <!-- Balance row -->
                     <div class="profile-balance-row" id="profile-balance-row">
-                        <span class="pbr-icon">💎</span>
-                        <span class="pbr-label">Balance</span>
-                        <span class="pbr-amount" id="p-balance">1000</span>
+                        <span class="bal-label">Balance</span>
+                        <span class="bal-amount" id="p-balance">1000</span>
                     </div>
 
-                    <div class="profile-divider"></div>
-
-                    <div class="profile-stats">
-                        <div class="stat-item"><div class="num win" id="p-wins">0</div><div class="lbl">wins</div></div>
-                        <div class="stat-item"><div class="num loss" id="p-losses">0</div><div class="lbl">losses</div></div>
-                        <div class="stat-item"><div class="num rate" id="p-winrate">0%</div><div class="lbl">winrate</div></div>
+                    <!-- Settings -->
+                    <div class="profile-settings">
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Anonymous mode</div>
+                                <span class="set-sub">Hide your identity from others</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Session</div>
+                                <span class="set-sub">Active since today</span>
+                            </div>
+                            <span class="set-value">● Live</span>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Games played</div>
+                                <span class="set-sub">Total rounds</span>
+                            </div>
+                            <span class="set-value" id="total-games">0</span>
+                        </div>
                     </div>
 
-                    <div class="profile-divider"></div>
-
-                    <div class="anon-row">
-                        <div class="anon-label"><span class="anon-title">Anonymous mode</span><span class="anon-sub">hide your avatar from other players</span></div>
-                        <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
-                    </div>
-
+                    <!-- Promo -->
                     <div class="promo-section">
-                        <div class="promo-row"><input id="promo-input" placeholder="Enter promo code" maxlength="30" /><button id="promo-btn">Redeem</button></div>
-                        <div class="promo-message" id="promo-message"></div>
+                        <input id="promo-input" placeholder="Enter promo code" maxlength="30" />
+                        <button id="promo-btn">Redeem</button>
                     </div>
+                    <div class="promo-message" id="promo-message"></div>
 
                     <button id="reload-pfp-btn">⟳ Reload Avatars</button>
+
+                    <div class="profile-footer">dllump · v1.0</div>
                 </div>
             </div>
 
@@ -2832,42 +2950,51 @@
     <!-- ─── 3D BANK CARD OVERLAY ──────────────────────────────── -->
     <div id="card-overlay">
         <button class="card-close-btn show" id="card-close-btn">✕</button>
-        <!-- Particle canvas behind card -->
         <canvas id="particle-canvas"></canvas>
-        <div class="card-container" id="card-container">
-            <div class="card-3d" id="card-3d">
-                <!-- Front -->
-                <div class="card-face front">
-                    <!-- Diamond GIF background -->
-                    <img class="card-diamond-bg" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
-                    <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;">
-                        <div style="font-size:18px;font-weight:700;color:rgba(255,255,255,0.3);letter-spacing:1px;">✦</div>
-                        <div class="card-brand">dllump</div>
-                    </div>
-                    <div class="card-balance">
-                        <div class="amount" id="card-balance-amount">1000</div>
-                        <div class="label">Balance</div>
-                    </div>
-                    <div class="card-bottom">
-                        <div class="card-holder">
-                            <span class="label">Card Holder</span>
-                            <span id="card-holder-name">Player</span>
+        <div class="card-wrapper">
+            <div class="card-container" id="card-container">
+                <div class="card-3d" id="card-3d">
+                    <!-- Front -->
+                    <div class="card-face front">
+                        <img class="card-diamond-bg" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;">
+                            <div class="card-welcome">Welcome, <span class="cw-name" id="card-welcome-name">Player</span></div>
+                            <div class="card-brand">dllump</div>
                         </div>
-                        <div class="card-expiry">
-                            <span class="label">Expiry</span>
-                            12/26
+                        <div class="card-balance">
+                            <div class="amount" id="card-balance-amount">1000</div>
+                            <div class="label">Balance</div>
                         </div>
+                        <div class="card-bottom">
+                            <div class="card-holder">
+                                <span class="label">Card Holder</span>
+                                <span id="card-holder-name">Player</span>
+                            </div>
+                            <div class="card-expiry">
+                                <span class="label">Expiry</span>
+                                12/26
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Back -->
+                    <div class="card-face back">
+                        <div class="card-stripe"></div>
+                        <div class="card-cvv">
+                            <span class="label">CVV</span>
+                            123
+                        </div>
+                        <div class="card-back-text">dllump · premium card</div>
                     </div>
                 </div>
-                <!-- Back -->
-                <div class="card-face back">
-                    <div class="card-stripe"></div>
-                    <div class="card-cvv">
-                        <span class="label">CVV</span>
-                        123
-                    </div>
-                    <div class="card-back-text">dllump · premium gaming card</div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="tx-history" id="tx-history">
+                <div class="tx-header">
+                    <span>Transaction</span>
+                    <span>Amount</span>
                 </div>
+                <div id="tx-list"></div>
             </div>
         </div>
     </div>
@@ -2930,6 +3057,8 @@
             winStreak: 0,
             bestWin: { amount: 0, pfp: '', name: '' },
             iceBestWin: { amount: 0, pfp: '', name: '' },
+            transactions: [],
+            maxTx: 15,
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -2963,6 +3092,7 @@
         const pLosses = document.getElementById('p-losses');
         const pWinrate = document.getElementById('p-winrate');
         const pBalance = document.getElementById('p-balance');
+        const totalGames = document.getElementById('total-games');
         const topList = document.getElementById('top-list');
         const podiumEl = document.getElementById('podium');
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -3034,48 +3164,30 @@
         const card3d = document.getElementById('card-3d');
         const cardBalanceAmount = document.getElementById('card-balance-amount');
         const cardHolderName = document.getElementById('card-holder-name');
+        const cardWelcomeName = document.getElementById('card-welcome-name');
         const profileBalanceRow = document.getElementById('profile-balance-row');
         const particleCanvas = document.getElementById('particle-canvas');
         const particleCtx = particleCanvas.getContext('2d');
-        const welcomeText = document.getElementById('welcome-text');
+        const txList = document.getElementById('tx-list');
 
         let notifTimeout = null;
         let particles = [];
         let particleAnimId = null;
 
-        // ─── WELCOME ANIMATION ─────────────────────────────────────────
-        function animateWelcomeText() {
-            const username = state.username || 'Player';
-            const text = `Welcome ${username}`;
-            welcomeText.innerHTML = '';
-            const chars = text.split('');
-            chars.forEach((char, index) => {
-                const span = document.createElement('span');
-                span.className = 'char';
-                if (char === ' ') span.classList.add('space');
-                // Highlight the username part
-                if (index > 7) span.classList.add('highlight');
-                span.textContent = char;
-                span.style.animationDelay = `${index * 0.05}s`;
-                welcomeText.appendChild(span);
-            });
-        }
-
         // ─── PARTICLES ──────────────────────────────────────────────────
         function initParticles() {
-            const rect = cardOverlay.getBoundingClientRect();
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
-            const count = 60;
+            const count = 50;
             particles = [];
             for (let i = 0; i < count; i++) {
                 particles.push({
                     x: Math.random() * particleCanvas.width,
                     y: Math.random() * particleCanvas.height,
-                    vx: (Math.random() - 0.5) * 0.6,
-                    vy: (Math.random() - 0.5) * 0.6,
-                    radius: Math.random() * 3 + 1.5,
-                    alpha: Math.random() * 0.5 + 0.1,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 2.5 + 1.5,
+                    alpha: Math.random() * 0.4 + 0.08,
                 });
             }
             particleCanvas.classList.add('show');
@@ -3096,12 +3208,10 @@
 
                 particleCtx.beginPath();
                 particleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                particleCtx.fillStyle = `rgba(100, 180, 255, ${p.alpha})`;
+                particleCtx.fillStyle = `rgba(120, 190, 255, ${p.alpha})`;
                 particleCtx.fill();
-
-                // Glow
-                particleCtx.shadowColor = 'rgba(100, 180, 255, 0.2)';
-                particleCtx.shadowBlur = 12;
+                particleCtx.shadowColor = 'rgba(120, 190, 255, 0.08)';
+                particleCtx.shadowBlur = 10;
                 particleCtx.fill();
                 particleCtx.shadowBlur = 0;
             });
@@ -3129,18 +3239,18 @@
         let cardIdlePhase = 0;
 
         function updateCardTransform() {
-            cardRotX += (cardTargetRotX - cardRotX) * 0.1;
-            cardRotY += (cardTargetRotY - cardRotY) * 0.1;
+            cardRotX += (cardTargetRotX - cardRotX) * 0.08;
+            cardRotY += (cardTargetRotY - cardRotY) * 0.08;
             card3d.style.transform = `rotateX(${cardRotX}deg) rotateY(${cardRotY}deg)`;
         }
 
         function startCardIdleAnimation() {
-            cardIdlePhase += 0.008;
-            const idleX = Math.sin(cardIdlePhase) * 3.5;
-            const idleY = Math.cos(cardIdlePhase * 0.7) * 4;
+            cardIdlePhase += 0.006;
+            const idleX = Math.sin(cardIdlePhase) * 3;
+            const idleY = Math.cos(cardIdlePhase * 0.7) * 3.5;
             if (!cardDrag) {
-                cardTargetRotX = 1.5 + idleX;
-                cardTargetRotY = 1.5 + idleY;
+                cardTargetRotX = 1.0 + idleX;
+                cardTargetRotY = 1.0 + idleY;
             }
             updateCardTransform();
             requestAnimationFrame(startCardIdleAnimation);
@@ -3155,9 +3265,12 @@
             cardTargetRotY = 0;
             const bal = parseInt(balanceEl.textContent) || 0;
             cardBalanceAmount.textContent = bal;
-            cardHolderName.textContent = state.username.toUpperCase() || 'PLAYER';
+            const name = state.username || 'Player';
+            cardHolderName.textContent = name.toUpperCase();
+            cardWelcomeName.textContent = name;
             cardIdlePhase = 0;
             cardDrag = false;
+            renderTransactions();
             initParticles();
             requestAnimationFrame(startCardIdleAnimation);
             haptic('medium');
@@ -3179,12 +3292,12 @@
         });
         document.addEventListener('mousemove', (e) => {
             if (!cardDrag) return;
-            const deltaX = (e.clientX - cardPrevX) * 0.5;
-            const deltaY = (e.clientY - cardPrevY) * 0.5;
+            const deltaX = (e.clientX - cardPrevX) * 0.4;
+            const deltaY = (e.clientY - cardPrevY) * 0.4;
             cardTargetRotY += deltaX;
             cardTargetRotX -= deltaY;
-            cardTargetRotX = Math.max(-25, Math.min(25, cardTargetRotX));
-            cardTargetRotY = Math.max(-25, Math.min(25, cardTargetRotY));
+            cardTargetRotX = Math.max(-20, Math.min(20, cardTargetRotX));
+            cardTargetRotY = Math.max(-20, Math.min(20, cardTargetRotY));
             cardPrevX = e.clientX;
             cardPrevY = e.clientY;
             updateCardTransform();
@@ -3195,8 +3308,8 @@
                 card3d.classList.remove('dragging');
                 setTimeout(() => {
                     if (!cardDrag) {
-                        cardTargetRotX = 1.5 + Math.sin(cardIdlePhase) * 3.5;
-                        cardTargetRotY = 1.5 + Math.cos(cardIdlePhase * 0.7) * 4;
+                        cardTargetRotX = 1.0 + Math.sin(cardIdlePhase) * 3;
+                        cardTargetRotY = 1.0 + Math.cos(cardIdlePhase * 0.7) * 3.5;
                     }
                 }, 300);
             }
@@ -3212,12 +3325,12 @@
         document.addEventListener('touchmove', (e) => {
             if (!cardDrag) return;
             const touch = e.touches[0];
-            const deltaX = (touch.clientX - cardPrevX) * 0.5;
-            const deltaY = (touch.clientY - cardPrevY) * 0.5;
+            const deltaX = (touch.clientX - cardPrevX) * 0.4;
+            const deltaY = (touch.clientY - cardPrevY) * 0.4;
             cardTargetRotY += deltaX;
             cardTargetRotX -= deltaY;
-            cardTargetRotX = Math.max(-25, Math.min(25, cardTargetRotX));
-            cardTargetRotY = Math.max(-25, Math.min(25, cardTargetRotY));
+            cardTargetRotX = Math.max(-20, Math.min(20, cardTargetRotX));
+            cardTargetRotY = Math.max(-20, Math.min(20, cardTargetRotY));
             cardPrevX = touch.clientX;
             cardPrevY = touch.clientY;
             updateCardTransform();
@@ -3228,8 +3341,8 @@
                 card3d.classList.remove('dragging');
                 setTimeout(() => {
                     if (!cardDrag) {
-                        cardTargetRotX = 1.5 + Math.sin(cardIdlePhase) * 3.5;
-                        cardTargetRotY = 1.5 + Math.cos(cardIdlePhase * 0.7) * 4;
+                        cardTargetRotX = 1.0 + Math.sin(cardIdlePhase) * 3;
+                        cardTargetRotY = 1.0 + Math.cos(cardIdlePhase * 0.7) * 3.5;
                     }
                 }, 300);
             }
@@ -3239,6 +3352,41 @@
         cardOverlay.addEventListener('click', (e) => {
             if (e.target === cardOverlay) closeCard();
         });
+
+        // ─── TRANSACTIONS ──────────────────────────────────────────────
+        function addTransaction(type, amount, label) {
+            const entry = {
+                type: type, // 'win', 'loss', 'bet'
+                amount: amount,
+                label: label || (type === 'win' ? 'Win' : type === 'loss' ? 'Loss' : 'Bet'),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            state.transactions.unshift(entry);
+            if (state.transactions.length > state.maxTx) state.transactions.pop();
+            renderTransactions();
+        }
+
+        function renderTransactions() {
+            if (!txList) return;
+            const txs = state.transactions;
+            if (txs.length === 0) {
+                txList.innerHTML = `<div class="tx-empty">No transactions yet</div>`;
+                return;
+            }
+            let html = '';
+            txs.forEach(tx => {
+                const sign = tx.amount > 0 ? '+' : '';
+                const cls = tx.type === 'win' ? 'win' : tx.type === 'loss' ? 'loss' : 'bet';
+                html += `<div class="tx-entry">
+                            <span class="tx-label">${tx.label}</span>
+                            <span>
+                                <span class="tx-amount ${cls}">${sign}${tx.amount}</span>
+                                <span class="tx-time">${tx.time}</span>
+                            </span>
+                        </div>`;
+            });
+            txList.innerHTML = html;
+        }
 
         // ─── Open card from balance click ─────────────────────────────
         function setupBalanceCardTriggers() {
@@ -3306,8 +3454,6 @@
 
         function easeOutBack(t) { const c1 = 1.70158,
                 c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-
-        function easeInOutQuad(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
 
         function lightenColor(hex, amt) {
             let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
@@ -3502,8 +3648,14 @@
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
-                    // Animate welcome text after profile loads
-                    animateWelcomeText();
+                    // Init transactions with some demo data
+                    if (state.transactions.length === 0) {
+                        addTransaction('win', 120, 'PvP Win');
+                        addTransaction('bet', -50, 'PvP Bet');
+                        addTransaction('loss', -30, 'Ice Loss');
+                        addTransaction('win', 200, 'Ice Win');
+                        addTransaction('bet', -75, 'PvP Bet');
+                    }
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
                 });
@@ -3771,6 +3923,8 @@
                 state.bestWin = { amount, pfp, name };
                 updateBestWinPanel(state.bestWin);
             }
+            // Add transaction
+            addTransaction('win', amount, `Win vs ${name}`);
         }
 
         function addIceWinToHistory(name, pfp, amount) {
@@ -3782,6 +3936,7 @@
                 iceState.bestWin = { amount, pfp, name };
                 updateIceBestWinPanel(iceState.bestWin);
             }
+            addTransaction('win', amount, `Ice Win vs ${name}`);
         }
 
         // ─── ROUND END HANDLERS ─────────────────────────────────────
@@ -3797,6 +3952,7 @@
             } else {
                 state.losses++;
                 state.winStreak = 0;
+                addTransaction('loss', -payload.winnings, `Loss vs ${payload.winnerName}`);
             }
             updateBalance();
             updateProfile();
@@ -3844,6 +4000,7 @@
             } else {
                 state.losses++;
                 state.winStreak = 0;
+                addTransaction('loss', -payload.winnings, `Ice Loss vs ${payload.winnerName}`);
             }
             updateBalance();
             updateProfile();
@@ -4071,6 +4228,7 @@
                 updateBalance();
                 updateProfile();
                 haptic('medium');
+                addTransaction('bet', -addAmount, 'Ice Bet');
             });
             iceBetInput.value = '';
             updateIceBetUI();
@@ -4237,14 +4395,11 @@
             pLosses.textContent = state.losses;
             const total = state.wins + state.losses;
             pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
+            totalGames.textContent = total;
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
-            // Re-run welcome animation if on profile tab
-            if (state.currentTab === 'profile') {
-                animateWelcomeText();
-            }
         }
 
         let audioCtx = null,
@@ -4290,6 +4445,7 @@
                 updateBalance();
                 updateProfile();
                 haptic('medium');
+                addTransaction('bet', -addAmount, 'PvP Bet');
             });
             betInput.value = 10;
             updateBetUI();
@@ -4361,7 +4517,8 @@
                         if (res?.ok) { state.balance = res.balance;
                             updateBalance();
                             updateProfile();
-                            haptic('medium'); }
+                            haptic('medium');
+                            addTransaction('bet', -amount, 'Auto Bet'); }
                     });
                 }, 2000);
             } else if (!enable && autoBetEnabled) {
@@ -4383,13 +4540,13 @@
         promoBtn.addEventListener('click', async () => {
             const code = promoInput.value.trim().toUpperCase();
             if (!code) { promoMessage.textContent = 'Please enter a code.';
-                promoMessage.style.color = 'var(--red)'; return; }
+                promoMessage.style.color = '#d45a5a'; return; }
             if (!state.userId) { promoMessage.textContent = 'You are not logged in.';
-                promoMessage.style.color = 'var(--red)'; return; }
+                promoMessage.style.color = '#d45a5a'; return; }
             const storageKey = 'dllump_promo_used_' + state.userId;
             if (localStorage.getItem(storageKey) === 'true') {
                 promoMessage.textContent = 'You have already used a promo code.';
-                promoMessage.style.color = 'var(--red)'; return;
+                promoMessage.style.color = '#d45a5a'; return;
             }
             promoBtn.disabled = true;
             promoBtn.textContent = '...';
@@ -4409,12 +4566,13 @@
                     promoModal.classList.add('show');
                     haptic('heavy');
                     promoMessage.textContent = '✅ Code redeemed!';
-                    promoMessage.style.color = 'var(--green)';
+                    promoMessage.style.color = '#5ac88a';
                     promoInput.value = '';
+                    addTransaction('win', data.amount, 'Promo Bonus');
                 } else { promoMessage.textContent = data.error || 'Invalid or expired code.';
-                    promoMessage.style.color = 'var(--red)'; }
+                    promoMessage.style.color = '#d45a5a'; }
             } catch (e) { promoMessage.textContent = 'Network error, please try again.';
-                promoMessage.style.color = 'var(--red)'; } finally { promoBtn.disabled = false;
+                promoMessage.style.color = '#d45a5a'; } finally { promoBtn.disabled = false;
                 promoBtn.textContent = 'Redeem'; }
         });
         promoContinueBtn.addEventListener('click', () => { promoModal.classList.remove('show'); });
@@ -4460,8 +4618,8 @@
                 setTimeout(() => { oldEl.classList.remove('exit'); }, 350); }
             const newEl = tabPages[tabId];
             if (newEl) { newEl.classList.add('active');
-                newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile();
-                    animateWelcomeText(); } if (tabId === 'top') refreshLeaderboard(); }
+                newEl.classList.remove('exit'); if (tabId === 'profile') updateProfile(); if (tabId === 'top')
+                    refreshLeaderboard(); }
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
             haptic('light');
         }
@@ -5081,8 +5239,6 @@
             document.getElementById('tabs').style.pointerEvents = 'auto';
             tabBtns.forEach(b => b.style.pointerEvents = 'auto');
             setupBalanceCardTriggers();
-            // Initial welcome animation (will be re-run after socket join)
-            animateWelcomeText();
             requestAnimationFrame(renderLoop);
             setOnline(false);
         }
