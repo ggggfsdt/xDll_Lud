@@ -118,14 +118,14 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── FASTER SPEED WITH WIDE RANDOMIZATION ──────────────────────
+// ─── MUCH FASTER SPEED WITH WIDE RANDOMIZATION ──────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // Max speed 16, min speed 6 – much faster overall
-  const speed = 16.0 - norm * 10.0;
-  return Math.max(4.0, Math.min(16.0, speed));
+  // Max speed 28, min speed 8 – much faster overall
+  const speed = 28.0 - norm * 20.0;
+  return Math.max(8.0, Math.min(28.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -594,7 +594,7 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
-// ─── START GAME – FASTER & RANDOMIZED ──────────────────────────
+// ─── START GAME – VERY FAST & HIGHLY RANDOMIZED ──────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -605,8 +605,8 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    // Randomize between 60% and 140% of base speed
-    const speed = baseSpeed * (0.6 + Math.random() * 0.8);
+    // Randomize between 50% and 180% of base speed – huge variation
+    const speed = baseSpeed * (0.5 + Math.random() * 1.3);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
     p.x = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
