@@ -3026,7 +3026,7 @@
                                 <div class="set-label">Sound effects</div>
                                 <span class="set-sub">Game audio feedback</span>
                             </div>
-                            <label class="switch"><input type="checkbox" id="sound-toggle" checked /><span class="slider"></span></label>
+                            <label class="switch"><input type="checkbox" id="sound-toggle" /><span class="slider"></span></label>
                         </div>
                     </div>
 
@@ -3180,6 +3180,47 @@
                 else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
         }
 
+        // ─── IMPROVED CLICK SOUND ─────────────────────────────────────
+        let audioCtxForClicks = null;
+
+        function playClickSound() {
+            if (!state.soundEnabled) return;
+            try {
+                if (!audioCtxForClicks) audioCtxForClicks = new (window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtxForClicks.currentTime;
+
+                // 1) Short noise burst with decay – gives the "click" transient
+                const bufferSize = audioCtxForClicks.sampleRate * 0.03;
+                const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+                }
+                const noise = audioCtxForClicks.createBufferSource();
+                noise.buffer = buffer;
+                const gainNoise = audioCtxForClicks.createGain();
+                gainNoise.gain.setValueAtTime(0.08, now);
+                gainNoise.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                noise.connect(gainNoise);
+                gainNoise.connect(audioCtxForClicks.destination);
+                noise.start(now);
+                noise.stop(now + 0.03);
+
+                // 2) Short sine tone with pitch drop – adds "tactile" feel
+                const osc = audioCtxForClicks.createOscillator();
+                const gainOsc = audioCtxForClicks.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.02);
+                gainOsc.gain.setValueAtTime(0.12, now);
+                gainOsc.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.connect(gainOsc);
+                gainOsc.connect(audioCtxForClicks.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } catch (_) {}
+        }
+
         // ─── STATE ──────────────────────────────────────────────────────
         const state = {
             balance: 0,
@@ -3212,7 +3253,7 @@
             recentGames: [],
             maxRecent: 5,
             memberSince: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            soundEnabled: true,
+            soundEnabled: false, // default OFF
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -3583,7 +3624,10 @@
             }
         }, { passive: true });
 
-        cardCloseBtn.addEventListener('click', closeCard);
+        cardCloseBtn.addEventListener('click', () => {
+            playClickSound();
+            closeCard();
+        });
         cardOverlay.addEventListener('click', (e) => {
             if (e.target === cardOverlay) closeCard();
         });
@@ -3628,10 +3672,12 @@
         function setupBalanceCardTriggers() {
             const balanceWrap = document.getElementById('balance-wrap');
             balanceWrap.addEventListener('click', () => {
+                playClickSound();
                 openCard();
                 haptic('light');
             });
             profileBalanceRow.addEventListener('click', () => {
+                playClickSound();
                 openCard();
                 haptic('light');
             });
@@ -4231,7 +4277,10 @@
             updateBetOverlayVisibility();
             updateFrogVisibility();
         }
-        winContinueBtn.addEventListener('click', hideWinPanelAndReset);
+        winContinueBtn.addEventListener('click', () => {
+            playClickSound();
+            hideWinPanelAndReset();
+        });
 
         // ─── ICE ROUND END ──────────────────────────────────────────
         function handleIceRoundEnd(payload) {
@@ -4279,7 +4328,10 @@
             updateIceBetOverlayVisibility();
             updateIceTopPanelVisibility();
         }
-        iceWinContinueBtn.addEventListener('click', hideIceWinPanelAndReset);
+        iceWinContinueBtn.addEventListener('click', () => {
+            playClickSound();
+            hideIceWinPanelAndReset();
+        });
 
         // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
@@ -4481,9 +4533,15 @@
             iceBetInput.value = '';
             updateIceBetUI();
         }
-        iceBetBtn.addEventListener('click', () => placeIceBet(iceBetInput.value));
-        iceAllInBtn.addEventListener('click', () => { iceBetInput.value = state.balance;
-            placeIceBet(state.balance); });
+        iceBetBtn.addEventListener('click', () => {
+            playClickSound();
+            placeIceBet(iceBetInput.value);
+        });
+        iceAllInBtn.addEventListener('click', () => {
+            playClickSound();
+            iceBetInput.value = state.balance;
+            placeIceBet(state.balance);
+        });
         iceBetInput.addEventListener('blur', () => {
             let val = parseInt(iceBetInput.value);
             if (isNaN(val) || val < 10) val = 10;
@@ -4517,16 +4575,27 @@
                     iceAutoBetInterval = null; }
             }
         }
-        iceAutoToggle.addEventListener('click', () => { iceAutoPanel.classList.toggle('open'); });
-        iceAutoSwitchWrap.addEventListener('click', (e) => { e.stopPropagation(); const checked = !iceAutoSwitch.checked;
+        iceAutoToggle.addEventListener('click', () => {
+            playClickSound();
+            iceAutoPanel.classList.toggle('open');
+        });
+        iceAutoSwitchWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClickSound();
+            const checked = !iceAutoSwitch.checked;
             iceAutoSwitch.checked = checked;
             toggleIceAutoBet(checked);
-            haptic('light'); });
-        iceAutoSwitch.addEventListener('change', () => { toggleIceAutoBet(iceAutoSwitch.checked); });
+            haptic('light');
+        });
+        iceAutoSwitch.addEventListener('change', () => {
+            playClickSound();
+            toggleIceAutoBet(iceAutoSwitch.checked);
+        });
 
         let iceBetCollapsed = false;
         iceBetToggleBtn.addEventListener('click', function(e) {
             e.stopPropagation();
+            playClickSound();
             iceBetCollapsed = !iceBetCollapsed;
             iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
             haptic('light');
@@ -4683,6 +4752,7 @@
         function stopVictorySound() { victorySoundPlaying = false; }
 
         betBtn.addEventListener('click', () => {
+            playClickSound();
             if (!socket || !socket.connected) return;
             let addAmount = parseInt(betInput.value) || 10;
             if (addAmount < 10) addAmount = 10;
@@ -4702,14 +4772,18 @@
         });
 
         let betCollapsed = false;
-        betToggleBtn.addEventListener('click', function(e) { e.stopPropagation();
+        betToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            playClickSound();
             betCollapsed = !betCollapsed;
             betOverlay.classList.toggle('collapsed', betCollapsed);
-            haptic('light'); });
+            haptic('light');
+        });
 
         let allInConfirming = false,
             allInTimeout = null;
         allInBtn.addEventListener('click', () => {
+            playClickSound();
             if (allInConfirming) {
                 const fullAmount = state.balance;
                 if (fullAmount < 10) { haptic('light'); return; }
@@ -4779,15 +4853,26 @@
                     autoBetInterval = null; }
             }
         }
-        autoToggle.addEventListener('click', () => { autoPanel.classList.toggle('open'); });
-        autoSwitchWrap.addEventListener('click', (e) => { e.stopPropagation(); const checked = !autoSwitch.checked;
+        autoToggle.addEventListener('click', () => {
+            playClickSound();
+            autoPanel.classList.toggle('open');
+        });
+        autoSwitchWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClickSound();
+            const checked = !autoSwitch.checked;
             autoSwitch.checked = checked;
             toggleAutoBet(checked);
-            haptic('light'); });
-        autoSwitch.addEventListener('change', () => { toggleAutoBet(autoSwitch.checked); });
+            haptic('light');
+        });
+        autoSwitch.addEventListener('change', () => {
+            playClickSound();
+            toggleAutoBet(autoSwitch.checked);
+        });
 
         // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
+            playClickSound();
             const code = promoInput.value.trim().toUpperCase();
             if (!code) { promoMessage.textContent = 'Please enter a code.';
                 promoMessage.style.color = '#d45a5a'; return; }
@@ -4825,10 +4910,14 @@
                 promoMessage.style.color = '#d45a5a'; } finally { promoBtn.disabled = false;
                 promoBtn.textContent = 'Redeem'; }
         });
-        promoContinueBtn.addEventListener('click', () => { promoModal.classList.remove('show'); });
+        promoContinueBtn.addEventListener('click', () => {
+            playClickSound();
+            promoModal.classList.remove('show');
+        });
 
         // ─── RELOAD PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
+            playClickSound();
             const user = getPlayer(state.userId);
             if (user) { pfpCache.delete(user.pfp);
                 loadPlayerPFP(user);
@@ -4845,6 +4934,7 @@
 
         // ─── ANONYMOUS ──────────────────────────────────────────────
         anonToggle.addEventListener('change', () => {
+            playClickSound();
             if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
             const enabled = anonToggle.checked;
             anonToggle.disabled = true;
@@ -4859,8 +4949,11 @@
 
         // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
+            playClickSound(); // plays only if sound was on (it will be off if toggling off, but if toggling on it will play)
             state.soundEnabled = soundToggle.checked;
         });
+        // Ensure the checkbox reflects the initial state
+        soundToggle.checked = state.soundEnabled;
 
         // ─── TAB SWITCHING ────────────────────────────────────────────
         function switchTab(tabId) {
@@ -4879,8 +4972,11 @@
             haptic('light');
         }
         tabBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) { e.stopPropagation();
-                switchTab(this.dataset.tab); });
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                playClickSound();
+                switchTab(this.dataset.tab);
+            });
         });
 
         // ─── RENDER ──────────────────────────────────────────────────
