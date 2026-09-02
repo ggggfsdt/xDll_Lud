@@ -118,14 +118,14 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── MUCH FASTER SPEED WITH WIDE RANDOMIZATION ──────────────────
+// ─── VERY HIGH SPEED – no more cap, just raw speed ──────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // Max speed 28, min speed 8 – much faster overall
-  const speed = 28.0 - norm * 20.0;
-  return Math.max(8.0, Math.min(28.0, speed));
+  // Max speed 80, min speed 20 – huge initial burst
+  const speed = 80.0 - norm * 60.0;
+  return Math.max(20.0, Math.min(80.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -594,7 +594,7 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
-// ─── START GAME – VERY FAST & HIGHLY RANDOMIZED ──────────────
+// ─── START GAME – EXTREME SPEED, NO CAP ─────────────────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -605,7 +605,7 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    // Randomize between 50% and 180% of base speed – huge variation
+    // Randomize between 50% and 180% – can reach up to 80 * 1.8 = 144
     const speed = baseSpeed * (0.5 + Math.random() * 1.3);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
@@ -687,7 +687,7 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── IMPROVED PHYSICS – smooth, bouncy, slime-like ─────────────
+// ─── IMPROVED PHYSICS – smooth, bouncy, NO SPEED CAP ────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -838,15 +838,8 @@ function updatePhysics(dt) {
       }
     }
 
-    // ─── Speed limits ────────────────────────────────────────────
-    stillAlive.forEach(p => {
-      const maxSp = speedForRadius(p.displayRadius || p.radius);
-      const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (sp > maxSp) {
-        p.vx = (p.vx / sp) * maxSp;
-        p.vy = (p.vy / sp) * maxSp;
-      }
-    });
+    // ─── NO SPEED CAP – let them fly! ───────────────────────────
+    // (removed the entire speed limit block)
   }
 
   // ─── Radius smoothing ──────────────────────────────────────────
