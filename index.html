@@ -1000,7 +1000,7 @@
             margin-right: 2px;
         }
 
-        /* ─── PROFILE TAB – clean, no emojis, smooth animations ── */
+        /* ─── PROFILE TAB – new anonymous button ────────────────── */
         #profile-page {
             display: flex;
             flex-direction: column;
@@ -1184,6 +1184,31 @@
         .profile-settings .setting-row .set-value {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Anonymous button */
+        .anon-btn {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+        .anon-btn:active { transform: scale(0.96); opacity: 0.7; }
+        .anon-btn .anon-icon { font-size: 18px; }
+        .anon-btn.active {
+            border-color: var(--primary);
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--primary);
         }
 
         .switch {
@@ -1426,7 +1451,6 @@
             object-fit: contain;
         }
 
-        /* ─── Card welcome with letter animation ────────────────── */
         .card-welcome {
             position: relative;
             z-index: 2;
@@ -1593,6 +1617,145 @@
         }
         .card-close-btn:active { transform: scale(0.88); }
         .card-close-btn.show { display: flex; }
+
+        /* ─── IDENTITY CARD OVERLAY ────────────────────────────── */
+        #identity-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99997;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+            animation: cardFadeIn 0.3s ease;
+        }
+        #identity-overlay.show { display: flex; }
+
+        .identity-card {
+            width: 92%;
+            max-width: 380px;
+            background: #0c0c10;
+            border-radius: 24px;
+            padding: 24px 20px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .identity-card::-webkit-scrollbar { width: 2px; }
+        .identity-card::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+
+        .identity-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            background: var(--surface2);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .identity-field {
+            width: 100%;
+            text-align: center;
+            padding: 6px 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            transition: 0.25s;
+            cursor: text;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .identity-field.editing {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .identity-field .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.15);
+            display: block;
+            margin-bottom: 2px;
+        }
+        .identity-field .value {
+            display: block;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .identity-field .value.editable {
+            cursor: text;
+        }
+        .identity-field .value.editable:hover {
+            color: #fff;
+        }
+        .identity-field .value input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+            outline: none;
+            font-family: inherit;
+        }
+        .identity-field .value input::placeholder {
+            color: rgba(255,255,255,0.2);
+        }
+
+        .identity-status {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.2);
+            text-align: center;
+            min-height: 18px;
+        }
+        .identity-status.error {
+            color: var(--red);
+        }
+        .identity-status.success {
+            color: var(--green);
+        }
+
+        .identity-toggle-btn {
+            padding: 10px 0;
+            width: 100%;
+            border-radius: 30px;
+            border: none;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.25s;
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .identity-toggle-btn:active { transform: scale(0.96); }
+        .identity-toggle-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 30px var(--primary-glow);
+        }
+
+        .identity-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 22px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .identity-close-btn:active { transform: scale(0.88); }
 
         /* ─── TRANSACTION HISTORY ────────────────────────────────── */
         .tx-history {
@@ -2770,6 +2933,8 @@
             .profile-header-section .prof-info .prof-name { font-size: 17px; }
             .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
             .profile-balance-row .bal-amount { font-size: 17px; }
+            .identity-avatar { width: 64px; height: 64px; }
+            .identity-field .value { font-size: 14px; }
         }
         @media (max-width: 380px) {
             #ice-top-panel { top: 86px;
@@ -2779,6 +2944,7 @@
             #ice-countdown-timer { font-size: 13px; }
             .card-face.front .card-balance .amount { font-size: 28px; }
             .tx-entry { font-size: 10px; padding: 3px 8px; }
+            .identity-avatar { width: 56px; height: 56px; }
         }
         @media (max-width: 360px) {
             #ice-top-panel { top: 80px;
@@ -2951,7 +3117,7 @@
                 <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – clean, recent games only (no achievements) -->
+            <!-- PROFILE TAB – with anonymous button -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -3002,13 +3168,6 @@
                     <div class="profile-settings">
                         <div class="setting-row">
                             <div>
-                                <div class="set-label">Anonymous mode</div>
-                                <span class="set-sub">Hide your identity from others</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
-                        </div>
-                        <div class="setting-row">
-                            <div>
                                 <div class="set-label">Session</div>
                                 <span class="set-sub">Active since today</span>
                             </div>
@@ -3027,6 +3186,12 @@
                                 <span class="set-sub">Game audio feedback</span>
                             </div>
                             <label class="switch"><input type="checkbox" id="sound-toggle" /><span class="slider"></span></label>
+                        </div>
+                        <!-- Anonymous button -->
+                        <div class="setting-row" style="border-bottom: none; padding-top: 4px;">
+                            <button class="anon-btn" id="anon-btn">
+                                <span class="anon-icon">👤</span> Anonymous
+                            </button>
                         </div>
                     </div>
 
@@ -3149,6 +3314,28 @@
         </div>
     </div>
 
+    <!-- ─── IDENTITY CARD OVERLAY ──────────────────────────────── -->
+    <div id="identity-overlay">
+        <div class="identity-card">
+            <button class="identity-close-btn" id="identity-close-btn">✕</button>
+            <img class="identity-avatar" id="identity-avatar" src="" alt="avatar" />
+            <div class="identity-field" id="identity-name-field">
+                <span class="label">Name</span>
+                <span class="value editable" id="identity-name-display">Anonymous</span>
+            </div>
+            <div class="identity-field" id="identity-username-field">
+                <span class="label">Username</span>
+                <span class="value editable" id="identity-username-display">@anon</span>
+            </div>
+            <div class="identity-field" id="identity-phone-field">
+                <span class="label">Phone</span>
+                <span class="value editable" id="identity-phone-display">+0 000 000 0000</span>
+            </div>
+            <div class="identity-status" id="identity-status"></div>
+            <button class="identity-toggle-btn" id="identity-toggle-btn">Enable Anonymous</button>
+        </div>
+    </div>
+
     <script>
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
         // All game logic, socket handling, rendering, etc.
@@ -3189,7 +3376,6 @@
                 if (!audioCtxForClicks) audioCtxForClicks = new (window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtxForClicks.currentTime;
 
-                // 1) Short noise burst with decay – gives the "click" transient
                 const bufferSize = audioCtxForClicks.sampleRate * 0.03;
                 const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -3206,7 +3392,6 @@
                 noise.start(now);
                 noise.stop(now + 0.03);
 
-                // 2) Short sine tone with pitch drop – adds "tactile" feel
                 const osc = audioCtxForClicks.createOscillator();
                 const gainOsc = audioCtxForClicks.createGain();
                 osc.type = 'sine';
@@ -3230,6 +3415,7 @@
             wins: 0,
             losses: 0,
             anonymous: false,
+            anonymousData: null,
             gameState: 'idle',
             players: [],
             pot: 0,
@@ -3253,7 +3439,7 @@
             recentGames: [],
             maxRecent: 5,
             memberSince: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            soundEnabled: false, // default OFF
+            soundEnabled: false,
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -3304,7 +3490,6 @@
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
-        const anonToggle = document.getElementById('anon-toggle');
         const promoInput = document.getElementById('promo-input');
         const promoBtn = document.getElementById('promo-btn');
         const promoMessage = document.getElementById('promo-message');
@@ -3370,6 +3555,20 @@
         const csWagered = document.getElementById('cs-wagered');
         const csBiggest = document.getElementById('cs-biggest');
         const csNet = document.getElementById('cs-net');
+
+        // ─── IDENTITY CARD DOM REFS ──────────────────────────────────
+        const identityOverlay = document.getElementById('identity-overlay');
+        const identityCloseBtn = document.getElementById('identity-close-btn');
+        const identityAvatar = document.getElementById('identity-avatar');
+        const identityNameDisplay = document.getElementById('identity-name-display');
+        const identityUsernameDisplay = document.getElementById('identity-username-display');
+        const identityPhoneDisplay = document.getElementById('identity-phone-display');
+        const identityStatus = document.getElementById('identity-status');
+        const identityToggleBtn = document.getElementById('identity-toggle-btn');
+        const identityNameField = document.getElementById('identity-name-field');
+        const identityUsernameField = document.getElementById('identity-username-field');
+        const identityPhoneField = document.getElementById('identity-phone-field');
+        const anonBtn = document.getElementById('anon-btn');
 
         let notifTimeout = null;
         let particles = [];
@@ -3507,7 +3706,7 @@
             });
         }
 
-        // ─── Card stats update (financial metrics) ────────────────────
+        // ─── Card stats update ────────────────────────────────────────
         function updateCardStats() {
             const txs = state.transactions;
             let totalWagered = 0;
@@ -3521,7 +3720,7 @@
                     netProfit += tx.amount;
                     if (tx.amount > biggestWin) biggestWin = tx.amount;
                 } else if (tx.type === 'loss') {
-                    netProfit += tx.amount; // tx.amount is negative
+                    netProfit += tx.amount;
                 }
             });
 
@@ -3875,8 +4074,13 @@
                     state.balance = res.user.balance;
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
-                    state.anonymous = !!res.user.anonymous;
-                    anonToggle.checked = state.anonymous;
+                    state.anonymous = !!res.user.anonymousEnabled;
+                    state.anonymousData = {
+                        anonymousEnabled: res.user.anonymousEnabled || false,
+                        anonymousName: res.user.anonymousName || '',
+                        anonymousUsername: res.user.anonymousUsername || '',
+                        anonymousPhone: res.user.anonymousPhone || '',
+                    };
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -3947,6 +4151,8 @@
                     }
                     // Init card stats
                     updateCardStats();
+                    // Init identity card
+                    updateIdentityUI();
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
                 });
@@ -4718,6 +4924,17 @@
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
             renderRecentGames();
+            updateAnonButtonState();
+        }
+
+        function updateAnonButtonState() {
+            if (state.anonymousData?.anonymousEnabled) {
+                anonBtn.classList.add('active');
+                anonBtn.innerHTML = '<span class="anon-icon">👤</span> Anonymous (ON)';
+            } else {
+                anonBtn.classList.remove('active');
+                anonBtn.innerHTML = '<span class="anon-icon">👤</span> Anonymous';
+            }
         }
 
         let audioCtx = null,
@@ -4932,27 +5149,11 @@
             }
         });
 
-        // ─── ANONYMOUS ──────────────────────────────────────────────
-        anonToggle.addEventListener('change', () => {
-            playClickSound();
-            if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
-            const enabled = anonToggle.checked;
-            anonToggle.disabled = true;
-            socket.emit('setAnonymous', { enabled }, (res) => {
-                anonToggle.disabled = false;
-                if (!res?.ok) { anonToggle.checked = state.anonymous;
-                    console.warn('setAnonymous failed:', res?.error); return; }
-                state.anonymous = res.anonymous;
-                haptic('light');
-            });
-        });
-
         // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
-            playClickSound(); // plays only if sound was on (it will be off if toggling off, but if toggling on it will play)
+            playClickSound();
             state.soundEnabled = soundToggle.checked;
         });
-        // Ensure the checkbox reflects the initial state
         soundToggle.checked = state.soundEnabled;
 
         // ─── TAB SWITCHING ────────────────────────────────────────────
@@ -4977,6 +5178,227 @@
                 playClickSound();
                 switchTab(this.dataset.tab);
             });
+        });
+
+        // ─── IDENTITY CARD LOGIC ──────────────────────────────────────
+        let identityEditing = false;
+        let editingField = null;
+
+        function openIdentityCard() {
+            identityOverlay.classList.add('show');
+            // Load latest data
+            if (socket && socket.connected) {
+                socket.emit('getAnonymousData', {}, (res) => {
+                    if (res?.ok) {
+                        state.anonymousData = res.data;
+                        updateIdentityUI();
+                    }
+                });
+            } else {
+                updateIdentityUI();
+            }
+            haptic('medium');
+        }
+
+        function closeIdentityCard() {
+            identityOverlay.classList.remove('show');
+            if (editingField) {
+                finishEditing();
+            }
+        }
+
+        function updateIdentityUI() {
+            const data = state.anonymousData || {};
+            const name = data.anonymousName || state.username || 'Player';
+            const username = data.anonymousUsername || 'anon_' + Math.random().toString(36).slice(2, 6);
+            const phone = data.anonymousPhone || '+0 000 000 0000';
+            const initial = name.charAt(0).toUpperCase();
+            // Generate avatar from initial
+            const avatar = generateDefaultAvatar(initial, 0);
+            identityAvatar.src = avatar.src;
+
+            identityNameDisplay.innerHTML = `<span class="label">Name</span><span class="value editable" id="identity-name-value">${name}</span>`;
+            identityUsernameDisplay.innerHTML = `<span class="label">Username</span><span class="value editable" id="identity-username-value">${username}</span>`;
+            identityPhoneDisplay.innerHTML = `<span class="label">Phone</span><span class="value editable" id="identity-phone-value">${phone}</span>`;
+
+            // Update toggle button
+            if (data.anonymousEnabled) {
+                identityToggleBtn.textContent = 'Disable Anonymous';
+                identityToggleBtn.classList.add('active');
+            } else {
+                identityToggleBtn.textContent = 'Enable Anonymous';
+                identityToggleBtn.classList.remove('active');
+            }
+            identityStatus.textContent = '';
+            identityStatus.className = 'identity-status';
+            updateAnonButtonState();
+
+            // Re-bind click events for editing
+            document.getElementById('identity-name-value')?.addEventListener('click', () => startEditing('name'));
+            document.getElementById('identity-username-value')?.addEventListener('click', () => startEditing('username'));
+            document.getElementById('identity-phone-value')?.addEventListener('click', () => startEditing('phone'));
+        }
+
+        function startEditing(field) {
+            if (editingField) finishEditing();
+            editingField = field;
+            identityEditing = true;
+            const displayEl = field === 'name' ? identityNameDisplay :
+                field === 'username' ? identityUsernameDisplay : identityPhoneDisplay;
+            const currentValue = displayEl.querySelector('.value')?.textContent || '';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            input.maxLength = field === 'phone' ? 20 : 30;
+            input.autofocus = true;
+            input.className = 'identity-input';
+            input.style.cssText = 'background:transparent;border:none;color:#fff;font-size:16px;font-weight:600;text-align:center;width:100%;outline:none;font-family:inherit;';
+
+            // Only allow English letters and numbers
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/[^A-Za-z0-9 ]/g, '');
+                if (field === 'phone') {
+                    input.value = input.value.replace(/[^0-9+\- ]/g, '');
+                }
+            });
+
+            input.addEventListener('blur', () => finishEditing());
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') finishEditing();
+                if (e.key === 'Escape') { input.value = currentValue;
+                    finishEditing(); }
+            });
+
+            // Replace the value with input
+            const label = displayEl.querySelector('.label');
+            displayEl.innerHTML = '';
+            displayEl.appendChild(label);
+            displayEl.appendChild(input);
+            displayEl.classList.add('editing');
+            setTimeout(() => input.focus(), 100);
+            haptic('light');
+        }
+
+        async function finishEditing() {
+            if (!editingField || !identityEditing) return;
+            const displayEl = editingField === 'name' ? identityNameDisplay :
+                editingField === 'username' ? identityUsernameDisplay : identityPhoneDisplay;
+            const input = displayEl.querySelector('input');
+            if (!input) { identityEditing = false;
+                editingField = null; return; }
+            const newValue = input.value.trim() || (editingField === 'name' ? state.username || 'Player' :
+                editingField === 'username' ? 'anon_' + Math.random().toString(36).slice(2, 6) : '+0 000 000 0000');
+
+            // Check uniqueness for username and phone
+            if (editingField === 'username' || editingField === 'phone') {
+                const field = editingField === 'username' ? 'username' : 'phone';
+                if (newValue !== (state.anonymousData?.[editingField === 'username' ? 'anonymousUsername' : 'anonymousPhone'] ||
+                        '')) {
+                    if (socket && socket.connected) {
+                        const res = await new Promise((resolve) => {
+                            socket.emit('checkAnonymousUnique', { field, value: newValue }, (r) => resolve(r));
+                        });
+                        if (!res?.unique) {
+                            identityStatus.textContent = `❌ ${editingField} already taken. Please choose another.`;
+                            identityStatus.className = 'identity-status error';
+                            haptic('heavy');
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // Save the new value
+            const data = {};
+            if (editingField === 'name') data.name = newValue;
+            else if (editingField === 'username') data.username = newValue;
+            else if (editingField === 'phone') data.phone = newValue;
+
+            if (socket && socket.connected) {
+                socket.emit('setAnonymous', data, (res) => {
+                    if (res?.ok) {
+                        state.anonymousData = res.user;
+                        identityStatus.textContent = '✅ Updated!';
+                        identityStatus.className = 'identity-status success';
+                        haptic('light');
+                    } else {
+                        identityStatus.textContent = '❌ ' + (res?.error || 'Update failed');
+                        identityStatus.className = 'identity-status error';
+                        haptic('heavy');
+                    }
+                    updateIdentityUI();
+                });
+            } else {
+                // Fallback local update
+                if (state.anonymousData) {
+                    if (editingField === 'name') state.anonymousData.anonymousName = newValue;
+                    else if (editingField === 'username') state.anonymousData.anonymousUsername = newValue;
+                    else if (editingField === 'phone') state.anonymousData.anonymousPhone = newValue;
+                }
+                updateIdentityUI();
+                identityStatus.textContent = '✅ Updated locally';
+                identityStatus.className = 'identity-status success';
+            }
+
+            identityEditing = false;
+            editingField = null;
+            displayEl.classList.remove('editing');
+        }
+
+        // ─── Toggle anonymous mode ──────────────────────────────────
+        function toggleAnonymousMode() {
+            const data = state.anonymousData || {};
+            const newState = !data.anonymousEnabled;
+            if (socket && socket.connected) {
+                socket.emit('setAnonymous', { enabled: newState }, (res) => {
+                    if (res?.ok) {
+                        state.anonymousData = res.user;
+                        updateIdentityUI();
+                        updateAnonButtonState();
+                        haptic('medium');
+                        identityStatus.textContent = newState ? '✅ Anonymous mode enabled' : '✅ Anonymous mode disabled';
+                        identityStatus.className = 'identity-status success';
+                        // Refresh game state to update player names
+                        if (state.gameState === 'idle' || state.gameState === 'countdown') {
+                            // Force a state refresh by requesting current state
+                            // The server will broadcast updated state with new names
+                        }
+                    } else {
+                        identityStatus.textContent = '❌ ' + (res?.error || 'Toggle failed');
+                        identityStatus.className = 'identity-status error';
+                        haptic('heavy');
+                    }
+                });
+            } else {
+                if (state.anonymousData) state.anonymousData.anonymousEnabled = newState;
+                updateIdentityUI();
+                updateAnonButtonState();
+                identityStatus.textContent = newState ? '✅ Enabled locally' : '✅ Disabled locally';
+                identityStatus.className = 'identity-status success';
+            }
+        }
+
+        // ─── Bind identity card events ──────────────────────────────
+        anonBtn.addEventListener('click', () => {
+            playClickSound();
+            openIdentityCard();
+        });
+
+        identityCloseBtn.addEventListener('click', () => {
+            playClickSound();
+            closeIdentityCard();
+        });
+
+        identityOverlay.addEventListener('click', (e) => {
+            if (e.target === identityOverlay) {
+                playClickSound();
+                closeIdentityCard();
+            }
+        });
+
+        identityToggleBtn.addEventListener('click', () => {
+            playClickSound();
+            toggleAnonymousMode();
         });
 
         // ─── RENDER ──────────────────────────────────────────────────
@@ -5596,9 +6018,12 @@
             updateCardStats();
             requestAnimationFrame(renderLoop);
             setOnline(false);
+            // Init identity card
+            updateIdentityUI();
         }
         init();
         window.__state = state;
+        window.__iceState = iceState;
     </script>
 
     <!-- ─── LOADING SCREEN CONTROLLER ──────────────────────────── -->
