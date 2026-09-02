@@ -118,12 +118,14 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
+// ─── FASTER SPEED WITH WIDE RANDOMIZATION ──────────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  const speed = 8.0 - norm * 5.5;
-  return Math.max(2.5, Math.min(8.0, speed));
+  // Max speed 16, min speed 6 – much faster overall
+  const speed = 16.0 - norm * 10.0;
+  return Math.max(4.0, Math.min(16.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -361,7 +363,7 @@ function startIceSpin() {
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const baseSpeed = 10;
-  const speed = baseSpeed + Math.random() * 2; // 10–12
+  const speed = baseSpeed + Math.random() * 2;
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
@@ -472,7 +474,6 @@ function updateIcePhysics(dt) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // Resolve collisions iteratively
     let iter = 0;
     const maxIter = 10;
     while (iter < maxIter) {
@@ -508,7 +509,6 @@ function updateIcePhysics(dt) {
       iter++;
     }
 
-    // ─── Friction ──────────────────────────────────────────────
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     let frictionPerSecond;
     if (elapsed < 3.5) {
@@ -594,6 +594,7 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
+// ─── START GAME – FASTER & RANDOMIZED ──────────────────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -604,7 +605,8 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    const speed = baseSpeed * (0.9 + Math.random() * 0.2);
+    // Randomize between 60% and 140% of base speed
+    const speed = baseSpeed * (0.6 + Math.random() * 0.8);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
     p.x = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
@@ -698,7 +700,6 @@ function updatePhysics(dt) {
   const half = ARENA_SIZE / 2;
   const totalPts = PERIMETER.length;
 
-  // ─── Opening logic (unchanged) ──────────────────────────────
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
     if (!room.opening) {
@@ -729,15 +730,15 @@ function updatePhysics(dt) {
   }
 
   // ─── Physics constants ────────────────────────────────────────
-  const SUBSTEPS = 10;               // more substeps = smoother collisions
-  const DRAG_PER_SEC = 0.6;          // air resistance – slows down quickly
-  const RESTITUTION_WALL = 1.0;      // perfect bounce off walls
-  const RESTITUTION_PLAYER = 0.9;    // high bounce between players
-  const FRICTION_PLAYER = 0.05;      // slight tangential friction for "soft" feel
+  const SUBSTEPS = 10;
+  const DRAG_PER_SEC = 0.6;          // Quick deceleration
+  const RESTITUTION_WALL = 1.0;
+  const RESTITUTION_PLAYER = 0.9;
+  const FRICTION_PLAYER = 0.05;
 
   const subDt = dt / SUBSTEPS;
   for (let step = 0; step < SUBSTEPS; step++) {
-    // ─── Apply drag (velocity decay) ──────────────────────────
+    // ─── Apply drag ────────────────────────────────────────────
     const decay = 1 - DRAG_PER_SEC * subDt;
     alive.forEach(p => {
       p.x += p.vx * subDt * 60;
@@ -775,7 +776,7 @@ function updatePhysics(dt) {
           break;
         }
       }
-      // ─── Escape prevention (opening) ──────────────────────────
+      // ─── Escape prevention ────────────────────────────────────
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
@@ -826,7 +827,6 @@ function updatePhysics(dt) {
             b.vx += (impulse / b.mass) * nx;
             b.vy += (impulse / b.mass) * ny;
 
-            // Tangential friction to soften the impact (slime feel)
             const vt = dvx * (-ny) + dvy * nx;
             const frictionImpulse = FRICTION_PLAYER * vt / (1 / a.mass + 1 / b.mass);
             a.vx -= (frictionImpulse / a.mass) * (-ny);
@@ -846,7 +846,6 @@ function updatePhysics(dt) {
         p.vx = (p.vx / sp) * maxSp;
         p.vy = (p.vy / sp) * maxSp;
       }
-      // No minimum speed – allow full stop
     });
   }
 
