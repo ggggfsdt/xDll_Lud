@@ -463,10 +463,10 @@ async function endIceGame() {
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 50;                    // even smoother
+  const subSteps = 50;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 8;                   // smaller = more responsive
+  const puckRadius = 8;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -496,7 +496,7 @@ function updateIcePhysics(dt) {
           puck.y += ny * overlap;
           const vn = puck.vx * nx + puck.vy * ny;
           if (vn < 0) {
-            const restitution = 1.0;     // perfect bounce
+            const restitution = 1.0;
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
           }
@@ -512,9 +512,9 @@ function updateIcePhysics(dt) {
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     let frictionPerSecond;
     if (elapsed < 3.5) {
-      frictionPerSecond = 0.997;   // very low friction
+      frictionPerSecond = 0.997;
     } else {
-      frictionPerSecond = 0.65;    // moderate friction to stop
+      frictionPerSecond = 0.65;
     }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
@@ -685,6 +685,7 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
+// ─── IMPROVED PHYSICS – smooth, bouncy, slime-like ─────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -696,6 +697,8 @@ function updatePhysics(dt) {
   }
   const half = ARENA_SIZE / 2;
   const totalPts = PERIMETER.length;
+
+  // ─── Opening logic (unchanged) ──────────────────────────────
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
     if (!room.opening) {
@@ -724,13 +727,27 @@ function updatePhysics(dt) {
       if (opening.flashCount >= 4) opening.state = 'open';
     }
   }
-  const subSteps = 6;
-  const subDt = dt / subSteps;
-  for (let step = 0; step < subSteps; step++) {
+
+  // ─── Physics constants ────────────────────────────────────────
+  const SUBSTEPS = 10;               // more substeps = smoother collisions
+  const DRAG_PER_SEC = 0.6;          // air resistance – slows down quickly
+  const RESTITUTION_WALL = 1.0;      // perfect bounce off walls
+  const RESTITUTION_PLAYER = 0.9;    // high bounce between players
+  const FRICTION_PLAYER = 0.05;      // slight tangential friction for "soft" feel
+
+  const subDt = dt / SUBSTEPS;
+  for (let step = 0; step < SUBSTEPS; step++) {
+    // ─── Apply drag (velocity decay) ──────────────────────────
+    const decay = 1 - DRAG_PER_SEC * subDt;
     alive.forEach(p => {
-      if (!p.alive) return;
       p.x += p.vx * subDt * 60;
       p.y += p.vy * subDt * 60;
+      p.vx *= decay;
+      p.vy *= decay;
+    });
+
+    // ─── Wall collisions ────────────────────────────────────────
+    alive.forEach(p => {
       const radius = p.displayRadius || p.radius;
       for (let i = 0; i < totalPts; i++) {
         const j = (i + 1) % totalPts;
@@ -751,10 +768,14 @@ function updatePhysics(dt) {
           p.x += nx * overlap;
           p.y += ny * overlap;
           const vn = p.vx * nx + p.vy * ny;
-          if (vn < 0) { p.vx -= 2 * vn * nx; p.vy -= 2 * vn * ny; }
+          if (vn < 0) {
+            p.vx -= (1 + RESTITUTION_WALL) * vn * nx;
+            p.vy -= (1 + RESTITUTION_WALL) * vn * ny;
+          }
           break;
         }
       }
+      // ─── Escape prevention (opening) ──────────────────────────
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
@@ -779,6 +800,8 @@ function updatePhysics(dt) {
         }
       }
     });
+
+    // ─── Player-player collisions ───────────────────────────────
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -792,29 +815,42 @@ function updatePhysics(dt) {
           const overlap = (minDist - dist) * 0.5;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
+
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
             const totalMass = a.mass + b.mass;
-            const impulse = 2 * dvn / (1 / a.mass + 1 / b.mass);
-            const aFactor = 1 - (a.mass / totalMass) * 0.6;
-            const bFactor = 1 - (b.mass / totalMass) * 0.6;
-            a.vx -= (impulse / a.mass) * aFactor * nx;
-            a.vy -= (impulse / a.mass) * aFactor * ny;
-            b.vx += (impulse / b.mass) * bFactor * nx;
-            b.vy += (impulse / b.mass) * bFactor * ny;
+            const impulse = (1 + RESTITUTION_PLAYER) * dvn / (1 / a.mass + 1 / b.mass);
+            a.vx -= (impulse / a.mass) * nx;
+            a.vy -= (impulse / a.mass) * ny;
+            b.vx += (impulse / b.mass) * nx;
+            b.vy += (impulse / b.mass) * ny;
+
+            // Tangential friction to soften the impact (slime feel)
+            const vt = dvx * (-ny) + dvy * nx;
+            const frictionImpulse = FRICTION_PLAYER * vt / (1 / a.mass + 1 / b.mass);
+            a.vx -= (frictionImpulse / a.mass) * (-ny);
+            a.vy -= (frictionImpulse / a.mass) * nx;
+            b.vx += (frictionImpulse / b.mass) * (-ny);
+            b.vy += (frictionImpulse / b.mass) * nx;
           }
         }
       }
     }
+
+    // ─── Speed limits ────────────────────────────────────────────
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
-      const minSp = 3.0;
-      if (sp < minSp && sp > 0.01) { const ratio = minSp / sp; p.vx *= ratio; p.vy *= ratio; }
+      if (sp > maxSp) {
+        p.vx = (p.vx / sp) * maxSp;
+        p.vy = (p.vy / sp) * maxSp;
+      }
+      // No minimum speed – allow full stop
     });
   }
+
+  // ─── Radius smoothing ──────────────────────────────────────────
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
