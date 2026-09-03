@@ -120,12 +120,11 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── VERY HIGH SPEED – no more cap, just raw speed ──────────────
+// ─── VERY HIGH SPEED – no cap ──────────────────────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // Max speed 80, min speed 20 – huge initial burst
   const speed = 80.0 - norm * 60.0;
   return Math.max(20.0, Math.min(80.0, speed));
 }
@@ -361,7 +360,6 @@ function startIceSpin() {
   iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck – bouncy and smooth ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const baseSpeed = 10;
@@ -463,7 +461,7 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
+// ─── SMOOTH ICE PHYSICS ──────────────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
@@ -538,21 +536,18 @@ function broadcastIceState() {
     spinStartX: iceRoom.spinStartX,
     spinStartY: iceRoom.spinStartY,
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
-    players: iceRoom.players.map(p => {
-      // Resolve anonymous data if needed
-      return {
-        id: p.id,
-        name: p.name,
-        pfp: p.pfp,
-        bet: p.bet,
-        color: p.color,
-        x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
-      };
-    }),
+    players: iceRoom.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      pfp: p.pfp,
+      bet: p.bet,
+      color: p.color,
+      x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+    })),
   });
 }
 
-// ─── Radius scaling for bump arena ──────────────────────────────
+// ─── Radius scaling ──────────────────────────────────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
@@ -603,7 +598,6 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
-// ─── START GAME – EXTREME SPEED, NO CAP ─────────────────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -614,7 +608,6 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    // Randomize between 50% and 180% – can reach up to 80 * 1.8 = 144
     const speed = baseSpeed * (0.5 + Math.random() * 1.3);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
@@ -696,7 +689,7 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── IMPROVED PHYSICS – smooth, bouncy, NO SPEED CAP ────────────
+// ─── IMPROVED PHYSICS ──────────────────────────────────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -738,16 +731,14 @@ function updatePhysics(dt) {
     }
   }
 
-  // ─── Physics constants ────────────────────────────────────────
   const SUBSTEPS = 10;
-  const DRAG_PER_SEC = 0.6;          // Quick deceleration
+  const DRAG_PER_SEC = 0.6;
   const RESTITUTION_WALL = 1.0;
   const RESTITUTION_PLAYER = 0.9;
   const FRICTION_PLAYER = 0.05;
 
   const subDt = dt / SUBSTEPS;
   for (let step = 0; step < SUBSTEPS; step++) {
-    // ─── Apply drag ────────────────────────────────────────────
     const decay = 1 - DRAG_PER_SEC * subDt;
     alive.forEach(p => {
       p.x += p.vx * subDt * 60;
@@ -756,7 +747,6 @@ function updatePhysics(dt) {
       p.vy *= decay;
     });
 
-    // ─── Wall collisions ────────────────────────────────────────
     alive.forEach(p => {
       const radius = p.displayRadius || p.radius;
       for (let i = 0; i < totalPts; i++) {
@@ -785,7 +775,6 @@ function updatePhysics(dt) {
           break;
         }
       }
-      // ─── Escape prevention ────────────────────────────────────
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
@@ -811,7 +800,6 @@ function updatePhysics(dt) {
       }
     });
 
-    // ─── Player-player collisions ───────────────────────────────
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -847,11 +835,9 @@ function updatePhysics(dt) {
       }
     }
 
-    // ─── NO SPEED CAP – let them fly! ───────────────────────────
-    // (removed the entire speed limit block)
+    // No speed cap – let them fly!
   }
 
-  // ─── Radius smoothing ──────────────────────────────────────────
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
@@ -895,22 +881,17 @@ setInterval(() => {
 }, 1000 / TICK_HZ);
 
 function broadcastState() {
-  // Build player list with anonymous substitution
-  const playerData = room.players.map(p => {
-    // We need to fetch user data to check anonymous state – we'll do it async? 
-    // For performance, we'll assume that when a player joins, we store their anonymous state in the player object.
-    // We'll store anonymous fields in the player object on join.
-    return {
-      id: p.id,
-      name: p.displayName || p.name,
-      pfp: p.displayPfp || p.pfp,
-      bet: p.bet,
-      color: p.color,
-      x: p.x, y: p.y,
-      displayRadius: p.displayRadius,
-      alive: p.alive,
-    };
-  });
+  const playerData = room.players.map(p => ({
+    id: p.id,
+    name: p.name,
+    pfp: p.pfp,
+    bet: p.bet,
+    color: p.color,
+    x: p.x,
+    y: p.y,
+    displayRadius: p.displayRadius,
+    alive: p.alive,
+  }));
   io.to(room.id).emit('state', {
     gameState: room.gameState,
     pot: room.pot,
@@ -946,12 +927,12 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Store anonymous state in the player object for quick access
-      // We'll also store in room.players when they place a bet.
-      // For now, we'll just send the anonymous data to the client.
-
       const icePlayers = iceRoom.players.map(p => ({
-        id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+        id: p.id,
+        name: p.name,
+        pfp: p.pfp,
+        bet: p.bet,
+        color: p.color,
         x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
       }));
 
@@ -999,17 +980,10 @@ io.on('connection', (socket) => {
         existing.bet += amt;
         computeRadii();
       } else {
-        // Create player with displayName and displayPfp based on anonymous state
+        // Use anonymous display if enabled
         const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
-        const displayPfp = user.anonymousEnabled ? null : user.pfp; // null means use default generated avatar
-        const p = makePlayer(userId, amt, displayName, displayPfp);
-        // Store anonymous fields for later updates
-        p.anonymousEnabled = user.anonymousEnabled;
-        p.anonymousName = user.anonymousName;
-        p.displayName = displayName;
-        p.displayPfp = displayPfp;
-        p.realName = user.username;
-        p.realPfp = user.pfp;
+        const displayPfp = user.anonymousEnabled ? null : user.pfp;
+        makePlayer(userId, amt, displayName, displayPfp);
       }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
@@ -1049,7 +1023,6 @@ io.on('connection', (socket) => {
         existing.bet += amt;
         repartitionIceArena();
       } else {
-        // Use anonymous display if enabled
         const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
         const displayPfp = user.anonymousEnabled ? null : user.pfp;
         makeIcePlayer(userId, amt, displayName, displayPfp);
@@ -1063,56 +1036,58 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── Anonymous endpoints ──────────────────────────────────────
+  // ─── ANONYMOUS IDENTITY HANDLERS ──────────────────────────────
   socket.on('setAnonymous', async ({ enabled, name, username, phone }, ack) => {
     try {
       if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
       const user = await getUser(userId);
       if (!user) return ack?.({ ok: false, error: 'User not found.' });
+
       // Check uniqueness for username and phone if they are changed
-      if (username && username !== user.anonymousUsername) {
+      if (username !== undefined && username !== user.anonymousUsername) {
         const unique = await checkAnonymousUnique('username', username, userId);
         if (!unique) return ack?.({ ok: false, error: 'Username already taken.' });
       }
-      if (phone && phone !== user.anonymousPhone) {
+      if (phone !== undefined && phone !== user.anonymousPhone) {
         const unique = await checkAnonymousUnique('phone', phone, userId);
         if (!unique) return ack?.({ ok: false, error: 'Phone number already taken.' });
       }
-      // Update anonymous data
-      const data = {};
-      if (enabled !== undefined) data.anonymousEnabled = enabled;
-      if (name !== undefined) data.anonymousName = name;
-      if (username !== undefined) data.anonymousUsername = username;
-      if (phone !== undefined) data.anonymousPhone = phone;
-      const updated = await setAnonymousData(userId, data);
-      // Update player objects in arenas
+
+      // Update fields
+      if (enabled !== undefined) user.anonymousEnabled = enabled;
+      if (name !== undefined) user.anonymousName = name;
+      if (username !== undefined) user.anonymousUsername = username;
+      if (phone !== undefined) user.anonymousPhone = phone;
+
+      // ─── IMPORTANT: save the user ──────────────────────────────
+      await saveUser(user);
+
+      // Update player objects in arenas if they exist
       const pvpPlayer = getPlayer(userId);
       if (pvpPlayer) {
-        if (updated.anonymousEnabled) {
-          pvpPlayer.displayName = updated.anonymousName;
-          pvpPlayer.displayPfp = null;
-        } else {
-          pvpPlayer.displayName = user.username;
-          pvpPlayer.displayPfp = user.pfp;
-        }
-        pvpPlayer.anonymousEnabled = updated.anonymousEnabled;
-        pvpPlayer.anonymousName = updated.anonymousName;
-        // Re-broadcast state
+        pvpPlayer.name = user.anonymousEnabled ? user.anonymousName : user.username;
+        pvpPlayer.pfp = user.anonymousEnabled ? null : user.pfp;
+        pvpPlayer.anonymousEnabled = user.anonymousEnabled;
+        pvpPlayer.anonymousName = user.anonymousName;
         broadcastState();
       }
       const iceP = getIcePlayer(userId);
       if (iceP) {
-        // In ice arena, we need to update name and pfp as well
-        if (updated.anonymousEnabled) {
-          iceP.name = updated.anonymousName;
-          iceP.pfp = null;
-        } else {
-          iceP.name = user.username;
-          iceP.pfp = user.pfp;
-        }
+        iceP.name = user.anonymousEnabled ? user.anonymousName : user.username;
+        iceP.pfp = user.anonymousEnabled ? null : user.pfp;
         broadcastIceState();
       }
-      ack?.({ ok: true, user: updated });
+
+      // Send back the updated data
+      ack?.({
+        ok: true,
+        user: {
+          anonymousEnabled: user.anonymousEnabled,
+          anonymousName: user.anonymousName,
+          anonymousUsername: user.anonymousUsername,
+          anonymousPhone: user.anonymousPhone,
+        }
+      });
     } catch (err) {
       console.error('Set anonymous error:', err);
       ack?.({ ok: false, error: 'Internal error' });
@@ -1124,12 +1099,15 @@ io.on('connection', (socket) => {
       if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
       const user = await getUser(userId);
       if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      ack?.({ ok: true, data: {
-        anonymousEnabled: user.anonymousEnabled || false,
-        anonymousName: user.anonymousName || '',
-        anonymousUsername: user.anonymousUsername || '',
-        anonymousPhone: user.anonymousPhone || '',
-      }});
+      ack?.({
+        ok: true,
+        data: {
+          anonymousEnabled: user.anonymousEnabled || false,
+          anonymousName: user.anonymousName || '',
+          anonymousUsername: user.anonymousUsername || '',
+          anonymousPhone: user.anonymousPhone || '',
+        }
+      });
     } catch (err) {
       console.error('Get anonymous error:', err);
       ack?.({ ok: false, error: 'Internal error' });
@@ -1155,7 +1133,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API
+// ADMIN API – unchanged
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -1186,63 +1164,13 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
 <h2>dllump Admin</h2>
 <div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
 <div id="content" style="display:none">
-  <div class="section">
-    <h3>📢 Send Notification</h3>
-    <div class="notification-row">
-      <input id="notifInput" placeholder="Type message or emoji..." />
-      <button onclick="sendNotification()">Send</button>
-    </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Auto Bot</h3>
-    <div class="switch-wrap">
-      <span style="color:#888;">Auto-spawn bots in ice arena</span>
-      <label class="switch">
-        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
-        <span class="slider"></span>
-      </label>
-      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
-    </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Bot Spawn</h3>
-    <div class="bot-row">
-      <input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
-      <input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
-      <button onclick="spawnBots()">Spawn Bots</button>
-      <button class="danger" onclick="removeBots()">Remove All Bots</button>
-    </div>
-  </div>
-  <div class="section">
-    <h3>Players</h3>
-    <button onclick="refreshPlayers()">Refresh Players</button>
-    <div id="players"></div>
-  </div>
-  <div class="section">
-    <h3>Actions</h3>
-    <button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button>
-    <button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button>
-    <button class="danger" onclick="wipeAll()">Wipe All Data</button>
-  </div>
-  <div class="section">
-    <h3>Promo Codes</h3>
-    <p>Generate a new code:</p>
-    <input id="promoAmount" placeholder="Amount" value="100"/>
-    <input id="promoCode" placeholder="Custom code (optional)"/>
-    <input id="promoMaxUses" placeholder="Max uses" value="1"/>
-    <button onclick="generatePromo()">Generate Promo</button>
-    <div id="promoCodes"></div>
-  </div>
-  <div class="section">
-    <h3>Individual Player</h3>
-    <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button>
-    <br/>
-    <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
-    <br/>
-    <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
-    <br/>
-    <input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button>
-  </div>
+  <div class="section"><h3>📢 Send Notification</h3><div class="notification-row"><input id="notifInput" placeholder="Type message or emoji..." /><button onclick="sendNotification()">Send</button></div></div>
+  <div class="section"><h3>🤖 Auto Bot</h3><div class="switch-wrap"><span style="color:#888;">Auto-spawn bots in ice arena</span><label class="switch"><input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" /><span class="slider"></span></label><span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span></div></div>
+  <div class="section"><h3>🤖 Bot Spawn</h3><div class="bot-row"><input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/><input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/><button onclick="spawnBots()">Spawn Bots</button><button class="danger" onclick="removeBots()">Remove All Bots</button></div></div>
+  <div class="section"><h3>Players</h3><button onclick="refreshPlayers()">Refresh Players</button><div id="players"></div></div>
+  <div class="section"><h3>Actions</h3><button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button><button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button><button class="danger" onclick="wipeAll()">Wipe All Data</button></div>
+  <div class="section"><h3>Promo Codes</h3><p>Generate a new code:</p><input id="promoAmount" placeholder="Amount" value="100"/><input id="promoCode" placeholder="Custom code (optional)"/><input id="promoMaxUses" placeholder="Max uses" value="1"/><button onclick="generatePromo()">Generate Promo</button><div id="promoCodes"></div></div>
+  <div class="section"><h3>Individual Player</h3><input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button><br/><input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button><br/><input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button><br/><input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button></div>
 </div>
 <script>
 const ADMIN_SECRET = '${ADMIN_SECRET}';
@@ -1252,115 +1180,23 @@ async function fetchAdmin(path, method='GET', body=null) {
   const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
   return res.json();
 }
-function auth(){
-  const secret = document.getElementById('secret').value;
-  if(secret === ADMIN_SECRET) {
-    document.getElementById('content').style.display = 'block';
-    refreshPlayers();
-    refreshPromoCodes();
-    fetchAutoBotStatus();
-  } else alert('Wrong secret');
-}
-async function fetchAutoBotStatus(){
-  const data = await fetchAdmin('/auto-bot-status');
-  document.getElementById('autoBotToggle').checked = data.enabled;
-  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-}
-async function toggleAutoBot(enabled){
-  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
-  if(data.ok) {
-    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-  } else alert('Error: '+data.error);
-}
-async function sendNotification(){
-  const msg = document.getElementById('notifInput').value.trim();
-  if(!msg) { alert('Please enter a message'); return; }
-  const data = await fetchAdmin('/send-notification', 'POST', {message: msg});
-  if(data.ok) {
-    alert('Notification sent!');
-    document.getElementById('notifInput').value = '';
-  } else alert('Error: '+data.error);
-}
-async function refreshPlayers(){
-  const data = await fetchAdmin('/players');
-  const players = data.players || [];
-  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
-  players.forEach(p => {
-    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
-    <td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`;
-  });
-  html += '</table>';
-  document.getElementById('players').innerHTML = html;
-}
-async function refreshPromoCodes(){
-  const data = await fetchAdmin('/promo-codes');
-  const codes = data.codes || [];
-  let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
-  codes.forEach(c => {
-    html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td>
-    <td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`;
-  });
-  html += '</table>';
-  document.getElementById('promoCodes').innerHTML = html;
-}
-async function spawnBots(){
-  const bet = parseInt(document.getElementById('botBet').value) || 100;
-  const count = parseInt(document.getElementById('botCount').value) || 1;
-  if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; }
-  const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count});
-  if(data.ok) alert('Spawned ' + data.spawned + ' bots!');
-  else alert('Error: ' + data.error);
-  refreshPlayers();
-}
-async function removeBots(){
-  if(!confirm('Remove all bots from the ice arena?')) return;
-  const data = await fetchAdmin('/remove-bots', 'POST');
-  if(data.ok) alert('Removed ' + data.removed + ' bots');
-  refreshPlayers();
-}
+function auth(){ const secret = document.getElementById('secret').value; if(secret === ADMIN_SECRET) { document.getElementById('content').style.display = 'block'; refreshPlayers(); refreshPromoCodes(); fetchAutoBotStatus(); } else alert('Wrong secret'); }
+async function fetchAutoBotStatus(){ const data = await fetchAdmin('/auto-bot-status'); document.getElementById('autoBotToggle').checked = data.enabled; document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled'; }
+async function toggleAutoBot(enabled){ const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled}); if(data.ok) { document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled'; } else alert('Error: '+data.error); }
+async function sendNotification(){ const msg = document.getElementById('notifInput').value.trim(); if(!msg) { alert('Please enter a message'); return; } const data = await fetchAdmin('/send-notification', 'POST', {message: msg}); if(data.ok) { alert('Notification sent!'); document.getElementById('notifInput').value = ''; } else alert('Error: '+data.error); }
+async function refreshPlayers(){ const data = await fetchAdmin('/players'); const players = data.players || []; let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>'; players.forEach(p => { html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td><td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`; }); html += '</table>'; document.getElementById('players').innerHTML = html; }
+async function refreshPromoCodes(){ const data = await fetchAdmin('/promo-codes'); const codes = data.codes || []; let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>'; codes.forEach(c => { html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td><td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`; }); html += '</table>'; document.getElementById('promoCodes').innerHTML = html; }
+async function spawnBots(){ const bet = parseInt(document.getElementById('botBet').value) || 100; const count = parseInt(document.getElementById('botCount').value) || 1; if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; } const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count}); if(data.ok) alert('Spawned ' + data.spawned + ' bots!'); else alert('Error: ' + data.error); refreshPlayers(); }
+async function removeBots(){ if(!confirm('Remove all bots from the ice arena?')) return; const data = await fetchAdmin('/remove-bots', 'POST'); if(data.ok) alert('Removed ' + data.removed + ' bots'); refreshPlayers(); }
 async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
 async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
 async function wipeAll(){ if(confirm('Wipe ALL player data? This cannot be undone!')){ await fetchAdmin('/wipe', 'POST'); refreshPlayers(); } }
-async function addMoney(){
-  const id = document.getElementById('addUserId').value;
-  const amount = parseInt(document.getElementById('addAmount').value);
-  if(!id || !amount) return;
-  await fetchAdmin('/add-money', 'POST', {id, amount});
-  refreshPlayers();
-}
-async function setMoney(){
-  const id = document.getElementById('setUserId').value;
-  const amount = parseInt(document.getElementById('setAmount').value);
-  if(!id || isNaN(amount)) return;
-  await fetchAdmin('/set-money', 'POST', {id, amount});
-  refreshPlayers();
-}
-async function banPlayer(id){
-  const userId = id || document.getElementById('banUserId').value;
-  if(!userId) return;
-  await fetchAdmin('/ban', 'POST', {id: userId});
-  refreshPlayers();
-}
-async function resetPlayer(){
-  const id = document.getElementById('resetUserId').value;
-  if(!id) return;
-  if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return;
-  await fetchAdmin('/reset-player', 'POST', {id});
-  refreshPlayers();
-}
-async function generatePromo(){
-  const amount = parseInt(document.getElementById('promoAmount').value) || 100;
-  const code = document.getElementById('promoCode').value || null;
-  const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1;
-  const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses});
-  if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); }
-  else alert('Error: '+data.error);
-}
-async function deletePromo(code){
-  if(!confirm('Delete promo '+code+'?')) return;
-  await fetchAdmin('/delete-promo', 'POST', {code});
-  refreshPromoCodes();
-}
+async function addMoney(){ const id = document.getElementById('addUserId').value; const amount = parseInt(document.getElementById('addAmount').value); if(!id || !amount) return; await fetchAdmin('/add-money', 'POST', {id, amount}); refreshPlayers(); }
+async function setMoney(){ const id = document.getElementById('setUserId').value; const amount = parseInt(document.getElementById('setAmount').value); if(!id || isNaN(amount)) return; await fetchAdmin('/set-money', 'POST', {id, amount}); refreshPlayers(); }
+async function banPlayer(id){ const userId = id || document.getElementById('banUserId').value; if(!userId) return; await fetchAdmin('/ban', 'POST', {id: userId}); refreshPlayers(); }
+async function resetPlayer(){ const id = document.getElementById('resetUserId').value; if(!id) return; if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return; await fetchAdmin('/reset-player', 'POST', {id}); refreshPlayers(); }
+async function generatePromo(){ const amount = parseInt(document.getElementById('promoAmount').value) || 100; const code = document.getElementById('promoCode').value || null; const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1; const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses}); if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); } else alert('Error: '+data.error); }
+async function deletePromo(code){ if(!confirm('Delete promo '+code+'?')) return; await fetchAdmin('/delete-promo', 'POST', {code}); refreshPromoCodes(); }
 </script>
 </body></html>`;
 
@@ -1579,6 +1415,7 @@ app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
   }
 });
 
+// ─── Redeem promo ──────────────────────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
