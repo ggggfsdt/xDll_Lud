@@ -3459,7 +3459,9 @@
             requestAnimationFrame(startIdentityCardIdleAnimation);
         }
 
+        // ─── FIX: Ignore drag on inputs ──────────────────────────────
         identityCardContainer.addEventListener('mousedown', (e) => {
+            if (e.target.closest('input') || e.target.closest('.identity-field.editing')) return;
             identityCardDrag = true;
             identityCardPrevX = e.clientX;
             identityCardPrevY = e.clientY;
@@ -3491,6 +3493,7 @@
         });
 
         identityCardContainer.addEventListener('touchstart', (e) => {
+            if (e.target.closest('input') || e.target.closest('.identity-field.editing')) return;
             const touch = e.touches[0];
             identityCardDrag = true;
             identityCardPrevX = touch.clientX;
@@ -4549,7 +4552,8 @@
         });
 
         // ─── IDENTITY CARD LOGIC ──────────────────────────────────────
-        let identityEditing = false, editingField = null;
+        let identityEditing = false;
+        let editingField = null;
 
         function openIdentityCard() {
             identityOverlay.classList.add('show');
@@ -4581,7 +4585,7 @@
             const avatar = generateDefaultAvatar(initial, 0);
             identityAvatar.src = avatar.src;
 
-            // Only update the .value text if not currently editing that field
+            // Only update .value text if not currently editing that field
             if (editingField !== 'name') {
                 const nameValue = identityNameDisplay.querySelector('.value');
                 if (nameValue) nameValue.textContent = name;
@@ -4612,18 +4616,24 @@
                 const nameValueSpan = identityNameDisplay.querySelector('.value');
                 const usernameValueSpan = identityUsernameDisplay.querySelector('.value');
                 const phoneValueSpan = identityPhoneDisplay.querySelector('.value');
-                if (nameValueSpan) nameValueSpan.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (!identityEditing) startEditing('name');
-                });
-                if (usernameValueSpan) usernameValueSpan.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (!identityEditing) startEditing('username');
-                });
-                if (phoneValueSpan) phoneValueSpan.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (!identityEditing) startEditing('phone');
-                });
+                if (nameValueSpan) {
+                    nameValueSpan.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!identityEditing) startEditing('name');
+                    });
+                }
+                if (usernameValueSpan) {
+                    usernameValueSpan.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!identityEditing) startEditing('username');
+                    });
+                }
+                if (phoneValueSpan) {
+                    phoneValueSpan.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (!identityEditing) startEditing('phone');
+                    });
+                }
             }
         }
 
@@ -4633,7 +4643,8 @@
             identityEditing = true;
             const displayEl = field === 'name' ? identityNameDisplay : field === 'username' ? identityUsernameDisplay : identityPhoneDisplay;
             const valueSpan = displayEl.querySelector('.value');
-            const currentValue = valueSpan ? valueSpan.textContent : '';
+            if (!valueSpan) return;
+            const currentValue = valueSpan.textContent;
             const input = document.createElement('input');
             input.type = 'text';
             input.value = currentValue;
@@ -4657,9 +4668,7 @@
                 if (e.key === 'Escape') { input.value = currentValue; finishEditing(); }
             });
             // Replace the .value span with the input
-            if (valueSpan) {
-                valueSpan.replaceWith(input);
-            }
+            valueSpan.replaceWith(input);
             displayEl.classList.add('editing');
             setTimeout(() => input.focus(), 100);
             haptic('light');
@@ -4704,6 +4713,7 @@
                         identityStatus.className = 'identity-status error';
                         haptic('heavy');
                     }
+                    // Update UI after saving
                     updateIdentityUI();
                 });
             } else {
@@ -4712,29 +4722,26 @@
                     else if (editingField === 'username') state.anonymousData.anonymousUsername = newValue;
                     else if (editingField === 'phone') state.anonymousData.anonymousPhone = newValue;
                 }
-                updateIdentityUI();
                 identityStatus.textContent = '✅ Updated locally';
                 identityStatus.className = 'identity-status success';
+                updateIdentityUI();
             }
-            identityEditing = false;
-            editingField = null;
-            displayEl.classList.remove('editing');
-            // Re-insert a new .value span with the updated value
+
+            // Remove input and restore value span
             const newSpan = document.createElement('span');
             newSpan.className = 'value editable';
             newSpan.textContent = newValue;
-            const label = displayEl.querySelector('.label');
-            if (label) {
-                // Insert after label
-                label.after(newSpan);
-            } else {
-                displayEl.appendChild(newSpan);
-            }
-            // Re-bind click
+            // Bind click event to new span
             newSpan.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (!identityEditing) startEditing(editingField);
             });
+            input.replaceWith(newSpan);
+            displayEl.classList.remove('editing');
+
+            // Reset editing flags
+            identityEditing = false;
+            editingField = null;
         }
 
         function toggleAnonymousMode() {
