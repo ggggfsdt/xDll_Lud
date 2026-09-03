@@ -4,8 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>dllump · bump arena</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js?56">
+    </script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js">
+    </script>
     <style>
         /* ─── LOADING SCREEN (unchanged) ──────────────────────────── */
         #loading-screen {
@@ -42,8 +44,15 @@
             animation: orbPulse 4s ease-in-out infinite;
         }
         @keyframes orbPulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
         }
         #grid-wrapper {
             position: relative;
@@ -93,21 +102,33 @@
             z-index: 1;
         }
         @keyframes squarePop {
-            0%   { transform: scale(0) rotate(-6deg); opacity: 0; }
-            60%  { transform: scale(1.10) rotate(1deg); opacity: 1; }
-            80%  { transform: scale(0.95) rotate(-0.5deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            0% {
+                transform: scale(0) rotate(-6deg);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.10) rotate(1deg);
+                opacity: 1;
+            }
+            80% {
+                transform: scale(0.95) rotate(-0.5deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
         }
         .load-square.pop {
             animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .load-square.slide {
             transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        border-radius 0.6s ease,
-                        box-shadow 0.6s ease,
-                        opacity 0.5s ease;
+                border-radius 0.6s ease,
+                box-shadow 0.6s ease,
+                opacity 0.5s ease;
             border-radius: 20px;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 60px rgba(76,175,80,0.08);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(76, 175, 80, 0.08);
             z-index: 5;
             opacity: 1;
         }
@@ -123,7 +144,7 @@
             opacity: 0;
             z-index: 10;
             transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        opacity 0.6s ease;
+                opacity 0.6s ease;
             pointer-events: none;
             will-change: transform, opacity;
         }
@@ -165,9 +186,21 @@
             opacity: 1;
         }
         @keyframes ringPulse {
-            0%   { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
-            50%  { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
-            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.6;
+                border-width: 1.5px;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.6);
+                opacity: 0;
+                border-width: 0.5px;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.6;
+                border-width: 1.5px;
+            }
         }
         #loading-text {
             margin-top: 36px;
@@ -189,11 +222,21 @@
             text-align: left;
         }
         @keyframes dotsAnim {
-            0%   { content: ''; }
-            25%  { content: '.'; }
-            50%  { content: '..'; }
-            75%  { content: '...'; }
-            100% { content: ''; }
+            0% {
+                content: '';
+            }
+            25% {
+                content: '.';
+            }
+            50% {
+                content: '..';
+            }
+            75% {
+                content: '...';
+            }
+            100% {
+                content: '';
+            }
         }
         #brand-mark {
             position: absolute;
@@ -210,22 +253,56 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         @media (max-width: 420px) {
-            #grid-wrapper { width: 220px; height: 220px; }
-            #loading-grid { gap: 6px; padding: 3px; }
-            .load-square { border-radius: 14px; }
-            .load-square::after { border-radius: 14px; }
-            #merged-square { border-radius: 22px; }
-            #merged-square::after { border-radius: 22px; }
-            #loading-text { font-size: 12px; margin-top: 28px; }
+            #grid-wrapper {
+                width: 220px;
+                height: 220px;
+            }
+            #loading-grid {
+                gap: 6px;
+                padding: 3px;
+            }
+            .load-square {
+                border-radius: 14px;
+            }
+            .load-square::after {
+                border-radius: 14px;
+            }
+            #merged-square {
+                border-radius: 22px;
+            }
+            #merged-square::after {
+                border-radius: 22px;
+            }
+            #loading-text {
+                font-size: 12px;
+                margin-top: 28px;
+            }
         }
         @media (max-width: 340px) {
-            #grid-wrapper { width: 170px; height: 170px; }
-            #loading-grid { gap: 4px; padding: 2px; }
-            .load-square { border-radius: 10px; }
-            .load-square::after { border-radius: 10px; }
-            #merged-square { border-radius: 16px; }
-            #merged-square::after { border-radius: 16px; }
-            #loading-text { font-size: 10px; margin-top: 20px; }
+            #grid-wrapper {
+                width: 170px;
+                height: 170px;
+            }
+            #loading-grid {
+                gap: 4px;
+                padding: 2px;
+            }
+            .load-square {
+                border-radius: 10px;
+            }
+            .load-square::after {
+                border-radius: 10px;
+            }
+            #merged-square {
+                border-radius: 16px;
+            }
+            #merged-square::after {
+                border-radius: 16px;
+            }
+            #loading-text {
+                font-size: 10px;
+                margin-top: 20px;
+            }
         }
 
         /* ─── APP STYLES ──────────────────────────────────────── */
@@ -358,8 +435,12 @@
         }
         @keyframes glowDiamond {
             0%,
-            100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
-            50% { filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2); }
+            100% {
+                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2);
+            }
         }
         #balance {
             font-size: 15px;
@@ -457,7 +538,9 @@
             opacity: 0.9;
             display: none;
         }
-        #frog-gif.show { display: block; }
+        #frog-gif.show {
+            display: block;
+        }
         #timer-wrap {
             position: absolute;
             top: 14px;
@@ -493,7 +576,9 @@
             display: none;
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
         }
-        #timer-progress-wrap.visible { display: block; }
+        #timer-progress-wrap.visible {
+            display: block;
+        }
         #timer-progress {
             width: 0%;
             height: 100%;
@@ -522,8 +607,12 @@
             color: var(--text2);
             min-height: 36px;
         }
-        .win-panel.left { left: 10px; }
-        .win-panel.right { right: 10px; }
+        .win-panel.left {
+            left: 10px;
+        }
+        .win-panel.right {
+            right: 10px;
+        }
         .win-panel .panel-label {
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -632,7 +721,9 @@
             flex-direction: row;
             justify-content: center;
         }
-        #bet-overlay.collapsed>*:not(.bet-toggle) { display: none; }
+        #bet-overlay.collapsed>*:not(.bet-toggle) {
+            display: none;
+        }
         #bet-overlay.collapsed .bet-toggle {
             display: flex;
             width: 100%;
@@ -656,7 +747,9 @@
             transition: 0.2s;
             font-family: monospace;
         }
-        .bet-toggle:active { opacity: 0.6; }
+        .bet-toggle:active {
+            opacity: 0.6;
+        }
         #bet-overlay:not(.collapsed) .bet-toggle {
             display: flex;
             position: absolute;
@@ -680,16 +773,22 @@
             gap: 6px;
             color: var(--text2);
         }
-        #bet-overlay.collapsed .bet-toggle span { font-size: 11px;
-            opacity: 0.5; }
+        #bet-overlay.collapsed .bet-toggle span {
+            font-size: 11px;
+            opacity: 0.5;
+        }
         #bet-overlay.collapsed .bet-toggle::before {
             content: '>';
             display: inline-block;
             transform: rotate(-90deg);
             margin-right: 4px;
         }
-        #bet-overlay:not(.collapsed) .bet-toggle-text { display: none; }
-        #bet-overlay.collapsed .bet-toggle-text { display: inline; }
+        #bet-overlay:not(.collapsed) .bet-toggle-text {
+            display: none;
+        }
+        #bet-overlay.collapsed .bet-toggle-text {
+            display: inline;
+        }
         .bet-row {
             display: flex;
             align-items: center;
@@ -731,8 +830,10 @@
             box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
             flex-shrink: 0;
         }
-        #all-in-btn:active { transform: scale(0.94);
-            opacity: 0.8; }
+        #all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
         #bet-btn {
             padding: 2px 0;
             height: 26px;
@@ -750,8 +851,10 @@
             text-align: center;
             margin-top: 2px;
         }
-        #bet-btn:active { transform: scale(0.96);
-            opacity: 0.8; }
+        #bet-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
         #bet-btn:disabled {
             opacity: 0.4;
             transform: none;
@@ -771,7 +874,9 @@
         }
         #bet-overlay.collapsed #current-bet-display,
         #bet-overlay.collapsed .bet-row,
-        #bet-overlay.collapsed #bet-btn { display: none; }
+        #bet-overlay.collapsed #bet-btn {
+            display: none;
+        }
 
         /* ─── AUTO-BET ──────────────────────────────────────────── */
         .auto-bet-container {
@@ -806,7 +911,9 @@
             color: #fff;
             box-shadow: 0 0 24px var(--primary-glow);
         }
-        .auto-bet-toggle:active { transform: scale(0.9); }
+        .auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
         .auto-bet-panel {
             background: rgba(18, 18, 22, 0.95);
             backdrop-filter: blur(16px);
@@ -819,7 +926,9 @@
             gap: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
         }
-        .auto-bet-panel.open { display: flex; }
+        .auto-bet-panel.open {
+            display: flex;
+        }
         .auto-bet-panel .row {
             display: flex;
             align-items: center;
@@ -842,7 +951,9 @@
             text-align: center;
             outline: none;
         }
-        .auto-bet-panel .row input:focus { border-color: var(--primary); }
+        .auto-bet-panel .row input:focus {
+            border-color: var(--primary);
+        }
         .auto-bet-panel .switch-sm {
             position: relative;
             width: 34px;
@@ -910,9 +1021,13 @@
             pointer-events: none !important;
             margin-top: 0 !important;
         }
-        #player-list-container::-webkit-scrollbar { width: 3px; }
-        #player-list-container::-webkit-scrollbar-thumb { background: var(--border);
-            border-radius: 10px; }
+        #player-list-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        #player-list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
         .pl-entry {
             display: flex;
             align-items: center;
@@ -1019,11 +1134,15 @@
             overflow-y: auto;
             padding: 12px 0 4px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.05) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
         }
-        #profile-page .profile-scroll::-webkit-scrollbar { width: 3px; }
-        #profile-page .profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08);
-            border-radius: 10px; }
+        #profile-page .profile-scroll::-webkit-scrollbar {
+            width: 3px;
+        }
+        #profile-page .profile-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+        }
 
         .profile-header-section {
             display: flex;
@@ -1036,8 +1155,10 @@
             transform: translateY(12px);
         }
         @keyframes fadeSlideUp {
-            to { opacity: 1;
-                transform: translateY(0); }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .profile-header-section .pfp-wrap {
             position: relative;
@@ -1114,9 +1235,15 @@
             color: #fff;
             letter-spacing: 0.5px;
         }
-        .profile-stats-grid .stat-box .stat-num.win { color: var(--green); }
-        .profile-stats-grid .stat-box .stat-num.loss { color: var(--red); }
-        .profile-stats-grid .stat-box .stat-num.rate { color: #6ab8f0; }
+        .profile-stats-grid .stat-box .stat-num.win {
+            color: var(--green);
+        }
+        .profile-stats-grid .stat-box .stat-num.loss {
+            color: var(--red);
+        }
+        .profile-stats-grid .stat-box .stat-num.rate {
+            color: #6ab8f0;
+        }
         .profile-stats-grid .stat-box .stat-label {
             font-size: 10px;
             color: rgba(255, 255, 255, 0.25);
@@ -1140,7 +1267,9 @@
             transform: translateY(12px);
             margin: 6px 0 2px;
         }
-        .profile-balance-row:active { transform: scale(0.97); }
+        .profile-balance-row:active {
+            transform: scale(0.97);
+        }
         .profile-balance-row .bal-label {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
@@ -1186,6 +1315,52 @@
             color: rgba(255, 255, 255, 0.3);
         }
 
+        /* ─── Anonymous button (replaces switch) ─────────────────── */
+        .anon-btn-wrap {
+            padding: 4px 0 2px;
+            animation: fadeSlideUp 0.6s ease 0.16s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .anon-btn-wrap .anon-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.25s;
+            letter-spacing: 0.3px;
+        }
+        .anon-btn-wrap .anon-btn:active {
+            transform: scale(0.96);
+            background: rgba(255, 255, 255, 0.06);
+        }
+        .anon-btn-wrap .anon-btn .icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+        .anon-btn-wrap .anon-btn .badge {
+            font-size: 11px;
+            font-weight: 500;
+            background: rgba(90, 200, 138, 0.15);
+            color: var(--green);
+            padding: 2px 12px;
+            border-radius: 20px;
+            margin-left: auto;
+        }
+        .anon-btn-wrap .anon-btn .badge.off {
+            background: rgba(255, 255, 255, 0.05);
+            color: rgba(255, 255, 255, 0.25);
+        }
+
         .switch {
             position: relative;
             flex-shrink: 0;
@@ -1217,7 +1392,7 @@
             background: #fff;
             border-radius: 50%;
             transition: transform 0.25s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         .switch input:checked+.slider {
             background: var(--primary);
@@ -1247,8 +1422,12 @@
             letter-spacing: 0.5px;
             transition: 0.2s;
         }
-        .promo-section input:focus { border-color: rgba(255, 255, 255, 0.15); }
-        .promo-section input::placeholder { color: rgba(255, 255, 255, 0.15); }
+        .promo-section input:focus {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .promo-section input::placeholder {
+            color: rgba(255, 255, 255, 0.15);
+        }
         .promo-section button {
             padding: 8px 18px;
             border-radius: 10px;
@@ -1261,10 +1440,14 @@
             transition: 0.2s;
             white-space: nowrap;
         }
-        .promo-section button:active { transform: scale(0.94);
-            opacity: 0.8; }
-        .promo-section button:disabled { opacity: 0.4;
-            pointer-events: none; }
+        .promo-section button:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        .promo-section button:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
         .promo-message {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.25);
@@ -1288,7 +1471,9 @@
             transform: translateY(12px);
             margin-top: 4px;
         }
-        #reload-pfp-btn:active { transform: scale(0.94); }
+        #reload-pfp-btn:active {
+            transform: scale(0.94);
+        }
 
         /* ─── Recent games ────────────────────────────────────────── */
         .recent-games {
@@ -1317,8 +1502,12 @@
         .rg-entry .rg-result {
             font-weight: 600;
         }
-        .rg-entry .rg-result.win { color: var(--green); }
-        .rg-entry .rg-result.loss { color: var(--red); }
+        .rg-entry .rg-result.win {
+            color: var(--green);
+        }
+        .rg-entry .rg-result.loss {
+            color: var(--red);
+        }
         .rg-entry .rg-amount {
             font-weight: 700;
             font-variant-numeric: tabular-nums;
@@ -1351,8 +1540,12 @@
             display: flex;
         }
         @keyframes cardFadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
         }
 
         .card-wrapper {
@@ -1426,7 +1619,6 @@
             object-fit: contain;
         }
 
-        /* ─── Card welcome with letter animation ────────────────── */
         .card-welcome {
             position: relative;
             z-index: 2;
@@ -1454,9 +1646,18 @@
             width: 6px;
         }
         @keyframes cwPop {
-            0% { opacity: 0; transform: translateY(6px) scale(0.9); }
-            60% { opacity: 1; transform: translateY(-2px) scale(1.05); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
+            0% {
+                opacity: 0;
+                transform: translateY(6px) scale(0.9);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(-2px) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .card-face.front .card-brand {
@@ -1591,8 +1792,12 @@
             justify-content: center;
             transition: 0.25s;
         }
-        .card-close-btn:active { transform: scale(0.88); }
-        .card-close-btn.show { display: flex; }
+        .card-close-btn:active {
+            transform: scale(0.88);
+        }
+        .card-close-btn.show {
+            display: flex;
+        }
 
         /* ─── TRANSACTION HISTORY ────────────────────────────────── */
         .tx-history {
@@ -1604,11 +1809,15 @@
             padding: 6px 4px;
             border: 1px solid rgba(255, 255, 255, 0.04);
             scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.04) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.04) transparent;
         }
-        .tx-history::-webkit-scrollbar { width: 3px; }
-        .tx-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05);
-            border-radius: 10px; }
+        .tx-history::-webkit-scrollbar {
+            width: 3px;
+        }
+        .tx-history::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
 
         .tx-header {
             display: flex;
@@ -1634,19 +1843,39 @@
             opacity: 0;
             transform: translateX(-8px);
         }
-        .tx-entry:nth-child(2) { animation-delay: 0.04s; }
-        .tx-entry:nth-child(3) { animation-delay: 0.08s; }
-        .tx-entry:nth-child(4) { animation-delay: 0.12s; }
-        .tx-entry:nth-child(5) { animation-delay: 0.16s; }
-        .tx-entry:nth-child(6) { animation-delay: 0.20s; }
-        .tx-entry:nth-child(7) { animation-delay: 0.24s; }
-        .tx-entry:nth-child(8) { animation-delay: 0.28s; }
-        .tx-entry:nth-child(9) { animation-delay: 0.32s; }
-        .tx-entry:nth-child(10) { animation-delay: 0.36s; }
+        .tx-entry:nth-child(2) {
+            animation-delay: 0.04s;
+        }
+        .tx-entry:nth-child(3) {
+            animation-delay: 0.08s;
+        }
+        .tx-entry:nth-child(4) {
+            animation-delay: 0.12s;
+        }
+        .tx-entry:nth-child(5) {
+            animation-delay: 0.16s;
+        }
+        .tx-entry:nth-child(6) {
+            animation-delay: 0.20s;
+        }
+        .tx-entry:nth-child(7) {
+            animation-delay: 0.24s;
+        }
+        .tx-entry:nth-child(8) {
+            animation-delay: 0.28s;
+        }
+        .tx-entry:nth-child(9) {
+            animation-delay: 0.32s;
+        }
+        .tx-entry:nth-child(10) {
+            animation-delay: 0.36s;
+        }
 
         @keyframes txSlide {
-            to { opacity: 1;
-                transform: translateX(0); }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         .tx-entry .tx-label {
             font-size: 11px;
@@ -1657,9 +1886,15 @@
             font-variant-numeric: tabular-nums;
             font-size: 13px;
         }
-        .tx-entry .tx-amount.win { color: var(--green); }
-        .tx-entry .tx-amount.loss { color: var(--red); }
-        .tx-entry .tx-amount.bet { color: #f0c040; }
+        .tx-entry .tx-amount.win {
+            color: var(--green);
+        }
+        .tx-entry .tx-amount.loss {
+            color: var(--red);
+        }
+        .tx-entry .tx-amount.bet {
+            color: #f0c040;
+        }
         .tx-entry .tx-time {
             font-size: 9px;
             color: rgba(255, 255, 255, 0.12);
@@ -1673,7 +1908,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* ─── Card stats – financial metrics ───────────────────── */
         .card-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1702,11 +1936,16 @@
             margin-top: 1px;
             font-variant-numeric: tabular-nums;
         }
-        .card-stats .cs-value.positive { color: var(--green); }
-        .card-stats .cs-value.negative { color: var(--red); }
-        .card-stats .cs-value.neutral { color: rgba(255,255,255,0.5); }
+        .card-stats .cs-value.positive {
+            color: var(--green);
+        }
+        .card-stats .cs-value.negative {
+            color: var(--red);
+        }
+        .card-stats .cs-value.neutral {
+            color: rgba(255, 255, 255, 0.5);
+        }
 
-        /* ─── Payment methods ───────────────────────────────────── */
         .payment-methods {
             width: 100%;
             display: flex;
@@ -1719,7 +1958,7 @@
             border-top: 1px solid rgba(255, 255, 255, 0.03);
         }
         .payment-methods span {
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
             padding: 2px 10px;
             border-radius: 12px;
         }
@@ -1866,9 +2105,15 @@
             min-height: 50px;
             box-shadow: 0 -4px 20px rgba(205, 138, 90, 0.2);
         }
-        .podium-col.p1 { transform: translateY(-6px); }
-        .podium-col.p2 { transform: translateY(0px); }
-        .podium-col.p3 { transform: translateY(6px); }
+        .podium-col.p1 {
+            transform: translateY(-6px);
+        }
+        .podium-col.p2 {
+            transform: translateY(0px);
+        }
+        .podium-col.p3 {
+            transform: translateY(6px);
+        }
 
         #top-list {
             display: flex;
@@ -2340,7 +2585,9 @@
             flex-direction: row;
             justify-content: center;
         }
-        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) { display: none; }
+        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) {
+            display: none;
+        }
         #ice-bet-overlay.collapsed .ice-bet-toggle {
             display: flex;
             width: 100%;
@@ -2364,7 +2611,9 @@
             transition: 0.2s;
             font-family: monospace;
         }
-        .ice-bet-toggle:active { opacity: 0.6; }
+        .ice-bet-toggle:active {
+            opacity: 0.6;
+        }
         #ice-bet-overlay:not(.collapsed) .ice-bet-toggle {
             display: flex;
             position: absolute;
@@ -2398,8 +2647,12 @@
             transform: rotate(-90deg);
             margin-right: 4px;
         }
-        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text { display: none; }
-        #ice-bet-overlay.collapsed .ice-bet-toggle-text { display: inline; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text {
+            display: none;
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle-text {
+            display: inline;
+        }
         .ice-bet-row {
             display: flex;
             align-items: center;
@@ -2485,7 +2738,9 @@
         }
         #ice-bet-overlay.collapsed #ice-current-bet-display,
         #ice-bet-overlay.collapsed .ice-bet-row,
-        #ice-bet-overlay.collapsed #ice-bet-btn { display: none; }
+        #ice-bet-overlay.collapsed #ice-bet-btn {
+            display: none;
+        }
 
         /* ─── ICE WIN PANEL ──────────────────────────────────────── */
         #ice-win-panel {
@@ -2615,7 +2870,9 @@
             color: #fff;
             box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
         }
-        .ice-auto-bet-toggle:active { transform: scale(0.9); }
+        .ice-auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
         .ice-auto-bet-panel {
             background: rgba(18, 18, 22, 0.95);
             backdrop-filter: blur(16px);
@@ -2628,7 +2885,9 @@
             gap: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
         }
-        .ice-auto-bet-panel.open { display: flex; }
+        .ice-auto-bet-panel.open {
+            display: flex;
+        }
         .ice-auto-bet-panel .row {
             display: flex;
             align-items: center;
@@ -2651,7 +2910,9 @@
             text-align: center;
             outline: none;
         }
-        .ice-auto-bet-panel .row input:focus { border-color: #5b8def; }
+        .ice-auto-bet-panel .row input:focus {
+            border-color: #5b8def;
+        }
         .ice-auto-bet-panel .switch-sm {
             position: relative;
             width: 34px;
@@ -2724,6 +2985,339 @@
             pointer-events: none;
         }
 
+        /* ─── IDENTITY CARD OVERLAY ──────────────────────────────── */
+        #identity-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99997;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #000000;
+            /* FULL BLACK */
+            animation: cardFadeIn 0.4s ease;
+            padding: 12px;
+        }
+        #identity-overlay.show {
+            display: flex;
+        }
+        #identity-overlay .id-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 420px;
+            gap: 16px;
+        }
+
+        /* Identity card - black/dark theme */
+        .id-card-container {
+            width: 100%;
+            aspect-ratio: 1.6 / 1;
+            perspective: 900px;
+            touch-action: none;
+            cursor: grab;
+            position: relative;
+        }
+        .id-card-container:active {
+            cursor: grabbing;
+        }
+
+        .id-card-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-radius: 20px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9), 0 0 60px rgba(255, 255, 255, 0.02);
+            will-change: transform;
+        }
+        .id-card-3d.dragging {
+            transition: none !important;
+        }
+
+        .id-card-face {
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            backface-visibility: hidden;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .id-card-face.front {
+            background: linear-gradient(145deg, #121212, #1a1a1a, #0d0d0d);
+            padding: 22px 24px 18px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .id-card-face.front::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .id-card-face.front .id-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: relative;
+            z-index: 2;
+        }
+        .id-card-face.front .id-header .id-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.15);
+            text-transform: uppercase;
+        }
+        .id-card-face.front .id-header .id-brand {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: rgba(255, 255, 255, 0.12);
+            text-transform: uppercase;
+        }
+
+        .id-card-face.front .id-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+            padding: 4px 0;
+        }
+
+        .id-field {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            cursor: pointer;
+            padding: 2px 0;
+            border-radius: 6px;
+            transition: background 0.15s;
+            position: relative;
+        }
+        .id-field:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .id-field .id-label {
+            font-size: 7px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: rgba(255, 255, 255, 0.15);
+            font-weight: 500;
+        }
+        .id-field .id-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.85);
+            letter-spacing: 0.3px;
+            transition: 0.2s;
+            min-height: 28px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid transparent;
+        }
+        .id-field .id-value .edit-hint {
+            font-size: 10px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.08);
+            margin-left: 8px;
+            transition: 0.2s;
+        }
+        .id-field:hover .id-value .edit-hint {
+            color: rgba(255, 255, 255, 0.15);
+        }
+        .id-field .id-value input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            width: 100%;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            letter-spacing: 0.3px;
+        }
+        .id-field .id-value input::placeholder {
+            color: rgba(255, 255, 255, 0.15);
+            font-weight: 400;
+        }
+        .id-field .id-value input:focus {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .id-field .id-value .char-limit {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.08);
+            margin-left: auto;
+            white-space: nowrap;
+        }
+        .id-field .id-error {
+            font-size: 9px;
+            color: var(--red);
+            opacity: 0;
+            transition: 0.2s;
+            min-height: 14px;
+        }
+        .id-field .id-error.show {
+            opacity: 1;
+        }
+        .id-field .id-valid {
+            font-size: 9px;
+            color: var(--green);
+            opacity: 0;
+            transition: 0.2s;
+            min-height: 14px;
+        }
+        .id-field .id-valid.show {
+            opacity: 1;
+        }
+
+        .id-card-face.front .id-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            z-index: 2;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .id-card-face.front .id-footer .id-status {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.08);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .id-card-face.front .id-footer .id-status .dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            margin-right: 4px;
+        }
+        .id-card-face.front .id-footer .id-status .dot.active {
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+        }
+
+        .id-card-face.back {
+            background: linear-gradient(145deg, #0a0a0a, #161616, #0d0d0d);
+            transform: rotateY(180deg);
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+        }
+        .id-card-face.back .id-back-icon {
+            font-size: 48px;
+            opacity: 0.06;
+        }
+        .id-card-face.back .id-back-text {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.06);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .id-card-face.back .id-back-sub {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.04);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .id-card-face.back .id-back-pattern {
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255, 255, 255, 0.005) 10px,
+                    rgba(255, 255, 255, 0.005) 11px);
+            pointer-events: none;
+        }
+
+        /* Identity enable toggle */
+        .id-enable-wrap {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+            padding: 4px 0;
+        }
+        .id-enable-btn {
+            padding: 12px 28px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.25s;
+            letter-spacing: 0.5px;
+            flex: 1;
+            max-width: 200px;
+            background: rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .id-enable-btn:active {
+            transform: scale(0.94);
+        }
+        .id-enable-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 30px var(--primary-glow);
+            border-color: var(--primary);
+        }
+        .id-enable-btn.active:active {
+            opacity: 0.8;
+        }
+        .id-enable-btn .btn-status {
+            font-size: 11px;
+            font-weight: 400;
+            opacity: 0.6;
+            display: block;
+            margin-top: 2px;
+        }
+
+        .id-close-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(18, 18, 22, 0.5);
+            backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: 0.25s;
+        }
+        .id-close-btn:active {
+            transform: scale(0.88);
+        }
+        .id-close-btn.show {
+            display: flex;
+        }
+
         /* ─── RESPONSIVE ──────────────────────────────────────────── */
         @media (max-width: 420px) {
             #notification-overlay {
@@ -2731,20 +3325,32 @@
                 padding: 18px 24px;
                 max-width: 92%;
             }
-            #balance-wrap { padding: 2px 8px 2px 4px; }
-            #balance { font-size: 13px; }
-            #diamond-icon { width: 18px;
-                height: 18px; }
-            #username-display { max-width: 60px;
-                font-size: 10px; }
-            .win-panel .panel-pfp { width: 22px;
-                height: 22px; }
+            #balance-wrap {
+                padding: 2px 8px 2px 4px;
+            }
+            #balance {
+                font-size: 13px;
+            }
+            #diamond-icon {
+                width: 18px;
+                height: 18px;
+            }
+            #username-display {
+                max-width: 60px;
+                font-size: 10px;
+            }
+            .win-panel .panel-pfp {
+                width: 22px;
+                height: 22px;
+            }
             .win-panel {
                 padding: 4px 8px;
                 font-size: 10px;
                 min-height: 30px;
             }
-            .win-panel .panel-amount { font-size: 11px; }
+            .win-panel .panel-amount {
+                font-size: 11px;
+            }
 
             #ice-top-panel {
                 padding: 2px 10px 3px;
@@ -2752,42 +3358,188 @@
                 top: 92px;
                 width: 94%;
             }
-            #ice-top-panel .panel-value { font-size: 12px; }
-            #ice-countdown-timer { font-size: 14px; }
-            #ice-top-panel .panel-label { font-size: 7px; }
+            #ice-top-panel .panel-value {
+                font-size: 12px;
+            }
+            #ice-countdown-timer {
+                font-size: 14px;
+            }
+            #ice-top-panel .panel-label {
+                font-size: 7px;
+            }
 
-            .card-face.front .card-balance .amount { font-size: 32px; }
-            .card-face.front { padding: 16px 18px; }
-            .card-face.back { padding: 16px 18px; }
-            .tx-entry { font-size: 11px; padding: 4px 10px; }
-            .tx-history { max-height: 120px; }
-            .card-welcome { font-size: 11px; }
-            .card-stats { grid-template-columns: 1fr 1fr; padding: 6px 8px; }
-            .card-stats .cs-value { font-size: 12px; }
+            .card-face.front .card-balance .amount {
+                font-size: 32px;
+            }
+            .card-face.front {
+                padding: 16px 18px;
+            }
+            .card-face.back {
+                padding: 16px 18px;
+            }
+            .tx-entry {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            .tx-history {
+                max-height: 120px;
+            }
+            .card-welcome {
+                font-size: 11px;
+            }
+            .card-stats {
+                grid-template-columns: 1fr 1fr;
+                padding: 6px 8px;
+            }
+            .card-stats .cs-value {
+                font-size: 12px;
+            }
 
-            .profile-header-section .pfp-wrap .prof-pfp { width: 52px;
-                height: 52px; }
-            .profile-header-section .prof-info .prof-name { font-size: 17px; }
-            .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
-            .profile-balance-row .bal-amount { font-size: 17px; }
+            .profile-header-section .pfp-wrap .prof-pfp {
+                width: 52px;
+                height: 52px;
+            }
+            .profile-header-section .prof-info .prof-name {
+                font-size: 17px;
+            }
+            .profile-stats-grid .stat-box .stat-num {
+                font-size: 18px;
+            }
+            .profile-balance-row .bal-amount {
+                font-size: 17px;
+            }
+
+            .id-card-face.front {
+                padding: 16px 18px 14px;
+            }
+            .id-field .id-value {
+                font-size: 15px;
+                min-height: 24px;
+            }
+            .id-field .id-value input {
+                font-size: 15px;
+            }
+            .id-card-face.front .id-body {
+                gap: 4px;
+            }
+            .id-enable-btn {
+                font-size: 13px;
+                padding: 10px 20px;
+            }
         }
         @media (max-width: 380px) {
-            #ice-top-panel { top: 86px;
+            #ice-top-panel {
+                top: 86px;
                 padding: 2px 8px 3px;
-                width: 96%; }
-            #ice-top-panel .panel-value { font-size: 11px; }
-            #ice-countdown-timer { font-size: 13px; }
-            .card-face.front .card-balance .amount { font-size: 28px; }
-            .tx-entry { font-size: 10px; padding: 3px 8px; }
+                width: 96%;
+            }
+            #ice-top-panel .panel-value {
+                font-size: 11px;
+            }
+            #ice-countdown-timer {
+                font-size: 13px;
+            }
+            .card-face.front .card-balance .amount {
+                font-size: 28px;
+            }
+            .tx-entry {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
+            .id-field .id-value {
+                font-size: 13px;
+                min-height: 20px;
+            }
+            .id-field .id-value input {
+                font-size: 13px;
+            }
         }
         @media (max-width: 360px) {
-            #ice-top-panel { top: 80px;
+            #ice-top-panel {
+                top: 80px;
                 padding: 2px 8px 2px;
-                width: 96%; }
-            #ice-top-panel .panel-value { font-size: 10px; }
-            #ice-countdown-timer { font-size: 12px; }
-            .card-face.front .card-balance .amount { font-size: 24px; }
-            .card-stats .cs-value { font-size: 11px; }
+                width: 96%;
+            }
+            #ice-top-panel .panel-value {
+                font-size: 10px;
+            }
+            #ice-countdown-timer {
+                font-size: 12px;
+            }
+            .card-face.front .card-balance .amount {
+                font-size: 24px;
+            }
+            .card-stats .cs-value {
+                font-size: 11px;
+            }
+            .id-field .id-value {
+                font-size: 12px;
+                min-height: 18px;
+            }
+            .id-field .id-value input {
+                font-size: 12px;
+            }
+        }
+
+        /* ─── PROMO MODAL ──────────────────────────────────────────── */
+        #promo-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            animation: cardFadeIn 0.4s ease;
+        }
+        #promo-modal.show {
+            display: flex;
+        }
+        #promo-modal .promo-box {
+            background: rgba(18, 18, 22, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 28px 32px 32px;
+            max-width: 360px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            text-align: center;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9);
+        }
+        #promo-modal .promo-gif {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        #promo-modal .promo-msg {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+        #promo-modal .promo-sub {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        #promo-modal .promo-btn {
+            padding: 10px 0;
+            width: 100%;
+            border-radius: 30px;
+            border: none;
+            background: var(--gold);
+            color: #000;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 6px;
+        }
+        #promo-modal .promo-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -2885,7 +3637,6 @@
             <div id="ice-page" class="tab-page">
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
-
                     <!-- ICE TOP PANEL -->
                     <div id="ice-top-panel">
                         <div class="panel-section">
@@ -2948,10 +3699,9 @@
                         </div>
                     </div>
                 </div>
-                <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – clean, recent games only (no achievements) -->
+            <!-- PROFILE TAB – with anonymous button -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -2990,6 +3740,15 @@
                         <span class="bal-amount" id="p-balance">1000</span>
                     </div>
 
+                    <!-- ─── ANONYMOUS BUTTON (replaces switch) ─── -->
+                    <div class="anon-btn-wrap">
+                        <button class="anon-btn" id="anon-btn">
+                            <span class="icon">🕵️</span>
+                            <span>Anonymous Identity</span>
+                            <span class="badge off" id="anon-badge">off</span>
+                        </button>
+                    </div>
+
                     <!-- Recent Games -->
                     <div class="recent-games">
                         <div class="rg-title">Recent Games</div>
@@ -3000,13 +3759,6 @@
 
                     <!-- Settings -->
                     <div class="profile-settings">
-                        <div class="setting-row">
-                            <div>
-                                <div class="set-label">Anonymous mode</div>
-                                <span class="set-sub">Hide your identity from others</span>
-                            </div>
-                            <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
-                        </div>
                         <div class="setting-row">
                             <div>
                                 <div class="set-label">Session</div>
@@ -3064,10 +3816,12 @@
 
     <!-- Promo Modal -->
     <div id="promo-modal">
-        <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
-        <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
-        <div class="promo-sub" id="promo-sub">Your new balance is 1100</div>
-        <button class="promo-btn" id="promo-continue-btn">Continue</button>
+        <div class="promo-box">
+            <img class="promo-gif" id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" />
+            <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
+            <div class="promo-sub" id="promo-sub">Your new balance is 1100</div>
+            <button class="promo-btn" id="promo-continue-btn">Continue</button>
+        </div>
     </div>
 
     <!-- ─── 3D BANK CARD OVERLAY ──────────────────────────────── -->
@@ -3120,7 +3874,7 @@
                 <div id="tx-list"></div>
             </div>
 
-            <!-- Card Stats – financial metrics -->
+            <!-- Card Stats -->
             <div class="card-stats" id="card-stats">
                 <div class="cs-item">
                     <span class="cs-label">Total Wagered</span>
@@ -3140,11 +3894,76 @@
                 </div>
             </div>
 
-            <!-- Payment Methods placeholder -->
             <div class="payment-methods">
                 <span>Visa</span>
                 <span>Mastercard</span>
                 <span>dllump Pay</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── IDENTITY CARD OVERLAY ──────────────────────────────── -->
+    <div id="identity-overlay">
+        <button class="id-close-btn show" id="identity-close-btn">✕</button>
+        <div class="id-wrapper">
+            <div class="id-card-container" id="id-card-container">
+                <div class="id-card-3d" id="id-card-3d">
+                    <!-- Front -->
+                    <div class="id-card-face front">
+                        <div class="id-header">
+                            <span class="id-title">🕵️ Identity</span>
+                            <span class="id-brand">dllump</span>
+                        </div>
+                        <div class="id-body">
+                            <!-- Name -->
+                            <div class="id-field" data-field="name">
+                                <span class="id-label">Full Name</span>
+                                <div class="id-value" id="id-name-display">
+                                    <span class="id-text">Anonymous</span>
+                                    <span class="edit-hint">✎</span>
+                                </div>
+                                <div class="id-error" id="id-name-error"></div>
+                            </div>
+                            <!-- Username -->
+                            <div class="id-field" data-field="username">
+                                <span class="id-label">Username</span>
+                                <div class="id-value" id="id-username-display">
+                                    <span class="id-text">@anon</span>
+                                    <span class="edit-hint">✎</span>
+                                </div>
+                                <div class="id-error" id="id-username-error"></div>
+                            </div>
+                            <!-- Phone -->
+                            <div class="id-field" data-field="phone">
+                                <span class="id-label">Phone Number</span>
+                                <div class="id-value" id="id-phone-display">
+                                    <span class="id-text">+0 000 000 000</span>
+                                    <span class="edit-hint">✎</span>
+                                </div>
+                                <div class="id-error" id="id-phone-error"></div>
+                            </div>
+                        </div>
+                        <div class="id-footer">
+                            <span class="id-status"><span class="dot" id="id-status-dot"></span> <span id="id-status-text">inactive</span></span>
+                            <span class="id-status" style="font-size:7px;opacity:0.06;">v2.0</span>
+                        </div>
+                    </div>
+                    <!-- Back -->
+                    <div class="id-card-face back">
+                        <div class="id-back-pattern"></div>
+                        <div class="id-back-icon">🕵️</div>
+                        <div class="id-back-text">anonymous identity</div>
+                        <div class="id-back-sub">dllump · private</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enable / Disable toggle -->
+            <div class="id-enable-wrap">
+                <button class="id-enable-btn" id="id-enable-btn">
+                    Enable Anonymous
+                    <span class="btn-status">hide identity in game</span>
+                </button>
             </div>
         </div>
     </div>
@@ -3180,16 +3999,14 @@
                 else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
         }
 
-        // ─── IMPROVED CLICK SOUND ─────────────────────────────────────
+        // ─── CLICK SOUND ─────────────────────────────────────────────────
         let audioCtxForClicks = null;
 
         function playClickSound() {
             if (!state.soundEnabled) return;
             try {
-                if (!audioCtxForClicks) audioCtxForClicks = new (window.AudioContext || window.webkitAudioContext)();
+                if (!audioCtxForClicks) audioCtxForClicks = new(window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtxForClicks.currentTime;
-
-                // 1) Short noise burst with decay – gives the "click" transient
                 const bufferSize = audioCtxForClicks.sampleRate * 0.03;
                 const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -3206,7 +4023,6 @@
                 noise.start(now);
                 noise.stop(now + 0.03);
 
-                // 2) Short sine tone with pitch drop – adds "tactile" feel
                 const osc = audioCtxForClicks.createOscillator();
                 const gainOsc = audioCtxForClicks.createGain();
                 osc.type = 'sine';
@@ -3253,7 +4069,18 @@
             recentGames: [],
             maxRecent: 5,
             memberSince: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            soundEnabled: false, // default OFF
+            soundEnabled: false,
+            // Identity card data
+            identity: {
+                name: '',
+                username: '',
+                phone: '',
+                enabled: false,
+                originalName: '',
+                originalUsername: '',
+                originalPhone: '',
+            },
+            identityLoaded: false,
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -3294,8 +4121,8 @@
         const topList = document.getElementById('top-list');
         const podiumEl = document.getElementById('podium');
         const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabPages = { pvp: document.getElementById('pvp-page'), ice: document.getElementById('ice-page'), profile: document.getElementById(
-                'profile-page'), top: document.getElementById('top-page') };
+        const tabPages = { pvp: document.getElementById('pvp-page'), ice: document.getElementById('ice-page'), profile: document
+                .getElementById('profile-page'), top: document.getElementById('top-page') };
         const winPanel = document.getElementById('win-panel');
         const winGif = document.getElementById('win-gif');
         const winAvatar = document.getElementById('win-avatar');
@@ -3304,7 +4131,6 @@
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
-        const anonToggle = document.getElementById('anon-toggle');
         const promoInput = document.getElementById('promo-input');
         const promoBtn = document.getElementById('promo-btn');
         const promoMessage = document.getElementById('promo-message');
@@ -3371,6 +4197,23 @@
         const csBiggest = document.getElementById('cs-biggest');
         const csNet = document.getElementById('cs-net');
 
+        // ─── IDENTITY CARD DOM REFS ──────────────────────────────────
+        const identityOverlay = document.getElementById('identity-overlay');
+        const identityCloseBtn = document.getElementById('identity-close-btn');
+        const idCardContainer = document.getElementById('id-card-container');
+        const idCard3d = document.getElementById('id-card-3d');
+        const idNameDisplay = document.getElementById('id-name-display');
+        const idUsernameDisplay = document.getElementById('id-username-display');
+        const idPhoneDisplay = document.getElementById('id-phone-display');
+        const idNameError = document.getElementById('id-name-error');
+        const idUsernameError = document.getElementById('id-username-error');
+        const idPhoneError = document.getElementById('id-phone-error');
+        const idEnableBtn = document.getElementById('id-enable-btn');
+        const idStatusDot = document.getElementById('id-status-dot');
+        const idStatusText = document.getElementById('id-status-text');
+        const anonBtn = document.getElementById('anon-btn');
+        const anonBadge = document.getElementById('anon-badge');
+
         let notifTimeout = null;
         let particles = [];
         let particleAnimId = null;
@@ -3432,7 +4275,6 @@
         function animateParticles() {
             if (!particleCanvas.classList.contains('show')) return;
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-
             particles.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -3440,7 +4282,6 @@
                 if (p.x > particleCanvas.width) p.x = 0;
                 if (p.y < 0) p.y = particleCanvas.height;
                 if (p.y > particleCanvas.height) p.y = 0;
-
                 particleCtx.beginPath();
                 particleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 particleCtx.fillStyle = `rgba(120, 190, 255, ${p.alpha})`;
@@ -3450,7 +4291,6 @@
                 particleCtx.fill();
                 particleCtx.shadowBlur = 0;
             });
-
             particleAnimId = requestAnimationFrame(animateParticles);
         }
 
@@ -3491,7 +4331,6 @@
             requestAnimationFrame(startCardIdleAnimation);
         }
 
-        // ─── Card welcome animation ──────────────────────────────────
         function animateCardWelcome(name) {
             const text = `Welcome, ${name}`;
             cardWelcome.innerHTML = '';
@@ -3507,24 +4346,16 @@
             });
         }
 
-        // ─── Card stats update (financial metrics) ────────────────────
         function updateCardStats() {
             const txs = state.transactions;
             let totalWagered = 0;
             let biggestWin = 0;
             let netProfit = 0;
-
             txs.forEach(tx => {
-                if (tx.type === 'bet') {
-                    totalWagered += Math.abs(tx.amount);
-                } else if (tx.type === 'win') {
-                    netProfit += tx.amount;
-                    if (tx.amount > biggestWin) biggestWin = tx.amount;
-                } else if (tx.type === 'loss') {
-                    netProfit += tx.amount; // tx.amount is negative
-                }
+                if (tx.type === 'bet') totalWagered += Math.abs(tx.amount);
+                else if (tx.type === 'win') { netProfit += tx.amount; if (tx.amount > biggestWin) biggestWin = tx.amount; } else
+                    if (tx.type === 'loss') netProfit += tx.amount;
             });
-
             csWagered.textContent = totalWagered;
             csBiggest.textContent = biggestWin;
             csNet.textContent = netProfit >= 0 ? `+${netProfit}` : `${netProfit}`;
@@ -3559,7 +4390,6 @@
             stopParticles();
         }
 
-        // ─── Card Touch/Mouse events ──────────────────────────────────
         cardContainer.addEventListener('mousedown', (e) => {
             cardDrag = true;
             cardPrevX = e.clientX;
@@ -3590,7 +4420,6 @@
                 }, 300);
             }
         });
-
         cardContainer.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             cardDrag = true;
@@ -3623,23 +4452,14 @@
                 }, 300);
             }
         }, { passive: true });
-
-        cardCloseBtn.addEventListener('click', () => {
-            playClickSound();
-            closeCard();
-        });
-        cardOverlay.addEventListener('click', (e) => {
-            if (e.target === cardOverlay) closeCard();
-        });
+        cardCloseBtn.addEventListener('click', () => { playClickSound();
+            closeCard(); });
+        cardOverlay.addEventListener('click', (e) => { if (e.target === cardOverlay) closeCard(); });
 
         // ─── TRANSACTIONS ──────────────────────────────────────────────
         function addTransaction(type, amount, label) {
-            const entry = {
-                type: type,
-                amount: amount,
-                label: label || (type === 'win' ? 'Win' : type === 'loss' ? 'Loss' : 'Bet'),
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
+            const entry = { type, amount, label: label || (type === 'win' ? 'Win' : type === 'loss' ? 'Loss' : 'Bet'),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             state.transactions.unshift(entry);
             if (state.transactions.length > state.maxTx) state.transactions.pop();
             renderTransactions();
@@ -3649,10 +4469,7 @@
         function renderTransactions() {
             if (!txList) return;
             const txs = state.transactions;
-            if (txs.length === 0) {
-                txList.innerHTML = `<div class="tx-empty">No transactions yet</div>`;
-                return;
-            }
+            if (txs.length === 0) { txList.innerHTML = `<div class="tx-empty">No transactions yet</div>`; return; }
             let html = '';
             txs.forEach(tx => {
                 const sign = tx.amount > 0 ? '+' : '';
@@ -3668,19 +4485,13 @@
             txList.innerHTML = html;
         }
 
-        // ─── Open card from balance click ─────────────────────────────
         function setupBalanceCardTriggers() {
-            const balanceWrap = document.getElementById('balance-wrap');
-            balanceWrap.addEventListener('click', () => {
-                playClickSound();
+            document.getElementById('balance-wrap').addEventListener('click', () => { playClickSound();
                 openCard();
-                haptic('light');
-            });
-            profileBalanceRow.addEventListener('click', () => {
-                playClickSound();
+                haptic('light'); });
+            profileBalanceRow.addEventListener('click', () => { playClickSound();
                 openCard();
-                haptic('light');
-            });
+                haptic('light'); });
         }
 
         // ─── ICE STATE ──────────────────────────────────────────────────
@@ -3791,8 +4602,8 @@
 
         function loadPlayerPFP(player) {
             const src = player.pfp || state.defaultAvatar;
-            if (pfpCache.has(src)) { const cached = pfpCache.get(src); if (cached.loaded && cached.img) { player.pfpImg = cached
-                    .img; return; } }
+            if (pfpCache.has(src)) { const cached = pfpCache.get(src); if (cached.loaded && cached.img) { player.pfpImg =
+                    cached.img; return; } }
             const img = new Image();
             let attempts = 0;
             const maxAttempts = 3;
@@ -3876,7 +4687,6 @@
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
                     state.anonymous = !!res.user.anonymous;
-                    anonToggle.checked = state.anonymous;
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -3887,20 +4697,16 @@
                         const last = state.winHistory[0];
                         if (last) updateLastGamePanel(last);
                         let best = state.winHistory.reduce((max, e) => (e.amount || 0) > (max.amount || 0) ? e : max, { amount: 0 });
-                        if (best.amount > 0) {
-                            state.bestWin = best;
-                            updateBestWinPanel(best);
-                        }
+                        if (best.amount > 0) { state.bestWin = best;
+                            updateBestWinPanel(best); }
                     }
                     if (Array.isArray(res.iceRecentWinners) && res.iceRecentWinners.length) {
                         iceState.winHistory = res.iceRecentWinners.slice(0, 8);
                         const last = iceState.winHistory[0];
                         if (last) updateIceLastGamePanel(last);
                         let best = iceState.winHistory.reduce((max, e) => (e.amount || 0) > (max.amount || 0) ? e : max, { amount: 0 });
-                        if (best.amount > 0) {
-                            iceState.bestWin = best;
-                            updateIceBestWinPanel(best);
-                        }
+                        if (best.amount > 0) { iceState.bestWin = best;
+                            updateIceBestWinPanel(best); }
                     }
                     if (res.icePlayers && Array.isArray(res.icePlayers)) {
                         iceState.players = res.icePlayers.map(p => ({
@@ -3931,6 +4737,8 @@
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
+                    // Load identity data from server
+                    loadIdentityFromServer();
                     // Init transactions with demo data
                     if (state.transactions.length === 0) {
                         addTransaction('win', 120, 'PvP Win');
@@ -3939,13 +4747,11 @@
                         addTransaction('win', 200, 'Ice Win');
                         addTransaction('bet', -75, 'PvP Bet');
                     }
-                    // Demo recent games
                     if (state.recentGames.length === 0) {
                         addRecentGame('pvp', 'Bot_007', 120, 'win');
                         addRecentGame('ice', 'CryptoKing', -30, 'loss');
                         addRecentGame('pvp', 'LuckyDuck', 50, 'win');
                     }
-                    // Init card stats
                     updateCardStats();
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
@@ -3957,19 +4763,14 @@
             socket.on('roundEnd', (payload) => { handleRoundEnd(payload); });
             socket.on('iceState', (snapshot) => { applyIceServerState(snapshot); });
             socket.on('iceRoundEnd', (payload) => { handleIceRoundEnd(payload); });
-            socket.on('notification', (data) => {
-                if (!data || !data.message) return;
-                showNotification(data.message);
-            });
+            socket.on('notification', (data) => { if (data && data.message) showNotification(data.message); });
         }
 
         // ─── NOTIFICATION ──────────────────────────────────────────────
         function showNotification(text) {
-            if (notifTimeout) {
-                clearTimeout(notifTimeout);
+            if (notifTimeout) { clearTimeout(notifTimeout);
                 notifTimeout = null;
-                notifOverlay.classList.remove('show');
-            }
+                notifOverlay.classList.remove('show'); }
             notifOverlay.textContent = text;
             requestAnimationFrame(() => {
                 notifOverlay.classList.add('show');
@@ -4210,10 +5011,8 @@
             state.winHistory.unshift(entry);
             if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
             updateLastGamePanel(entry);
-            if (amount > state.bestWin.amount) {
-                state.bestWin = { amount, pfp, name };
-                updateBestWinPanel(state.bestWin);
-            }
+            if (amount > state.bestWin.amount) { state.bestWin = { amount, pfp, name };
+                updateBestWinPanel(state.bestWin); }
             addTransaction('win', amount, `Win vs ${name}`);
             addRecentGame('pvp', name, amount, 'win');
         }
@@ -4223,10 +5022,8 @@
             iceState.winHistory.unshift(entry);
             if (iceState.winHistory.length > 8) iceState.winHistory.pop();
             updateIceLastGamePanel(entry);
-            if (amount > iceState.bestWin.amount) {
-                iceState.bestWin = { amount, pfp, name };
-                updateIceBestWinPanel(iceState.bestWin);
-            }
+            if (amount > iceState.bestWin.amount) { iceState.bestWin = { amount, pfp, name };
+                updateIceBestWinPanel(iceState.bestWin); }
             addTransaction('win', amount, `Ice Win vs ${name}`);
             addRecentGame('ice', name, amount, 'win');
         }
@@ -4277,10 +5074,8 @@
             updateBetOverlayVisibility();
             updateFrogVisibility();
         }
-        winContinueBtn.addEventListener('click', () => {
-            playClickSound();
-            hideWinPanelAndReset();
-        });
+        winContinueBtn.addEventListener('click', () => { playClickSound();
+            hideWinPanelAndReset(); });
 
         // ─── ICE ROUND END ──────────────────────────────────────────
         function handleIceRoundEnd(payload) {
@@ -4308,10 +5103,8 @@
             iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             iceWinPanel.classList.add('show');
             haptic('heavy');
-
             iceState.winnerPuckPop = true;
             iceState.winnerPuckPopStart = performance.now();
-
             if (window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
             window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
         }
@@ -4328,18 +5121,14 @@
             updateIceBetOverlayVisibility();
             updateIceTopPanelVisibility();
         }
-        iceWinContinueBtn.addEventListener('click', () => {
-            playClickSound();
-            hideIceWinPanelAndReset();
-        });
+        iceWinContinueBtn.addEventListener('click', () => { playClickSound();
+            hideIceWinPanelAndReset(); });
 
-        // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
         // ─── applyIceServerState ───────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
-
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.puckPrevX = snapshot.puck.x;
                 iceState.puckPrevY = snapshot.puck.y;
@@ -4347,7 +5136,6 @@
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
             }
-
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
             iceState.countdownStartTime = snapshot.countdownStartTime;
@@ -4356,7 +5144,6 @@
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
             iceState.spinStartX = snapshot.spinStartX || iceState.arenaSize / 2;
             iceState.spinStartY = snapshot.spinStartY || iceState.arenaSize / 2;
-
             if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
                 iceState.puckPrevX = iceState.puck.x;
                 iceState.puckPrevY = iceState.puck.y;
@@ -4364,11 +5151,7 @@
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
             }
-
-            if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
-                iceState.idlePuckInitialized = false;
-            }
-
+            if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) { iceState.idlePuckInitialized = false; }
             if (snapshot.gameState === 'spinning' && prevGameState !== 'spinning') {
                 iceState.puckVisible = true;
                 iceState.puckPopStart = performance.now();
@@ -4412,7 +5195,6 @@
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
             }
-
             const seen = new Set();
             snapshot.players.forEach(sp => {
                 seen.add(sp.id);
@@ -4448,7 +5230,6 @@
                 local.name = sp.name;
             });
             iceState.players = iceState.players.filter(p => seen.has(p.id));
-
             if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
                 iceState.winnerId = null;
                 iceWaitingText.style.display = 'block';
@@ -4472,11 +5253,8 @@
         }
 
         function updateIceWaitingText() {
-            if (iceState.players.length >= 1) {
-                iceWaitingText.style.display = 'none';
-            } else {
-                iceWaitingText.style.display = 'block';
-            }
+            if (iceState.players.length >= 1) { iceWaitingText.style.display = 'none'; } else { iceWaitingText.style
+                    .display = 'block'; }
             if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
                 iceWaitingText.style.display = 'none';
             }
@@ -4488,7 +5266,6 @@
                 iceState.gameState === 'sliding' ||
                 iceState.gameState === 'finished');
             iceTopPanel.classList.toggle('show', show);
-
             const timerSection = document.getElementById('ice-timer-section');
             if (iceState.gameState === 'countdown') {
                 timerSection.style.display = 'flex';
@@ -4533,15 +5310,11 @@
             iceBetInput.value = '';
             updateIceBetUI();
         }
-        iceBetBtn.addEventListener('click', () => {
-            playClickSound();
-            placeIceBet(iceBetInput.value);
-        });
-        iceAllInBtn.addEventListener('click', () => {
-            playClickSound();
+        iceBetBtn.addEventListener('click', () => { playClickSound();
+            placeIceBet(iceBetInput.value); });
+        iceAllInBtn.addEventListener('click', () => { playClickSound();
             iceBetInput.value = state.balance;
-            placeIceBet(state.balance);
-        });
+            placeIceBet(state.balance); });
         iceBetInput.addEventListener('blur', () => {
             let val = parseInt(iceBetInput.value);
             if (isNaN(val) || val < 10) val = 10;
@@ -4575,31 +5348,22 @@
                     iceAutoBetInterval = null; }
             }
         }
-        iceAutoToggle.addEventListener('click', () => {
-            playClickSound();
-            iceAutoPanel.classList.toggle('open');
-        });
-        iceAutoSwitchWrap.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClickSound();
-            const checked = !iceAutoSwitch.checked;
+        iceAutoToggle.addEventListener('click', () => { playClickSound();
+            iceAutoPanel.classList.toggle('open'); });
+        iceAutoSwitchWrap.addEventListener('click', (e) => { e.stopPropagation();
+            playClickSound(); const checked = !iceAutoSwitch.checked;
             iceAutoSwitch.checked = checked;
             toggleIceAutoBet(checked);
-            haptic('light');
-        });
-        iceAutoSwitch.addEventListener('change', () => {
-            playClickSound();
-            toggleIceAutoBet(iceAutoSwitch.checked);
-        });
+            haptic('light'); });
+        iceAutoSwitch.addEventListener('change', () => { playClickSound();
+            toggleIceAutoBet(iceAutoSwitch.checked); });
 
         let iceBetCollapsed = false;
-        iceBetToggleBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
+        iceBetToggleBtn.addEventListener('click', function(e) { e.stopPropagation();
             playClickSound();
             iceBetCollapsed = !iceBetCollapsed;
             iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
-            haptic('light');
-        });
+            haptic('light'); });
 
         function refreshLeaderboard() {
             if (!socket) return;
@@ -4628,8 +5392,8 @@
                 const p = info.player;
                 if (!p) return;
                 const prize = getPrizeForRank(p.rank);
-                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
-                    prize.label) : '';
+                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize
+                        .label}` : prize.label) : '';
                 const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
                     `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` :
                     '';
@@ -4643,7 +5407,6 @@
                         </div>`;
             });
             podiumEl.innerHTML = podiumHtml;
-
             const rest = players.slice(3);
             if (rest.length === 0) { topList.innerHTML = ''; return; }
             let listHtml = '';
@@ -4654,8 +5417,8 @@
                 else if (rank === 5) rClass += ' silver';
                 else if (rank === 6) rClass += ' bronze';
                 const prize = getPrizeForRank(rank);
-                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
-                    prize.label) : '';
+                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize
+                        .label}` : prize.label) : '';
                 const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
                     `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` :
                     '';
@@ -4718,6 +5481,8 @@
             if (state.pfp) profilePfp.src = state.pfp;
             updateBalance();
             renderRecentGames();
+            // Update badge
+            updateAnonBadge();
         }
 
         let audioCtx = null,
@@ -4772,13 +5537,11 @@
         });
 
         let betCollapsed = false;
-        betToggleBtn.addEventListener('click', function(e) {
-            e.stopPropagation();
+        betToggleBtn.addEventListener('click', function(e) { e.stopPropagation();
             playClickSound();
             betCollapsed = !betCollapsed;
             betOverlay.classList.toggle('collapsed', betCollapsed);
-            haptic('light');
-        });
+            haptic('light'); });
 
         let allInConfirming = false,
             allInTimeout = null;
@@ -4853,22 +5616,15 @@
                     autoBetInterval = null; }
             }
         }
-        autoToggle.addEventListener('click', () => {
-            playClickSound();
-            autoPanel.classList.toggle('open');
-        });
-        autoSwitchWrap.addEventListener('click', (e) => {
-            e.stopPropagation();
-            playClickSound();
-            const checked = !autoSwitch.checked;
+        autoToggle.addEventListener('click', () => { playClickSound();
+            autoPanel.classList.toggle('open'); });
+        autoSwitchWrap.addEventListener('click', (e) => { e.stopPropagation();
+            playClickSound(); const checked = !autoSwitch.checked;
             autoSwitch.checked = checked;
             toggleAutoBet(checked);
-            haptic('light');
-        });
-        autoSwitch.addEventListener('change', () => {
-            playClickSound();
-            toggleAutoBet(autoSwitch.checked);
-        });
+            haptic('light'); });
+        autoSwitch.addEventListener('change', () => { playClickSound();
+            toggleAutoBet(autoSwitch.checked); });
 
         // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
@@ -4910,10 +5666,8 @@
                 promoMessage.style.color = '#d45a5a'; } finally { promoBtn.disabled = false;
                 promoBtn.textContent = 'Redeem'; }
         });
-        promoContinueBtn.addEventListener('click', () => {
-            playClickSound();
-            promoModal.classList.remove('show');
-        });
+        promoContinueBtn.addEventListener('click', () => { playClickSound();
+            promoModal.classList.remove('show'); });
 
         // ─── RELOAD PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
@@ -4932,27 +5686,11 @@
             }
         });
 
-        // ─── ANONYMOUS ──────────────────────────────────────────────
-        anonToggle.addEventListener('change', () => {
-            playClickSound();
-            if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
-            const enabled = anonToggle.checked;
-            anonToggle.disabled = true;
-            socket.emit('setAnonymous', { enabled }, (res) => {
-                anonToggle.disabled = false;
-                if (!res?.ok) { anonToggle.checked = state.anonymous;
-                    console.warn('setAnonymous failed:', res?.error); return; }
-                state.anonymous = res.anonymous;
-                haptic('light');
-            });
-        });
-
         // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
-            playClickSound(); // plays only if sound was on (it will be off if toggling off, but if toggling on it will play)
+            playClickSound();
             state.soundEnabled = soundToggle.checked;
         });
-        // Ensure the checkbox reflects the initial state
         soundToggle.checked = state.soundEnabled;
 
         // ─── TAB SWITCHING ────────────────────────────────────────────
@@ -4966,17 +5704,15 @@
                 setTimeout(() => { oldEl.classList.remove('exit'); }, 350); }
             const newEl = tabPages[tabId];
             if (newEl) { newEl.classList.add('active');
-                newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile(); } if (tabId === 'top')
-                    refreshLeaderboard(); }
+                newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile();
+                    updateAnonBadge(); } if (tabId === 'top') refreshLeaderboard(); }
             tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
             haptic('light');
         }
         tabBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
+            btn.addEventListener('click', function(e) { e.stopPropagation();
                 playClickSound();
-                switchTab(this.dataset.tab);
-            });
+                switchTab(this.dataset.tab); });
         });
 
         // ─── RENDER ──────────────────────────────────────────────────
@@ -5364,7 +6100,6 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -5401,7 +6136,6 @@
                 iceCtx.restore();
             }
 
-            // Draw puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -5448,9 +6182,7 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
 
                 let glowColor = 'rgba(180,220,255,0.9)';
-                if (iceState.winnerPuckPop) {
-                    glowColor = 'rgba(255,215,0,0.9)';
-                }
+                if (iceState.winnerPuckPop) { glowColor = 'rgba(255,215,0,0.9)'; }
 
                 iceCtx.save();
                 iceCtx.shadowColor = glowColor;
@@ -5503,9 +6235,7 @@
                     iceState.nameFadeIn = Math.min(1, iceState.nameFadeIn + 0.03);
                 } else if (!isSlow || !ownerName) {
                     iceState.nameFadeIn = Math.max(0, iceState.nameFadeIn - 0.02);
-                    if (iceState.nameFadeIn <= 0) {
-                        iceState.showOwnerName = false;
-                    }
+                    if (iceState.nameFadeIn <= 0) { iceState.showOwnerName = false; }
                 }
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
@@ -5526,9 +6256,7 @@
                 }
             }
 
-            if (iceState.zoom > 1.01) {
-                iceCtx.restore();
-            }
+            if (iceState.zoom > 1.01) { iceCtx.restore(); }
         }
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
@@ -5569,6 +6297,477 @@
             requestAnimationFrame(renderLoop);
         }
 
+        // ─── IDENTITY CARD LOGIC ──────────────────────────────────────
+
+        // Random generators
+        function randomName() {
+            const first = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliett',
+                'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa', 'Quebec', 'Romeo', 'Sierra', 'Tango', 'Uniform',
+                'Victor', 'Whiskey', 'Xray', 'Yankee', 'Zulu'
+            ];
+            const second = ['Wolf', 'Fox', 'Hawk', 'Eagle', 'Lion', 'Tiger', 'Bear', 'Shark', 'Dragon', 'Phoenix', 'Raven',
+                'Falcon', 'Owl', 'Snake', 'Panther', 'Leopard', 'Cheetah', 'Hound', 'Viper', 'Cobra'
+            ];
+            return first[Math.floor(Math.random() * first.length)] + ' ' + second[Math.floor(Math.random() * second
+            .length)];
+        }
+
+        function randomUsername() {
+            const adjs = ['Swift', 'Silent', 'Shadow', 'Crimson', 'Phantom', 'Noble', 'Frost', 'Storm', 'Blaze', 'Ivy',
+                'Echo', 'Raven', 'Lunar', 'Solar', 'Apex'
+            ];
+            const nouns = ['Wolf', 'Fox', 'Hawk', 'Lion', 'Tiger', 'Bear', 'Shark', 'Dragon', 'Phoenix', 'Raven', 'Falcon',
+                'Owl', 'Snake'
+            ];
+            const num = Math.floor(Math.random() * 1000);
+            return adjs[Math.floor(Math.random() * adjs.length)] + nouns[Math.floor(Math.random() * nouns.length)] + num;
+        }
+
+        function randomPhone() {
+            const country = ['+1', '+44', '+49', '+33', '+91', '+61', '+81', '+86', '+7', '+39', '+34', '+31', '+46'];
+            const parts = [];
+            for (let i = 0; i < 3; i++) parts.push(String(Math.floor(Math.random() * 900) + 100));
+            return country[Math.floor(Math.random() * country.length)] + ' ' + parts.join(' ');
+        }
+
+        function loadIdentityFromServer() {
+            if (!socket || !socket.connected) return;
+            socket.emit('getAnonymousData', {}, (res) => {
+                if (res?.ok && res.data) {
+                    state.identity.name = res.data.anonymousName || randomName();
+                    state.identity.username = res.data.anonymousUsername || randomUsername();
+                    state.identity.phone = res.data.anonymousPhone || randomPhone();
+                    state.identity.enabled = res.data.anonymousEnabled || false;
+                    state.identity.originalName = state.identity.name;
+                    state.identity.originalUsername = state.identity.username;
+                    state.identity.originalPhone = state.identity.phone;
+                    state.identityLoaded = true;
+                    // Update UI
+                    updateIdentityUI();
+                    updateAnonBadge();
+                } else {
+                    // Fallback: generate random
+                    state.identity.name = randomName();
+                    state.identity.username = randomUsername();
+                    state.identity.phone = randomPhone();
+                    state.identity.enabled = false;
+                    state.identity.originalName = state.identity.name;
+                    state.identity.originalUsername = state.identity.username;
+                    state.identity.originalPhone = state.identity.phone;
+                    state.identityLoaded = true;
+                    updateIdentityUI();
+                    updateAnonBadge();
+                }
+            });
+        }
+
+        function updateIdentityUI() {
+            const i = state.identity;
+            // Update display spans
+            const nameSpan = idNameDisplay.querySelector('.id-text');
+            const userSpan = idUsernameDisplay.querySelector('.id-text');
+            const phoneSpan = idPhoneDisplay.querySelector('.id-text');
+            if (nameSpan) nameSpan.textContent = i.name || 'Anonymous';
+            if (userSpan) userSpan.textContent = i.username ? '@' + i.username : '@anon';
+            if (phoneSpan) phoneSpan.textContent = i.phone || '+0 000 000 000';
+            // Update status
+            updateIdStatus();
+            // Update enable button
+            updateEnableButton();
+            // Update badge in profile
+            updateAnonBadge();
+        }
+
+        function updateIdStatus() {
+            if (state.identity.enabled) {
+                idStatusDot.className = 'dot active';
+                idStatusText.textContent = 'active';
+            } else {
+                idStatusDot.className = 'dot';
+                idStatusText.textContent = 'inactive';
+            }
+        }
+
+        function updateEnableButton() {
+            const btn = idEnableBtn;
+            if (state.identity.enabled) {
+                btn.textContent = 'Disable Anonymous';
+                btn.className = 'id-enable-btn active';
+                btn.querySelector('.btn-status').textContent = 'show your real identity';
+            } else {
+                btn.textContent = 'Enable Anonymous';
+                btn.className = 'id-enable-btn';
+                btn.querySelector('.btn-status').textContent = 'hide identity in game';
+            }
+        }
+
+        function updateAnonBadge() {
+            const badge = anonBadge;
+            if (state.identity.enabled) {
+                badge.textContent = 'on';
+                badge.className = 'badge';
+            } else {
+                badge.textContent = 'off';
+                badge.className = 'badge off';
+            }
+        }
+
+        // ─── IDENTITY CARD 3D INTERACTION ────────────────────────────
+        let idCardDrag = false;
+        let idCardPrevX = 0,
+            idCardPrevY = 0;
+        let idCardRotX = 0,
+            idCardRotY = 0;
+        let idCardTargetRotX = 0,
+            idCardTargetRotY = 0;
+        let idCardIdlePhase = 0;
+
+        function updateIdCardTransform() {
+            idCardRotX += (idCardTargetRotX - idCardRotX) * 0.08;
+            idCardRotY += (idCardTargetRotY - idCardRotY) * 0.08;
+            idCard3d.style.transform = `rotateX(${idCardRotX}deg) rotateY(${idCardRotY}deg)`;
+        }
+
+        function startIdCardIdleAnimation() {
+            idCardIdlePhase += 0.006;
+            const idleX = Math.sin(idCardIdlePhase) * 3;
+            const idleY = Math.cos(idCardIdlePhase * 0.7) * 3.5;
+            if (!idCardDrag) {
+                idCardTargetRotX = 1.0 + idleX;
+                idCardTargetRotY = 1.0 + idleY;
+            }
+            updateIdCardTransform();
+            requestAnimationFrame(startIdCardIdleAnimation);
+        }
+
+        idCardContainer.addEventListener('mousedown', (e) => {
+            idCardDrag = true;
+            idCardPrevX = e.clientX;
+            idCardPrevY = e.clientY;
+            idCard3d.classList.add('dragging');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!idCardDrag) return;
+            const deltaX = (e.clientX - idCardPrevX) * 0.4;
+            const deltaY = (e.clientY - idCardPrevY) * 0.4;
+            idCardTargetRotY += deltaX;
+            idCardTargetRotX -= deltaY;
+            idCardTargetRotX = Math.max(-20, Math.min(20, idCardTargetRotX));
+            idCardTargetRotY = Math.max(-20, Math.min(20, idCardTargetRotY));
+            idCardPrevX = e.clientX;
+            idCardPrevY = e.clientY;
+            updateIdCardTransform();
+        });
+        document.addEventListener('mouseup', () => {
+            if (idCardDrag) {
+                idCardDrag = false;
+                idCard3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!idCardDrag) {
+                        idCardTargetRotX = 1.0 + Math.sin(idCardIdlePhase) * 3;
+                        idCardTargetRotY = 1.0 + Math.cos(idCardIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        });
+        idCardContainer.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            idCardDrag = true;
+            idCardPrevX = touch.clientX;
+            idCardPrevY = touch.clientY;
+            idCard3d.classList.add('dragging');
+        }, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (!idCardDrag) return;
+            const touch = e.touches[0];
+            const deltaX = (touch.clientX - idCardPrevX) * 0.4;
+            const deltaY = (touch.clientY - idCardPrevY) * 0.4;
+            idCardTargetRotY += deltaX;
+            idCardTargetRotX -= deltaY;
+            idCardTargetRotX = Math.max(-20, Math.min(20, idCardTargetRotX));
+            idCardTargetRotY = Math.max(-20, Math.min(20, idCardTargetRotY));
+            idCardPrevX = touch.clientX;
+            idCardPrevY = touch.clientY;
+            updateIdCardTransform();
+        }, { passive: true });
+        document.addEventListener('touchend', () => {
+            if (idCardDrag) {
+                idCardDrag = false;
+                idCard3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!idCardDrag) {
+                        idCardTargetRotX = 1.0 + Math.sin(idCardIdlePhase) * 3;
+                        idCardTargetRotY = 1.0 + Math.cos(idCardIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        }, { passive: true });
+
+        identityCloseBtn.addEventListener('click', () => { playClickSound();
+            closeIdentityOverlay(); });
+        identityOverlay.addEventListener('click', (e) => { if (e.target === identityOverlay) closeIdentityOverlay(); });
+
+        // ─── OPEN / CLOSE IDENTITY OVERLAY ────────────────────────────
+        function openIdentityOverlay() {
+            identityOverlay.classList.add('show');
+            identityCloseBtn.classList.add('show');
+            idCardRotX = 0;
+            idCardRotY = 0;
+            idCardTargetRotX = 0;
+            idCardTargetRotY = 0;
+            idCardIdlePhase = 0;
+            idCardDrag = false;
+            // Load latest data
+            loadIdentityFromServer();
+            // Reset any editing state
+            cancelEditing();
+            requestAnimationFrame(startIdCardIdleAnimation);
+            haptic('medium');
+        }
+
+        function closeIdentityOverlay() {
+            identityOverlay.classList.remove('show');
+            identityCloseBtn.classList.remove('show');
+            idCardDrag = false;
+            cancelEditing();
+        }
+
+        // ─── EDITABLE FIELDS ──────────────────────────────────────────
+        let activeEditField = null;
+        let editInput = null;
+
+        function cancelEditing() {
+            if (editInput) {
+                editInput.remove();
+                editInput = null;
+            }
+            activeEditField = null;
+            // Remove any error states
+            document.querySelectorAll('.id-error').forEach(el => { el.textContent = '';
+                el.classList.remove('show'); });
+        }
+
+        function startEditing(field) {
+            cancelEditing();
+            activeEditField = field;
+            const displayEl = field === 'name' ? idNameDisplay : field === 'username' ? idUsernameDisplay : idPhoneDisplay;
+            const textSpan = displayEl.querySelector('.id-text');
+            const currentValue = textSpan ? textSpan.textContent : '';
+            // Remove the edit hint
+            const hint = displayEl.querySelector('.edit-hint');
+            if (hint) hint.style.display = 'none';
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = field === 'username' ? currentValue.replace(/^@/, '') : currentValue;
+            input.placeholder = field === 'name' ? 'Your name' : field === 'username' ? 'Username' : 'Phone number';
+            input.maxLength = field === 'phone' ? 20 : 30;
+            input.autofocus = true;
+
+            // Style it like the value
+            input.style.background = 'rgba(255,255,255,0.03)';
+            input.style.border = 'none';
+            input.style.borderBottom = '1px solid rgba(255,255,255,0.15)';
+            input.style.outline = 'none';
+            input.style.color = '#fff';
+            input.style.fontSize = '18px';
+            input.style.fontWeight = '600';
+            input.style.width = '100%';
+            input.style.padding = '0';
+            input.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            input.style.letterSpacing = '0.3px';
+
+            // Replace text with input
+            displayEl.innerHTML = '';
+            displayEl.appendChild(input);
+            editInput = input;
+
+            // Focus and select
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 50);
+
+            // Handle input events
+            input.addEventListener('blur', () => { saveEdit(field, input.value); });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { e.preventDefault();
+                    saveEdit(field, input.value); }
+                if (e.key === 'Escape') { e.preventDefault();
+                    cancelEditing();
+                    updateIdentityUI(); }
+            });
+            input.addEventListener('input', () => {
+                // Validate on the fly
+                const val = input.value.trim();
+                const errorEl = field === 'name' ? idNameError : field === 'username' ? idUsernameError : idPhoneError;
+                if (val.length === 0) {
+                    errorEl.textContent = 'This field cannot be empty.';
+                    errorEl.classList.add('show');
+                } else if (field === 'username' && !/^[A-Za-z0-9_]+$/.test(val)) {
+                    errorEl.textContent = 'Only letters, numbers, and underscores.';
+                    errorEl.classList.add('show');
+                } else if (field === 'phone' && !/^[0-9+\s]+$/.test(val)) {
+                    errorEl.textContent = 'Only numbers, +, and spaces.';
+                    errorEl.classList.add('show');
+                } else {
+                    errorEl.textContent = '';
+                    errorEl.classList.remove('show');
+                }
+            });
+        }
+
+        async function saveEdit(field, value) {
+            const val = value.trim();
+            const errorEl = field === 'name' ? idNameError : field === 'username' ? idUsernameError : idPhoneError;
+
+            // Validation
+            if (val.length === 0) {
+                errorEl.textContent = 'This field cannot be empty.';
+                errorEl.classList.add('show');
+                // Keep editing
+                return;
+            }
+            if (field === 'username') {
+                if (!/^[A-Za-z0-9_]+$/.test(val)) {
+                    errorEl.textContent = 'Only letters, numbers, and underscores.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+                // Check uniqueness via server
+                try {
+                    const uniqueRes = await new Promise((resolve) => {
+                        socket.emit('checkAnonymousUnique', { field: 'username', value: val }, (res) => {
+                            resolve(res);
+                        });
+                    });
+                    if (uniqueRes && !uniqueRes.unique) {
+                        errorEl.textContent = 'Username already taken.';
+                        errorEl.classList.add('show');
+                        return;
+                    }
+                } catch (e) {
+                    errorEl.textContent = 'Network error, try again.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+            }
+            if (field === 'phone') {
+                if (!/^[0-9+\s]+$/.test(val)) {
+                    errorEl.textContent = 'Only numbers, +, and spaces.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+                // Check uniqueness via server
+                try {
+                    const uniqueRes = await new Promise((resolve) => {
+                        socket.emit('checkAnonymousUnique', { field: 'phone', value: val }, (res) => {
+                            resolve(res);
+                        });
+                    });
+                    if (uniqueRes && !uniqueRes.unique) {
+                        errorEl.textContent = 'Phone number already taken.';
+                        errorEl.classList.add('show');
+                        return;
+                    }
+                } catch (e) {
+                    errorEl.textContent = 'Network error, try again.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+            }
+
+            // Save to state
+            if (field === 'name') state.identity.name = val;
+            else if (field === 'username') state.identity.username = val;
+            else if (field === 'phone') state.identity.phone = val;
+
+            // Update on server via socket
+            const data = {};
+            if (field === 'name') data.name = val;
+            else if (field === 'username') data.username = val;
+            else if (field === 'phone') data.phone = val;
+
+            socket.emit('setAnonymous', data, (res) => {
+                if (res?.ok) {
+                    // Success
+                    errorEl.textContent = '✓ Saved!';
+                    errorEl.className = 'id-valid show';
+                    setTimeout(() => { errorEl.classList.remove('show'); }, 2000);
+                    // Update UI
+                    updateIdentityUI();
+                } else {
+                    errorEl.textContent = res?.error || 'Failed to save.';
+                    errorEl.className = 'id-error show';
+                }
+            });
+
+            cancelEditing();
+            updateIdentityUI();
+        }
+
+        // ─── Click to edit ────────────────────────────────────────────
+        document.querySelectorAll('.id-field').forEach(el => {
+            el.addEventListener('click', (e) => {
+                // Don't trigger if clicking on an input
+                if (e.target.tagName === 'INPUT') return;
+                const field = el.dataset.field;
+                if (!field) return;
+                playClickSound();
+                startEditing(field);
+                haptic('light');
+            });
+        });
+
+        // ─── Enable/Disable anonymous ─────────────────────────────────
+        idEnableBtn.addEventListener('click', () => {
+            playClickSound();
+            const newState = !state.identity.enabled;
+            // Optimistic update
+            state.identity.enabled = newState;
+            updateIdentityUI();
+            updateAnonBadge();
+            // Also need to update on server
+            socket.emit('setAnonymous', { enabled: newState }, (res) => {
+                if (res?.ok) {
+                    haptic('medium');
+                    // Update game state if needed
+                    if (newState) {
+                        showNotification('🕵️ Anonymous mode enabled');
+                    } else {
+                        showNotification('👤 Anonymous mode disabled');
+                    }
+                } else {
+                    // Revert
+                    state.identity.enabled = !newState;
+                    updateIdentityUI();
+                    updateAnonBadge();
+                    haptic('light');
+                    showNotification('❌ Failed to update anonymous mode');
+                }
+            });
+            // Also update profile
+            updateProfile();
+        });
+
+        // ─── ANONYMOUS BUTTON IN PROFILE ─────────────────────────────
+        anonBtn.addEventListener('click', () => {
+            playClickSound();
+            openIdentityOverlay();
+        });
+
+        // ─── KEYBOARD SHORTCUT: Escape to close identity ─────────────
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (identityOverlay.classList.contains('show')) {
+                    closeIdentityOverlay();
+                }
+                if (cardOverlay.classList.contains('show')) {
+                    closeCard();
+                }
+            }
+        });
+
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
             if (tg?.initDataUnsafe?.user) {
@@ -5596,6 +6795,9 @@
             updateCardStats();
             requestAnimationFrame(renderLoop);
             setOnline(false);
+            // Init identity UI with placeholder
+            updateIdentityUI();
+            updateAnonBadge();
         }
         init();
         window.__state = state;
