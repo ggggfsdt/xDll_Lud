@@ -26,8 +26,6 @@ const {
   getPromoCodes,
   deletePromoCode,
   resetPlayer,
-  setAnonymousData,
-  checkAnonymousUnique,
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -119,12 +117,15 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 }
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
-const ICE_PERIMETER = generatePerimeter(ARENA_SIZE, ARENA_SIZE * 0.045, 300);
 
+// ─── VERY HIGH SPEED – no more cap, just raw speed ──────────────
 function speedForRadius(radius) {
-  const minR = 18, maxR = 52;
+  const minR = 18;
+  const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  return Math.max(20, 80 - norm * 60);
+  // Max speed 80, min speed 20 – huge initial burst
+  const speed = 80.0 - norm * 60.0;
+  return Math.max(20.0, Math.min(80.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -150,7 +151,13 @@ const room = createRoom('main');
 function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
-// ─── ICE ROOM ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
+// ═══════════════════════════════════════════════════════════════
+const ICE_SIZE = ARENA_SIZE;
+const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
+const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
+
 function createIceRoom(id) {
   return {
     id,
@@ -161,9 +168,9 @@ function createIceRoom(id) {
     spinStartTime: 0,
     spinDuration: 0,
     spinFinalAngle: 0,
-    spinStartX: ARENA_SIZE / 2,
-    spinStartY: ARENA_SIZE / 2,
-    puck: { x: ARENA_SIZE / 2, y: ARENA_SIZE / 2, vx: 0, vy: 0 },
+    spinStartX: ICE_SIZE / 2,
+    spinStartY: ICE_SIZE / 2,
+    puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
     slideStartTime: 0,
   };
@@ -172,16 +179,22 @@ const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
-// ─── Bots ──────────────────────────────────────────────────────
+// ─── BOT MANAGEMENT ─────────────────────────────────────────────
 let botCounter = 0;
 const botIds = new Set();
 let autoBotEnabled = false;
 let autoBotInterval = null;
 
-function isBot(id) { return id && typeof id === 'string' && id.startsWith('bot_'); }
+function generateBotId() {
+  return `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function isBot(id) {
+  return id && typeof id === 'string' && id.startsWith('bot_');
+}
 
 function spawnBot(betAmount) {
-  const id = `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const id = generateBotId();
   botCounter++;
   const name = `Bot_${String(botCounter).padStart(3, '0')}`;
   const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
@@ -219,10 +232,19 @@ function startAutoBot() {
     if (iceRoom.players.length >= MAX_PLAYERS) return;
     const bet = Math.floor(Math.random() * 140) + 10;
     const bot = spawnBot(bet);
-    if (bot) console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
+    if (bot) {
+      console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
+    }
   }, 4000);
 }
 startAutoBot();
+
+function stopAutoBot() {
+  if (autoBotInterval) {
+    clearInterval(autoBotInterval);
+    autoBotInterval = null;
+  }
+}
 
 // ─── BSP Partition ──────────────────────────────────────────────
 function repartitionIceArena() {
@@ -233,7 +255,7 @@ function repartitionIceArena() {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  partitionRect(shuffled, 0, 0, ARENA_SIZE, ARENA_SIZE, 0, shuffled.length);
+  partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
   players.forEach(p => {
@@ -306,11 +328,18 @@ function makeIcePlayer(id, bet, name, pfp) {
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx],
-    x1: 0, y1: 0, x2: ARENA_SIZE, y2: ARENA_SIZE,
+    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
   };
   iceRoom.players.push(p);
   repartitionIceArena();
   return p;
+}
+
+function removeIcePlayer(id) {
+  const idx = iceRoom.players.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  iceRoom.players.splice(idx, 1);
+  if (iceRoom.players.length > 0) repartitionIceArena();
 }
 
 function startIceCountdown() {
@@ -326,13 +355,15 @@ function startIceSpin() {
   iceRoom.spinDuration = 2.6 + Math.random() * 1.6;
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
   const margin = 30;
-  iceRoom.spinStartX = margin + Math.random() * (ARENA_SIZE - 2 * margin);
-  iceRoom.spinStartY = margin + Math.random() * (ARENA_SIZE - 2 * margin);
+  iceRoom.spinStartX = margin + Math.random() * (ICE_SIZE - 2 * margin);
+  iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
+// ─── launchIcePuck – bouncy and smooth ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const speed = 10 + Math.random() * 2;
+  const baseSpeed = 10;
+  const speed = baseSpeed + Math.random() * 2;
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
@@ -342,14 +373,18 @@ function launchIcePuck() {
 }
 
 function getIceWinner() {
-  const px = Math.min(Math.max(iceRoom.puck.x, 0), ARENA_SIZE);
-  const py = Math.min(Math.max(iceRoom.puck.y, 0), ARENA_SIZE);
+  const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
+  const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
   for (const p of iceRoom.players) {
-    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) return p;
+    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) {
+      return p;
+    }
   }
-  let closest = null, minDist = Infinity;
+  let closest = null;
+  let minDist = Infinity;
   for (const p of iceRoom.players) {
-    const cx = (p.x1 + p.x2) / 2, cy = (p.y1 + p.y2) / 2;
+    const cx = (p.x1 + p.x2) / 2;
+    const cy = (p.y1 + p.y2) / 2;
     const d = Math.hypot(px - cx, py - cy);
     if (d < minDist) { minDist = d; closest = p; }
   }
@@ -359,6 +394,7 @@ function getIceWinner() {
 async function endIceGame() {
   if (iceRoom.gameState === 'finished') return;
   iceRoom.gameState = 'finished';
+
   const winner = getIceWinner();
   let payload = null;
   if (winner) {
@@ -374,46 +410,73 @@ async function endIceGame() {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
-    iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp, amount: winnings });
+
+    iceRoom.recentWinners.unshift({
+      name: winner.name,
+      pfp: winner.pfp,
+      amount: winnings
+    });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
+
     if (!isBot(winner.id)) {
-      const winnerUser = await getUser(winner.id);
-      if (winnerUser) {
-        winnerUser.balance += winnings;
-        winnerUser.wins += 1;
-        await saveUser(winnerUser);
+      try {
+        const winnerUser = await getUser(winner.id);
+        if (winnerUser) {
+          winnerUser.balance += winnings;
+          winnerUser.wins += 1;
+          await saveUser(winnerUser);
+        }
+      } catch (err) {
+        console.error('endIceGame: failed to credit winner balance:', err);
       }
     }
+
     for (const p of iceRoom.players) {
       if (p.id === winner.id) continue;
       if (!isBot(p.id)) {
-        const u = await getUser(p.id);
-        if (u) { u.losses += 1; await saveUser(u); }
+        try {
+          const u = await getUser(p.id);
+          if (u) { u.losses += 1; await saveUser(u); }
+        } catch (err) {
+          console.error('endIceGame: failed to update loser stats for', p.id, err);
+        }
       }
     }
-    await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
+
+    try {
+      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
+    } catch (err) {
+      console.error('endIceGame: failed to write win history:', err);
+    }
   }
+
   io.emit('iceRoundEnd', payload);
   setTimeout(() => {
     iceRoom.players = [];
     iceRoom.pot = 0;
-    iceRoom.puck = { x: ARENA_SIZE / 2, y: ARENA_SIZE / 2, vx: 0, vy: 0 };
+    iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
     iceRoom.gameState = 'idle';
     botIds.clear();
     botCounter = 0;
   }, 3000);
 }
 
+// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 50, subDt = dt / subSteps;
-  const puck = iceRoom.puck, puckRadius = 8;
+  const subSteps = 50;
+  const subDt = dt / subSteps;
+  const puck = iceRoom.puck;
+  const puckRadius = 8;
+
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
+
     let iter = 0;
-    while (iter < 10) {
+    const maxIter = 10;
+    while (iter < maxIter) {
       let collided = false;
       for (let i = 0; i < totalPts; i++) {
         const j = (i + 1) % totalPts;
@@ -430,9 +493,14 @@ function updateIcePhysics(dt) {
         if (dist < puckRadius && dist > 0.0001) {
           const nx = distX / dist, ny = distY / dist;
           const overlap = puckRadius - dist;
-          puck.x += nx * overlap; puck.y += ny * overlap;
+          puck.x += nx * overlap;
+          puck.y += ny * overlap;
           const vn = puck.vx * nx + puck.vy * ny;
-          if (vn < 0) { puck.vx -= 2 * vn * nx; puck.vy -= 2 * vn * ny; }
+          if (vn < 0) {
+            const restitution = 1.0;
+            puck.vx -= (1 + restitution) * vn * nx;
+            puck.vy -= (1 + restitution) * vn * ny;
+          }
           collided = true;
           break;
         }
@@ -440,13 +508,21 @@ function updateIcePhysics(dt) {
       if (!collided) break;
       iter++;
     }
+
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    const friction = elapsed < 3.5 ? 0.997 : 0.65;
-    const decay = Math.pow(friction, subDt);
+    let frictionPerSecond;
+    if (elapsed < 3.5) {
+      frictionPerSecond = 0.997;
+    } else {
+      frictionPerSecond = 0.65;
+    }
+    const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
-  if (Math.hypot(puck.vx, puck.vy) < 0.08) endIceGame();
+
+  const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+  if (finalSpeed < 0.08) endIceGame();
 }
 
 function broadcastIceState() {
@@ -467,7 +543,7 @@ function broadcastIceState() {
   });
 }
 
-// ─── PvP arena helpers ────────────────────────────────────────
+// ─── Radius scaling for bump arena ──────────────────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
@@ -507,7 +583,8 @@ function makePlayer(id, bet, name, pfp) {
 }
 
 function startCountdown() {
-  if (room.gameState !== 'idle' || getAlive().length < 2) return;
+  if (room.gameState !== 'idle') return;
+  if (getAlive().length < 2) return;
   room.gameState = 'countdown';
   room.countdownStartTime = Date.now();
 }
@@ -517,6 +594,7 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
+// ─── START GAME – EXTREME SPEED, NO CAP ─────────────────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -527,6 +605,7 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
+    // Randomize between 50% and 180% – can reach up to 80 * 1.8 = 144
     const speed = baseSpeed * (0.5 + Math.random() * 1.3);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
@@ -542,6 +621,7 @@ async function endGame(winnerId) {
   room.gameState = 'finished';
   const winner = getPlayer(winnerId);
   let payload = null;
+
   if (winner) {
     const totalPot = room.pot;
     const winnerBet = winner.bet;
@@ -555,21 +635,42 @@ async function endGame(winnerId) {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
-    room.recentWinners.unshift({ name: winner.name, pfp: winner.pfp, amount: winnings });
+
+    room.recentWinners.unshift({
+      name: winner.name,
+      pfp: winner.pfp,
+      amount: winnings
+    });
     if (room.recentWinners.length > 8) room.recentWinners.length = 8;
-    const winnerUser = await getUser(winner.id);
-    if (winnerUser) {
-      winnerUser.balance += winnings;
-      winnerUser.wins += 1;
-      await saveUser(winnerUser);
+
+    try {
+      const winnerUser = await getUser(winner.id);
+      if (winnerUser) {
+        winnerUser.balance += winnings;
+        winnerUser.wins += 1;
+        await saveUser(winnerUser);
+      }
+    } catch (err) {
+      console.error('endGame: failed to credit winner balance:', err);
     }
+
     for (const p of room.players) {
       if (p.id === winner.id) continue;
-      const u = await getUser(p.id);
-      if (u) { u.losses += 1; await saveUser(u); }
+      try {
+        const u = await getUser(p.id);
+        if (u) { u.losses += 1; await saveUser(u); }
+      } catch (err) {
+        console.error('endGame: failed to update loser stats for', p.id, err);
+      }
     }
-    await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
+
+    try {
+      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
+    } catch (err) {
+      console.error('endGame: failed to write win history:', err);
+    }
   }
+
   io.to(room.id).emit('roundEnd', payload);
   setTimeout(() => {
     room.players = [];
@@ -586,6 +687,7 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
+// ─── IMPROVED PHYSICS – smooth, bouncy, NO SPEED CAP ────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -595,7 +697,8 @@ function updatePhysics(dt) {
     else { room.gameState = 'idle'; room.players = []; room.opening = null; }
     return;
   }
-  const half = ARENA_SIZE / 2, totalPts = PERIMETER.length;
+  const half = ARENA_SIZE / 2;
+  const totalPts = PERIMETER.length;
 
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
@@ -626,14 +729,16 @@ function updatePhysics(dt) {
     }
   }
 
+  // ─── Physics constants ────────────────────────────────────────
   const SUBSTEPS = 10;
-  const DRAG_PER_SEC = 0.6;
+  const DRAG_PER_SEC = 0.6;          // Quick deceleration
   const RESTITUTION_WALL = 1.0;
   const RESTITUTION_PLAYER = 0.9;
   const FRICTION_PLAYER = 0.05;
-  const subDt = dt / SUBSTEPS;
 
+  const subDt = dt / SUBSTEPS;
   for (let step = 0; step < SUBSTEPS; step++) {
+    // ─── Apply drag ────────────────────────────────────────────
     const decay = 1 - DRAG_PER_SEC * subDt;
     alive.forEach(p => {
       p.x += p.vx * subDt * 60;
@@ -642,6 +747,7 @@ function updatePhysics(dt) {
       p.vy *= decay;
     });
 
+    // ─── Wall collisions ────────────────────────────────────────
     alive.forEach(p => {
       const radius = p.displayRadius || p.radius;
       for (let i = 0; i < totalPts; i++) {
@@ -670,10 +776,13 @@ function updatePhysics(dt) {
           break;
         }
       }
+      // ─── Escape prevention ────────────────────────────────────
       if (opening && opening.state === 'open') {
-        const dx = p.x - half, dy = p.y - half;
-        const distFromCenter = Math.hypot(dx, dy);
-        if (distFromCenter > half * 1.12 + radius) {
+        const cx = half, cy = half;
+        const dx = p.x - cx, dy = p.y - cy;
+        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+        const escapeThreshold = half * 1.12 + radius;
+        if (distFromCenter > escapeThreshold) {
           let nearestGapIdx = -1, minDist = Infinity;
           for (let i = 0; i < totalPts; i++) {
             if (isInGap(i)) {
@@ -683,28 +792,31 @@ function updatePhysics(dt) {
           }
           if (nearestGapIdx >= 0) {
             const angle = Math.atan2(dy, dx);
-            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - half, PERIMETER[nearestGapIdx].x - half);
+            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
             let diff = Math.abs(angle - gapAngle);
             diff = Math.min(diff, 2 * Math.PI - diff);
             const vOut = p.vx * dx + p.vy * dy;
-            if (diff < 0.8 && vOut > 0) { p.alive = false; }
+            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
           }
         }
       }
     });
 
+    // ─── Player-player collisions ───────────────────────────────
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
         const a = stillAlive[i], b = stillAlive[j];
         const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.hypot(dx, dy);
+        const dist = Math.sqrt(dx * dx + dy * dy);
         const rA = a.displayRadius || a.radius, rB = b.displayRadius || b.radius;
-        if (dist < rA + rB && dist > 0.001) {
+        const minDist = rA + rB;
+        if (dist < minDist && dist > 0.001) {
           const nx = dx / dist, ny = dy / dist;
-          const overlap = (rA + rB - dist) * 0.5;
+          const overlap = (minDist - dist) * 0.5;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
+
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
@@ -714,6 +826,7 @@ function updatePhysics(dt) {
             a.vy -= (impulse / a.mass) * ny;
             b.vx += (impulse / b.mass) * nx;
             b.vy += (impulse / b.mass) * ny;
+
             const vt = dvx * (-ny) + dvy * nx;
             const frictionImpulse = FRICTION_PLAYER * vt / (1 / a.mass + 1 / b.mass);
             a.vx -= (frictionImpulse / a.mass) * (-ny);
@@ -724,8 +837,12 @@ function updatePhysics(dt) {
         }
       }
     }
+
+    // ─── NO SPEED CAP – let them fly! ───────────────────────────
+    // (removed the entire speed limit block)
   }
 
+  // ─── Radius smoothing ──────────────────────────────────────────
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
@@ -742,7 +859,8 @@ setInterval(() => {
   try {
     if (room.gameState === 'playing') updatePhysics(dt);
     else if (room.gameState === 'countdown') {
-      if ((now - room.countdownStartTime) / 1000 >= 10) startPrestart();
+      const elapsed = (now - room.countdownStartTime) / 1000;
+      if (elapsed >= 10.0) startPrestart();
     } else if (room.gameState === 'prestart') {
       room.prestartTimer -= dt;
       if (room.prestartTimer <= 0) startGame();
@@ -753,9 +871,11 @@ setInterval(() => {
 
     if (iceRoom.gameState === 'sliding') updateIcePhysics(dt);
     else if (iceRoom.gameState === 'countdown') {
-      if ((now - iceRoom.countdownStartTime) / 1000 >= 10) startIceSpin();
+      const elapsed = (now - iceRoom.countdownStartTime) / 1000;
+      if (elapsed >= 10.0) startIceSpin();
     } else if (iceRoom.gameState === 'spinning') {
-      if ((now - iceRoom.spinStartTime) / 1000 >= iceRoom.spinDuration) launchIcePuck();
+      const elapsed = (now - iceRoom.spinStartTime) / 1000;
+      if (elapsed >= iceRoom.spinDuration) launchIcePuck();
     } else if (iceRoom.gameState === 'idle') {
       if (iceRoom.players.length >= 2) startIceCountdown();
     }
@@ -766,21 +886,14 @@ setInterval(() => {
 }, 1000 / TICK_HZ);
 
 function broadcastState() {
-  const playerData = room.players.map(p => ({
-    id: p.id,
-    name: p.name,
-    pfp: p.pfp,
-    bet: p.bet,
-    color: p.color,
-    x: p.x, y: p.y,
-    displayRadius: p.displayRadius,
-    alive: p.alive,
-  }));
   io.to(room.id).emit('state', {
     gameState: room.gameState,
     pot: room.pot,
     countdownStartTime: room.countdownStartTime,
-    players: playerData,
+    players: room.players.map(p => ({
+      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+      x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
+    })),
     opening: room.opening,
   });
 }
@@ -821,13 +934,9 @@ io.on('connection', (socket) => {
         user: {
           ...user,
           winHistory: user.winHistory || [],
-          anonymousEnabled: user.anonymousEnabled || false,
-          anonymousName: user.anonymousName || '',
-          anonymousUsername: user.anonymousUsername || '',
-          anonymousPhone: user.anonymousPhone || '',
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
-        iceArena: { size: ARENA_SIZE, cornerRadius: ARENA_SIZE * 0.045, perimeter: ICE_PERIMETER },
+        iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
         icePlayers: icePlayers,
@@ -856,14 +965,8 @@ io.on('connection', (socket) => {
       user.balance -= amt;
       await saveUser(user);
       const existing = getPlayer(userId);
-      if (existing) {
-        existing.bet += amt;
-        computeRadii();
-      } else {
-        const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
-        const displayPfp = user.anonymousEnabled ? null : user.pfp;
-        makePlayer(userId, amt, displayName, displayPfp);
-      }
+      if (existing) { existing.bet += amt; computeRadii(); }
+      else { makePlayer(userId, amt, user.username, user.pfp); }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
@@ -898,102 +1001,13 @@ io.on('connection', (socket) => {
       user.balance -= amt;
       await saveUser(user);
       const existing = getIcePlayer(userId);
-      if (existing) {
-        existing.bet += amt;
-        repartitionIceArena();
-      } else {
-        const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
-        const displayPfp = user.anonymousEnabled ? null : user.pfp;
-        makeIcePlayer(userId, amt, displayName, displayPfp);
-      }
+      if (existing) { existing.bet += amt; repartitionIceArena(); }
+      else { makeIcePlayer(userId, amt, user.username, user.pfp); }
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastIceState();
     } catch (err) {
       console.error('Ice bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  // ─── Anonymous identity handlers ──────────────────────────────
-  socket.on('setAnonymous', async ({ enabled, name, username, phone }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-
-      if (username !== undefined && username !== user.anonymousUsername) {
-        const unique = await checkAnonymousUnique('username', username, userId);
-        if (!unique) return ack?.({ ok: false, error: 'Username already taken.' });
-      }
-      if (phone !== undefined && phone !== user.anonymousPhone) {
-        const unique = await checkAnonymousUnique('phone', phone, userId);
-        if (!unique) return ack?.({ ok: false, error: 'Phone number already taken.' });
-      }
-
-      if (enabled !== undefined) user.anonymousEnabled = enabled;
-      if (name !== undefined) user.anonymousName = name;
-      if (username !== undefined) user.anonymousUsername = username;
-      if (phone !== undefined) user.anonymousPhone = phone;
-
-      await saveUser(user);
-
-      // Update PvP player if in arena
-      const pvpPlayer = getPlayer(userId);
-      if (pvpPlayer) {
-        pvpPlayer.name = user.anonymousEnabled ? user.anonymousName : user.username;
-        pvpPlayer.pfp = user.anonymousEnabled ? null : user.pfp;
-        broadcastState();
-      }
-      const iceP = getIcePlayer(userId);
-      if (iceP) {
-        iceP.name = user.anonymousEnabled ? user.anonymousName : user.username;
-        iceP.pfp = user.anonymousEnabled ? null : user.pfp;
-        broadcastIceState();
-      }
-
-      ack?.({
-        ok: true,
-        user: {
-          anonymousEnabled: user.anonymousEnabled,
-          anonymousName: user.anonymousName,
-          anonymousUsername: user.anonymousUsername,
-          anonymousPhone: user.anonymousPhone,
-        }
-      });
-    } catch (err) {
-      console.error('Set anonymous error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  socket.on('getAnonymousData', async (_, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      ack?.({
-        ok: true,
-        data: {
-          anonymousEnabled: user.anonymousEnabled || false,
-          anonymousName: user.anonymousName || '',
-          anonymousUsername: user.anonymousUsername || '',
-          anonymousPhone: user.anonymousPhone || '',
-        }
-      });
-    } catch (err) {
-      console.error('Get anonymous error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  socket.on('checkAnonymousUnique', async ({ field, value }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const unique = await checkAnonymousUnique(field, value, userId);
-      ack?.({ ok: true, unique });
-    } catch (err) {
-      console.error('Check unique error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
@@ -1005,7 +1019,9 @@ io.on('connection', (socket) => {
   });
 });
 
-// ─── Admin API ──────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// ADMIN API
+// ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
 <style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
@@ -1035,13 +1051,63 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
 <h2>dllump Admin</h2>
 <div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
 <div id="content" style="display:none">
-  <div class="section"><h3>📢 Send Notification</h3><div class="notification-row"><input id="notifInput" placeholder="Type message or emoji..." /><button onclick="sendNotification()">Send</button></div></div>
-  <div class="section"><h3>🤖 Auto Bot</h3><div class="switch-wrap"><span style="color:#888;">Auto-spawn bots in ice arena</span><label class="switch"><input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" /><span class="slider"></span></label><span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span></div></div>
-  <div class="section"><h3>🤖 Bot Spawn</h3><div class="bot-row"><input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/><input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/><button onclick="spawnBots()">Spawn Bots</button><button class="danger" onclick="removeBots()">Remove All Bots</button></div></div>
-  <div class="section"><h3>Players</h3><button onclick="refreshPlayers()">Refresh Players</button><div id="players"></div></div>
-  <div class="section"><h3>Actions</h3><button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button><button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button><button class="danger" onclick="wipeAll()">Wipe All Data</button></div>
-  <div class="section"><h3>Promo Codes</h3><p>Generate a new code:</p><input id="promoAmount" placeholder="Amount" value="100"/><input id="promoCode" placeholder="Custom code (optional)"/><input id="promoMaxUses" placeholder="Max uses" value="1"/><button onclick="generatePromo()">Generate Promo</button><div id="promoCodes"></div></div>
-  <div class="section"><h3>Individual Player</h3><input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button><br/><input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button><br/><input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button><br/><input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button></div>
+  <div class="section">
+    <h3>📢 Send Notification</h3>
+    <div class="notification-row">
+      <input id="notifInput" placeholder="Type message or emoji..." />
+      <button onclick="sendNotification()">Send</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>🤖 Auto Bot</h3>
+    <div class="switch-wrap">
+      <span style="color:#888;">Auto-spawn bots in ice arena</span>
+      <label class="switch">
+        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
+        <span class="slider"></span>
+      </label>
+      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
+    </div>
+  </div>
+  <div class="section">
+    <h3>🤖 Bot Spawn</h3>
+    <div class="bot-row">
+      <input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
+      <input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
+      <button onclick="spawnBots()">Spawn Bots</button>
+      <button class="danger" onclick="removeBots()">Remove All Bots</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Players</h3>
+    <button onclick="refreshPlayers()">Refresh Players</button>
+    <div id="players"></div>
+  </div>
+  <div class="section">
+    <h3>Actions</h3>
+    <button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button>
+    <button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button>
+    <button class="danger" onclick="wipeAll()">Wipe All Data</button>
+  </div>
+  <div class="section">
+    <h3>Promo Codes</h3>
+    <p>Generate a new code:</p>
+    <input id="promoAmount" placeholder="Amount" value="100"/>
+    <input id="promoCode" placeholder="Custom code (optional)"/>
+    <input id="promoMaxUses" placeholder="Max uses" value="1"/>
+    <button onclick="generatePromo()">Generate Promo</button>
+    <div id="promoCodes"></div>
+  </div>
+  <div class="section">
+    <h3>Individual Player</h3>
+    <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button>
+    <br/>
+    <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
+    <br/>
+    <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
+    <br/>
+    <input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button>
+  </div>
 </div>
 <script>
 const ADMIN_SECRET = '${ADMIN_SECRET}';
@@ -1051,23 +1117,115 @@ async function fetchAdmin(path, method='GET', body=null) {
   const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
   return res.json();
 }
-function auth(){ const secret = document.getElementById('secret').value; if(secret === ADMIN_SECRET) { document.getElementById('content').style.display = 'block'; refreshPlayers(); refreshPromoCodes(); fetchAutoBotStatus(); } else alert('Wrong secret'); }
-async function fetchAutoBotStatus(){ const data = await fetchAdmin('/auto-bot-status'); document.getElementById('autoBotToggle').checked = data.enabled; document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled'; }
-async function toggleAutoBot(enabled){ const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled}); if(data.ok) { document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled'; } else alert('Error: '+data.error); }
-async function sendNotification(){ const msg = document.getElementById('notifInput').value.trim(); if(!msg) { alert('Please enter a message'); return; } const data = await fetchAdmin('/send-notification', 'POST', {message: msg}); if(data.ok) { alert('Notification sent!'); document.getElementById('notifInput').value = ''; } else alert('Error: '+data.error); }
-async function refreshPlayers(){ const data = await fetchAdmin('/players'); const players = data.players || []; let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>'; players.forEach(p => { html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td><td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`; }); html += '</table>'; document.getElementById('players').innerHTML = html; }
-async function refreshPromoCodes(){ const data = await fetchAdmin('/promo-codes'); const codes = data.codes || []; let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>'; codes.forEach(c => { html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td><td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`; }); html += '</table>'; document.getElementById('promoCodes').innerHTML = html; }
-async function spawnBots(){ const bet = parseInt(document.getElementById('botBet').value) || 100; const count = parseInt(document.getElementById('botCount').value) || 1; if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; } const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count}); if(data.ok) alert('Spawned ' + data.spawned + ' bots!'); else alert('Error: ' + data.error); refreshPlayers(); }
-async function removeBots(){ if(!confirm('Remove all bots from the ice arena?')) return; const data = await fetchAdmin('/remove-bots', 'POST'); if(data.ok) alert('Removed ' + data.removed + ' bots'); refreshPlayers(); }
+function auth(){
+  const secret = document.getElementById('secret').value;
+  if(secret === ADMIN_SECRET) {
+    document.getElementById('content').style.display = 'block';
+    refreshPlayers();
+    refreshPromoCodes();
+    fetchAutoBotStatus();
+  } else alert('Wrong secret');
+}
+async function fetchAutoBotStatus(){
+  const data = await fetchAdmin('/auto-bot-status');
+  document.getElementById('autoBotToggle').checked = data.enabled;
+  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
+}
+async function toggleAutoBot(enabled){
+  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
+  if(data.ok) {
+    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
+  } else alert('Error: '+data.error);
+}
+async function sendNotification(){
+  const msg = document.getElementById('notifInput').value.trim();
+  if(!msg) { alert('Please enter a message'); return; }
+  const data = await fetchAdmin('/send-notification', 'POST', {message: msg});
+  if(data.ok) {
+    alert('Notification sent!');
+    document.getElementById('notifInput').value = '';
+  } else alert('Error: '+data.error);
+}
+async function refreshPlayers(){
+  const data = await fetchAdmin('/players');
+  const players = data.players || [];
+  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
+  players.forEach(p => {
+    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
+    <td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`;
+  });
+  html += '</table>';
+  document.getElementById('players').innerHTML = html;
+}
+async function refreshPromoCodes(){
+  const data = await fetchAdmin('/promo-codes');
+  const codes = data.codes || [];
+  let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
+  codes.forEach(c => {
+    html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td>
+    <td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`;
+  });
+  html += '</table>';
+  document.getElementById('promoCodes').innerHTML = html;
+}
+async function spawnBots(){
+  const bet = parseInt(document.getElementById('botBet').value) || 100;
+  const count = parseInt(document.getElementById('botCount').value) || 1;
+  if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; }
+  const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count});
+  if(data.ok) alert('Spawned ' + data.spawned + ' bots!');
+  else alert('Error: ' + data.error);
+  refreshPlayers();
+}
+async function removeBots(){
+  if(!confirm('Remove all bots from the ice arena?')) return;
+  const data = await fetchAdmin('/remove-bots', 'POST');
+  if(data.ok) alert('Removed ' + data.removed + ' bots');
+  refreshPlayers();
+}
 async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
 async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
 async function wipeAll(){ if(confirm('Wipe ALL player data? This cannot be undone!')){ await fetchAdmin('/wipe', 'POST'); refreshPlayers(); } }
-async function addMoney(){ const id = document.getElementById('addUserId').value; const amount = parseInt(document.getElementById('addAmount').value); if(!id || !amount) return; await fetchAdmin('/add-money', 'POST', {id, amount}); refreshPlayers(); }
-async function setMoney(){ const id = document.getElementById('setUserId').value; const amount = parseInt(document.getElementById('setAmount').value); if(!id || isNaN(amount)) return; await fetchAdmin('/set-money', 'POST', {id, amount}); refreshPlayers(); }
-async function banPlayer(id){ const userId = id || document.getElementById('banUserId').value; if(!userId) return; await fetchAdmin('/ban', 'POST', {id: userId}); refreshPlayers(); }
-async function resetPlayer(){ const id = document.getElementById('resetUserId').value; if(!id) return; if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return; await fetchAdmin('/reset-player', 'POST', {id}); refreshPlayers(); }
-async function generatePromo(){ const amount = parseInt(document.getElementById('promoAmount').value) || 100; const code = document.getElementById('promoCode').value || null; const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1; const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses}); if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); } else alert('Error: '+data.error); }
-async function deletePromo(code){ if(!confirm('Delete promo '+code+'?')) return; await fetchAdmin('/delete-promo', 'POST', {code}); refreshPromoCodes(); }
+async function addMoney(){
+  const id = document.getElementById('addUserId').value;
+  const amount = parseInt(document.getElementById('addAmount').value);
+  if(!id || !amount) return;
+  await fetchAdmin('/add-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function setMoney(){
+  const id = document.getElementById('setUserId').value;
+  const amount = parseInt(document.getElementById('setAmount').value);
+  if(!id || isNaN(amount)) return;
+  await fetchAdmin('/set-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function banPlayer(id){
+  const userId = id || document.getElementById('banUserId').value;
+  if(!userId) return;
+  await fetchAdmin('/ban', 'POST', {id: userId});
+  refreshPlayers();
+}
+async function resetPlayer(){
+  const id = document.getElementById('resetUserId').value;
+  if(!id) return;
+  if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return;
+  await fetchAdmin('/reset-player', 'POST', {id});
+  refreshPlayers();
+}
+async function generatePromo(){
+  const amount = parseInt(document.getElementById('promoAmount').value) || 100;
+  const code = document.getElementById('promoCode').value || null;
+  const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1;
+  const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses});
+  if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); }
+  else alert('Error: '+data.error);
+}
+async function deletePromo(code){
+  if(!confirm('Delete promo '+code+'?')) return;
+  await fetchAdmin('/delete-promo', 'POST', {code});
+  refreshPromoCodes();
+}
 </script>
 </body></html>`;
 
@@ -1079,17 +1237,24 @@ function adminAuth(req, res, next) {
   next();
 }
 
-app.get('/admin', (req, res) => { res.send(ADMIN_HTML); });
+app.get('/admin', (req, res) => {
+  res.send(ADMIN_HTML);
+});
 
+// ─── Auto-bot endpoints ──────────────────────────────────────
 app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
   const { enabled } = req.body;
-  if (typeof enabled !== 'boolean') return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
+  }
   autoBotEnabled = enabled;
   res.json({ ok: true, enabled: autoBotEnabled });
 });
 app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
   res.json({ enabled: autoBotEnabled });
 });
+
+// ─── Notification endpoint ──────────────────────────────────
 app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   const { message } = req.body;
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -1099,6 +1264,7 @@ app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── Existing admin endpoints ──────────────────────────────
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -1112,7 +1278,10 @@ app.get('/admin/api/players', adminAuth, async (req, res) => {
 app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
-    for (const u of users) { u.balance = 50; await saveUser(u); }
+    for (const u of users) {
+      u.balance = 50;
+      await saveUser(u);
+    }
     res.json({ ok: true });
   } catch (err) {
     console.error('Reset money error:', err);
@@ -1123,7 +1292,11 @@ app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
 app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
-    for (const u of users) { u.wins = 0; u.losses = 0; await saveUser(u); }
+    for (const u of users) {
+      u.wins = 0;
+      u.losses = 0;
+      await saveUser(u);
+    }
     res.json({ ok: true });
   } catch (err) {
     console.error('Reset top error:', err);
@@ -1248,7 +1421,8 @@ app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
     const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
     let spawned = 0;
     for (let i = 0; i < numBots; i++) {
-      if (spawnBot(betAmount)) spawned++;
+      const player = spawnBot(betAmount);
+      if (player) spawned++;
     }
     if (spawned > 0) repartitionIceArena();
     broadcastIceState();
@@ -1273,7 +1447,9 @@ app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
-    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    if (!code || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    }
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
@@ -1285,7 +1461,9 @@ app.post('/redeem', async (req, res) => {
 app.get('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.query;
-    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    if (!code || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    }
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
