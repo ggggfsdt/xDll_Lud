@@ -31,7 +31,7 @@ function queueSave() {
   setTimeout(flush, 250);
 }
 
-// ─── Helper: generate random anonymous values ──────────────────
+// ─── Generate random anonymous values ──────────────────────────
 function generateRandomAnonymousName() {
   const first = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliett', 'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa', 'Quebec', 'Romeo', 'Sierra', 'Tango', 'Uniform', 'Victor', 'Whiskey', 'Xray', 'Yankee', 'Zulu'];
   const second = ['Wolf', 'Fox', 'Hawk', 'Eagle', 'Lion', 'Tiger', 'Bear', 'Shark', 'Dragon', 'Phoenix', 'Raven', 'Falcon', 'Owl', 'Snake', 'Panther', 'Leopard', 'Cheetah', 'Hound', 'Viper', 'Cobra'];
@@ -60,7 +60,6 @@ function ensureAnonymousFields(user) {
   if (!user.anonymousName) user.anonymousName = user.username || generateRandomAnonymousName();
   if (!user.anonymousUsername) user.anonymousUsername = generateRandomAnonymousUsername();
   if (!user.anonymousPhone) user.anonymousPhone = generateRandomAnonymousPhone();
-  // Also store the real name/pfp separately if needed – we use username/pfp for real
   return user;
 }
 
@@ -89,7 +88,6 @@ async function getUser(id, defaults = {}) {
     if (defaults.pfp) data.users[id].pfp = defaults.pfp;
     if (data.users[id].banned === undefined) data.users[id].banned = false;
     if (!Array.isArray(data.users[id].winHistory)) data.users[id].winHistory = [];
-    // Ensure anonymous fields exist
     ensureAnonymousFields(data.users[id]);
   }
   return data.users[id];
@@ -162,7 +160,6 @@ async function resetPlayer(userId) {
   user.wins = 0;
   user.losses = 0;
   user.winHistory = [];
-  // Reset anonymous fields as well (optional)
   user.anonymousEnabled = false;
   user.anonymousName = generateRandomAnonymousName();
   user.anonymousUsername = generateRandomAnonymousUsername();
