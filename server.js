@@ -119,14 +119,12 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 }
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
+const ICE_PERIMETER = generatePerimeter(ARENA_SIZE, ARENA_SIZE * 0.045, 300);
 
-// ─── VERY HIGH SPEED – no cap ──────────────────────────────────
 function speedForRadius(radius) {
-  const minR = 18;
-  const maxR = 52;
+  const minR = 18, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  const speed = 80.0 - norm * 60.0;
-  return Math.max(20.0, Math.min(80.0, speed));
+  return Math.max(20, 80 - norm * 60);
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -152,13 +150,7 @@ const room = createRoom('main');
 function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
-// ═══════════════════════════════════════════════════════════════
-// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
-// ═══════════════════════════════════════════════════════════════
-const ICE_SIZE = ARENA_SIZE;
-const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
-const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
-
+// ─── ICE ROOM ──────────────────────────────────────────────────
 function createIceRoom(id) {
   return {
     id,
@@ -169,9 +161,9 @@ function createIceRoom(id) {
     spinStartTime: 0,
     spinDuration: 0,
     spinFinalAngle: 0,
-    spinStartX: ICE_SIZE / 2,
-    spinStartY: ICE_SIZE / 2,
-    puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
+    spinStartX: ARENA_SIZE / 2,
+    spinStartY: ARENA_SIZE / 2,
+    puck: { x: ARENA_SIZE / 2, y: ARENA_SIZE / 2, vx: 0, vy: 0 },
     recentWinners: [],
     slideStartTime: 0,
   };
@@ -180,22 +172,16 @@ const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
-// ─── BOT MANAGEMENT ─────────────────────────────────────────────
+// ─── Bots ──────────────────────────────────────────────────────
 let botCounter = 0;
 const botIds = new Set();
 let autoBotEnabled = false;
 let autoBotInterval = null;
 
-function generateBotId() {
-  return `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function isBot(id) {
-  return id && typeof id === 'string' && id.startsWith('bot_');
-}
+function isBot(id) { return id && typeof id === 'string' && id.startsWith('bot_'); }
 
 function spawnBot(betAmount) {
-  const id = generateBotId();
+  const id = `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
   botCounter++;
   const name = `Bot_${String(botCounter).padStart(3, '0')}`;
   const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
@@ -233,19 +219,10 @@ function startAutoBot() {
     if (iceRoom.players.length >= MAX_PLAYERS) return;
     const bet = Math.floor(Math.random() * 140) + 10;
     const bot = spawnBot(bet);
-    if (bot) {
-      console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
-    }
+    if (bot) console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
   }, 4000);
 }
 startAutoBot();
-
-function stopAutoBot() {
-  if (autoBotInterval) {
-    clearInterval(autoBotInterval);
-    autoBotInterval = null;
-  }
-}
 
 // ─── BSP Partition ──────────────────────────────────────────────
 function repartitionIceArena() {
@@ -256,7 +233,7 @@ function repartitionIceArena() {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
+  partitionRect(shuffled, 0, 0, ARENA_SIZE, ARENA_SIZE, 0, shuffled.length);
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
   players.forEach(p => {
@@ -329,18 +306,11 @@ function makeIcePlayer(id, bet, name, pfp) {
   const p = {
     id, bet, name: name || 'player', pfp: pfp || '',
     color: COLORS[colorIdx],
-    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
+    x1: 0, y1: 0, x2: ARENA_SIZE, y2: ARENA_SIZE,
   };
   iceRoom.players.push(p);
   repartitionIceArena();
   return p;
-}
-
-function removeIcePlayer(id) {
-  const idx = iceRoom.players.findIndex(p => p.id === id);
-  if (idx === -1) return;
-  iceRoom.players.splice(idx, 1);
-  if (iceRoom.players.length > 0) repartitionIceArena();
 }
 
 function startIceCountdown() {
@@ -356,14 +326,13 @@ function startIceSpin() {
   iceRoom.spinDuration = 2.6 + Math.random() * 1.6;
   iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
   const margin = 30;
-  iceRoom.spinStartX = margin + Math.random() * (ICE_SIZE - 2 * margin);
-  iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
+  iceRoom.spinStartX = margin + Math.random() * (ARENA_SIZE - 2 * margin);
+  iceRoom.spinStartY = margin + Math.random() * (ARENA_SIZE - 2 * margin);
 }
 
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const baseSpeed = 10;
-  const speed = baseSpeed + Math.random() * 2;
+  const speed = 10 + Math.random() * 2;
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
@@ -373,18 +342,14 @@ function launchIcePuck() {
 }
 
 function getIceWinner() {
-  const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
-  const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
+  const px = Math.min(Math.max(iceRoom.puck.x, 0), ARENA_SIZE);
+  const py = Math.min(Math.max(iceRoom.puck.y, 0), ARENA_SIZE);
   for (const p of iceRoom.players) {
-    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) {
-      return p;
-    }
+    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) return p;
   }
-  let closest = null;
-  let minDist = Infinity;
+  let closest = null, minDist = Infinity;
   for (const p of iceRoom.players) {
-    const cx = (p.x1 + p.x2) / 2;
-    const cy = (p.y1 + p.y2) / 2;
+    const cx = (p.x1 + p.x2) / 2, cy = (p.y1 + p.y2) / 2;
     const d = Math.hypot(px - cx, py - cy);
     if (d < minDist) { minDist = d; closest = p; }
   }
@@ -394,7 +359,6 @@ function getIceWinner() {
 async function endIceGame() {
   if (iceRoom.gameState === 'finished') return;
   iceRoom.gameState = 'finished';
-
   const winner = getIceWinner();
   let payload = null;
   if (winner) {
@@ -410,73 +374,46 @@ async function endIceGame() {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
-
-    iceRoom.recentWinners.unshift({
-      name: winner.name,
-      pfp: winner.pfp,
-      amount: winnings
-    });
+    iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp, amount: winnings });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
-
     if (!isBot(winner.id)) {
-      try {
-        const winnerUser = await getUser(winner.id);
-        if (winnerUser) {
-          winnerUser.balance += winnings;
-          winnerUser.wins += 1;
-          await saveUser(winnerUser);
-        }
-      } catch (err) {
-        console.error('endIceGame: failed to credit winner balance:', err);
+      const winnerUser = await getUser(winner.id);
+      if (winnerUser) {
+        winnerUser.balance += winnings;
+        winnerUser.wins += 1;
+        await saveUser(winnerUser);
       }
     }
-
     for (const p of iceRoom.players) {
       if (p.id === winner.id) continue;
       if (!isBot(p.id)) {
-        try {
-          const u = await getUser(p.id);
-          if (u) { u.losses += 1; await saveUser(u); }
-        } catch (err) {
-          console.error('endIceGame: failed to update loser stats for', p.id, err);
-        }
+        const u = await getUser(p.id);
+        if (u) { u.losses += 1; await saveUser(u); }
       }
     }
-
-    try {
-      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-    } catch (err) {
-      console.error('endIceGame: failed to write win history:', err);
-    }
+    await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
   }
-
   io.emit('iceRoundEnd', payload);
   setTimeout(() => {
     iceRoom.players = [];
     iceRoom.pot = 0;
-    iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
+    iceRoom.puck = { x: ARENA_SIZE / 2, y: ARENA_SIZE / 2, vx: 0, vy: 0 };
     iceRoom.gameState = 'idle';
     botIds.clear();
     botCounter = 0;
   }, 3000);
 }
 
-// ─── SMOOTH ICE PHYSICS ──────────────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 50;
-  const subDt = dt / subSteps;
-  const puck = iceRoom.puck;
-  const puckRadius = 8;
-
+  const subSteps = 50, subDt = dt / subSteps;
+  const puck = iceRoom.puck, puckRadius = 8;
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
-
     let iter = 0;
-    const maxIter = 10;
-    while (iter < maxIter) {
+    while (iter < 10) {
       let collided = false;
       for (let i = 0; i < totalPts; i++) {
         const j = (i + 1) % totalPts;
@@ -493,14 +430,9 @@ function updateIcePhysics(dt) {
         if (dist < puckRadius && dist > 0.0001) {
           const nx = distX / dist, ny = distY / dist;
           const overlap = puckRadius - dist;
-          puck.x += nx * overlap;
-          puck.y += ny * overlap;
+          puck.x += nx * overlap; puck.y += ny * overlap;
           const vn = puck.vx * nx + puck.vy * ny;
-          if (vn < 0) {
-            const restitution = 1.0;
-            puck.vx -= (1 + restitution) * vn * nx;
-            puck.vy -= (1 + restitution) * vn * ny;
-          }
+          if (vn < 0) { puck.vx -= 2 * vn * nx; puck.vy -= 2 * vn * ny; }
           collided = true;
           break;
         }
@@ -508,21 +440,13 @@ function updateIcePhysics(dt) {
       if (!collided) break;
       iter++;
     }
-
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    let frictionPerSecond;
-    if (elapsed < 3.5) {
-      frictionPerSecond = 0.997;
-    } else {
-      frictionPerSecond = 0.65;
-    }
-    const decay = Math.pow(frictionPerSecond, subDt);
+    const friction = elapsed < 3.5 ? 0.997 : 0.65;
+    const decay = Math.pow(friction, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
-
-  const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.08) endIceGame();
+  if (Math.hypot(puck.vx, puck.vy) < 0.08) endIceGame();
 }
 
 function broadcastIceState() {
@@ -537,17 +461,13 @@ function broadcastIceState() {
     spinStartY: iceRoom.spinStartY,
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
-      id: p.id,
-      name: p.name,
-      pfp: p.pfp,
-      bet: p.bet,
-      color: p.color,
+      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
     })),
   });
 }
 
-// ─── Radius scaling ──────────────────────────────────────────────
+// ─── PvP arena helpers ────────────────────────────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
@@ -587,8 +507,7 @@ function makePlayer(id, bet, name, pfp) {
 }
 
 function startCountdown() {
-  if (room.gameState !== 'idle') return;
-  if (getAlive().length < 2) return;
+  if (room.gameState !== 'idle' || getAlive().length < 2) return;
   room.gameState = 'countdown';
   room.countdownStartTime = Date.now();
 }
@@ -623,7 +542,6 @@ async function endGame(winnerId) {
   room.gameState = 'finished';
   const winner = getPlayer(winnerId);
   let payload = null;
-
   if (winner) {
     const totalPot = room.pot;
     const winnerBet = winner.bet;
@@ -637,42 +555,21 @@ async function endGame(winnerId) {
       winnings,
       multiplier: +(winnings / winnerBet).toFixed(2),
     };
-
-    room.recentWinners.unshift({
-      name: winner.name,
-      pfp: winner.pfp,
-      amount: winnings
-    });
+    room.recentWinners.unshift({ name: winner.name, pfp: winner.pfp, amount: winnings });
     if (room.recentWinners.length > 8) room.recentWinners.length = 8;
-
-    try {
-      const winnerUser = await getUser(winner.id);
-      if (winnerUser) {
-        winnerUser.balance += winnings;
-        winnerUser.wins += 1;
-        await saveUser(winnerUser);
-      }
-    } catch (err) {
-      console.error('endGame: failed to credit winner balance:', err);
+    const winnerUser = await getUser(winner.id);
+    if (winnerUser) {
+      winnerUser.balance += winnings;
+      winnerUser.wins += 1;
+      await saveUser(winnerUser);
     }
-
     for (const p of room.players) {
       if (p.id === winner.id) continue;
-      try {
-        const u = await getUser(p.id);
-        if (u) { u.losses += 1; await saveUser(u); }
-      } catch (err) {
-        console.error('endGame: failed to update loser stats for', p.id, err);
-      }
+      const u = await getUser(p.id);
+      if (u) { u.losses += 1; await saveUser(u); }
     }
-
-    try {
-      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-    } catch (err) {
-      console.error('endGame: failed to write win history:', err);
-    }
+    await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
   }
-
   io.to(room.id).emit('roundEnd', payload);
   setTimeout(() => {
     room.players = [];
@@ -689,7 +586,6 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── IMPROVED PHYSICS ──────────────────────────────────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -699,8 +595,7 @@ function updatePhysics(dt) {
     else { room.gameState = 'idle'; room.players = []; room.opening = null; }
     return;
   }
-  const half = ARENA_SIZE / 2;
-  const totalPts = PERIMETER.length;
+  const half = ARENA_SIZE / 2, totalPts = PERIMETER.length;
 
   room.openingTimer -= dt;
   if (room.openingTimer <= 0) {
@@ -736,8 +631,8 @@ function updatePhysics(dt) {
   const RESTITUTION_WALL = 1.0;
   const RESTITUTION_PLAYER = 0.9;
   const FRICTION_PLAYER = 0.05;
-
   const subDt = dt / SUBSTEPS;
+
   for (let step = 0; step < SUBSTEPS; step++) {
     const decay = 1 - DRAG_PER_SEC * subDt;
     alive.forEach(p => {
@@ -776,11 +671,9 @@ function updatePhysics(dt) {
         }
       }
       if (opening && opening.state === 'open') {
-        const cx = half, cy = half;
-        const dx = p.x - cx, dy = p.y - cy;
-        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-        const escapeThreshold = half * 1.12 + radius;
-        if (distFromCenter > escapeThreshold) {
+        const dx = p.x - half, dy = p.y - half;
+        const distFromCenter = Math.hypot(dx, dy);
+        if (distFromCenter > half * 1.12 + radius) {
           let nearestGapIdx = -1, minDist = Infinity;
           for (let i = 0; i < totalPts; i++) {
             if (isInGap(i)) {
@@ -790,11 +683,11 @@ function updatePhysics(dt) {
           }
           if (nearestGapIdx >= 0) {
             const angle = Math.atan2(dy, dx);
-            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
+            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - half, PERIMETER[nearestGapIdx].x - half);
             let diff = Math.abs(angle - gapAngle);
             diff = Math.min(diff, 2 * Math.PI - diff);
             const vOut = p.vx * dx + p.vy * dy;
-            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
+            if (diff < 0.8 && vOut > 0) { p.alive = false; }
           }
         }
       }
@@ -805,15 +698,13 @@ function updatePhysics(dt) {
       for (let j = i + 1; j < stillAlive.length; j++) {
         const a = stillAlive[i], b = stillAlive[j];
         const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dist = Math.hypot(dx, dy);
         const rA = a.displayRadius || a.radius, rB = b.displayRadius || b.radius;
-        const minDist = rA + rB;
-        if (dist < minDist && dist > 0.001) {
+        if (dist < rA + rB && dist > 0.001) {
           const nx = dx / dist, ny = dy / dist;
-          const overlap = (minDist - dist) * 0.5;
+          const overlap = (rA + rB - dist) * 0.5;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
-
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
@@ -823,7 +714,6 @@ function updatePhysics(dt) {
             a.vy -= (impulse / a.mass) * ny;
             b.vx += (impulse / b.mass) * nx;
             b.vy += (impulse / b.mass) * ny;
-
             const vt = dvx * (-ny) + dvy * nx;
             const frictionImpulse = FRICTION_PLAYER * vt / (1 / a.mass + 1 / b.mass);
             a.vx -= (frictionImpulse / a.mass) * (-ny);
@@ -834,8 +724,6 @@ function updatePhysics(dt) {
         }
       }
     }
-
-    // No speed cap – let them fly!
   }
 
   room.players.forEach(p => {
@@ -854,8 +742,7 @@ setInterval(() => {
   try {
     if (room.gameState === 'playing') updatePhysics(dt);
     else if (room.gameState === 'countdown') {
-      const elapsed = (now - room.countdownStartTime) / 1000;
-      if (elapsed >= 10.0) startPrestart();
+      if ((now - room.countdownStartTime) / 1000 >= 10) startPrestart();
     } else if (room.gameState === 'prestart') {
       room.prestartTimer -= dt;
       if (room.prestartTimer <= 0) startGame();
@@ -866,11 +753,9 @@ setInterval(() => {
 
     if (iceRoom.gameState === 'sliding') updateIcePhysics(dt);
     else if (iceRoom.gameState === 'countdown') {
-      const elapsed = (now - iceRoom.countdownStartTime) / 1000;
-      if (elapsed >= 10.0) startIceSpin();
+      if ((now - iceRoom.countdownStartTime) / 1000 >= 10) startIceSpin();
     } else if (iceRoom.gameState === 'spinning') {
-      const elapsed = (now - iceRoom.spinStartTime) / 1000;
-      if (elapsed >= iceRoom.spinDuration) launchIcePuck();
+      if ((now - iceRoom.spinStartTime) / 1000 >= iceRoom.spinDuration) launchIcePuck();
     } else if (iceRoom.gameState === 'idle') {
       if (iceRoom.players.length >= 2) startIceCountdown();
     }
@@ -887,8 +772,7 @@ function broadcastState() {
     pfp: p.pfp,
     bet: p.bet,
     color: p.color,
-    x: p.x,
-    y: p.y,
+    x: p.x, y: p.y,
     displayRadius: p.displayRadius,
     alive: p.alive,
   }));
@@ -928,11 +812,7 @@ io.on('connection', (socket) => {
       }
 
       const icePlayers = iceRoom.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        pfp: p.pfp,
-        bet: p.bet,
-        color: p.color,
+        id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
         x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
       }));
 
@@ -947,7 +827,7 @@ io.on('connection', (socket) => {
           anonymousPhone: user.anonymousPhone || '',
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
-        iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
+        iceArena: { size: ARENA_SIZE, cornerRadius: ARENA_SIZE * 0.045, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
         icePlayers: icePlayers,
@@ -980,7 +860,6 @@ io.on('connection', (socket) => {
         existing.bet += amt;
         computeRadii();
       } else {
-        // Use anonymous display if enabled
         const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
         const displayPfp = user.anonymousEnabled ? null : user.pfp;
         makePlayer(userId, amt, displayName, displayPfp);
@@ -1036,14 +915,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  // ─── ANONYMOUS IDENTITY HANDLERS ──────────────────────────────
+  // ─── Anonymous identity handlers ──────────────────────────────
   socket.on('setAnonymous', async ({ enabled, name, username, phone }, ack) => {
     try {
       if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
       const user = await getUser(userId);
       if (!user) return ack?.({ ok: false, error: 'User not found.' });
 
-      // Check uniqueness for username and phone if they are changed
       if (username !== undefined && username !== user.anonymousUsername) {
         const unique = await checkAnonymousUnique('username', username, userId);
         if (!unique) return ack?.({ ok: false, error: 'Username already taken.' });
@@ -1053,22 +931,18 @@ io.on('connection', (socket) => {
         if (!unique) return ack?.({ ok: false, error: 'Phone number already taken.' });
       }
 
-      // Update fields
       if (enabled !== undefined) user.anonymousEnabled = enabled;
       if (name !== undefined) user.anonymousName = name;
       if (username !== undefined) user.anonymousUsername = username;
       if (phone !== undefined) user.anonymousPhone = phone;
 
-      // ─── IMPORTANT: save the user ──────────────────────────────
       await saveUser(user);
 
-      // Update player objects in arenas if they exist
+      // Update PvP player if in arena
       const pvpPlayer = getPlayer(userId);
       if (pvpPlayer) {
         pvpPlayer.name = user.anonymousEnabled ? user.anonymousName : user.username;
         pvpPlayer.pfp = user.anonymousEnabled ? null : user.pfp;
-        pvpPlayer.anonymousEnabled = user.anonymousEnabled;
-        pvpPlayer.anonymousName = user.anonymousName;
         broadcastState();
       }
       const iceP = getIcePlayer(userId);
@@ -1078,7 +952,6 @@ io.on('connection', (socket) => {
         broadcastIceState();
       }
 
-      // Send back the updated data
       ack?.({
         ok: true,
         user: {
@@ -1132,9 +1005,7 @@ io.on('connection', (socket) => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────
-// ADMIN API – unchanged
-// ─────────────────────────────────────────────────────────────
+// ─── Admin API ──────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
 <style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
@@ -1208,24 +1079,17 @@ function adminAuth(req, res, next) {
   next();
 }
 
-app.get('/admin', (req, res) => {
-  res.send(ADMIN_HTML);
-});
+app.get('/admin', (req, res) => { res.send(ADMIN_HTML); });
 
-// ─── Auto-bot endpoints ──────────────────────────────────────
 app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
   const { enabled } = req.body;
-  if (typeof enabled !== 'boolean') {
-    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
-  }
+  if (typeof enabled !== 'boolean') return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
   autoBotEnabled = enabled;
   res.json({ ok: true, enabled: autoBotEnabled });
 });
 app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
   res.json({ enabled: autoBotEnabled });
 });
-
-// ─── Notification endpoint ──────────────────────────────────
 app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   const { message } = req.body;
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -1235,7 +1099,6 @@ app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Existing admin endpoints ──────────────────────────────
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -1249,10 +1112,7 @@ app.get('/admin/api/players', adminAuth, async (req, res) => {
 app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
-    for (const u of users) {
-      u.balance = 50;
-      await saveUser(u);
-    }
+    for (const u of users) { u.balance = 50; await saveUser(u); }
     res.json({ ok: true });
   } catch (err) {
     console.error('Reset money error:', err);
@@ -1263,11 +1123,7 @@ app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
 app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
-    for (const u of users) {
-      u.wins = 0;
-      u.losses = 0;
-      await saveUser(u);
-    }
+    for (const u of users) { u.wins = 0; u.losses = 0; await saveUser(u); }
     res.json({ ok: true });
   } catch (err) {
     console.error('Reset top error:', err);
@@ -1392,8 +1248,7 @@ app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
     const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
     let spawned = 0;
     for (let i = 0; i < numBots; i++) {
-      const player = spawnBot(betAmount);
-      if (player) spawned++;
+      if (spawnBot(betAmount)) spawned++;
     }
     if (spawned > 0) repartitionIceArena();
     broadcastIceState();
@@ -1415,13 +1270,10 @@ app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
   }
 });
 
-// ─── Redeem promo ──────────────────────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
+    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
@@ -1433,9 +1285,7 @@ app.post('/redeem', async (req, res) => {
 app.get('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.query;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
+    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing code or userId' });
     const result = await redeemPromoCode(code, userId);
     res.json(result);
   } catch (err) {
