@@ -1599,8 +1599,9 @@
             border: 1px solid rgba(255,255,255,0.06);
         }
 
+        /* ─── BLACK IDENTITY CARD FRONT ────────────────────────── */
         .identity-card-face.front {
-            background: linear-gradient(145deg, #2a1a3a, #1a0d2a, #3a2a5a);
+            background: linear-gradient(145deg, #1a1a1a, #0a0a0a);
             padding: 20px 18px;
             display: flex;
             flex-direction: column;
@@ -1612,15 +1613,26 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.04) 0%, transparent 70%);
+            background: radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.03) 0%, transparent 70%);
             pointer-events: none;
+        }
+        /* Subtle accent line at top */
+        .identity-card-face.front::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            border-radius: 0 0 4px 4px;
         }
 
         .identity-card-face .identity-avatar {
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.15);
             object-fit: cover;
             flex-shrink: 0;
             background: var(--surface2);
@@ -1654,6 +1666,7 @@
             color: rgba(255,255,255,0.85);
             font-size: 14px;
             font-weight: 600;
+            position: relative;
         }
         .identity-card-face .identity-field .value.editable { cursor: text; }
         .identity-card-face .identity-field .value.editable:hover { color: #fff; }
@@ -1667,8 +1680,16 @@
             width: 100%;
             outline: none;
             font-family: inherit;
+            animation: inputPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         .identity-card-face .identity-field .value input::placeholder { color: rgba(255,255,255,0.2); }
+
+        /* ─── TYPING ANIMATION ──────────────────────────────────── */
+        @keyframes inputPop {
+            0% { transform: scale(0.8) translateY(4px); opacity: 0.5; }
+            60% { transform: scale(1.05) translateY(-2px); opacity: 1; }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
 
         .identity-card-face .identity-toggle-btn {
             padding: 6px 0;
@@ -4562,9 +4583,14 @@
             const avatar = generateDefaultAvatar(initial, 0);
             identityAvatar.src = avatar.src;
 
-            identityNameDisplay.innerHTML = `<span class="label">Name</span><span class="value editable" id="identity-name-value">${name}</span>`;
-            identityUsernameDisplay.innerHTML = `<span class="label">Username</span><span class="value editable" id="identity-username-value">${username}</span>`;
-            identityPhoneDisplay.innerHTML = `<span class="label">Phone</span><span class="value editable" id="identity-phone-value">${phone}</span>`;
+            // Update display without re-creating DOM to preserve input states
+            // We'll just update the text content of the value spans
+            const nameValueSpan = identityNameDisplay.querySelector('.value');
+            const usernameValueSpan = identityUsernameDisplay.querySelector('.value');
+            const phoneValueSpan = identityPhoneDisplay.querySelector('.value');
+            if (nameValueSpan) nameValueSpan.textContent = name;
+            if (usernameValueSpan) usernameValueSpan.textContent = username;
+            if (phoneValueSpan) phoneValueSpan.textContent = phone;
 
             if (data.anonymousEnabled) {
                 identityToggleBtn.textContent = 'Disable Anonymous';
@@ -4577,9 +4603,13 @@
             identityStatus.className = 'identity-status';
             updateAnonButtonState();
 
-            document.getElementById('identity-name-value')?.addEventListener('click', () => startEditing('name'));
-            document.getElementById('identity-username-value')?.addEventListener('click', () => startEditing('username'));
-            document.getElementById('identity-phone-value')?.addEventListener('click', () => startEditing('phone'));
+            // Bind click events if not already bound
+            if (!window._identityClickBound) {
+                window._identityClickBound = true;
+                document.getElementById('identity-name-display')?.addEventListener('click', () => startEditing('name'));
+                document.getElementById('identity-username-display')?.addEventListener('click', () => startEditing('username'));
+                document.getElementById('identity-phone-display')?.addEventListener('click', () => startEditing('phone'));
+            }
         }
 
         function startEditing(field) {
@@ -4592,9 +4622,19 @@
             input.maxLength = field === 'phone' ? 20 : 30;
             input.autofocus = true;
             input.style.cssText = 'background:transparent;border:none;color:#fff;font-size:14px;font-weight:600;text-align:center;width:100%;outline:none;font-family:inherit;';
+            // Add animation class when typing
             input.addEventListener('input', () => {
-                input.value = input.value.replace(/[^A-Za-z0-9 ]/g, '');
-                if (field === 'phone') input.value = input.value.replace(/[^0-9+\- ]/g, '');
+                // Only allow letters/numbers/space for name/username, numbers for phone
+                if (field === 'phone') {
+                    input.value = input.value.replace(/[^0-9+\- ]/g, '');
+                } else {
+                    input.value = input.value.replace(/[^A-Za-z0-9 ]/g, '');
+                }
+                // Trigger animation on each keystroke
+                input.style.animation = 'none';
+                requestAnimationFrame(() => {
+                    input.style.animation = 'inputPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                });
             });
             input.addEventListener('blur', () => finishEditing());
             input.addEventListener('keydown', (e) => {
@@ -4602,6 +4642,8 @@
                 if (e.key === 'Escape') { input.value = currentValue; finishEditing(); }
             });
             const label = displayEl.querySelector('.label');
+            const valueSpan = displayEl.querySelector('.value');
+            // Replace valueSpan with input, but keep the label
             displayEl.innerHTML = '';
             displayEl.appendChild(label);
             displayEl.appendChild(input);
