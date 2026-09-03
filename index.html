@@ -4667,10 +4667,17 @@
                 if (e.key === 'Enter') finishEditing();
                 if (e.key === 'Escape') { input.value = currentValue; finishEditing(); }
             });
+            // Prevent card drag from interfering
+            input.addEventListener('mousedown', (e) => e.stopPropagation());
+            input.addEventListener('touchstart', (e) => e.stopPropagation());
+
             // Replace the .value span with the input
             valueSpan.replaceWith(input);
             displayEl.classList.add('editing');
-            setTimeout(() => input.focus(), 100);
+            setTimeout(() => {
+                input.focus();
+                input.select();
+            }, 100);
             haptic('light');
         }
 
