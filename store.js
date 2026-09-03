@@ -54,7 +54,6 @@ function generateRandomAnonymousPhone() {
   return country[Math.floor(Math.random() * country.length)] + ' ' + parts.join(' ');
 }
 
-// ─── Ensure user has anonymous fields ──────────────────────────
 function ensureAnonymousFields(user) {
   if (user.anonymousEnabled === undefined) user.anonymousEnabled = false;
   if (!user.anonymousName) user.anonymousName = user.username || generateRandomAnonymousName();
@@ -63,7 +62,6 @@ function ensureAnonymousFields(user) {
   return user;
 }
 
-// ─── Get user ──────────────────────────────────────────────────
 async function getUser(id, defaults = {}) {
   if (!data.users[id]) {
     const username = defaults.username || 'player';
@@ -93,7 +91,6 @@ async function getUser(id, defaults = {}) {
   return data.users[id];
 }
 
-// ─── Set anonymous data ────────────────────────────────────────
 async function setAnonymousData(userId, data) {
   const user = await getUser(userId);
   if (data.enabled !== undefined) user.anonymousEnabled = data.enabled;
@@ -109,9 +106,7 @@ async function setAnonymousData(userId, data) {
   };
 }
 
-// ─── Check uniqueness of anonymous field ──────────────────────
 async function checkAnonymousUnique(field, value, excludeUserId) {
-  // field can be 'username' or 'phone'
   const allUsers = Object.values(data.users);
   for (const u of allUsers) {
     if (u.id === excludeUserId) continue;
@@ -121,7 +116,6 @@ async function checkAnonymousUnique(field, value, excludeUserId) {
   return true;
 }
 
-// ─── Add win to history ────────────────────────────────────────
 async function addWinToHistory(id, name, pfp, amount) {
   const user = await getUser(id);
   if (!Array.isArray(user.winHistory)) user.winHistory = [];
@@ -152,7 +146,6 @@ async function allUsersCount() {
   return Object.keys(data.users).length;
 }
 
-// ─── Reset player (admin) ──────────────────────────────────────
 async function resetPlayer(userId) {
   const user = data.users[userId];
   if (!user) return false;
