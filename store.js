@@ -31,7 +31,7 @@ function queueSave() {
   setTimeout(flush, 250);
 }
 
-// ─── Helper: generate random anonymous values ──────────────────
+// ─── Random generators for anonymous fields ──────────────────
 function generateRandomAnonymousName() {
   const first = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot', 'Golf', 'Hotel', 'India', 'Juliett', 'Kilo', 'Lima', 'Mike', 'November', 'Oscar', 'Papa', 'Quebec', 'Romeo', 'Sierra', 'Tango', 'Uniform', 'Victor', 'Whiskey', 'Xray', 'Yankee', 'Zulu'];
   const second = ['Wolf', 'Fox', 'Hawk', 'Eagle', 'Lion', 'Tiger', 'Bear', 'Shark', 'Dragon', 'Phoenix', 'Raven', 'Falcon', 'Owl', 'Snake', 'Panther', 'Leopard', 'Cheetah', 'Hound', 'Viper', 'Cobra'];
@@ -60,7 +60,6 @@ function ensureAnonymousFields(user) {
   if (!user.anonymousName) user.anonymousName = user.username || generateRandomAnonymousName();
   if (!user.anonymousUsername) user.anonymousUsername = generateRandomAnonymousUsername();
   if (!user.anonymousPhone) user.anonymousPhone = generateRandomAnonymousPhone();
-  // Also store the real name/pfp separately if needed – we use username/pfp for real
   return user;
 }
 
@@ -89,20 +88,39 @@ async function getUser(id, defaults = {}) {
     if (defaults.pfp) data.users[id].pfp = defaults.pfp;
     if (data.users[id].banned === undefined) data.users[id].banned = false;
     if (!Array.isArray(data.users[id].winHistory)) data.users[id].winHistory = [];
-    // Ensure anonymous fields exist
     ensureAnonymousFields(data.users[id]);
   }
   return data.users[id];
 }
 
-// ─── Set anonymous data ────────────────────────────────────────
-async function setAnonymousData(userId, data) {
-  const user = await getUser(userId);
-  if (data.enabled !== undefined) user.anonymousEnabled = data.enabled;
-  if (data.name !== undefined) user.anonymousName = data.name;
-  if (data.username !== undefined) user.anonymousUsername = data.username;
-  if (data.phone !== undefined) user.anonymousPhone = data.phone;
+// ─── Save user ──────────────────────────────────────────────────
+async function saveUser(user) {
+  data.users[user.id] = user;
   queueSave();
+}
+
+// ─── Set anonymous data with uniqueness checks ────────────────
+async function setAnonymousData(userId, updates) {
+  const user = await getUser(userId);
+  if (!user) throw new Error('User not found');
+
+  if (updates.enabled !== undefined) user.anonymousEnabled = updates.enabled;
+
+  if (updates.username !== undefined) {
+    const unique = await checkAnonymousUnique('username', updates.username, userId);
+    if (!unique) throw new Error('Username already taken');
+    user.anonymousUsername = updates.username;
+  }
+  if (updates.phone !== undefined) {
+    const unique = await checkAnonymousUnique('phone', updates.phone, userId);
+    if (!unique) throw new Error('Phone number already taken');
+    user.anonymousPhone = updates.phone;
+  }
+  if (updates.name !== undefined) {
+    user.anonymousName = updates.name;
+  }
+
+  await saveUser(user);
   return {
     anonymousEnabled: user.anonymousEnabled,
     anonymousName: user.anonymousName,
@@ -111,9 +129,8 @@ async function setAnonymousData(userId, data) {
   };
 }
 
-// ─── Check uniqueness of anonymous field ──────────────────────
+// ─── Check uniqueness (exposed for API) ──────────────────────
 async function checkAnonymousUnique(field, value, excludeUserId) {
-  // field can be 'username' or 'phone'
   const allUsers = Object.values(data.users);
   for (const u of allUsers) {
     if (u.id === excludeUserId) continue;
@@ -131,11 +148,6 @@ async function addWinToHistory(id, name, pfp, amount) {
   if (user.winHistory.length > 20) user.winHistory.length = 20;
   queueSave();
   return user.winHistory;
-}
-
-async function saveUser(user) {
-  data.users[user.id] = user;
-  queueSave();
 }
 
 async function getAllUsers() {
@@ -162,7 +174,6 @@ async function resetPlayer(userId) {
   user.wins = 0;
   user.losses = 0;
   user.winHistory = [];
-  // Reset anonymous fields as well (optional)
   user.anonymousEnabled = false;
   user.anonymousName = generateRandomAnonymousName();
   user.anonymousUsername = generateRandomAnonymousUsername();
