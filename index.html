@@ -1363,7 +1363,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            background: #000000; /* solid black */
+            background: #000000;
             animation: cardFadeIn 0.4s ease;
         }
         #identity-overlay.show {
@@ -1441,7 +1441,6 @@
             object-fit: contain;
         }
 
-        /* Card welcome with letter animation */
         .card-welcome {
             position: relative;
             z-index: 2;
@@ -1614,12 +1613,38 @@
             border: none;
             padding: 2px 0;
             font-family: inherit;
+            transition: border-color 0.2s;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0;
         }
         .identity-field .id-value:focus {
             border-bottom: 1px solid rgba(255,255,255,0.3);
         }
         .identity-field .id-value.error {
             color: #ff6b6b;
+        }
+        .identity-field .id-value.editing {
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            animation: pulseBorder 1.2s ease-in-out infinite;
+        }
+        @keyframes pulseBorder {
+            0%, 100% { border-bottom-color: rgba(255,255,255,0.5); }
+            50% { border-bottom-color: rgba(255,255,255,0.1); }
+        }
+
+        /* Per‑character animation for typing */
+        .char-anim {
+            display: inline-block;
+            animation: charSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: translateY(6px);
+            white-space: pre;
+        }
+        @keyframes charSlideUp {
+            0% { opacity: 0; transform: translateY(6px); }
+            60% { opacity: 1; transform: translateY(-2px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         .card-close-btn {
@@ -3210,14 +3235,11 @@
         <div class="card-wrapper">
             <div class="card-container" id="identity-card-container">
                 <div class="card-3d" id="identity-card-3d">
-                    <!-- Front – solid black background -->
                     <div class="card-face front" style="background:#000000;padding:20px 24px;display:flex;flex-direction:column;justify-content:space-between;border-color:rgba(255,255,255,0.05);">
-                        <!-- Top: title and dllump -->
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;padding:4px 0;">
-                            <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:1px;">🪪 Identity</div>
+                            <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:1px;">Identity</div>
                             <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
                         </div>
-                        <!-- Fields -->
                         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
                             <div class="identity-field" data-field="name">
                                 <div class="id-label">Name</div>
@@ -3232,12 +3254,10 @@
                                 <div class="id-value" id="id-phone">+0 000 000 000</div>
                             </div>
                         </div>
-                        <!-- Bottom: toggle button (no "tap a field to edit" text, only button) -->
                         <div style="display:flex;justify-content:center;position:relative;z-index:2;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
                             <button id="identity-toggle-btn" style="padding:6px 20px;border-radius:8px;border:none;background:#4CAF50;color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:0.2s;width:auto;">Enable</button>
                         </div>
                     </div>
-                    <!-- Back -->
                     <div class="card-face back" style="background:linear-gradient(145deg, #1a2a3a, #0d1a2a);">
                         <div class="card-stripe"></div>
                         <div style="position:absolute;bottom:40px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.08);font-size:10px;letter-spacing:2px;">anonymous identity · dllump</div>
@@ -3249,8 +3269,6 @@
 
     <script>
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
-        // All game logic, socket handling, rendering, etc.
-
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
             'https://i.postimg.cc/9Frvpxhz/ezgif-3f0e907be807d1cc.gif',
@@ -3278,16 +3296,12 @@
                 else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
         }
 
-        // ─── IMPROVED CLICK SOUND ─────────────────────────────────────
         let audioCtxForClicks = null;
-
         function playClickSound() {
             if (!state.soundEnabled) return;
             try {
                 if (!audioCtxForClicks) audioCtxForClicks = new (window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtxForClicks.currentTime;
-
-                // 1) Short noise burst with decay – gives the "click" transient
                 const bufferSize = audioCtxForClicks.sampleRate * 0.03;
                 const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -3304,7 +3318,6 @@
                 noise.start(now);
                 noise.stop(now + 0.03);
 
-                // 2) Short sine tone with pitch drop – adds "tactile" feel
                 const osc = audioCtxForClicks.createOscillator();
                 const gainOsc = audioCtxForClicks.createGain();
                 osc.type = 'sine';
@@ -3354,7 +3367,7 @@
             recentGames: [],
             maxRecent: 5,
             memberSince: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-            soundEnabled: false, // default OFF
+            soundEnabled: false,
         };
 
         let SERVER_ARENA_SIZE = 400;
@@ -3492,6 +3505,69 @@
         let identityRotX = 0, identityRotY = 0, identityTargetRotX = 0, identityTargetRotY = 0;
         let identityIdlePhase = 0;
 
+        function getAnonymousColor(id) {
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                hash = hash & hash;
+            }
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 70%, 50%)`;
+        }
+
+        // ─── Per‑character animation for identity fields ────────────
+        function animateIdentityField(element, newText) {
+            // Save cursor position
+            const sel = window.getSelection();
+            let offset = 0;
+            if (sel.rangeCount > 0 && sel.anchorNode && element.contains(sel.anchorNode)) {
+                const range = sel.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(element);
+                preCaretRange.setEnd(range.startContainer, range.startOffset);
+                offset = preCaretRange.toString().length;
+            }
+
+            // Build HTML with spans
+            let html = '';
+            const chars = newText.split('');
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                const delay = i * 0.04;
+                const span = document.createElement('span');
+                span.className = 'char-anim';
+                span.style.animationDelay = delay + 's';
+                span.textContent = char === ' ' ? '\u00A0' : char; // preserve spaces
+                html += span.outerHTML;
+            }
+            element.innerHTML = html;
+
+            // Restore cursor position
+            if (offset <= newText.length) {
+                const range = document.createRange();
+                const charSpans = element.querySelectorAll('.char-anim');
+                let targetNode = element;
+                let targetOffset = 0;
+                let charCount = 0;
+                for (const span of charSpans) {
+                    const text = span.textContent;
+                    if (charCount + text.length >= offset) {
+                        targetNode = span.firstChild || span;
+                        targetOffset = offset - charCount;
+                        break;
+                    }
+                    charCount += text.length;
+                }
+                if (targetNode) {
+                    range.setStart(targetNode, targetOffset);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+        }
+
         // ─── RECENT GAMES ──────────────────────────────────────────────
         function addRecentGame(type, opponent, amount, result) {
             const entry = {
@@ -3549,7 +3625,6 @@
         function animateParticles() {
             if (!particleCanvas.classList.contains('show')) return;
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
-
             particles.forEach(p => {
                 p.x += p.vx;
                 p.y += p.vy;
@@ -3557,7 +3632,6 @@
                 if (p.x > particleCanvas.width) p.x = 0;
                 if (p.y < 0) p.y = particleCanvas.height;
                 if (p.y > particleCanvas.height) p.y = 0;
-
                 particleCtx.beginPath();
                 particleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 particleCtx.fillStyle = `rgba(120, 190, 255, ${p.alpha})`;
@@ -3567,7 +3641,6 @@
                 particleCtx.fill();
                 particleCtx.shadowBlur = 0;
             });
-
             particleAnimId = requestAnimationFrame(animateParticles);
         }
 
@@ -3655,7 +3728,6 @@
             requestAnimationFrame(startCardIdleAnimation);
         }
 
-        // ─── Identity card 3D interaction ──────────────────────────
         function updateIdentityTransform() {
             identityRotX += (identityTargetRotX - identityRotX) * 0.08;
             identityRotY += (identityTargetRotY - identityRotY) * 0.08;
@@ -3688,13 +3760,12 @@
             });
         }
 
-        // ─── Card stats update (financial metrics) ────────────────────
+        // ─── Card stats update ────────────────────────────────────
         function updateCardStats() {
             const txs = state.transactions;
             let totalWagered = 0;
             let biggestWin = 0;
             let netProfit = 0;
-
             txs.forEach(tx => {
                 if (tx.type === 'bet') {
                     totalWagered += Math.abs(tx.amount);
@@ -3702,10 +3773,9 @@
                     netProfit += tx.amount;
                     if (tx.amount > biggestWin) biggestWin = tx.amount;
                 } else if (tx.type === 'loss') {
-                    netProfit += tx.amount; // tx.amount is negative
+                    netProfit += tx.amount;
                 }
             });
-
             csWagered.textContent = totalWagered;
             csBiggest.textContent = biggestWin;
             csNet.textContent = netProfit >= 0 ? `+${netProfit}` : `${netProfit}`;
@@ -3744,23 +3814,37 @@
         function openIdentityCard() {
             identityOverlay.classList.add('show');
             identityCloseBtn.classList.add('show');
-            // Reset rotation
             identityRotX = 0; identityRotY = 0;
             identityTargetRotX = 0; identityTargetRotY = 0;
             identityCard3d.style.transform = 'rotateX(0) rotateY(0)';
-            // Populate fields
-            idName.textContent = state.anonymousName || 'Anonymous';
-            idUsername.textContent = state.anonymousUsername || '@anon';
-            idPhone.textContent = state.anonymousPhone || '+0 000 000 000';
-            // Update toggle button state
+            // Populate fields with animation
+            setIdentityField(idName, state.anonymousName || 'Anonymous');
+            setIdentityField(idUsername, state.anonymousUsername || '@anon');
+            setIdentityField(idPhone, state.anonymousPhone || '+0 000 000 000');
             updateIdentityToggleButton();
-            // Init particles
             initIdentityParticles();
-            // Start idle animation
             identityIdlePhase = 0;
             identityDrag = false;
             requestAnimationFrame(startIdentityIdleAnimation);
             haptic('medium');
+        }
+
+        function setIdentityField(element, text) {
+            // Save current selection (none) and just set content with animation
+            const sel = window.getSelection();
+            // We'll just set innerHTML with spans
+            let html = '';
+            const chars = text.split('');
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                const delay = i * 0.04;
+                const span = document.createElement('span');
+                span.className = 'char-anim';
+                span.style.animationDelay = delay + 's';
+                span.textContent = char === ' ' ? '\u00A0' : char;
+                html += span.outerHTML;
+            }
+            element.innerHTML = html;
         }
 
         function closeIdentityCard() {
@@ -3788,14 +3872,25 @@
                 e.stopPropagation();
                 if (valueEl.isContentEditable) return;
                 valueEl.contentEditable = true;
+                valueEl.classList.add('editing');
                 valueEl.focus();
                 document.execCommand('selectAll', false, null);
             });
             valueEl.addEventListener('blur', () => {
                 if (!valueEl.isContentEditable) return;
                 valueEl.contentEditable = false;
+                valueEl.classList.remove('editing');
                 const newVal = valueEl.textContent.trim();
                 saveIdentityField(fieldName, newVal, valueEl);
+            });
+            valueEl.addEventListener('input', function(e) {
+                // When typing, re‑render with animation
+                const text = this.textContent;
+                // We need to preserve the caret position; we'll use a flag to avoid recursion
+                if (this._animating) return;
+                this._animating = true;
+                animateIdentityField(this, text);
+                this._animating = false;
             });
             valueEl.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
@@ -3814,7 +3909,6 @@
             const original = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
             if (value === original) return;
 
-            // Validate based on field
             if (field === 'name') {
                 if (!/^[a-zA-Z\s]{1,30}$/.test(value)) {
                     el.textContent = original;
@@ -3849,7 +3943,6 @@
                 }
             }
 
-            // Save to server – use full URL
             const payload = { userId: state.userId };
             payload[field] = value;
             try {
@@ -3888,7 +3981,7 @@
             }
         }
 
-        // ─── Identity toggle button (Enable/Disable) ─────────────────
+        // ─── Identity toggle button ─────────────────────────────────
         identityToggleBtn.addEventListener('click', async function() {
             const enabled = !state.anonymous;
             try {
@@ -3959,7 +4052,6 @@
                 }, 300);
             }
         });
-
         cardContainer.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             cardDrag = true;
@@ -4024,7 +4116,6 @@
                 }, 300);
             }
         });
-
         identityCardContainer.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             identityDrag = true;
@@ -4165,12 +4256,8 @@
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-
-        function easeOutBack(t) { const c1 = 1.70158,
-                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-
+        function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
         function lightenColor(hex, amt) {
             let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
             let g = parseInt(hex.slice(2, 3), 16) * 17 || parseInt(hex.slice(3, 5), 16);
@@ -4180,7 +4267,6 @@
             b = Math.min(255, b + amt);
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
-
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(120,120,120,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
@@ -4286,7 +4372,6 @@
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
-
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
         // ─── SOCKET ─────────────────────────────────────────────────────
@@ -4369,7 +4454,6 @@
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
-                    // Init transactions with demo data
                     if (state.transactions.length === 0) {
                         addTransaction('win', 120, 'PvP Win');
                         addTransaction('bet', -50, 'PvP Bet');
@@ -4377,13 +4461,11 @@
                         addTransaction('win', 200, 'Ice Win');
                         addTransaction('bet', -75, 'PvP Bet');
                     }
-                    // Demo recent games
                     if (state.recentGames.length === 0) {
                         addRecentGame('pvp', 'Bot_007', 120, 'win');
                         addRecentGame('ice', 'CryptoKing', -30, 'loss');
                         addRecentGame('pvp', 'LuckyDuck', 50, 'win');
                     }
-                    // Init card stats
                     updateCardStats();
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
@@ -4527,9 +4609,7 @@
         let touchingIds = new Set();
 
         function getPlayer(id) { return state.players.find(p => p.id === id); }
-
         function getAlive() { return state.players.filter(p => p.alive); }
-
         function updateStatsBar() { statsPlayers.textContent = getAlive().length;
             statsPot.textContent = state.pot; }
 
@@ -4582,8 +4662,7 @@
             playerListContainer.innerHTML = html;
         }
 
-        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158,
-                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
 
         function getPopScale(player) {
             if (!player.isPopping) return 1;
@@ -4752,10 +4831,8 @@
             iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
             iceWinPanel.classList.add('show');
             haptic('heavy');
-
             iceState.winnerPuckPop = true;
             iceState.winnerPuckPopStart = performance.now();
-
             if (window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
             window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
         }
@@ -4783,7 +4860,6 @@
         // ─── applyIceServerState ───────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
-
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.puckPrevX = snapshot.puck.x;
                 iceState.puckPrevY = snapshot.puck.y;
@@ -4791,7 +4867,6 @@
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
             }
-
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
             iceState.countdownStartTime = snapshot.countdownStartTime;
@@ -4800,7 +4875,6 @@
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
             iceState.spinStartX = snapshot.spinStartX || iceState.arenaSize / 2;
             iceState.spinStartY = snapshot.spinStartY || iceState.arenaSize / 2;
-
             if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
                 iceState.puckPrevX = iceState.puck.x;
                 iceState.puckPrevY = iceState.puck.y;
@@ -4808,11 +4882,9 @@
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
             }
-
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
             }
-
             if (snapshot.gameState === 'spinning' && prevGameState !== 'spinning') {
                 iceState.puckVisible = true;
                 iceState.puckPopStart = performance.now();
@@ -4856,7 +4928,6 @@
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
             }
-
             const seen = new Set();
             snapshot.players.forEach(sp => {
                 seen.add(sp.id);
@@ -4892,7 +4963,6 @@
                 local.name = sp.name;
             });
             iceState.players = iceState.players.filter(p => seen.has(p.id));
-
             if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
                 iceState.winnerId = null;
                 iceWaitingText.style.display = 'block';
@@ -4932,7 +5002,6 @@
                 iceState.gameState === 'sliding' ||
                 iceState.gameState === 'finished');
             iceTopPanel.classList.toggle('show', show);
-
             const timerSection = document.getElementById('ice-timer-section');
             if (iceState.gameState === 'countdown') {
                 timerSection.style.display = 'flex';
@@ -5379,7 +5448,7 @@
 
         // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
-            playClickSound(); // plays only if sound was on (it will be off if toggling off, but if toggling on it will play)
+            playClickSound();
             state.soundEnabled = soundToggle.checked;
         });
         soundToggle.checked = state.soundEnabled;
@@ -5521,13 +5590,18 @@
                 ctx.closePath();
                 ctx.clip();
                 if (isAnonymous) {
-                    ctx.fillStyle = '#333';
+                    const color = getAnonymousColor(state.userId);
+                    ctx.fillStyle = color;
                     ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
-                    ctx.fillStyle = '#888';
-                    ctx.font = `${drawRadius*0.5}px system-ui, sans-serif`;
+                    ctx.fillStyle = '#fff';
+                    const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
+                    ctx.font = `bold ${drawRadius*0.6}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText('?', px, py + 1);
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(letter, px, py + 1);
+                    ctx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
@@ -5560,7 +5634,6 @@
             if (!w) return;
             const half = w / 2;
             const s = iceScaleFactor();
-
             iceCtx.clearRect(0, 0, w, w);
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(12,16,22,0.85)');
@@ -5776,13 +5849,18 @@
                 const isMe = p.id === state.userId;
                 const isAnonymous = isMe && state.anonymous;
                 if (isAnonymous) {
-                    iceCtx.fillStyle = '#333';
+                    const color = getAnonymousColor(state.userId);
+                    iceCtx.fillStyle = color;
                     iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
-                    iceCtx.fillStyle = '#888';
-                    iceCtx.font = `${drawR*0.8}px system-ui, sans-serif`;
+                    iceCtx.fillStyle = '#fff';
+                    const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
+                    iceCtx.font = `bold ${drawR*0.8}px system-ui, sans-serif`;
                     iceCtx.textAlign = 'center';
                     iceCtx.textBaseline = 'middle';
-                    iceCtx.fillText('?', 0, 0);
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                    iceCtx.shadowBlur = 4;
+                    iceCtx.fillText(letter, 0, 0);
+                    iceCtx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
                 } else {
@@ -5814,32 +5892,26 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
                 const extraSpins = 4;
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
-
                 const centerX = iceState.spinStartX * s;
                 const centerY = iceState.spinStartY * s;
                 const puckRadius = PUCK_RENDER_RADIUS * s;
                 const orbitRadius = puckRadius + 4;
-
                 const triSize = Math.min(w * 0.035, 10);
                 const tipOffset = triSize * 0.4;
-
                 iceCtx.save();
                 iceCtx.translate(centerX, centerY);
                 iceCtx.rotate(angle);
                 iceCtx.translate(orbitRadius, 0);
-
                 iceCtx.beginPath();
                 iceCtx.moveTo(tipOffset, 0);
                 iceCtx.lineTo(-tipOffset * 0.3, -triSize * 0.5);
                 iceCtx.lineTo(-tipOffset * 0.3, triSize * 0.5);
                 iceCtx.closePath();
-
                 iceCtx.fillStyle = '#e8f4ff';
                 iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
                 iceCtx.shadowBlur = 12;
@@ -5851,7 +5923,6 @@
                 iceCtx.restore();
             }
 
-            // Draw puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
