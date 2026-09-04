@@ -1363,8 +1363,7 @@
             display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(0, 0, 0, 0.92);
-            backdrop-filter: blur(24px);
+            background: #000000; /* solid black */
             animation: cardFadeIn 0.4s ease;
         }
         #identity-overlay.show {
@@ -1604,7 +1603,7 @@
             font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.3);
         }
         .identity-field .id-value {
             font-size: 16px;
@@ -1617,7 +1616,7 @@
             font-family: inherit;
         }
         .identity-field .id-value:focus {
-            border-bottom: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.3);
         }
         .identity-field .id-value.error {
             color: #ff6b6b;
@@ -3053,7 +3052,7 @@
 
                     <!-- Settings -->
                     <div class="profile-settings">
-                        <!-- Anonymous Identity button (replaces toggle) -->
+                        <!-- Anonymous Identity button -->
                         <div class="setting-row" id="anonymous-row">
                             <div>
                                 <div class="set-label">Anonymous Identity</div>
@@ -3211,12 +3210,14 @@
         <div class="card-wrapper">
             <div class="card-container" id="identity-card-container">
                 <div class="card-3d" id="identity-card-3d">
-                    <!-- Front -->
-                    <div class="card-face front" style="background:linear-gradient(145deg, #1a2a3a, #0d1a2a, #2a4a5a);">
+                    <!-- Front – solid black background -->
+                    <div class="card-face front" style="background:#000000;padding:20px 24px;display:flex;flex-direction:column;justify-content:space-between;border-color:rgba(255,255,255,0.05);">
+                        <!-- Top: title and dllump -->
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;padding:4px 0;">
-                            <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:1px;">🪪 Identity</div>
+                            <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:1px;">🪪 Identity</div>
                             <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
                         </div>
+                        <!-- Fields -->
                         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
                             <div class="identity-field" data-field="name">
                                 <div class="id-label">Name</div>
@@ -3231,15 +3232,9 @@
                                 <div class="id-value" id="id-phone">+0 000 000 000</div>
                             </div>
                         </div>
-                        <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
-                            <span style="font-size:10px;color:rgba(255,255,255,0.2);">tap a field to edit</span>
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <span style="font-size:11px;color:rgba(255,255,255,0.3);">Enable</span>
-                                <label class="switch" style="width:40px;height:20px;">
-                                    <input type="checkbox" id="identity-enable-switch" />
-                                    <span class="slider" style="border:none;"></span>
-                                </label>
-                            </div>
+                        <!-- Bottom: toggle button (no "tap a field to edit" text, only button) -->
+                        <div style="display:flex;justify-content:center;position:relative;z-index:2;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
+                            <button id="identity-toggle-btn" style="padding:6px 20px;border-radius:8px;border:none;background:#4CAF50;color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:0.2s;width:auto;">Enable</button>
                         </div>
                     </div>
                     <!-- Back -->
@@ -3488,7 +3483,7 @@
         const idName = document.getElementById('id-name');
         const idUsername = document.getElementById('id-username');
         const idPhone = document.getElementById('id-phone');
-        const identityEnableSwitch = document.getElementById('identity-enable-switch');
+        const identityToggleBtn = document.getElementById('identity-toggle-btn');
         const identityParticleCanvas = document.getElementById('identity-particle-canvas');
         const identityParticleCtx = identityParticleCanvas.getContext('2d');
         let identityParticles = [];
@@ -3757,7 +3752,8 @@
             idName.textContent = state.anonymousName || 'Anonymous';
             idUsername.textContent = state.anonymousUsername || '@anon';
             idPhone.textContent = state.anonymousPhone || '+0 000 000 000';
-            identityEnableSwitch.checked = state.anonymous;
+            // Update toggle button state
+            updateIdentityToggleButton();
             // Init particles
             initIdentityParticles();
             // Start idle animation
@@ -3772,6 +3768,16 @@
             identityCloseBtn.classList.remove('show');
             identityDrag = false;
             stopIdentityParticles();
+        }
+
+        function updateIdentityToggleButton() {
+            if (state.anonymous) {
+                identityToggleBtn.textContent = 'Disable';
+                identityToggleBtn.style.background = '#d45a5a';
+            } else {
+                identityToggleBtn.textContent = 'Enable';
+                identityToggleBtn.style.background = '#4CAF50';
+            }
         }
 
         // ─── Identity field editing ──────────────────────────────────
@@ -3843,11 +3849,11 @@
                 }
             }
 
-            // Save to server
+            // Save to server – use full URL
             const payload = { userId: state.userId };
             payload[field] = value;
             try {
-                const res = await fetch('/api/set-anonymous', {
+                const res = await fetch(SERVER_URL + '/api/set-anonymous', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -3861,30 +3867,32 @@
                     showNotification(data.error || 'Update failed.');
                 }
             } catch (err) {
+                console.error('Save identity field error:', err);
                 el.textContent = original;
-                showNotification('Network error.');
+                showNotification('Network error. Check console.');
             }
         }
 
         async function checkAnonymousUnique(field, value) {
             try {
-                const res = await fetch('/api/check-anonymous-unique', {
+                const res = await fetch(SERVER_URL + '/api/check-anonymous-unique', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ field, value, userId: state.userId })
                 });
                 const data = await res.json();
                 return data.ok ? data.unique : false;
-            } catch {
+            } catch (err) {
+                console.error('Check uniqueness error:', err);
                 return false;
             }
         }
 
-        // ─── Identity enable switch ──────────────────────────────────
-        identityEnableSwitch.addEventListener('change', async () => {
-            const enabled = identityEnableSwitch.checked;
+        // ─── Identity toggle button (Enable/Disable) ─────────────────
+        identityToggleBtn.addEventListener('click', async function() {
+            const enabled = !state.anonymous;
             try {
-                const res = await fetch('/api/set-anonymous', {
+                const res = await fetch(SERVER_URL + '/api/set-anonymous', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: state.userId, enabled })
@@ -3893,18 +3901,14 @@
                 if (data.ok) {
                     state.anonymous = enabled;
                     document.getElementById('profile-status').textContent = enabled ? 'anonymous' : 'online';
+                    updateIdentityToggleButton();
                     haptic('medium');
-                    if (enabled) {
-                        showNotification('Anonymous mode enabled.');
-                    } else {
-                        showNotification('Anonymous mode disabled.');
-                    }
+                    showNotification(enabled ? 'Anonymous mode enabled.' : 'Anonymous mode disabled.');
                 } else {
-                    identityEnableSwitch.checked = !enabled;
                     showNotification(data.error || 'Failed to toggle.');
                 }
             } catch (err) {
-                identityEnableSwitch.checked = !enabled;
+                console.error('Toggle anonymous error:', err);
                 showNotification('Network error.');
             }
         });
@@ -4361,6 +4365,7 @@
                     profilePfp.src = state.pfp || state.defaultAvatar;
                     memberSince.textContent = `Member since ${state.memberSince}`;
                     document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
+                    updateIdentityToggleButton();
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
@@ -4561,12 +4566,11 @@
                 let crown = '';
                 if (topInfo) { if (topInfo.rank === 1) crown = '👑';
                     else if (topInfo.rank === 2) crown = '👑'; }
-                // Use anonymous name if enabled for the player
                 let displayName = p.name;
                 let displayPfp = p.pfp;
                 if (isYou && state.anonymous) {
                     displayName = state.anonymousName || 'Anonymous';
-                    displayPfp = null; // hide pfp – show default
+                    displayPfp = null;
                 }
                 html += `<div class="pl-entry ${isYou?'you':''}">
                             <div class="pl-avatar"><img src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" /></div>
@@ -5517,7 +5521,6 @@
                 ctx.closePath();
                 ctx.clip();
                 if (isAnonymous) {
-                    // Use a default avatar or a generic anonymous icon
                     ctx.fillStyle = '#333';
                     ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
                     ctx.fillStyle = '#888';
