@@ -26,8 +26,6 @@ const {
   getPromoCodes,
   deletePromoCode,
   resetPlayer,
-  setAnonymousData,
-  checkAnonymousUnique,
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -120,14 +118,14 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── VERY HIGH SPEED – no more cap, just raw speed ──────────────
+// ─── MUCH FASTER SPEED WITH WIDE RANDOMIZATION ──────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // Max speed 80, min speed 20 – huge initial burst
-  const speed = 80.0 - norm * 60.0;
-  return Math.max(20.0, Math.min(80.0, speed));
+  // Max speed 28, min speed 8 – much faster overall
+  const speed = 28.0 - norm * 20.0;
+  return Math.max(8.0, Math.min(28.0, speed));
 }
 
 // ─── Room ──────────────────────────────────────────────────────
@@ -538,17 +536,10 @@ function broadcastIceState() {
     spinStartX: iceRoom.spinStartX,
     spinStartY: iceRoom.spinStartY,
     puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
-    players: iceRoom.players.map(p => {
-      // Resolve anonymous data if needed
-      return {
-        id: p.id,
-        name: p.name,
-        pfp: p.pfp,
-        bet: p.bet,
-        color: p.color,
-        x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
-      };
-    }),
+    players: iceRoom.players.map(p => ({
+      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+      x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
+    })),
   });
 }
 
@@ -603,7 +594,7 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
-// ─── START GAME – EXTREME SPEED, NO CAP ─────────────────────────
+// ─── START GAME – VERY FAST & HIGHLY RANDOMIZED ──────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -614,7 +605,7 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    // Randomize between 50% and 180% – can reach up to 80 * 1.8 = 144
+    // Randomize between 50% and 180% of base speed – huge variation
     const speed = baseSpeed * (0.5 + Math.random() * 1.3);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
@@ -696,7 +687,7 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── IMPROVED PHYSICS – smooth, bouncy, NO SPEED CAP ────────────
+// ─── IMPROVED PHYSICS – smooth, bouncy, slime-like ─────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -847,8 +838,15 @@ function updatePhysics(dt) {
       }
     }
 
-    // ─── NO SPEED CAP – let them fly! ───────────────────────────
-    // (removed the entire speed limit block)
+    // ─── Speed limits ────────────────────────────────────────────
+    stillAlive.forEach(p => {
+      const maxSp = speedForRadius(p.displayRadius || p.radius);
+      const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      if (sp > maxSp) {
+        p.vx = (p.vx / sp) * maxSp;
+        p.vy = (p.vy / sp) * maxSp;
+      }
+    });
   }
 
   // ─── Radius smoothing ──────────────────────────────────────────
@@ -895,27 +893,14 @@ setInterval(() => {
 }, 1000 / TICK_HZ);
 
 function broadcastState() {
-  // Build player list with anonymous substitution
-  const playerData = room.players.map(p => {
-    // We need to fetch user data to check anonymous state – we'll do it async? 
-    // For performance, we'll assume that when a player joins, we store their anonymous state in the player object.
-    // We'll store anonymous fields in the player object on join.
-    return {
-      id: p.id,
-      name: p.displayName || p.name,
-      pfp: p.displayPfp || p.pfp,
-      bet: p.bet,
-      color: p.color,
-      x: p.x, y: p.y,
-      displayRadius: p.displayRadius,
-      alive: p.alive,
-    };
-  });
   io.to(room.id).emit('state', {
     gameState: room.gameState,
     pot: room.pot,
     countdownStartTime: room.countdownStartTime,
-    players: playerData,
+    players: room.players.map(p => ({
+      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
+      x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
+    })),
     opening: room.opening,
   });
 }
@@ -946,10 +931,6 @@ io.on('connection', (socket) => {
         return;
       }
 
-      // Store anonymous state in the player object for quick access
-      // We'll also store in room.players when they place a bet.
-      // For now, we'll just send the anonymous data to the client.
-
       const icePlayers = iceRoom.players.map(p => ({
         id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
         x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
@@ -960,10 +941,6 @@ io.on('connection', (socket) => {
         user: {
           ...user,
           winHistory: user.winHistory || [],
-          anonymousEnabled: user.anonymousEnabled || false,
-          anonymousName: user.anonymousName || '',
-          anonymousUsername: user.anonymousUsername || '',
-          anonymousPhone: user.anonymousPhone || '',
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
@@ -995,22 +972,8 @@ io.on('connection', (socket) => {
       user.balance -= amt;
       await saveUser(user);
       const existing = getPlayer(userId);
-      if (existing) {
-        existing.bet += amt;
-        computeRadii();
-      } else {
-        // Create player with displayName and displayPfp based on anonymous state
-        const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
-        const displayPfp = user.anonymousEnabled ? null : user.pfp; // null means use default generated avatar
-        const p = makePlayer(userId, amt, displayName, displayPfp);
-        // Store anonymous fields for later updates
-        p.anonymousEnabled = user.anonymousEnabled;
-        p.anonymousName = user.anonymousName;
-        p.displayName = displayName;
-        p.displayPfp = displayPfp;
-        p.realName = user.username;
-        p.realPfp = user.pfp;
-      }
+      if (existing) { existing.bet += amt; computeRadii(); }
+      else { makePlayer(userId, amt, user.username, user.pfp); }
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
@@ -1045,104 +1008,13 @@ io.on('connection', (socket) => {
       user.balance -= amt;
       await saveUser(user);
       const existing = getIcePlayer(userId);
-      if (existing) {
-        existing.bet += amt;
-        repartitionIceArena();
-      } else {
-        // Use anonymous display if enabled
-        const displayName = user.anonymousEnabled ? user.anonymousName : user.username;
-        const displayPfp = user.anonymousEnabled ? null : user.pfp;
-        makeIcePlayer(userId, amt, displayName, displayPfp);
-      }
+      if (existing) { existing.bet += amt; repartitionIceArena(); }
+      else { makeIcePlayer(userId, amt, user.username, user.pfp); }
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastIceState();
     } catch (err) {
       console.error('Ice bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  // ─── Anonymous endpoints ──────────────────────────────────────
-  socket.on('setAnonymous', async ({ enabled, name, username, phone }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      // Check uniqueness for username and phone if they are changed
-      if (username && username !== user.anonymousUsername) {
-        const unique = await checkAnonymousUnique('username', username, userId);
-        if (!unique) return ack?.({ ok: false, error: 'Username already taken.' });
-      }
-      if (phone && phone !== user.anonymousPhone) {
-        const unique = await checkAnonymousUnique('phone', phone, userId);
-        if (!unique) return ack?.({ ok: false, error: 'Phone number already taken.' });
-      }
-      // Update anonymous data
-      const data = {};
-      if (enabled !== undefined) data.anonymousEnabled = enabled;
-      if (name !== undefined) data.anonymousName = name;
-      if (username !== undefined) data.anonymousUsername = username;
-      if (phone !== undefined) data.anonymousPhone = phone;
-      const updated = await setAnonymousData(userId, data);
-      // Update player objects in arenas
-      const pvpPlayer = getPlayer(userId);
-      if (pvpPlayer) {
-        if (updated.anonymousEnabled) {
-          pvpPlayer.displayName = updated.anonymousName;
-          pvpPlayer.displayPfp = null;
-        } else {
-          pvpPlayer.displayName = user.username;
-          pvpPlayer.displayPfp = user.pfp;
-        }
-        pvpPlayer.anonymousEnabled = updated.anonymousEnabled;
-        pvpPlayer.anonymousName = updated.anonymousName;
-        // Re-broadcast state
-        broadcastState();
-      }
-      const iceP = getIcePlayer(userId);
-      if (iceP) {
-        // In ice arena, we need to update name and pfp as well
-        if (updated.anonymousEnabled) {
-          iceP.name = updated.anonymousName;
-          iceP.pfp = null;
-        } else {
-          iceP.name = user.username;
-          iceP.pfp = user.pfp;
-        }
-        broadcastIceState();
-      }
-      ack?.({ ok: true, user: updated });
-    } catch (err) {
-      console.error('Set anonymous error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  socket.on('getAnonymousData', async (_, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const user = await getUser(userId);
-      if (!user) return ack?.({ ok: false, error: 'User not found.' });
-      ack?.({ ok: true, data: {
-        anonymousEnabled: user.anonymousEnabled || false,
-        anonymousName: user.anonymousName || '',
-        anonymousUsername: user.anonymousUsername || '',
-        anonymousPhone: user.anonymousPhone || '',
-      }});
-    } catch (err) {
-      console.error('Get anonymous error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
-
-  socket.on('checkAnonymousUnique', async ({ field, value }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      const unique = await checkAnonymousUnique(field, value, userId);
-      ack?.({ ok: true, unique });
-    } catch (err) {
-      console.error('Check unique error:', err);
       ack?.({ ok: false, error: 'Internal error' });
     }
   });
