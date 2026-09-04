@@ -24,6 +24,8 @@ const {
   resetPlayer,
   setAnonymousData,
   checkAnonymousUnique,
+  changeAnonymousField,
+  toggleHidePfp,
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -971,7 +973,9 @@ io.on('connection', (socket) => {
 
   socket.on('leaderboard', async (_, ack) => {
     try {
-      ack?.({ ok: true, top: await topPlayers(20) });
+      const tops = await topPlayers(20);
+      // Anonymize if needed – frontend will handle display, but we return all data
+      ack?.({ ok: true, top: tops });
     } catch (err) {
       console.error('Leaderboard error:', err);
       ack?.({ ok: false, error: 'Internal error' });
@@ -1474,7 +1478,6 @@ app.post('/api/set-anonymous', async (req, res) => {
     if (username !== undefined) updates.username = username.trim();
     if (phone !== undefined) updates.phone = phone.trim();
 
-    // Validate
     if (updates.username && !/^[a-zA-Z0-9_]{3,16}$/.test(updates.username)) {
       return res.status(400).json({ ok: false, error: 'Username must be 3-16 characters, letters, digits, underscore.' });
     }
@@ -1506,18 +1509,60 @@ app.post('/api/check-anonymous-unique', async (req, res) => {
     res.status(500).json({ ok: false, error: 'Internal error' });
   }
 });
-// ─── END NEW API ──────────────────────────────────────────────
 
-app.get('/health', (req, res) => {
-  res.json({ ok: true, players: room.players.length, gameState: room.gameState });
+app.post('/api/change-anonymous', async (req, res) => {
+  try {
+    const { userId, field, value, fee } = req.body;
+    if (!userId || !field || value === undefined || !fee) {
+      return res.status(400).json({ ok: false, error: 'Missing parameters' });
+    }
+    const validFields = ['name', 'username', 'phone'];
+    if (!validFields.includes(field)) {
+      return res.status(400).json({ ok: false, error: 'Invalid field' });
+    }
+    // Additional validation
+    if (field === 'username' && !/^[a-zA-Z0-9_]{3,16}$/.test(value)) {
+      return res.status(400).json({ ok: false, error: 'Invalid username format' });
+    }
+    if (field === 'phone' && !/^\+?[0-9\s\-]{7,15}$/.test(value)) {
+      return res.status(400).json({ ok: false, error: 'Invalid phone format' });
+    }
+    if (field === 'name' && !/^[a-zA-Z\s]{1,30}$/.test(value)) {
+      return res.status(400).json({ ok: false, error: 'Invalid name format' });
+    }
+
+    const result = await changeAnonymousField(userId, field, value, fee);
+    res.json({ ok: true, newBalance: result.newBalance });
+  } catch (err) {
+    console.error('Change anonymous field error:', err);
+    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
+  }
 });
+
+app.post('/api/toggle-hide-pfp', async (req, res) => {
+  try {
+    const { userId, hide } = req.body;
+    if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
+    const newHide = await toggleHidePfp(userId, hide);
+    res.json({ ok: true, hidePfp: newHide });
+  } catch (err) {
+    console.error('Toggle hide PFP error:', err);
+    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
+  }
+});
+
 app.get('/leaderboard', async (req, res) => {
   try {
-    res.json({ top: await topPlayers(20) });
+    const tops = await topPlayers(20);
+    res.json({ top: tops });
   } catch (err) {
     console.error('Leaderboard error:', err);
     res.status(500).json({ ok: false, error: 'Internal error' });
   }
+});
+
+app.get('/health', (req, res) => {
+  res.json({ ok: true, players: room.players.length, gameState: room.gameState });
 });
 
 server.listen(PORT, () => {
