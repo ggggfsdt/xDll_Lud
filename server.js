@@ -1,7 +1,3 @@
-// ═══════════════════════════════════════════════════════════════
-// dllump · bump arena — multiplayer backend (BSP layout)
-// ═══════════════════════════════════════════════════════════════
-
 process.on('uncaughtException', (err) => {
   console.error('💥 Uncaught Exception:', err.stack);
 });
@@ -26,6 +22,8 @@ const {
   getPromoCodes,
   deletePromoCode,
   resetPlayer,
+  setAnonymousData,
+  checkAnonymousUnique,
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -123,7 +121,6 @@ function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  // Max speed 28, min speed 8 – much faster overall
   const speed = 28.0 - norm * 20.0;
   return Math.max(8.0, Math.min(28.0, speed));
 }
@@ -359,7 +356,6 @@ function startIceSpin() {
   iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
 }
 
-// ─── launchIcePuck – bouncy and smooth ──────────────────────────
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
   const baseSpeed = 10;
@@ -594,7 +590,6 @@ function startPrestart() {
   room.prestartTimer = 2.0;
 }
 
-// ─── START GAME – VERY FAST & HIGHLY RANDOMIZED ──────────────
 function startGame() {
   room.gameState = 'playing';
   room.gameTime = 0;
@@ -605,7 +600,6 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    // Randomize between 50% and 180% of base speed – huge variation
     const speed = baseSpeed * (0.5 + Math.random() * 1.3);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
@@ -687,7 +681,6 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── IMPROVED PHYSICS – smooth, bouncy, slime-like ─────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -729,16 +722,14 @@ function updatePhysics(dt) {
     }
   }
 
-  // ─── Physics constants ────────────────────────────────────────
   const SUBSTEPS = 10;
-  const DRAG_PER_SEC = 0.6;          // Quick deceleration
+  const DRAG_PER_SEC = 0.6;
   const RESTITUTION_WALL = 1.0;
   const RESTITUTION_PLAYER = 0.9;
   const FRICTION_PLAYER = 0.05;
 
   const subDt = dt / SUBSTEPS;
   for (let step = 0; step < SUBSTEPS; step++) {
-    // ─── Apply drag ────────────────────────────────────────────
     const decay = 1 - DRAG_PER_SEC * subDt;
     alive.forEach(p => {
       p.x += p.vx * subDt * 60;
@@ -747,7 +738,6 @@ function updatePhysics(dt) {
       p.vy *= decay;
     });
 
-    // ─── Wall collisions ────────────────────────────────────────
     alive.forEach(p => {
       const radius = p.displayRadius || p.radius;
       for (let i = 0; i < totalPts; i++) {
@@ -776,7 +766,6 @@ function updatePhysics(dt) {
           break;
         }
       }
-      // ─── Escape prevention ────────────────────────────────────
       if (opening && opening.state === 'open') {
         const cx = half, cy = half;
         const dx = p.x - cx, dy = p.y - cy;
@@ -802,7 +791,6 @@ function updatePhysics(dt) {
       }
     });
 
-    // ─── Player-player collisions ───────────────────────────────
     const stillAlive = alive.filter(p => p.alive);
     for (let i = 0; i < stillAlive.length; i++) {
       for (let j = i + 1; j < stillAlive.length; j++) {
@@ -838,7 +826,6 @@ function updatePhysics(dt) {
       }
     }
 
-    // ─── Speed limits ────────────────────────────────────────────
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -849,7 +836,6 @@ function updatePhysics(dt) {
     });
   }
 
-  // ─── Radius smoothing ──────────────────────────────────────────
   room.players.forEach(p => {
     const diff = p.targetRadius - p.displayRadius;
     if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
@@ -1248,7 +1234,6 @@ app.get('/admin', (req, res) => {
   res.send(ADMIN_HTML);
 });
 
-// ─── Auto-bot endpoints ──────────────────────────────────────
 app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
   const { enabled } = req.body;
   if (typeof enabled !== 'boolean') {
@@ -1261,7 +1246,6 @@ app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
   res.json({ enabled: autoBotEnabled });
 });
 
-// ─── Notification endpoint ──────────────────────────────────
 app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   const { message } = req.body;
   if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -1271,7 +1255,6 @@ app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Existing admin endpoints ──────────────────────────────
 app.get('/admin/api/players', adminAuth, async (req, res) => {
   try {
     const users = await getAllUsers();
@@ -1478,6 +1461,52 @@ app.get('/redeem', async (req, res) => {
     res.status(500).json({ ok: false, error: 'Internal error' });
   }
 });
+
+// ─── NEW ANONYMOUS API ROUTES ─────────────────────────────────
+app.post('/api/set-anonymous', async (req, res) => {
+  try {
+    const { userId, enabled, name, username, phone } = req.body;
+    if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
+
+    const updates = {};
+    if (enabled !== undefined) updates.enabled = enabled;
+    if (name !== undefined) updates.name = name.trim();
+    if (username !== undefined) updates.username = username.trim();
+    if (phone !== undefined) updates.phone = phone.trim();
+
+    // Validate
+    if (updates.username && !/^[a-zA-Z0-9_]{3,16}$/.test(updates.username)) {
+      return res.status(400).json({ ok: false, error: 'Username must be 3-16 characters, letters, digits, underscore.' });
+    }
+    if (updates.phone && !/^\+?[0-9\s\-]{7,15}$/.test(updates.phone)) {
+      return res.status(400).json({ ok: false, error: 'Invalid phone format.' });
+    }
+    if (updates.name && !/^[a-zA-Z\s]{1,30}$/.test(updates.name)) {
+      return res.status(400).json({ ok: false, error: 'Name must contain only letters and spaces (max 30).' });
+    }
+
+    const result = await setAnonymousData(userId, updates);
+    res.json({ ok: true, data: result });
+  } catch (err) {
+    console.error('Set anonymous error:', err);
+    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
+  }
+});
+
+app.post('/api/check-anonymous-unique', async (req, res) => {
+  try {
+    const { field, value, userId } = req.body;
+    if (!field || !value || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing parameters' });
+    }
+    const unique = await checkAnonymousUnique(field, value, userId);
+    res.json({ ok: true, unique });
+  } catch (err) {
+    console.error('Check anonymous unique error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+// ─── END NEW API ──────────────────────────────────────────────
 
 app.get('/health', (req, res) => {
   res.json({ ok: true, players: room.players.length, gameState: room.gameState });
