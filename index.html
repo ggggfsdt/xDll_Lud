@@ -1355,6 +1355,22 @@
             100% { opacity: 1; }
         }
 
+        /* ─── IDENTITY CARD OVERLAY ────────────────────────────── */
+        #identity-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99997;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(24px);
+            animation: cardFadeIn 0.4s ease;
+        }
+        #identity-overlay.show {
+            display: flex;
+        }
+
         .card-wrapper {
             display: flex;
             flex-direction: column;
@@ -1426,7 +1442,7 @@
             object-fit: contain;
         }
 
-        /* ─── Card welcome with letter animation ────────────────── */
+        /* Card welcome with letter animation */
         .card-welcome {
             position: relative;
             z-index: 2;
@@ -1570,6 +1586,41 @@
             font-size: 9px;
             color: rgba(255, 255, 255, 0.10);
             letter-spacing: 0.5px;
+        }
+
+        /* Identity card specific field styles */
+        .identity-field {
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+        .identity-field:hover {
+            background: rgba(255,255,255,0.03);
+            border-color: rgba(255,255,255,0.06);
+        }
+        .identity-field .id-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255,255,255,0.2);
+        }
+        .identity-field .id-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            outline: none;
+            background: transparent;
+            border: none;
+            padding: 2px 0;
+            font-family: inherit;
+        }
+        .identity-field .id-value:focus {
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        .identity-field .id-value.error {
+            color: #ff6b6b;
         }
 
         .card-close-btn {
@@ -1725,14 +1776,16 @@
         }
 
         /* ─── PARTICLES ───────────────────────────────────────────── */
-        #particle-canvas {
+        #particle-canvas,
+        #identity-particle-canvas {
             position: fixed;
             inset: 0;
-            z-index: 99997;
+            z-index: 99996;
             pointer-events: none;
             display: none;
         }
-        #particle-canvas.show {
+        #particle-canvas.show,
+        #identity-particle-canvas.show {
             display: block;
         }
 
@@ -2951,7 +3004,7 @@
                 <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – clean, recent games only (no achievements) -->
+            <!-- PROFILE TAB – with anonymous identity button -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -3000,13 +3053,15 @@
 
                     <!-- Settings -->
                     <div class="profile-settings">
-                        <div class="setting-row">
+                        <!-- Anonymous Identity button (replaces toggle) -->
+                        <div class="setting-row" id="anonymous-row">
                             <div>
-                                <div class="set-label">Anonymous mode</div>
-                                <span class="set-sub">Hide your identity from others</span>
+                                <div class="set-label">Anonymous Identity</div>
+                                <span class="set-sub">Manage your anonymous profile</span>
                             </div>
-                            <label class="switch"><input type="checkbox" id="anon-toggle" /><span class="slider"></span></label>
+                            <button id="identity-btn" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;">👤</button>
                         </div>
+
                         <div class="setting-row">
                             <div>
                                 <div class="set-label">Session</div>
@@ -3059,10 +3114,10 @@
         </div>
     </div>
 
-    <!-- Notification Overlay -->
+    <!-- ─── NOTIFICATION ────────────────────────────────────────── -->
     <div id="notification-overlay"></div>
 
-    <!-- Promo Modal -->
+    <!-- ─── PROMO MODAL ─────────────────────────────────────────── -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -3149,6 +3204,54 @@
         </div>
     </div>
 
+    <!-- ─── IDENTITY CARD OVERLAY ──────────────────────────────── -->
+    <div id="identity-overlay">
+        <button class="card-close-btn show" id="identity-close-btn">✕</button>
+        <canvas id="identity-particle-canvas"></canvas>
+        <div class="card-wrapper">
+            <div class="card-container" id="identity-card-container">
+                <div class="card-3d" id="identity-card-3d">
+                    <!-- Front -->
+                    <div class="card-face front" style="background:linear-gradient(145deg, #1a2a3a, #0d1a2a, #2a4a5a);">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;padding:4px 0;">
+                            <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:1px;">🪪 Identity</div>
+                            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
+                        </div>
+                        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
+                            <div class="identity-field" data-field="name">
+                                <div class="id-label">Name</div>
+                                <div class="id-value" id="id-name">Anonymous</div>
+                            </div>
+                            <div class="identity-field" data-field="username">
+                                <div class="id-label">Username</div>
+                                <div class="id-value" id="id-username">@anon_user</div>
+                            </div>
+                            <div class="identity-field" data-field="phone">
+                                <div class="id-label">Phone</div>
+                                <div class="id-value" id="id-phone">+0 000 000 000</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
+                            <span style="font-size:10px;color:rgba(255,255,255,0.2);">tap a field to edit</span>
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <span style="font-size:11px;color:rgba(255,255,255,0.3);">Enable</span>
+                                <label class="switch" style="width:40px;height:20px;">
+                                    <input type="checkbox" id="identity-enable-switch" />
+                                    <span class="slider" style="border:none;"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Back -->
+                    <div class="card-face back" style="background:linear-gradient(145deg, #1a2a3a, #0d1a2a);">
+                        <div class="card-stripe"></div>
+                        <div style="position:absolute;bottom:40px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.08);font-size:10px;letter-spacing:2px;">anonymous identity · dllump</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
         // All game logic, socket handling, rendering, etc.
@@ -3230,6 +3333,9 @@
             wins: 0,
             losses: 0,
             anonymous: false,
+            anonymousName: '',
+            anonymousUsername: '',
+            anonymousPhone: '',
             gameState: 'idle',
             players: [],
             pot: 0,
@@ -3304,7 +3410,6 @@
         const winContinueBtn = document.getElementById('win-continue-btn');
         const playerListContainer = document.getElementById('player-list-container');
         const reloadPfpBtn = document.getElementById('reload-pfp-btn');
-        const anonToggle = document.getElementById('anon-toggle');
         const promoInput = document.getElementById('promo-input');
         const promoBtn = document.getElementById('promo-btn');
         const promoMessage = document.getElementById('promo-message');
@@ -3374,6 +3479,23 @@
         let notifTimeout = null;
         let particles = [];
         let particleAnimId = null;
+
+        // ─── Identity card DOM refs ──────────────────────────────────
+        const identityOverlay = document.getElementById('identity-overlay');
+        const identityCloseBtn = document.getElementById('identity-close-btn');
+        const identityCard3d = document.getElementById('identity-card-3d');
+        const identityCardContainer = document.getElementById('identity-card-container');
+        const idName = document.getElementById('id-name');
+        const idUsername = document.getElementById('id-username');
+        const idPhone = document.getElementById('id-phone');
+        const identityEnableSwitch = document.getElementById('identity-enable-switch');
+        const identityParticleCanvas = document.getElementById('identity-particle-canvas');
+        const identityParticleCtx = identityParticleCanvas.getContext('2d');
+        let identityParticles = [];
+        let identityParticleAnimId = null;
+        let identityDrag = false, identityPrevX = 0, identityPrevY = 0;
+        let identityRotX = 0, identityRotY = 0, identityTargetRotX = 0, identityTargetRotY = 0;
+        let identityIdlePhase = 0;
 
         // ─── RECENT GAMES ──────────────────────────────────────────────
         function addRecentGame(type, opponent, amount, result) {
@@ -3463,6 +3585,53 @@
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
         }
 
+        // ─── Identity particles ──────────────────────────────────────
+        function initIdentityParticles() {
+            identityParticleCanvas.width = window.innerWidth;
+            identityParticleCanvas.height = window.innerHeight;
+            const count = 40;
+            identityParticles = [];
+            for (let i = 0; i < count; i++) {
+                identityParticles.push({
+                    x: Math.random() * identityParticleCanvas.width,
+                    y: Math.random() * identityParticleCanvas.height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    radius: Math.random() * 2 + 1,
+                    alpha: Math.random() * 0.3 + 0.05,
+                });
+            }
+            identityParticleCanvas.classList.add('show');
+            animateIdentityParticles();
+        }
+
+        function animateIdentityParticles() {
+            if (!identityParticleCanvas.classList.contains('show')) return;
+            identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
+            identityParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0) p.x = identityParticleCanvas.width;
+                if (p.x > identityParticleCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = identityParticleCanvas.height;
+                if (p.y > identityParticleCanvas.height) p.y = 0;
+                identityParticleCtx.beginPath();
+                identityParticleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                identityParticleCtx.fillStyle = `rgba(180, 220, 255, ${p.alpha})`;
+                identityParticleCtx.fill();
+            });
+            identityParticleAnimId = requestAnimationFrame(animateIdentityParticles);
+        }
+
+        function stopIdentityParticles() {
+            if (identityParticleAnimId) {
+                cancelAnimationFrame(identityParticleAnimId);
+                identityParticleAnimId = null;
+            }
+            identityParticleCanvas.classList.remove('show');
+            identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
+        }
+
         // ─── CARD 3D INTERACTION ──────────────────────────────────────
         let cardDrag = false;
         let cardPrevX = 0,
@@ -3489,6 +3658,23 @@
             }
             updateCardTransform();
             requestAnimationFrame(startCardIdleAnimation);
+        }
+
+        // ─── Identity card 3D interaction ──────────────────────────
+        function updateIdentityTransform() {
+            identityRotX += (identityTargetRotX - identityRotX) * 0.08;
+            identityRotY += (identityTargetRotY - identityRotY) * 0.08;
+            identityCard3d.style.transform = `rotateX(${identityRotX}deg) rotateY(${identityRotY}deg)`;
+        }
+
+        function startIdentityIdleAnimation() {
+            identityIdlePhase += 0.006;
+            if (!identityDrag) {
+                identityTargetRotX = 1.0 + Math.sin(identityIdlePhase) * 3;
+                identityTargetRotY = 1.0 + Math.cos(identityIdlePhase * 0.7) * 3.5;
+            }
+            updateIdentityTransform();
+            requestAnimationFrame(startIdentityIdleAnimation);
         }
 
         // ─── Card welcome animation ──────────────────────────────────
@@ -3559,6 +3745,185 @@
             stopParticles();
         }
 
+        // ─── Identity Card functions ──────────────────────────────────
+        function openIdentityCard() {
+            identityOverlay.classList.add('show');
+            identityCloseBtn.classList.add('show');
+            // Reset rotation
+            identityRotX = 0; identityRotY = 0;
+            identityTargetRotX = 0; identityTargetRotY = 0;
+            identityCard3d.style.transform = 'rotateX(0) rotateY(0)';
+            // Populate fields
+            idName.textContent = state.anonymousName || 'Anonymous';
+            idUsername.textContent = state.anonymousUsername || '@anon';
+            idPhone.textContent = state.anonymousPhone || '+0 000 000 000';
+            identityEnableSwitch.checked = state.anonymous;
+            // Init particles
+            initIdentityParticles();
+            // Start idle animation
+            identityIdlePhase = 0;
+            identityDrag = false;
+            requestAnimationFrame(startIdentityIdleAnimation);
+            haptic('medium');
+        }
+
+        function closeIdentityCard() {
+            identityOverlay.classList.remove('show');
+            identityCloseBtn.classList.remove('show');
+            identityDrag = false;
+            stopIdentityParticles();
+        }
+
+        // ─── Identity field editing ──────────────────────────────────
+        document.querySelectorAll('.identity-field').forEach(field => {
+            const valueEl = field.querySelector('.id-value');
+            const fieldName = field.dataset.field;
+            valueEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (valueEl.isContentEditable) return;
+                valueEl.contentEditable = true;
+                valueEl.focus();
+                document.execCommand('selectAll', false, null);
+            });
+            valueEl.addEventListener('blur', () => {
+                if (!valueEl.isContentEditable) return;
+                valueEl.contentEditable = false;
+                const newVal = valueEl.textContent.trim();
+                saveIdentityField(fieldName, newVal, valueEl);
+            });
+            valueEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    valueEl.blur();
+                }
+                if (e.key === 'Escape') {
+                    const orig = state[`anonymous${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}`] || '';
+                    valueEl.textContent = orig;
+                    valueEl.blur();
+                }
+            });
+        });
+
+        async function saveIdentityField(field, value, el) {
+            const original = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
+            if (value === original) return;
+
+            // Validate based on field
+            if (field === 'name') {
+                if (!/^[a-zA-Z\s]{1,30}$/.test(value)) {
+                    el.textContent = original;
+                    showNotification('Name must contain only letters and spaces (max 30).');
+                    return;
+                }
+            }
+            if (field === 'username') {
+                if (!/^[a-zA-Z0-9_]{3,16}$/.test(value)) {
+                    el.textContent = original;
+                    showNotification('Username must be 3-16 characters, letters, digits, underscore.');
+                    return;
+                }
+                const unique = await checkAnonymousUnique('username', value);
+                if (!unique) {
+                    el.textContent = original;
+                    showNotification('Username already taken.');
+                    return;
+                }
+            }
+            if (field === 'phone') {
+                if (!/^\+?[0-9\s\-]{7,15}$/.test(value)) {
+                    el.textContent = original;
+                    showNotification('Invalid phone format.');
+                    return;
+                }
+                const unique = await checkAnonymousUnique('phone', value);
+                if (!unique) {
+                    el.textContent = original;
+                    showNotification('Phone number already taken.');
+                    return;
+                }
+            }
+
+            // Save to server
+            const payload = { userId: state.userId };
+            payload[field] = value;
+            try {
+                const res = await fetch('/api/set-anonymous', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] = value;
+                    haptic('light');
+                } else {
+                    el.textContent = original;
+                    showNotification(data.error || 'Update failed.');
+                }
+            } catch (err) {
+                el.textContent = original;
+                showNotification('Network error.');
+            }
+        }
+
+        async function checkAnonymousUnique(field, value) {
+            try {
+                const res = await fetch('/api/check-anonymous-unique', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ field, value, userId: state.userId })
+                });
+                const data = await res.json();
+                return data.ok ? data.unique : false;
+            } catch {
+                return false;
+            }
+        }
+
+        // ─── Identity enable switch ──────────────────────────────────
+        identityEnableSwitch.addEventListener('change', async () => {
+            const enabled = identityEnableSwitch.checked;
+            try {
+                const res = await fetch('/api/set-anonymous', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: state.userId, enabled })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    state.anonymous = enabled;
+                    document.getElementById('profile-status').textContent = enabled ? 'anonymous' : 'online';
+                    haptic('medium');
+                    if (enabled) {
+                        showNotification('Anonymous mode enabled.');
+                    } else {
+                        showNotification('Anonymous mode disabled.');
+                    }
+                } else {
+                    identityEnableSwitch.checked = !enabled;
+                    showNotification(data.error || 'Failed to toggle.');
+                }
+            } catch (err) {
+                identityEnableSwitch.checked = !enabled;
+                showNotification('Network error.');
+            }
+        });
+
+        // ─── Open identity from profile button ──────────────────────
+        document.getElementById('identity-btn').addEventListener('click', () => {
+            playClickSound();
+            openIdentityCard();
+        });
+
+        identityCloseBtn.addEventListener('click', () => {
+            playClickSound();
+            closeIdentityCard();
+        });
+
+        identityOverlay.addEventListener('click', (e) => {
+            if (e.target === identityOverlay) closeIdentityCard();
+        });
+
         // ─── Card Touch/Mouse events ──────────────────────────────────
         cardContainer.addEventListener('mousedown', (e) => {
             cardDrag = true;
@@ -3619,6 +3984,71 @@
                     if (!cardDrag) {
                         cardTargetRotX = 1.0 + Math.sin(cardIdlePhase) * 3;
                         cardTargetRotY = 1.0 + Math.cos(cardIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        }, { passive: true });
+
+        // ─── Identity card touch/mouse events ──────────────────────
+        identityCardContainer.addEventListener('mousedown', (e) => {
+            identityDrag = true;
+            identityPrevX = e.clientX;
+            identityPrevY = e.clientY;
+            identityCard3d.classList.add('dragging');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!identityDrag) return;
+            const dx = (e.clientX - identityPrevX) * 0.4;
+            const dy = (e.clientY - identityPrevY) * 0.4;
+            identityTargetRotY += dx;
+            identityTargetRotX -= dy;
+            identityTargetRotX = Math.max(-20, Math.min(20, identityTargetRotX));
+            identityTargetRotY = Math.max(-20, Math.min(20, identityTargetRotY));
+            identityPrevX = e.clientX;
+            identityPrevY = e.clientY;
+            updateIdentityTransform();
+        });
+        document.addEventListener('mouseup', () => {
+            if (identityDrag) {
+                identityDrag = false;
+                identityCard3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!identityDrag) {
+                        identityTargetRotX = 1.0 + Math.sin(identityIdlePhase) * 3;
+                        identityTargetRotY = 1.0 + Math.cos(identityIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        });
+
+        identityCardContainer.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            identityDrag = true;
+            identityPrevX = touch.clientX;
+            identityPrevY = touch.clientY;
+            identityCard3d.classList.add('dragging');
+        }, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (!identityDrag) return;
+            const touch = e.touches[0];
+            const dx = (touch.clientX - identityPrevX) * 0.4;
+            const dy = (touch.clientY - identityPrevY) * 0.4;
+            identityTargetRotY += dx;
+            identityTargetRotX -= dy;
+            identityTargetRotX = Math.max(-20, Math.min(20, identityTargetRotX));
+            identityTargetRotY = Math.max(-20, Math.min(20, identityTargetRotY));
+            identityPrevX = touch.clientX;
+            identityPrevY = touch.clientY;
+            updateIdentityTransform();
+        }, { passive: true });
+        document.addEventListener('touchend', () => {
+            if (identityDrag) {
+                identityDrag = false;
+                identityCard3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!identityDrag) {
+                        identityTargetRotX = 1.0 + Math.sin(identityIdlePhase) * 3;
+                        identityTargetRotY = 1.0 + Math.cos(identityIdlePhase * 0.7) * 3.5;
                     }
                 }, 300);
             }
@@ -3875,8 +4305,10 @@
                     state.balance = res.user.balance;
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
-                    state.anonymous = !!res.user.anonymous;
-                    anonToggle.checked = state.anonymous;
+                    state.anonymous = !!res.user.anonymousEnabled;
+                    state.anonymousName = res.user.anonymousName || 'Anonymous';
+                    state.anonymousUsername = res.user.anonymousUsername || '@anon';
+                    state.anonymousPhone = res.user.anonymousPhone || '+0 000 000 000';
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -3928,6 +4360,7 @@
                     profileUsername.textContent = '@' + state.username;
                     profilePfp.src = state.pfp || state.defaultAvatar;
                     memberSince.textContent = `Member since ${state.memberSince}`;
+                    document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
                     updateBalance();
                     updateProfile();
                     refreshLeaderboard();
@@ -4128,9 +4561,16 @@
                 let crown = '';
                 if (topInfo) { if (topInfo.rank === 1) crown = '👑';
                     else if (topInfo.rank === 2) crown = '👑'; }
+                // Use anonymous name if enabled for the player
+                let displayName = p.name;
+                let displayPfp = p.pfp;
+                if (isYou && state.anonymous) {
+                    displayName = state.anonymousName || 'Anonymous';
+                    displayPfp = null; // hide pfp – show default
+                }
                 html += `<div class="pl-entry ${isYou?'you':''}">
-                            <div class="pl-avatar"><img src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" /></div>
-                            <span class="pl-name">${crown} ${p.name}</span>
+                            <div class="pl-avatar"><img src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" /></div>
+                            <span class="pl-name">${crown} ${displayName}</span>
                             <span class="pl-bet">${p.bet}</span>
                             <span class="pl-chance">${chance}%</span>
                         </div>`;
@@ -4716,6 +5156,7 @@
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
             if (state.pfp) profilePfp.src = state.pfp;
+            document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
             updateBalance();
             renderRecentGames();
         }
@@ -4932,27 +5373,11 @@
             }
         });
 
-        // ─── ANONYMOUS ──────────────────────────────────────────────
-        anonToggle.addEventListener('change', () => {
-            playClickSound();
-            if (!socket || !socket.connected) { anonToggle.checked = state.anonymous; return; }
-            const enabled = anonToggle.checked;
-            anonToggle.disabled = true;
-            socket.emit('setAnonymous', { enabled }, (res) => {
-                anonToggle.disabled = false;
-                if (!res?.ok) { anonToggle.checked = state.anonymous;
-                    console.warn('setAnonymous failed:', res?.error); return; }
-                state.anonymous = res.anonymous;
-                haptic('light');
-            });
-        });
-
         // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
             playClickSound(); // plays only if sound was on (it will be off if toggling off, but if toggling on it will play)
             state.soundEnabled = soundToggle.checked;
         });
-        // Ensure the checkbox reflects the initial state
         soundToggle.checked = state.soundEnabled;
 
         // ─── TAB SWITCHING ────────────────────────────────────────────
@@ -5084,12 +5509,23 @@
                         shadowColor = 'rgba(192,192,192,0.5)';
                         shadowBlur = 14; }
                 }
+                const isMe = p.id === state.userId;
+                const isAnonymous = isMe && state.anonymous;
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
                 ctx.closePath();
                 ctx.clip();
-                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                if (isAnonymous) {
+                    // Use a default avatar or a generic anonymous icon
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
+                    ctx.fillStyle = '#888';
+                    ctx.font = `${drawRadius*0.5}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('?', px, py + 1);
+                } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     const size = drawRadius * 2;
                     ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
                 } else {
@@ -5333,7 +5769,18 @@
                 iceCtx.arc(0, 0, drawR, 0, Math.PI * 2);
                 iceCtx.closePath();
                 iceCtx.clip();
-                if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+
+                const isMe = p.id === state.userId;
+                const isAnonymous = isMe && state.anonymous;
+                if (isAnonymous) {
+                    iceCtx.fillStyle = '#333';
+                    iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
+                    iceCtx.fillStyle = '#888';
+                    iceCtx.font = `${drawR*0.8}px system-ui, sans-serif`;
+                    iceCtx.textAlign = 'center';
+                    iceCtx.textBaseline = 'middle';
+                    iceCtx.fillText('?', 0, 0);
+                } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
                     iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
                 } else {
                     iceCtx.fillStyle = p.color || '#555';
