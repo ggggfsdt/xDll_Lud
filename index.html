@@ -1614,6 +1614,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            cursor: text;
         }
         .identity-field .id-value {
             font-size: 16px;
@@ -1627,6 +1628,7 @@
             transition: border-color 0.2s;
             flex: 1;
             min-width: 80px;
+            cursor: text;
         }
         .identity-field .id-value:focus {
             border-bottom: 1px solid rgba(255,255,255,0.3);
@@ -1655,26 +1657,6 @@
             0% { opacity: 0; transform: translateY(6px); }
             60% { opacity: 1; transform: translateY(-2px); }
             100% { opacity: 1; transform: translateY(0); }
-        }
-
-        .identity-change-btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.5);
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            cursor: pointer;
-            transition: 0.2s;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        .identity-change-btn:hover {
-            background: rgba(255,255,255,0.15);
-            border-color: rgba(255,255,255,0.2);
-        }
-        .identity-change-btn:active {
-            transform: scale(0.94);
         }
 
         .card-close-btn {
@@ -3126,7 +3108,7 @@
                 <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – with anonymous identity button -->
+            <!-- PROFILE TAB – with anonymous identity and hide PFP -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -3182,6 +3164,15 @@
                                 <span class="set-sub">Manage your anonymous profile</span>
                             </div>
                             <button id="identity-btn" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;">👤</button>
+                        </div>
+
+                        <!-- Hide PFP toggle -->
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Hide Profile Picture</div>
+                                <span class="set-sub">Show default avatar in game</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="hide-pfp-toggle" /><span class="slider"></span></label>
                         </div>
 
                         <div class="setting-row">
@@ -3352,25 +3343,25 @@
                             <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
                         </div>
                         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
-                            <div class="identity-field" data-field="name">
+                            <!-- Name field -->
+                            <div class="identity-field">
                                 <span class="id-label">Name</span>
                                 <div class="id-value-wrap">
-                                    <span class="id-value" id="id-name">Anonymous</span>
-                                    <button class="identity-change-btn" data-field="name">Change</button>
+                                    <span class="id-value" id="id-name" contenteditable="false">Anonymous</span>
                                 </div>
                             </div>
-                            <div class="identity-field" data-field="username">
+                            <!-- Username field -->
+                            <div class="identity-field">
                                 <span class="id-label">Username</span>
                                 <div class="id-value-wrap">
-                                    <span class="id-value" id="id-username">@anon_user</span>
-                                    <button class="identity-change-btn" data-field="username">Change</button>
+                                    <span class="id-value" id="id-username" contenteditable="false">@anon_user</span>
                                 </div>
                             </div>
-                            <div class="identity-field" data-field="phone">
+                            <!-- Phone field -->
+                            <div class="identity-field">
                                 <span class="id-label">Phone</span>
                                 <div class="id-value-wrap">
-                                    <span class="id-value" id="id-phone">+0 000 000 000</span>
-                                    <button class="identity-change-btn" data-field="phone">Change</button>
+                                    <span class="id-value" id="id-phone" contenteditable="false">+0 000 000 000</span>
                                 </div>
                             </div>
                         </div>
@@ -3462,9 +3453,13 @@
             wins: 0,
             losses: 0,
             anonymous: false,
+            hidePfp: false,
             anonymousName: '',
             anonymousUsername: '',
             anonymousPhone: '',
+            nameChanged: false,
+            usernameChanged: false,
+            phoneChanged: false,
             gameState: 'idle',
             players: [],
             pot: 0,
@@ -3526,6 +3521,7 @@
         const totalGames = document.getElementById('total-games');
         const recentGamesList = document.getElementById('recent-games-list');
         const soundToggle = document.getElementById('sound-toggle');
+        const hidePfpToggle = document.getElementById('hide-pfp-toggle');
         const topList = document.getElementById('top-list');
         const podiumEl = document.getElementById('podium');
         const tabBtns = document.querySelectorAll('.tab-btn');
@@ -3638,7 +3634,7 @@
         const confirmFee = document.getElementById('confirm-fee');
         const confirmCancel = document.getElementById('confirm-cancel');
         const confirmOk = document.getElementById('confirm-ok');
-        let pendingChange = null; // { field, value, oldValue, fee }
+        let pendingChange = null; // { field, value, oldValue }
 
         // ─── Helpers ────────────────────────────────────────────────
         function getAnonymousColor(id) {
@@ -3958,6 +3954,53 @@
             identityDrag = false;
             requestAnimationFrame(startIdentityIdleAnimation);
             haptic('medium');
+            // Make fields editable on click
+            document.querySelectorAll('.id-value').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (this.isContentEditable) return;
+                    this.contentEditable = true;
+                    this.classList.add('editing');
+                    this.focus();
+                    document.execCommand('selectAll', false, null);
+                });
+                el.addEventListener('blur', function(e) {
+                    if (!this.isContentEditable) return;
+                    this.contentEditable = false;
+                    this.classList.remove('editing');
+                    const field = this.id.replace('id-', '');
+                    const newValue = this.textContent.trim();
+                    const oldValue = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
+                    if (newValue === oldValue) return;
+                    // Show confirmation modal
+                    const fee = getFeeForField(field);
+                    confirmTitle.textContent = `Change ${field.charAt(0).toUpperCase() + field.slice(1)}`;
+                    confirmDesc.textContent = `Update your anonymous ${field.toLowerCase()}.`;
+                    confirmFee.textContent = fee === 0 ? 'Free' : `-${fee} 💎`;
+                    pendingChange = { field, value: newValue, oldValue };
+                    confirmModal.classList.add('show');
+                    haptic('light');
+                });
+                el.addEventListener('input', function(e) {
+                    // Re-render with animation while typing
+                    if (this._animating) return;
+                    this._animating = true;
+                    animateIdentityField(this, this.textContent);
+                    this._animating = false;
+                });
+                el.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                    }
+                    if (e.key === 'Escape') {
+                        const field = this.id.replace('id-', '');
+                        const orig = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
+                        this.textContent = orig;
+                        this.blur();
+                    }
+                });
+            });
         }
 
         function setIdentityField(element, text) {
@@ -3992,60 +4035,17 @@
             }
         }
 
-        // ─── Identity field change flow ─────────────────────────────
-        const FIELD_FEES = {
-            name: 467,
-            username: 700,
-            phone: 1000,
-        };
+        // ─── Fee calculator ──────────────────────────────────────────
+        function getFeeForField(field) {
+            if (field === 'name') return state.nameChanged ? 467 : 0;
+            if (field === 'username') return state.usernameChanged ? 700 : 32;
+            if (field === 'phone') return 1000; // first and subsequent same
+            return 0;
+        }
 
-        document.querySelectorAll('.identity-change-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const field = btn.dataset.field;
-                const valueEl = document.getElementById('id-' + field);
-                const currentValue = valueEl.textContent.trim();
-                // Allow user to edit the value – we'll show a prompt or inline edit
-                // We'll make the value editable by clicking on it.
-                if (!valueEl.isContentEditable) {
-                    valueEl.contentEditable = true;
-                    valueEl.classList.add('editing');
-                    valueEl.focus();
-                    document.execCommand('selectAll', false, null);
-                } else {
-                    // If already editing, blur to trigger save flow.
-                    valueEl.blur();
-                }
-            });
-        });
-
-        // Listen for blur on the value elements – the actual change happens after blur.
-        document.querySelectorAll('.id-value').forEach(el => {
-            el.addEventListener('blur', async function() {
-                if (!this.isContentEditable) return;
-                this.contentEditable = false;
-                this.classList.remove('editing');
-                const newValue = this.textContent.trim();
-                const field = this.id.replace('id-', '');
-                const oldValue = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
-                if (newValue === oldValue) return;
-                // Show confirmation modal
-                const fee = FIELD_FEES[field];
-                if (!fee) return;
-                const fieldLabel = field.charAt(0).toUpperCase() + field.slice(1);
-                confirmTitle.textContent = `Change ${fieldLabel}`;
-                confirmDesc.textContent = `Update your anonymous ${fieldLabel.toLowerCase()}.`;
-                confirmFee.textContent = `-${fee} 💎`;
-                pendingChange = { field, value: newValue, oldValue, fee };
-                confirmModal.classList.add('show');
-                haptic('light');
-            });
-        });
-
-        // Cancel
+        // ─── Confirm modal handlers ─────────────────────────────────
         confirmCancel.addEventListener('click', () => {
             confirmModal.classList.remove('show');
-            // Revert to old value
             if (pendingChange) {
                 const el = document.getElementById('id-' + pendingChange.field);
                 el.textContent = pendingChange.oldValue;
@@ -4054,20 +4054,11 @@
             }
         });
 
-        // Confirm
         confirmOk.addEventListener('click', async () => {
             if (!pendingChange) return;
-            const { field, value, fee } = pendingChange;
+            const { field, value } = pendingChange;
             confirmModal.classList.remove('show');
-            // Check balance
-            if (state.balance < fee) {
-                showNotification(`Insufficient balance! Need ${fee} gems.`);
-                const el = document.getElementById('id-' + field);
-                el.textContent = pendingChange.oldValue;
-                pendingChange = null;
-                return;
-            }
-            // Call API to deduct and update
+            // Call API
             try {
                 const res = await fetch(SERVER_URL + '/api/change-anonymous', {
                     method: 'POST',
@@ -4075,22 +4066,21 @@
                     body: JSON.stringify({
                         userId: state.userId,
                         field: field,
-                        value: value,
-                        fee: fee
+                        value: value
                     })
                 });
                 const data = await res.json();
                 if (data.ok) {
                     state.balance = data.newBalance;
+                    state[`${field}Changed`] = true;
                     state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] = value;
                     updateBalance();
                     updateProfile();
-                    // Update the field display with animation
                     const el = document.getElementById('id-' + field);
                     setIdentityField(el, value);
                     haptic('medium');
                     showNotification(`${field.charAt(0).toUpperCase()+field.slice(1)} updated!`);
-                    addTransaction('bet', -fee, `Change ${field}`);
+                    addTransaction('bet', -data.fee, `Change ${field}`);
                 } else {
                     showNotification(data.error || 'Update failed.');
                     const el = document.getElementById('id-' + field);
@@ -4126,6 +4116,30 @@
                 }
             } catch (err) {
                 console.error('Toggle anonymous error:', err);
+                showNotification('Network error.');
+            }
+        });
+
+        // ─── Hide PFP toggle ─────────────────────────────────────────
+        hidePfpToggle.addEventListener('change', async function() {
+            const hide = this.checked;
+            try {
+                const res = await fetch(SERVER_URL + '/api/toggle-hide-pfp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: state.userId, hide })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    state.hidePfp = data.hidePfp;
+                    haptic('light');
+                } else {
+                    this.checked = !hide;
+                    showNotification(data.error || 'Failed to update.');
+                }
+            } catch (err) {
+                console.error('Hide PFP error:', err);
+                this.checked = !hide;
                 showNotification('Network error.');
             }
         });
@@ -4380,12 +4394,8 @@
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-
-        function easeOutBack(t) { const c1 = 1.70158,
-                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
-
+        function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
         function lightenColor(hex, amt) {
             let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
             let g = parseInt(hex.slice(2, 3), 16) * 17 || parseInt(hex.slice(3, 5), 16);
@@ -4395,7 +4405,6 @@
             b = Math.min(255, b + amt);
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
-
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(120,120,120,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
@@ -4501,7 +4510,6 @@
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
-
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
         // ─── SOCKET ─────────────────────────────────────────────────────
@@ -4525,9 +4533,13 @@
                     state.wins = res.user.wins;
                     state.losses = res.user.losses;
                     state.anonymous = !!res.user.anonymousEnabled;
+                    state.hidePfp = !!res.user.hidePfp;
                     state.anonymousName = res.user.anonymousName || 'Anonymous';
                     state.anonymousUsername = res.user.anonymousUsername || '@anon';
                     state.anonymousPhone = res.user.anonymousPhone || '+0 000 000 000';
+                    state.nameChanged = !!res.user.nameChanged;
+                    state.usernameChanged = !!res.user.usernameChanged;
+                    state.phoneChanged = !!res.user.phoneChanged;
                     SERVER_ARENA_SIZE = res.arena.size;
                     state.perimeterPoints = res.arena.perimeter;
                     state.cornerRadius = res.arena.cornerRadius;
@@ -4580,6 +4592,7 @@
                     profilePfp.src = state.pfp || state.defaultAvatar;
                     memberSince.textContent = `Member since ${state.memberSince}`;
                     document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
+                    hidePfpToggle.checked = state.hidePfp;
                     updateIdentityToggleButton();
                     updateBalance();
                     updateProfile();
@@ -4739,9 +4752,7 @@
         let touchingIds = new Set();
 
         function getPlayer(id) { return state.players.find(p => p.id === id); }
-
         function getAlive() { return state.players.filter(p => p.alive); }
-
         function updateStatsBar() { statsPlayers.textContent = getAlive().length;
             statsPot.textContent = state.pot; }
 
@@ -4784,6 +4795,7 @@
                     displayName = state.anonymousName || 'Anonymous';
                     displayPfp = null;
                 }
+                if (isYou && state.hidePfp) displayPfp = null;
                 html += `<div class="pl-entry ${isYou?'you':''}">
                             <div class="pl-avatar"><img src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" /></div>
                             <span class="pl-name">${crown} ${displayName}</span>
@@ -4794,8 +4806,7 @@
             playerListContainer.innerHTML = html;
         }
 
-        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158,
-                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
 
         function getPopScale(player) {
             if (!player.isPopping) return 1;
@@ -5251,8 +5262,18 @@
             if (!socket) return;
             socket.emit('leaderboard', {}, (res) => {
                 if (!res?.ok) return;
-                state.topPlayers = res.top.map((u, i) => ({ id: u.id, name: u.username, pfp: u.pfp || state
-                        .defaultAvatar, wins: u.wins, score: u.balance, rank: i + 1 }));
+                state.topPlayers = res.top.map((u, i) => {
+                    const isAnon = u.anonymousEnabled || false;
+                    return {
+                        id: u.id,
+                        name: isAnon ? u.anonymousUsername || 'Anonymous' : u.username,
+                        pfp: isAnon ? '' : u.pfp,
+                        wins: u.wins,
+                        score: u.balance,
+                        rank: i + 1,
+                        anonymous: isAnon,
+                    };
+                });
                 state.topPlayerIds.clear();
                 state.topPlayers.forEach(p => { state.topPlayerIds.set(p.id, { rank: p.rank }); });
                 updateTopUI();
@@ -5279,9 +5300,10 @@
                 const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
                     `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` :
                     '';
+                const displayPfp = p.anonymous ? state.defaultAvatar : p.pfp;
                 podiumHtml += `<div class="podium-col ${info.colClass}">
                             <div class="rank-badge ${info.cls}">${info.label}</div>
-                            <img class="podium-pfp ${info.cls}" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
+                            <img class="podium-pfp ${info.cls}" src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="podium-name">${p.name} ${flameHtml}</div>
                             <div class="podium-prize">${prizeHtml}</div>
                             <div class="podium-stats">${p.wins} wins · ${p.score}</div>
@@ -5305,9 +5327,10 @@
                 const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
                     `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` :
                     '';
+                const displayPfp = p.anonymous ? state.defaultAvatar : p.pfp;
                 listHtml += `<div class="top-entry">
                             <div class="${rClass}">#${rank}</div>
-                            <img class="t-pfp" src="${p.pfp}" onerror="this.src='${state.defaultAvatar}'" />
+                            <img class="t-pfp" src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" />
                             <div class="t-name">${p.name} ${flameHtml}</div>
                             <div class="t-wins">${p.wins} wins</div>
                             <div class="t-score">${p.score}</div>
@@ -5361,7 +5384,8 @@
             totalGames.textContent = total;
             profileName.textContent = state.username;
             profileUsername.textContent = '@' + state.username;
-            if (state.pfp) profilePfp.src = state.pfp;
+            if (!state.hidePfp) profilePfp.src = state.pfp || state.defaultAvatar;
+            else profilePfp.src = state.defaultAvatar;
             document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
             updateBalance();
             renderRecentGames();
@@ -5717,12 +5741,13 @@
                 }
                 const isMe = p.id === state.userId;
                 const isAnonymous = isMe && state.anonymous;
+                const hidePfp = isMe && state.hidePfp;
                 ctx.save();
                 ctx.beginPath();
                 ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
                 ctx.closePath();
                 ctx.clip();
-                if (isAnonymous) {
+                if (isAnonymous || hidePfp) {
                     const color = getAnonymousColor(state.userId);
                     ctx.fillStyle = color;
                     ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
@@ -5981,7 +6006,8 @@
 
                 const isMe = p.id === state.userId;
                 const isAnonymous = isMe && state.anonymous;
-                if (isAnonymous) {
+                const hidePfp = isMe && state.hidePfp;
+                if (isAnonymous || hidePfp) {
                     const color = getAnonymousColor(state.userId);
                     iceCtx.fillStyle = color;
                     iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
