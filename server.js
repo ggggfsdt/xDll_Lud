@@ -245,8 +245,8 @@ function stopAutoBot() {
   }
 }
 
-// ─── BSP Partition with field inset (4px) ──────────────────────
-const ICE_FIELD_MARGIN = 4;
+// ─── BSP Partition with field inset (6px) ──────────────────────
+const ICE_FIELD_MARGIN = 6;
 
 function repartitionIceArena() {
   const players = iceRoom.players;
@@ -1478,7 +1478,7 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── NEW HTTP ENDPOINTS FOR ANONYMOUS CHANGES ──────────────────
+// ─── NEW HTTP ENDPOINTS ──────────────────────────────────────────
 app.post('/api/change-anonymous', async (req, res) => {
   try {
     const { userId, field, value } = req.body;
@@ -1489,7 +1489,6 @@ app.post('/api/change-anonymous', async (req, res) => {
     if (!validFields.includes(field)) {
       return res.status(400).json({ ok: false, error: 'Invalid field' });
     }
-    // Additional validation
     if (field === 'username' && !/^[a-zA-Z0-9_]{3,16}$/.test(value)) {
       return res.status(400).json({ ok: false, error: 'Invalid username format' });
     }
@@ -1501,7 +1500,6 @@ app.post('/api/change-anonymous', async (req, res) => {
     }
 
     const result = await changeAnonymousField(userId, field, value);
-    // Update player objects in arenas if they exist
     const pvpPlayer = getPlayer(userId);
     if (pvpPlayer) {
       const user = await getUser(userId);
@@ -1538,13 +1536,11 @@ app.post('/api/toggle-hide-pfp', async (req, res) => {
     const { userId, hide } = req.body;
     if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
     const newHide = await toggleHidePfp(userId, hide);
-    // Update player object in PvP arena (pfp should reflect hide)
     const pvpPlayer = getPlayer(userId);
     if (pvpPlayer) {
       pvpPlayer.pfp = newHide ? null : (await getUser(userId)).pfp;
       broadcastState();
     }
-    // Ice arena player pfp also updated
     const iceP = getIcePlayer(userId);
     if (iceP) {
       iceP.pfp = newHide ? null : (await getUser(userId)).pfp;
