@@ -5955,7 +5955,7 @@
                 // Draw the non-gap segments with liquid glass outline
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
                 ctx.lineWidth = 3;
-                ctx.shadowColor = 'rgba(180, 220, 255, 0.06)';
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
                 ctx.shadowBlur = 8;
                 for (let i = 0; i < total; i++) {
                     const j = (i + 1) % total;
@@ -6001,9 +6001,9 @@
                 }
             } else if (total > 0) {
                 // ─── No gap: draw full liquid glass outline ──────────
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
                 ctx.lineWidth = 3;
-                ctx.shadowColor = 'rgba(180, 220, 255, 0.05)';
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
                 ctx.shadowBlur = 8;
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
@@ -6135,15 +6135,15 @@
             // Glass outline for the ice arena (same style as fields)
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-            iceCtx.lineWidth = 2.5;
-            iceCtx.shadowColor = 'rgba(180, 220, 255, 0.06)';
-            iceCtx.shadowBlur = 10;
+            iceCtx.lineWidth = 3;
+            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.06)';
+            iceCtx.shadowBlur = 8;
             iceCtx.stroke(perimeterPath);
             iceCtx.shadowBlur = 0;
 
             // Secondary subtle glow
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
-            iceCtx.lineWidth = 5;
+            iceCtx.lineWidth = 6;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
@@ -6316,14 +6316,15 @@
                 iceCtx.globalAlpha = 1;
 
                 // ─── Field outline (liquid glass) ──────────────────
-                iceCtx.strokeStyle = isWinner ? 'rgba(255,255,255,0.85)' : 'rgba(255, 255, 255, 0.15)';
-                iceCtx.lineWidth = isWinner ? 3 : 2;
+                // Same as main perimeter outline
+                iceCtx.strokeStyle = isWinner ? 'rgba(255,255,255,0.85)' : 'rgba(255, 255, 255, 0.12)';
+                iceCtx.lineWidth = isWinner ? 3 : 2.5;
                 if (isWinner) {
                     iceCtx.shadowColor = hexToRgba(color, 0.8);
                     iceCtx.shadowBlur = 16;
                 } else {
-                    iceCtx.shadowColor = 'rgba(180, 220, 255, 0.04)';
-                    iceCtx.shadowBlur = 4;
+                    iceCtx.shadowColor = 'rgba(255, 255, 255, 0.06)';
+                    iceCtx.shadowBlur = 6;
                 }
                 iceCtx.strokeRect(-drawW / 2, -drawH / 2, drawW, drawH);
                 iceCtx.shadowBlur = 0;
@@ -6422,7 +6423,7 @@
                 iceCtx.restore();
             }
 
-            // Draw main puck
+            // Draw main puck (size constant, no speed scaling)
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
