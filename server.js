@@ -151,11 +151,14 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA — BSP LAYOUT (no gaps, fully filled)
+// ICE ARENA – BSP LAYOUT (no gaps, fields scaled uniformly)
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
+
+// Uniform scale factor for fields – makes them smaller but keeps them adjacent
+const ICE_FIELD_SCALE = 0.88;
 
 function createIceRoom(id) {
   return {
@@ -245,9 +248,7 @@ function stopAutoBot() {
   }
 }
 
-// ─── BSP Partition with field inset (6px) ──────────────────────
-const ICE_FIELD_MARGIN = 6;
-
+// ─── BSP Partition with uniform scaling ──────────────────────
 function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
@@ -259,13 +260,22 @@ function repartitionIceArena() {
   partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
+
+  // Apply uniform scale to all fields, centered
+  const half = ICE_SIZE / 2;
+  const scale = ICE_FIELD_SCALE;
   players.forEach(p => {
     const assigned = map[p.id];
     if (assigned) {
-      p.x1 = assigned.x1 + ICE_FIELD_MARGIN;
-      p.y1 = assigned.y1 + ICE_FIELD_MARGIN;
-      p.x2 = assigned.x2 - ICE_FIELD_MARGIN;
-      p.y2 = assigned.y2 - ICE_FIELD_MARGIN;
+      // Scale around center
+      const cx1 = assigned.x1 - half;
+      const cy1 = assigned.y1 - half;
+      const cx2 = assigned.x2 - half;
+      const cy2 = assigned.y2 - half;
+      p.x1 = half + cx1 * scale;
+      p.y1 = half + cy1 * scale;
+      p.x2 = half + cx2 * scale;
+      p.y2 = half + cy2 * scale;
     }
   });
 }
