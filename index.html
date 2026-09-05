@@ -5668,31 +5668,10 @@
 
             // ─── Draw ice background ────────────────────────────────
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(30,40,60,0.20)');
+            grad.addColorStop(0, 'rgba(35,45,65,0.15)');
             grad.addColorStop(1, 'rgba(5,10,20,0.30)');
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
-
-            // ─── Draw ice grid (subtle lines) ──────────────────────
-            iceCtx.save();
-            iceCtx.globalAlpha = 0.08;
-            iceCtx.strokeStyle = '#8ab4f8';
-            iceCtx.lineWidth = 1;
-            const gridStep = 30;
-            for (let x = 0; x <= w; x += gridStep) {
-                iceCtx.beginPath();
-                iceCtx.moveTo(x, 0);
-                iceCtx.lineTo(x, w);
-                iceCtx.stroke();
-            }
-            for (let y = 0; y <= w; y += gridStep) {
-                iceCtx.beginPath();
-                iceCtx.moveTo(0, y);
-                iceCtx.lineTo(w, y);
-                iceCtx.stroke();
-            }
-            iceCtx.globalAlpha = 1;
-            iceCtx.restore();
 
             // ─── Perimeter (collider wall, very faint) ─────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
@@ -5702,14 +5681,13 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
             iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(255,255,255,0.03)';
+            iceCtx.strokeStyle = 'rgba(255,255,255,0.02)';
             iceCtx.lineWidth = 1;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
             // ─── Idle puck (always visible when gameState === 'idle') ──
             if (iceState.gameState === 'idle') {
-                // Initialize idle puck if needed
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
                     const r = 10;
@@ -5722,7 +5700,6 @@
                     iceState.idlePuck.radius = r;
                     iceState.idlePuckInitialized = true;
                 }
-                // Move puck
                 let x = iceState.idlePuck.x;
                 let y = iceState.idlePuck.y;
                 let vx = iceState.idlePuck.vx;
@@ -5748,7 +5725,6 @@
                 const cy = y;
                 const puckRadius = 10 * s;
 
-                // Draw idle puck
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.4)';
                 iceCtx.shadowBlur = 12;
@@ -5771,11 +5747,10 @@
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
 
-                // If there are no players, we're done – don't draw fields.
                 if (iceState.players.length === 0) return;
             }
 
-            // ─── Draw fields (only if players exist) ──────────────
+            // ─── Draw fields ─────────────────────────────────────────
             const now = performance.now();
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             const puck = iceState.puck;
