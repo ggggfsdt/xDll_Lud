@@ -118,7 +118,7 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── MUCH FASTER SPEED WITH WIDE RANDOMIZATION ──────────────────
+// ─── ORIGINAL SPEED (8–28) ──────────────────────────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
@@ -245,7 +245,9 @@ function stopAutoBot() {
   }
 }
 
-// ─── BSP Partition ──────────────────────────────────────────────
+// ─── BSP Partition with field inset (4px) ──────────────────────
+const ICE_FIELD_MARGIN = 4;
+
 function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
@@ -260,8 +262,10 @@ function repartitionIceArena() {
   players.forEach(p => {
     const assigned = map[p.id];
     if (assigned) {
-      p.x1 = assigned.x1; p.y1 = assigned.y1;
-      p.x2 = assigned.x2; p.y2 = assigned.y2;
+      p.x1 = assigned.x1 + ICE_FIELD_MARGIN;
+      p.y1 = assigned.y1 + ICE_FIELD_MARGIN;
+      p.x2 = assigned.x2 - ICE_FIELD_MARGIN;
+      p.y2 = assigned.y2 - ICE_FIELD_MARGIN;
     }
   });
 }
@@ -602,7 +606,7 @@ function startGame() {
   alive.forEach((p, i) => {
     const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
     const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    const speed = baseSpeed * (0.5 + Math.random() * 1.3);
+    const speed = baseSpeed * (0.8 + Math.random() * 0.4);
     p.vx = Math.cos(angle) * speed;
     p.vy = Math.sin(angle) * speed;
     p.x = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
@@ -683,6 +687,7 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
+// ─── PHYSICS with speed cap ────────────────────────────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -828,6 +833,7 @@ function updatePhysics(dt) {
       }
     }
 
+    // Speed cap
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
@@ -929,6 +935,14 @@ io.on('connection', (socket) => {
         user: {
           ...user,
           winHistory: user.winHistory || [],
+          anonymousEnabled: user.anonymousEnabled || false,
+          anonymousName: user.anonymousName || '',
+          anonymousUsername: user.anonymousUsername || '',
+          anonymousPhone: user.anonymousPhone || '',
+          nameChanged: user.nameChanged || false,
+          usernameChanged: user.usernameChanged || false,
+          phoneChanged: user.phoneChanged || false,
+          hidePfp: user.hidePfp || false,
         },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
@@ -973,9 +987,7 @@ io.on('connection', (socket) => {
 
   socket.on('leaderboard', async (_, ack) => {
     try {
-      const tops = await topPlayers(20);
-      // Anonymize if needed – frontend will handle display, but we return all data
-      ack?.({ ok: true, top: tops });
+      ack?.({ ok: true, top: await topPlayers(20) });
     } catch (err) {
       console.error('Leaderboard error:', err);
       ack?.({ ok: false, error: 'Internal error' });
@@ -1466,54 +1478,11 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── NEW ANONYMOUS API ROUTES ─────────────────────────────────
-app.post('/api/set-anonymous', async (req, res) => {
-  try {
-    const { userId, enabled, name, username, phone } = req.body;
-    if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
-
-    const updates = {};
-    if (enabled !== undefined) updates.enabled = enabled;
-    if (name !== undefined) updates.name = name.trim();
-    if (username !== undefined) updates.username = username.trim();
-    if (phone !== undefined) updates.phone = phone.trim();
-
-    if (updates.username && !/^[a-zA-Z0-9_]{3,16}$/.test(updates.username)) {
-      return res.status(400).json({ ok: false, error: 'Username must be 3-16 characters, letters, digits, underscore.' });
-    }
-    if (updates.phone && !/^\+?[0-9\s\-]{7,15}$/.test(updates.phone)) {
-      return res.status(400).json({ ok: false, error: 'Invalid phone format.' });
-    }
-    if (updates.name && !/^[a-zA-Z\s]{1,30}$/.test(updates.name)) {
-      return res.status(400).json({ ok: false, error: 'Name must contain only letters and spaces (max 30).' });
-    }
-
-    const result = await setAnonymousData(userId, updates);
-    res.json({ ok: true, data: result });
-  } catch (err) {
-    console.error('Set anonymous error:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
-  }
-});
-
-app.post('/api/check-anonymous-unique', async (req, res) => {
-  try {
-    const { field, value, userId } = req.body;
-    if (!field || !value || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing parameters' });
-    }
-    const unique = await checkAnonymousUnique(field, value, userId);
-    res.json({ ok: true, unique });
-  } catch (err) {
-    console.error('Check anonymous unique error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
-
+// ─── NEW HTTP ENDPOINTS FOR ANONYMOUS CHANGES ──────────────────
 app.post('/api/change-anonymous', async (req, res) => {
   try {
-    const { userId, field, value, fee } = req.body;
-    if (!userId || !field || value === undefined || !fee) {
+    const { userId, field, value } = req.body;
+    if (!userId || !field || value === undefined) {
       return res.status(400).json({ ok: false, error: 'Missing parameters' });
     }
     const validFields = ['name', 'username', 'phone'];
@@ -1531,8 +1500,33 @@ app.post('/api/change-anonymous', async (req, res) => {
       return res.status(400).json({ ok: false, error: 'Invalid name format' });
     }
 
-    const result = await changeAnonymousField(userId, field, value, fee);
-    res.json({ ok: true, newBalance: result.newBalance });
+    const result = await changeAnonymousField(userId, field, value);
+    // Update player objects in arenas if they exist
+    const pvpPlayer = getPlayer(userId);
+    if (pvpPlayer) {
+      const user = await getUser(userId);
+      if (user.anonymousEnabled) {
+        pvpPlayer.name = user.anonymousName;
+        pvpPlayer.pfp = null;
+      } else {
+        pvpPlayer.name = user.username;
+        pvpPlayer.pfp = user.pfp;
+      }
+      broadcastState();
+    }
+    const iceP = getIcePlayer(userId);
+    if (iceP) {
+      const user = await getUser(userId);
+      if (user.anonymousEnabled) {
+        iceP.name = user.anonymousName;
+        iceP.pfp = null;
+      } else {
+        iceP.name = user.username;
+        iceP.pfp = user.pfp;
+      }
+      broadcastIceState();
+    }
+    res.json({ ok: true, newBalance: result.newBalance, fee: result.fee });
   } catch (err) {
     console.error('Change anonymous field error:', err);
     res.status(500).json({ ok: false, error: err.message || 'Internal error' });
@@ -1544,6 +1538,18 @@ app.post('/api/toggle-hide-pfp', async (req, res) => {
     const { userId, hide } = req.body;
     if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
     const newHide = await toggleHidePfp(userId, hide);
+    // Update player object in PvP arena (pfp should reflect hide)
+    const pvpPlayer = getPlayer(userId);
+    if (pvpPlayer) {
+      pvpPlayer.pfp = newHide ? null : (await getUser(userId)).pfp;
+      broadcastState();
+    }
+    // Ice arena player pfp also updated
+    const iceP = getIcePlayer(userId);
+    if (iceP) {
+      iceP.pfp = newHide ? null : (await getUser(userId)).pfp;
+      broadcastIceState();
+    }
     res.json({ ok: true, hidePfp: newHide });
   } catch (err) {
     console.error('Toggle hide PFP error:', err);
