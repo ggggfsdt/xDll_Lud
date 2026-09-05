@@ -62,6 +62,9 @@ function ensureFields(user) {
   if (!user.anonymousUsername) user.anonymousUsername = generateRandomAnonymousUsername();
   if (!user.anonymousPhone) user.anonymousPhone = generateRandomAnonymousPhone();
   if (!user.winHistory) user.winHistory = [];
+  if (user.nameChanged === undefined) user.nameChanged = false;
+  if (user.usernameChanged === undefined) user.usernameChanged = false;
+  if (user.phoneChanged === undefined) user.phoneChanged = false;
   return user;
 }
 
@@ -84,6 +87,9 @@ async function getUser(id, defaults = {}) {
       anonymousName: generateRandomAnonymousName(),
       anonymousUsername: generateRandomAnonymousUsername(),
       anonymousPhone: generateRandomAnonymousPhone(),
+      nameChanged: false,
+      usernameChanged: false,
+      phoneChanged: false,
     };
     queueSave();
   } else {
@@ -96,7 +102,6 @@ async function getUser(id, defaults = {}) {
   return data.users[id];
 }
 
-// ─── Save user ──────────────────────────────────────────────────
 async function saveUser(user) {
   data.users[user.id] = user;
   queueSave();
@@ -132,10 +137,22 @@ async function setAnonymousData(userId, updates) {
   };
 }
 
-// ─── Change anonymous field with fee ──────────────────────────
-async function changeAnonymousField(userId, field, value, fee) {
+// ─── Change anonymous field with first-time pricing ──────────
+async function changeAnonymousField(userId, field, value) {
   const user = await getUser(userId);
   if (!user) throw new Error('User not found');
+
+  let fee;
+  if (field === 'name') {
+    fee = user.nameChanged ? 467 : 0;
+  } else if (field === 'username') {
+    fee = user.usernameChanged ? 700 : 32;
+  } else if (field === 'phone') {
+    fee = user.phoneChanged ? 1000 : 1000; // first also 1000
+  } else {
+    throw new Error('Invalid field');
+  }
+
   if (user.balance < fee) throw new Error('Insufficient balance');
 
   const validFields = ['name', 'username', 'phone'];
@@ -153,8 +170,11 @@ async function changeAnonymousField(userId, field, value, fee) {
   user.balance -= fee;
   const key = `anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`;
   user[key] = value;
+  if (field === 'name') user.nameChanged = true;
+  else if (field === 'username') user.usernameChanged = true;
+  else if (field === 'phone') user.phoneChanged = true;
   await saveUser(user);
-  return { newBalance: user.balance };
+  return { newBalance: user.balance, fee };
 }
 
 // ─── Toggle hidePfp ──────────────────────────────────────────
@@ -227,6 +247,9 @@ async function resetPlayer(userId) {
   user.anonymousName = generateRandomAnonymousName();
   user.anonymousUsername = generateRandomAnonymousUsername();
   user.anonymousPhone = generateRandomAnonymousPhone();
+  user.nameChanged = false;
+  user.usernameChanged = false;
+  user.phoneChanged = false;
   queueSave();
   return true;
 }
