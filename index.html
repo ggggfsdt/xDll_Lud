@@ -3823,8 +3823,8 @@
 
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
-        // Larger fields: scale from 0.88 to 0.95
-        const ICE_FIELD_SCALE = 0.95;
+        // Larger fields: scale up to 1.0 so they cover the whole arena
+        const ICE_FIELD_SCALE = 1.0;
 
         // ─── DOM refs ──────────────────────────────────────────────────
         const canvas = document.getElementById('game-canvas');
@@ -6410,7 +6410,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Draw fields - NO individual outlines, only colored rectangles
+            // Draw fields - fields fill with white glass, no individual outlines
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6422,14 +6422,20 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                const color = isWinner ? lightenColor(p.color, 70) : p.color;
-
-                // Fill the field
+                // Fill with white glass
                 iceCtx.save();
-                iceCtx.fillStyle = color;
-                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.fillStyle = isWinner ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)';
+                iceCtx.shadowColor = 'rgba(0,0,0,0.2)';
+                iceCtx.shadowBlur = 8;
                 iceCtx.fillRect(x1, y1, segW, segH);
-                iceCtx.globalAlpha = 1;
+                iceCtx.shadowBlur = 0;
+
+                // Subtle border for winner (golden)
+                if (isWinner) {
+                    iceCtx.strokeStyle = 'rgba(255,215,0,0.6)';
+                    iceCtx.lineWidth = 2;
+                    iceCtx.strokeRect(x1, y1, segW, segH);
+                }
 
                 // Avatar
                 const avatarR = Math.min(segW, segH) * 0.32;
@@ -6513,7 +6519,7 @@
                 iceCtx.restore();
             }
 
-            // Puck - with shadow instead of glow
+            // Puck - with shadow and a subtle gray outline
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6559,10 +6565,10 @@
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
 
-                // Draw shadow first
+                // Draw shadow
                 iceCtx.save();
-                iceCtx.shadowColor = 'rgba(0,0,0,0.4)';
-                iceCtx.shadowBlur = 12;
+                iceCtx.shadowColor = 'rgba(0,0,0,0.35)';
+                iceCtx.shadowBlur = 14;
                 iceCtx.shadowOffsetX = 3;
                 iceCtx.shadowOffsetY = 4;
                 iceCtx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -6571,18 +6577,27 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // Draw puck body (white outline, no glow)
+                // Draw gray outline (slightly transparent, wide)
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(160,160,160,0.35)';
+                iceCtx.lineWidth = 6;
+                iceCtx.shadowBlur = 0;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, puckRadius + 3, 0, Math.PI * 2);
+                iceCtx.stroke();
+                iceCtx.restore();
+
+                // Draw white inner outline
                 iceCtx.save();
                 iceCtx.strokeStyle = '#ffffff';
-                iceCtx.lineWidth = 4;
-                iceCtx.shadowColor = 'transparent';
+                iceCtx.lineWidth = 3;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 // cross
                 const crossSize = puckRadius * 0.75;
-                iceCtx.globalAlpha = 0.6;
+                iceCtx.globalAlpha = 0.5;
                 iceCtx.lineWidth = 2;
                 iceCtx.strokeStyle = '#ffffff';
                 iceCtx.beginPath();
@@ -6593,7 +6608,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // Owner name
+                // Owner name (if slow)
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
