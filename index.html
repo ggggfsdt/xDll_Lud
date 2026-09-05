@@ -2277,13 +2277,12 @@
             max-width: 100%;
             max-height: 100%;
             border-radius: var(--radius);
-            background: rgba(18, 18, 20, 0.60);
-            backdrop-filter: blur(6px);
+            background: transparent;
             touch-action: none;
             display: block;
-            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(91, 141, 239, 0.06);
+            box-shadow: none;
             flex-shrink: 0;
-            border: 1px solid rgba(255, 255, 255, 0.04);
+            border: none;
         }
 
         #ice-top-panel {
@@ -2388,7 +2387,7 @@
             opacity: 0.8;
             text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
             line-height: 1.6;
-            display: block;
+            display: none;
         }
         #ice-waiting-text .sub {
             font-size: 13px;
@@ -3028,10 +3027,9 @@
                         </div>
                     </div>
                 </div>
-                <!-- old stats bar removed -->
             </div>
 
-            <!-- PROFILE TAB – with anonymous identity and hide PFP -->
+            <!-- PROFILE TAB -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
                     <!-- Header -->
@@ -3224,7 +3222,7 @@
                 <div id="tx-list"></div>
             </div>
 
-            <!-- Card Stats – financial metrics -->
+            <!-- Card Stats -->
             <div class="card-stats" id="card-stats">
                 <div class="cs-item">
                     <span class="cs-label">Total Wagered</span>
@@ -3244,7 +3242,6 @@
                 </div>
             </div>
 
-            <!-- Payment Methods placeholder -->
             <div class="payment-methods">
                 <span>Visa</span>
                 <span>Mastercard</span>
@@ -3266,21 +3263,18 @@
                             <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
                         </div>
                         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
-                            <!-- Name field -->
                             <div class="identity-field">
                                 <span class="id-label">Name</span>
                                 <div class="id-value-wrap">
                                     <span class="id-value" id="id-name" contenteditable="false">Anonymous</span>
                                 </div>
                             </div>
-                            <!-- Username field -->
                             <div class="identity-field">
                                 <span class="id-label">Username</span>
                                 <div class="id-value-wrap">
                                     <span class="id-value" id="id-username" contenteditable="false">@anon_user</span>
                                 </div>
                             </div>
-                            <!-- Phone field -->
                             <div class="identity-field">
                                 <span class="id-label">Phone</span>
                                 <div class="id-value-wrap">
@@ -3335,7 +3329,6 @@
             try {
                 if (!audioCtxForClicks) audioCtxForClicks = new(window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtxForClicks.currentTime;
-                // Noise burst
                 const bufferSize = audioCtxForClicks.sampleRate * 0.03;
                 const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -3351,7 +3344,6 @@
                 gainNoise.connect(audioCtxForClicks.destination);
                 noise.start(now);
                 noise.stop(now + 0.03);
-                // Sine click
                 const osc = audioCtxForClicks.createOscillator();
                 const gainOsc = audioCtxForClicks.createGain();
                 osc.type = 'sine';
@@ -5670,21 +5662,120 @@
             if (!w) return;
             const half = w / 2;
             const s = iceScaleFactor();
+
+            // ─── Clear canvas ────────────────────────────────────────
             iceCtx.clearRect(0, 0, w, w);
-            // Glass-like gradient
+
+            // ─── Draw ice background ────────────────────────────────
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(40,50,70,0.25)');
-            grad.addColorStop(1, 'rgba(10,15,25,0.35)');
+            grad.addColorStop(0, 'rgba(30,40,60,0.20)');
+            grad.addColorStop(1, 'rgba(5,10,20,0.30)');
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
+            // ─── Draw ice grid (subtle lines) ──────────────────────
+            iceCtx.save();
+            iceCtx.globalAlpha = 0.08;
+            iceCtx.strokeStyle = '#8ab4f8';
+            iceCtx.lineWidth = 1;
+            const gridStep = 30;
+            for (let x = 0; x <= w; x += gridStep) {
+                iceCtx.beginPath();
+                iceCtx.moveTo(x, 0);
+                iceCtx.lineTo(x, w);
+                iceCtx.stroke();
+            }
+            for (let y = 0; y <= w; y += gridStep) {
+                iceCtx.beginPath();
+                iceCtx.moveTo(0, y);
+                iceCtx.lineTo(w, y);
+                iceCtx.stroke();
+            }
+            iceCtx.globalAlpha = 1;
+            iceCtx.restore();
+
+            // ─── Perimeter (collider wall, very faint) ─────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
             perimeterPath.moveTo(pts[0].x, pts[0].y);
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
+            iceCtx.save();
+            iceCtx.strokeStyle = 'rgba(255,255,255,0.03)';
+            iceCtx.lineWidth = 1;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
 
+            // ─── Idle puck (always visible when gameState === 'idle') ──
+            if (iceState.gameState === 'idle') {
+                // Initialize idle puck if needed
+                if (!iceState.idlePuckInitialized) {
+                    const margin = 20;
+                    const r = 10;
+                    iceState.idlePuck.x = w / 2;
+                    iceState.idlePuck.y = w / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2.0 + Math.random() * 1.5;
+                    iceState.idlePuck.vx = Math.cos(angle) * speed;
+                    iceState.idlePuck.vy = Math.sin(angle) * speed;
+                    iceState.idlePuck.radius = r;
+                    iceState.idlePuckInitialized = true;
+                }
+                // Move puck
+                let x = iceState.idlePuck.x;
+                let y = iceState.idlePuck.y;
+                let vx = iceState.idlePuck.vx;
+                let vy = iceState.idlePuck.vy;
+                x += vx;
+                y += vy;
+                const radius = iceState.idlePuck.radius;
+                const margin = 15;
+                if (x - radius < margin) { x = margin + radius;
+                    vx = -vx; }
+                if (x + radius > w - margin) { x = w - margin - radius;
+                    vx = -vx; }
+                if (y - radius < margin) { y = margin + radius;
+                    vy = -vy; }
+                if (y + radius > w - margin) { y = w - margin - radius;
+                    vy = -vy; }
+                iceState.idlePuck.x = x;
+                iceState.idlePuck.y = y;
+                iceState.idlePuck.vx = vx;
+                iceState.idlePuck.vy = vy;
+
+                const cx = x;
+                const cy = y;
+                const puckRadius = 10 * s;
+
+                // Draw idle puck
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(180, 220, 255, 0.4)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.lineWidth = 3.5;
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
+                iceCtx.stroke();
+                const crossSize = puckRadius * 0.7;
+                iceCtx.shadowBlur = 0;
+                iceCtx.globalAlpha = 0.5;
+                iceCtx.lineWidth = 1.5;
+                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.beginPath();
+                iceCtx.moveTo(cx - crossSize, cy);
+                iceCtx.lineTo(cx + crossSize, cy);
+                iceCtx.moveTo(cx, cy - crossSize);
+                iceCtx.lineTo(cx, cy + crossSize);
+                iceCtx.stroke();
+                iceCtx.globalAlpha = 1;
+                iceCtx.restore();
+
+                // If there are no players, we're done – don't draw fields.
+                if (iceState.players.length === 0) return;
+            }
+
+            // ─── Draw fields (only if players exist) ──────────────
             const now = performance.now();
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             const puck = iceState.puck;
@@ -5749,14 +5840,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter as near-invisible (just for collider visual)
-            iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(255,255,255,0.05)';
-            iceCtx.lineWidth = 1;
-            iceCtx.stroke(perimeterPath);
-            iceCtx.restore();
-
-            // Draw fields (inset by ICE_FIELD_MARGIN on server)
+            // Draw fields
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -5894,7 +5978,7 @@
                 iceCtx.restore();
             }
 
-            // Draw puck
+            // Draw main puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
