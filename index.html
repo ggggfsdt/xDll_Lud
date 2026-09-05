@@ -6017,13 +6017,24 @@
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
 
-            // Glass background
+            // Glass background with center glow (liquid glass effect)
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(20, 22, 30, 0.75)');
-            grad.addColorStop(0.5, 'rgba(12, 14, 20, 0.82)');
+            grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
+            grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
+            grad.addColorStop(0.7, 'rgba(16, 18, 26, 0.80)');
             grad.addColorStop(1, 'rgba(6, 8, 12, 0.92)');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
+
+            // Center glow (liquid glass effect)
+            const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.save();
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, 0, w, w);
+            ctx.restore();
 
             // We'll draw a rounded rect with larger corner radius for the arena background and outline
             const cornerRadius = w * 0.20; // more rounded
@@ -6051,14 +6062,14 @@
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             ctx.shadowBlur = 30;
-            ctx.fillStyle = 'rgba(24, 26, 34, 0.75)';
+            ctx.fillStyle = 'rgba(20, 22, 30, 0.70)';
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.fill();
             ctx.restore();
 
             // Inner highlight
             ctx.save();
-            ctx.fillStyle = 'rgba(48, 52, 62, 0.25)';
+            ctx.fillStyle = 'rgba(40, 44, 54, 0.20)';
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.fill();
             ctx.restore();
@@ -6066,11 +6077,11 @@
             // Pulsing border glow when waiting (idle and less than 2 players)
             if (state.gameState === 'idle' && getAlive().length < 2) {
                 const pulse = Math.sin(Date.now() / 1000) * 0.5 + 0.5;
-                const alpha = 0.15 + pulse * 0.25;
+                const alpha = 0.08 + pulse * 0.15;
                 ctx.save();
-                ctx.shadowColor = `rgba(255,255,255,${alpha * 0.7})`;
+                ctx.shadowColor = `rgba(255,255,255,${alpha * 0.5})`;
                 ctx.shadowBlur = 40 + pulse * 30;
-                ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+                ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.3})`;
                 ctx.lineWidth = 3 + pulse * 2;
                 roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
                 ctx.stroke();
@@ -6079,15 +6090,15 @@
 
             // Outline - white liquid glass (always drawn)
             ctx.save();
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.15)';
-            ctx.shadowBlur = 18;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
-            ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
+            ctx.shadowBlur = 16;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 2.5;
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.stroke();
             ctx.shadowBlur = 0;
             // secondary glow
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
             ctx.lineWidth = 6;
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.stroke();
@@ -6262,13 +6273,24 @@
             // Clear
             iceCtx.clearRect(0, 0, w, w);
 
-            // Glass background
+            // Glass background with center glow
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(30, 40, 55, 0.45)');
-            grad.addColorStop(0.6, 'rgba(16, 22, 34, 0.50)');
-            grad.addColorStop(1, 'rgba(6, 10, 18, 0.55)');
+            grad.addColorStop(0, 'rgba(45, 55, 70, 0.35)');
+            grad.addColorStop(0.4, 'rgba(28, 35, 48, 0.45)');
+            grad.addColorStop(0.8, 'rgba(14, 18, 26, 0.55)');
+            grad.addColorStop(1, 'rgba(6, 10, 18, 0.60)');
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
+
+            // Center glow
+            const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            iceCtx.save();
+            iceCtx.fillStyle = glowGrad;
+            iceCtx.fillRect(0, 0, w, w);
+            iceCtx.restore();
 
             // Perimeter
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
@@ -6281,11 +6303,11 @@
             // Pulsing border glow when idle
             if (iceState.gameState === 'idle' && iceState.players.length < 2) {
                 const pulse = Math.sin(Date.now() / 1000) * 0.5 + 0.5;
-                const alpha = 0.15 + pulse * 0.25;
+                const alpha = 0.08 + pulse * 0.15;
                 iceCtx.save();
-                iceCtx.shadowColor = `rgba(255,255,255,${alpha * 0.7})`;
+                iceCtx.shadowColor = `rgba(255,255,255,${alpha * 0.5})`;
                 iceCtx.shadowBlur = 40 + pulse * 30;
-                iceCtx.strokeStyle = `rgba(255,255,255,${alpha})`;
+                iceCtx.strokeStyle = `rgba(255,255,255,${alpha * 0.3})`;
                 iceCtx.lineWidth = 3 + pulse * 2;
                 iceCtx.stroke(perimeterPath);
                 iceCtx.restore();
@@ -6313,15 +6335,15 @@
             // Draw perimeter outline (white glass) - this is the main outline for the whole arena
             iceCtx.save();
             // Primary outline
-            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-            iceCtx.lineWidth = 3.5;
-            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.15)';
-            iceCtx.shadowBlur = 16;
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+            iceCtx.lineWidth = 3;
+            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+            iceCtx.shadowBlur = 14;
             iceCtx.stroke(perimeterPath);
             // Secondary glow
             iceCtx.shadowBlur = 0;
-            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-            iceCtx.lineWidth = 8;
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            iceCtx.lineWidth = 6;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
@@ -6437,7 +6459,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Draw fields - NO individual outlines, only colored rectangles
+            // Draw fields - colored rectangles
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6454,7 +6476,7 @@
                 // Fill the field
                 iceCtx.save();
                 iceCtx.fillStyle = color;
-                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.globalAlpha = isWinner ? 1 : 0.92;
                 iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
 
@@ -6540,7 +6562,7 @@
                 iceCtx.restore();
             }
 
-            // Puck - with shadow, no extra dark outline (only white ring and cross)
+            // Puck - with shadow, clean outline (no extra dark outline)
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6588,8 +6610,8 @@
 
                 // Draw shadow
                 iceCtx.save();
-                iceCtx.shadowColor = 'rgba(0,0,0,0.35)';
-                iceCtx.shadowBlur = 14;
+                iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                iceCtx.shadowBlur = 12;
                 iceCtx.shadowOffsetX = 3;
                 iceCtx.shadowOffsetY = 4;
                 iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
@@ -6598,18 +6620,18 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // White outline (ring) and cross (no extra dark outline)
+                // White outline (ring) and cross - clean, no extra dark outline
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 3;
+                iceCtx.lineWidth = 2.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 // cross
                 const crossSize = puckRadius * 0.7;
-                iceCtx.globalAlpha = 0.6;
-                iceCtx.lineWidth = 2;
+                iceCtx.globalAlpha = 0.5;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
