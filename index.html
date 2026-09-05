@@ -42,15 +42,8 @@
             animation: orbPulse 4s ease-in-out infinite;
         }
         @keyframes orbPulse {
-            0%,
-            100% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 0.5;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.3);
-                opacity: 1;
-            }
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
         }
         #grid-wrapper {
             position: relative;
@@ -100,31 +93,19 @@
             z-index: 1;
         }
         @keyframes squarePop {
-            0% {
-                transform: scale(0) rotate(-6deg);
-                opacity: 0;
-            }
-            60% {
-                transform: scale(1.10) rotate(1deg);
-                opacity: 1;
-            }
-            80% {
-                transform: scale(0.95) rotate(-0.5deg);
-                opacity: 1;
-            }
-            100% {
-                transform: scale(1) rotate(0deg);
-                opacity: 1;
-            }
+            0% { transform: scale(0) rotate(-6deg); opacity: 0; }
+            60% { transform: scale(1.10) rotate(1deg); opacity: 1; }
+            80% { transform: scale(0.95) rotate(-0.5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
         .load-square.pop {
             animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .load-square.slide {
             transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
-                border-radius 0.6s ease,
-                box-shadow 0.6s ease,
-                opacity 0.5s ease;
+                        border-radius 0.6s ease,
+                        box-shadow 0.6s ease,
+                        opacity 0.5s ease;
             border-radius: 20px;
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 255, 255, 0.05);
             z-index: 5;
@@ -142,7 +123,7 @@
             opacity: 0;
             z-index: 10;
             transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
-                opacity 0.6s ease;
+                        opacity 0.6s ease;
             pointer-events: none;
             will-change: transform, opacity;
         }
@@ -184,21 +165,9 @@
             opacity: 1;
         }
         @keyframes ringPulse {
-            0% {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0.6;
-                border-width: 1.5px;
-            }
-            50% {
-                transform: translate(-50%, -50%) scale(1.6);
-                opacity: 0;
-                border-width: 0.5px;
-            }
-            100% {
-                transform: translate(-50%, -50%) scale(0.8);
-                opacity: 0.6;
-                border-width: 1.5px;
-            }
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
+            50% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
         }
         #loading-text {
             margin-top: 36px;
@@ -220,21 +189,11 @@
             text-align: left;
         }
         @keyframes dotsAnim {
-            0% {
-                content: '';
-            }
-            25% {
-                content: '.';
-            }
-            50% {
-                content: '..';
-            }
-            75% {
-                content: '...';
-            }
-            100% {
-                content: '';
-            }
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+            100% { content: ''; }
         }
         #brand-mark {
             position: absolute;
@@ -251,56 +210,22 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         @media (max-width: 420px) {
-            #grid-wrapper {
-                width: 220px;
-                height: 220px;
-            }
-            #loading-grid {
-                gap: 6px;
-                padding: 3px;
-            }
-            .load-square {
-                border-radius: 14px;
-            }
-            .load-square::after {
-                border-radius: 14px;
-            }
-            #merged-square {
-                border-radius: 22px;
-            }
-            #merged-square::after {
-                border-radius: 22px;
-            }
-            #loading-text {
-                font-size: 12px;
-                margin-top: 28px;
-            }
+            #grid-wrapper { width: 220px; height: 220px; }
+            #loading-grid { gap: 6px; padding: 3px; }
+            .load-square { border-radius: 14px; }
+            .load-square::after { border-radius: 14px; }
+            #merged-square { border-radius: 22px; }
+            #merged-square::after { border-radius: 22px; }
+            #loading-text { font-size: 12px; margin-top: 28px; }
         }
         @media (max-width: 340px) {
-            #grid-wrapper {
-                width: 170px;
-                height: 170px;
-            }
-            #loading-grid {
-                gap: 4px;
-                padding: 2px;
-            }
-            .load-square {
-                border-radius: 10px;
-            }
-            .load-square::after {
-                border-radius: 10px;
-            }
-            #merged-square {
-                border-radius: 16px;
-            }
-            #merged-square::after {
-                border-radius: 16px;
-            }
-            #loading-text {
-                font-size: 10px;
-                margin-top: 20px;
-            }
+            #grid-wrapper { width: 170px; height: 170px; }
+            #loading-grid { gap: 4px; padding: 2px; }
+            .load-square { border-radius: 10px; }
+            .load-square::after { border-radius: 10px; }
+            #merged-square { border-radius: 16px; }
+            #merged-square::after { border-radius: 16px; }
+            #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
         /* ─── APP STYLES ──────────────────────────────────────── */
@@ -328,8 +253,7 @@
             --radius: 16px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-        html,
-        body {
+        html, body {
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -432,13 +356,8 @@
             animation: glowDiamond 2.8s ease-in-out infinite;
         }
         @keyframes glowDiamond {
-            0%,
-            100% {
-                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3));
-            }
-            50% {
-                filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2);
-            }
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
+            50% { filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2); }
         }
         #balance {
             font-size: 15px;
@@ -673,21 +592,10 @@
             color: #fff;
         }
         @keyframes letterBounce {
-            0% {
-                opacity: 0;
-                transform: translateY(30px) scale(0.8);
-            }
-            40% {
-                opacity: 1;
-                transform: translateY(-10px) scale(1.05);
-            }
-            70% {
-                transform: translateY(5px) scale(0.98);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            0% { opacity: 0; transform: translateY(30px) scale(0.8); }
+            40% { opacity: 1; transform: translateY(-10px) scale(1.05); }
+            70% { transform: translateY(5px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .waiting-sub {
             font-size: 13px;
@@ -700,9 +608,7 @@
             opacity: 0;
         }
         @keyframes subFade {
-            to {
-                opacity: 0.5;
-            }
+            to { opacity: 0.5; }
         }
 
         /* ─── ICE WAITING TEXT ─────────────────────────────────── */
@@ -1234,10 +1140,7 @@
             transform: translateY(12px);
         }
         @keyframes fadeSlideUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            to { opacity: 1; transform: translateY(0); }
         }
         .profile-header-section .pfp-wrap {
             position: relative;
@@ -1572,12 +1475,8 @@
             display: flex;
         }
         @keyframes cardFadeIn {
-            0% {
-                opacity: 0;
-            }
-            100% {
-                opacity: 1;
-            }
+            0% { opacity: 0; }
+            100% { opacity: 1; }
         }
 
         /* ─── IDENTITY CARD OVERLAY ────────────────────────────── */
@@ -1687,18 +1586,9 @@
             width: 6px;
         }
         @keyframes cwPop {
-            0% {
-                opacity: 0;
-                transform: translateY(6px) scale(0.9);
-            }
-            60% {
-                opacity: 1;
-                transform: translateY(-2px) scale(1.05);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
+            0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+            60% { opacity: 1; transform: translateY(-2px) scale(1.05); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
         }
         .card-face.front .card-brand {
             font-size: 13px;
@@ -1865,13 +1755,8 @@
             animation: pulseBorder 1.2s ease-in-out infinite;
         }
         @keyframes pulseBorder {
-            0%,
-            100% {
-                border-bottom-color: rgba(255, 255, 255, 0.5);
-            }
-            50% {
-                border-bottom-color: rgba(255, 255, 255, 0.1);
-            }
+            0%, 100% { border-bottom-color: rgba(255, 255, 255, 0.5); }
+            50% { border-bottom-color: rgba(255, 255, 255, 0.1); }
         }
 
         .char-anim {
@@ -1882,18 +1767,9 @@
             white-space: pre;
         }
         @keyframes charSlideUp {
-            0% {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            60% {
-                opacity: 1;
-                transform: translateY(-2px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            0% { opacity: 0; transform: translateY(6px); }
+            60% { opacity: 1; transform: translateY(-2px); }
+            100% { opacity: 1; transform: translateY(0); }
         }
 
         .card-close-btn {
@@ -2037,38 +1913,17 @@
             opacity: 0;
             transform: translateX(-8px);
         }
-        .tx-entry:nth-child(2) {
-            animation-delay: 0.04s;
-        }
-        .tx-entry:nth-child(3) {
-            animation-delay: 0.08s;
-        }
-        .tx-entry:nth-child(4) {
-            animation-delay: 0.12s;
-        }
-        .tx-entry:nth-child(5) {
-            animation-delay: 0.16s;
-        }
-        .tx-entry:nth-child(6) {
-            animation-delay: 0.20s;
-        }
-        .tx-entry:nth-child(7) {
-            animation-delay: 0.24s;
-        }
-        .tx-entry:nth-child(8) {
-            animation-delay: 0.28s;
-        }
-        .tx-entry:nth-child(9) {
-            animation-delay: 0.32s;
-        }
-        .tx-entry:nth-child(10) {
-            animation-delay: 0.36s;
-        }
+        .tx-entry:nth-child(2) { animation-delay: 0.04s; }
+        .tx-entry:nth-child(3) { animation-delay: 0.08s; }
+        .tx-entry:nth-child(4) { animation-delay: 0.12s; }
+        .tx-entry:nth-child(5) { animation-delay: 0.16s; }
+        .tx-entry:nth-child(6) { animation-delay: 0.20s; }
+        .tx-entry:nth-child(7) { animation-delay: 0.24s; }
+        .tx-entry:nth-child(8) { animation-delay: 0.28s; }
+        .tx-entry:nth-child(9) { animation-delay: 0.32s; }
+        .tx-entry:nth-child(10) { animation-delay: 0.36s; }
         @keyframes txSlide {
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+            to { opacity: 1; transform: translateX(0); }
         }
         .tx-entry .tx-label {
             font-size: 11px;
@@ -3162,130 +3017,44 @@
 
         /* ─── RESPONSIVE ──────────────────────────────────────────── */
         @media (max-width: 420px) {
-            #notification-overlay {
-                font-size: 20px;
-                padding: 18px 24px;
-                max-width: 92%;
-            }
-            #balance-wrap {
-                padding: 2px 8px 2px 4px;
-            }
-            #balance {
-                font-size: 13px;
-            }
-            #diamond-icon {
-                width: 18px;
-                height: 18px;
-            }
-            #username-display {
-                max-width: 60px;
-                font-size: 10px;
-            }
-            .win-panel .panel-pfp {
-                width: 22px;
-                height: 22px;
-            }
-            .win-panel {
-                padding: 4px 8px;
-                font-size: 10px;
-                min-height: 30px;
-            }
-            .win-panel .panel-amount {
-                font-size: 11px;
-            }
-            #ice-top-panel {
-                padding: 2px 10px 3px;
-                gap: 3px;
-                top: 92px;
-                width: 94%;
-            }
-            #ice-top-panel .panel-value {
-                font-size: 12px;
-            }
-            #ice-countdown-timer {
-                font-size: 14px;
-            }
-            #ice-top-panel .panel-label {
-                font-size: 7px;
-            }
-            .card-face.front .card-balance .amount {
-                font-size: 32px;
-            }
-            .card-face.front {
-                padding: 16px 18px;
-            }
-            .card-face.back {
-                padding: 16px 18px;
-            }
-            .tx-entry {
-                font-size: 11px;
-                padding: 4px 10px;
-            }
-            .tx-history {
-                max-height: 120px;
-            }
-            .card-welcome {
-                font-size: 11px;
-            }
-            .card-stats {
-                grid-template-columns: 1fr 1fr;
-                padding: 6px 8px;
-            }
-            .card-stats .cs-value {
-                font-size: 12px;
-            }
-            .profile-header-section .pfp-wrap .prof-pfp {
-                width: 52px;
-                height: 52px;
-            }
-            .profile-header-section .prof-info .prof-name {
-                font-size: 17px;
-            }
-            .profile-stats-grid .stat-box .stat-num {
-                font-size: 18px;
-            }
-            .profile-balance-row .bal-amount {
-                font-size: 17px;
-            }
+            #notification-overlay { font-size: 20px; padding: 18px 24px; max-width: 92%; }
+            #balance-wrap { padding: 2px 8px 2px 4px; }
+            #balance { font-size: 13px; }
+            #diamond-icon { width: 18px; height: 18px; }
+            #username-display { max-width: 60px; font-size: 10px; }
+            .win-panel .panel-pfp { width: 22px; height: 22px; }
+            .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
+            .win-panel .panel-amount { font-size: 11px; }
+            #ice-top-panel { padding: 2px 10px 3px; gap: 3px; top: 92px; width: 94%; }
+            #ice-top-panel .panel-value { font-size: 12px; }
+            #ice-countdown-timer { font-size: 14px; }
+            #ice-top-panel .panel-label { font-size: 7px; }
+            .card-face.front .card-balance .amount { font-size: 32px; }
+            .card-face.front { padding: 16px 18px; }
+            .card-face.back { padding: 16px 18px; }
+            .tx-entry { font-size: 11px; padding: 4px 10px; }
+            .tx-history { max-height: 120px; }
+            .card-welcome { font-size: 11px; }
+            .card-stats { grid-template-columns: 1fr 1fr; padding: 6px 8px; }
+            .card-stats .cs-value { font-size: 12px; }
+            .profile-header-section .pfp-wrap .prof-pfp { width: 52px; height: 52px; }
+            .profile-header-section .prof-info .prof-name { font-size: 17px; }
+            .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
+            .profile-balance-row .bal-amount { font-size: 17px; }
         }
         @media (max-width: 380px) {
-            #ice-top-panel {
-                top: 86px;
-                padding: 2px 8px 3px;
-                width: 96%;
-            }
-            #ice-top-panel .panel-value {
-                font-size: 11px;
-            }
-            #ice-countdown-timer {
-                font-size: 13px;
-            }
-            .card-face.front .card-balance .amount {
-                font-size: 28px;
-            }
-            .tx-entry {
-                font-size: 10px;
-                padding: 3px 8px;
-            }
+            #ice-top-panel { top: 86px; padding: 2px 8px 3px; width: 96%; }
+            #ice-top-panel .panel-value { font-size: 11px; }
+            #ice-countdown-timer { font-size: 13px; }
+            .card-face.front .card-balance .amount { font-size: 28px; }
+            .tx-entry { font-size: 10px; padding: 3px 8px; }
         }
         @media (max-width: 360px) {
-            #ice-top-panel {
-                top: 80px;
-                padding: 2px 8px 2px;
-                width: 96%;
-            }
-            #ice-top-panel .panel-value {
-                font-size: 10px;
-            }
-            #ice-countdown-timer {
-                font-size: 12px;
-            }
-            .card-face.front .card-balance .amount {
-                font-size: 24px;
-            }
-            .card-stats .cs-value {
-                font-size: 11px;
-            }
+            #ice-top-panel { top: 80px; padding: 2px 8px 2px; width: 96%; }
+            #ice-top-panel .panel-value { font-size: 10px; }
+            #ice-countdown-timer { font-size: 12px; }
+            .card-face.front .card-balance .amount { font-size: 24px; }
+            .card-stats .cs-value { font-size: 11px; }
         }
     </style>
 </head>
@@ -3823,8 +3592,7 @@
 
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
-        // Larger fields: scale up to 0.98 (slightly bigger)
-        const ICE_FIELD_SCALE = 0.98;
+        const ICE_FIELD_SCALE = 0.85; // match server
 
         // ─── DOM refs ──────────────────────────────────────────────────
         const canvas = document.getElementById('game-canvas');
@@ -4706,11 +4474,8 @@
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-
-        function easeOutBack(t) { const c1 = 1.70158,
-                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+        function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
 
         function lightenColor(hex, amt) {
             let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
@@ -4725,7 +4490,7 @@
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
-        const PUCK_RENDER_RADIUS = 14; // wider puck
+        const PUCK_RENDER_RADIUS = 14; // wider
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -4827,7 +4592,6 @@
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
-
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
         // ─── SOCKET ─────────────────────────────────────────────────────
@@ -4930,7 +4694,6 @@
                     updateCardStats();
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
-                    // Animate waiting text
                     animateWaitingText();
                 });
             });
@@ -4998,7 +4761,6 @@
                     subSpan.textContent = 'place a bet to join';
                     el.appendChild(subSpan);
                 }
-                // Restart every 5 seconds
                 setInterval(() => {
                     const spans = mainSpan.querySelectorAll('.waiting-letter');
                     spans.forEach((s, i) => {
@@ -5127,7 +4889,6 @@
         let touchingIds = new Set();
 
         function getPlayer(id) { return state.players.find(p => p.id === id); }
-
         function getAlive() { return state.players.filter(p => p.alive); }
 
         function updateStatsBar() { statsPlayers.textContent = getAlive().length;
@@ -5181,8 +4942,8 @@
             playerListContainer.innerHTML = html;
         }
 
-        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158,
-                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 *
+                Math.pow(t - 1, 2); }
 
         function getPopScale(player) {
             if (!player.isPopping) return 1;
@@ -6036,14 +5797,10 @@
             ctx.fillRect(0, 0, w, w);
             ctx.restore();
 
-            // We'll draw a rounded rect with larger corner radius for the arena background and outline
-            const cornerRadius = w * 0.20; // more rounded
-            const rectX = 0;
-            const rectY = 0;
-            const rectW = w;
-            const rectH = w;
+            // Rounded rect for arena background
+            const cornerRadius = w * 0.20;
+            const rectX = 0, rectY = 0, rectW = w, rectH = w;
 
-            // Helper to draw rounded rect
             function roundRect(ctx, x, y, w, h, r) {
                 ctx.beginPath();
                 ctx.moveTo(x + r, y);
@@ -6058,7 +5815,6 @@
                 ctx.closePath();
             }
 
-            // Fill with glass
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             ctx.shadowBlur = 30;
@@ -6067,16 +5823,13 @@
             ctx.fill();
             ctx.restore();
 
-            // Inner highlight
             ctx.save();
             ctx.fillStyle = 'rgba(40, 44, 54, 0.20)';
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.fill();
             ctx.restore();
 
-            // No pulsing glow around edges - removed
-
-            // Outline - white liquid glass (always drawn)
+            // Outline
             ctx.save();
             ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
             ctx.shadowBlur = 16;
@@ -6085,14 +5838,13 @@
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.stroke();
             ctx.shadowBlur = 0;
-            // secondary glow
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
             ctx.lineWidth = 6;
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.stroke();
             ctx.restore();
 
-            // Now draw the perimeter path for the gap (using server points)
+            // Perimeter path
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length > 0) {
                 const opening = state.opening;
@@ -6104,7 +5856,6 @@
                 if (hasGap && total > 0) {
                     const start = opening.startIdx,
                         end = opening.endIdx;
-                    // Draw non-gap segments
                     ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
                     ctx.lineWidth = 1.5;
                     for (let i = 0; i < total; i++) {
@@ -6123,7 +5874,6 @@
                         ctx.lineTo(pts[j].x, pts[j].y);
                         ctx.stroke();
                     }
-                    // Flashing gap
                     if (isFlashing) {
                         const isRed = (opening.flashCount % 2 === 0);
                         ctx.save();
@@ -6148,8 +5898,6 @@
                         ctx.restore();
                     }
                 } else {
-                    // No gap: draw a faint outline (but we already have the rounded rect outline)
-                    // We can skip or draw a faint inner line
                     ctx.strokeStyle = 'rgba(255,255,255,0.03)';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
@@ -6161,8 +5909,7 @@
                 ctx.restore();
             }
 
-            // Players (clipped to the rounded rect? We'll clip to the rounded rect for better look)
-            // But we need to clip to the actual play area (server points). We'll use the rounded rect for clipping.
+            // Clip to rounded rect for players
             ctx.save();
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.clip();
@@ -6258,10 +6005,8 @@
             const half = w / 2;
             const s = iceScaleFactor();
 
-            // Clear
             iceCtx.clearRect(0, 0, w, w);
 
-            // Glass background with center glow
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(45, 55, 70, 0.35)');
             grad.addColorStop(0.4, 'rgba(28, 35, 48, 0.45)');
@@ -6270,7 +6015,6 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            // Center glow
             const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
             glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
             glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
@@ -6280,7 +6024,6 @@
             iceCtx.fillRect(0, 0, w, w);
             iceCtx.restore();
 
-            // Perimeter
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -6288,19 +6031,14 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            // No pulsing glow - removed
-
             // Zoom handling
             let zoomActive = iceState.zoom > 1.01;
-            let zoomTx = 0,
-                zoomTy = 0,
-                zoomSc = 1;
+            let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             if (zoomActive) {
                 const puck = iceState.puck;
                 const puckScreenX = puck.x * s;
                 const puckScreenY = puck.y * s;
-                const cx = half,
-                    cy = half;
+                const cx = half, cy = half;
                 zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                 zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
@@ -6309,15 +6047,13 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter outline (white glass) - this is the main outline for the whole arena
+            // Perimeter outline
             iceCtx.save();
-            // Primary outline
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             iceCtx.lineWidth = 3;
             iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
             iceCtx.shadowBlur = 14;
             iceCtx.stroke(perimeterPath);
-            // Secondary glow
             iceCtx.shadowBlur = 0;
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             iceCtx.lineWidth = 6;
@@ -6346,14 +6082,10 @@
                 y += vy;
                 const radius = iceState.idlePuck.radius;
                 const margin = 15;
-                if (x - radius < margin) { x = margin + radius;
-                    vx = -vx; }
-                if (x + radius > w - margin) { x = w - margin - radius;
-                    vx = -vx; }
-                if (y - radius < margin) { y = margin + radius;
-                    vy = -vy; }
-                if (y + radius > w - margin) { y = w - margin - radius;
-                    vy = -vy; }
+                if (x - radius < margin) { x = margin + radius; vx = -vx; }
+                if (x + radius > w - margin) { x = w - margin - radius; vx = -vx; }
+                if (y - radius < margin) { y = margin + radius; vy = -vy; }
+                if (y + radius > w - margin) { y = w - margin - radius; vy = -vy; }
                 iceState.idlePuck.x = x;
                 iceState.idlePuck.y = y;
                 iceState.idlePuck.vx = vx;
@@ -6362,24 +6094,28 @@
                 const cx = x;
                 const cy = y;
                 const puckRadius = 10 * s;
+                // Draw as ellipse: wider
+                const rx = puckRadius * 1.6;
+                const ry = puckRadius * 0.7;
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.strokeStyle = '#ffffff';
                 iceCtx.lineWidth = 3.5;
                 iceCtx.beginPath();
-                iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
+                iceCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
                 iceCtx.stroke();
-                const crossSize = puckRadius * 0.7;
+                const crossSizeX = rx * 0.7;
+                const crossSizeY = ry * 0.7;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.5;
                 iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = '#ffffff';
                 iceCtx.beginPath();
-                iceCtx.moveTo(cx - crossSize, cy);
-                iceCtx.lineTo(cx + crossSize, cy);
-                iceCtx.moveTo(cx, cy - crossSize);
-                iceCtx.lineTo(cx, cy + crossSize);
+                iceCtx.moveTo(cx - crossSizeX, cy);
+                iceCtx.lineTo(cx + crossSizeX, cy);
+                iceCtx.moveTo(cx, cy - crossSizeY);
+                iceCtx.lineTo(cx, cy + crossSizeY);
                 iceCtx.stroke();
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
@@ -6450,7 +6186,6 @@
 
                 const color = isWinner ? lightenColor(p.color, 70) : p.color;
 
-                // Fill the field
                 iceCtx.save();
                 iceCtx.fillStyle = color;
                 iceCtx.globalAlpha = isWinner ? 1 : 0.92;
@@ -6539,7 +6274,7 @@
                 iceCtx.restore();
             }
 
-            // Puck - wider radius with shadow, clean outline
+            // Puck - wider ellipse
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6584,8 +6319,11 @@
                     py = renderPuckY * s;
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
+                // Wider ellipse: rx larger, ry smaller
+                const rx = puckRadius * 1.6;
+                const ry = puckRadius * 0.7;
 
-                // Draw shadow
+                // Shadow
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
                 iceCtx.shadowBlur = 12;
@@ -6593,28 +6331,29 @@
                 iceCtx.shadowOffsetY = 4;
                 iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
                 iceCtx.beginPath();
-                iceCtx.arc(px + 3, py + 4, puckRadius, 0, Math.PI * 2);
+                iceCtx.ellipse(px + 3, py + 4, rx, ry, 0, 0, Math.PI * 2);
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // White outline (ring) and cross - clean
+                // White outline
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
                 iceCtx.lineWidth = 2.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
-                iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
+                iceCtx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // cross
-                const crossSize = puckRadius * 0.7;
+                // Cross
+                const crossSizeX = rx * 0.7;
+                const crossSizeY = ry * 0.7;
                 iceCtx.globalAlpha = 0.5;
                 iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
-                iceCtx.moveTo(px - crossSize, py);
-                iceCtx.lineTo(px + crossSize, py);
-                iceCtx.moveTo(px, py - crossSize);
-                iceCtx.lineTo(px, py + crossSize);
+                iceCtx.moveTo(px - crossSizeX, py);
+                iceCtx.lineTo(px + crossSizeX, py);
+                iceCtx.moveTo(px, py - crossSizeY);
+                iceCtx.lineTo(px, py + crossSizeY);
                 iceCtx.stroke();
                 iceCtx.restore();
 
@@ -6655,7 +6394,7 @@
                     iceCtx.shadowBlur = 6;
                     let displayName = iceState.currentOwnerName;
                     if (displayName.length > 10) displayName = displayName.slice(0, 9) + '…';
-                    const textY = py + puckRadius + 4;
+                    const textY = py + ry + 4;
                     iceCtx.fillText(displayName, px, textY);
                     iceCtx.restore();
                 }
