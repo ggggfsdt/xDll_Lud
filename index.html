@@ -644,7 +644,7 @@
 
         #waiting-text {
             position: absolute;
-            top: 50%;
+            top: 28%;
             left: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
@@ -6025,107 +6025,135 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Perimeter (more rounded corners)
-            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            // We'll draw a rounded rect with larger corner radius for the arena background and outline
+            const cornerRadius = w * 0.20; // more rounded
+            const rectX = 0;
+            const rectY = 0;
+            const rectW = w;
+            const rectH = w;
+
+            // Helper to draw rounded rect
+            function roundRect(ctx, x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+            }
+
+            // Fill with glass
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             ctx.shadowBlur = 30;
-            ctx.fillStyle = 'rgba(24, 26, 34, 0.70)';
-            if (pts.length > 0) {
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.fill();
-            }
-            ctx.restore();
-            ctx.save();
-            ctx.fillStyle = 'rgba(48, 52, 62, 0.30)';
-            if (pts.length > 0) {
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.fill();
-            }
+            ctx.fillStyle = 'rgba(24, 26, 34, 0.75)';
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.fill();
             ctx.restore();
 
-            // Opening/gap
-            const opening = state.opening;
-            const isFlashing = opening && opening.state === 'flashing';
-            const isOpen = opening && opening.state === 'open';
-            const total = pts.length;
+            // Inner highlight
             ctx.save();
-            const hasGap = opening !== null && (isFlashing || isOpen);
-            if (hasGap && total > 0) {
-                const start = opening.startIdx,
-                    end = opening.endIdx;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-                ctx.lineWidth = 3;
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-                ctx.shadowBlur = 10;
-                for (let i = 0; i < total; i++) {
-                    const j = (i + 1) % total;
-                    let inGap = false;
-                    if (start < end) {
-                        if (i >= start && i < end) inGap = true;
-                        if (j >= start && j < end) inGap = true;
-                    } else {
-                        if (i >= start || i < end) inGap = true;
-                        if (j >= start || j < end) inGap = true;
-                    }
-                    if (inGap) continue;
-                    ctx.beginPath();
-                    ctx.moveTo(pts[i].x, pts[i].y);
-                    ctx.lineTo(pts[j].x, pts[j].y);
-                    ctx.stroke();
-                }
-                ctx.shadowBlur = 0;
-                if (isFlashing) {
-                    const isRed = (opening.flashCount % 2 === 0);
-                    ctx.save();
-                    const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.15)';
-                    let gapSegments = [];
-                    if (start < end) {
-                        for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
-                    } else {
-                        for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
-                        for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
-                    }
-                    ctx.strokeStyle = flashColor;
-                    ctx.lineWidth = isRed ? 4 : 2.5;
-                    ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
-                    ctx.shadowBlur = isRed ? 18 : 6;
-                    for (const seg of gapSegments) {
+            ctx.fillStyle = 'rgba(48, 52, 62, 0.25)';
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.fill();
+            ctx.restore();
+
+            // Outline - white liquid glass
+            ctx.save();
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.15)';
+            ctx.shadowBlur = 18;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.20)';
+            ctx.lineWidth = 3;
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            // secondary glow
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+            ctx.lineWidth = 6;
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.stroke();
+            ctx.restore();
+
+            // Now draw the perimeter path for the gap (using server points)
+            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length > 0) {
+                const opening = state.opening;
+                const isFlashing = opening && opening.state === 'flashing';
+                const isOpen = opening && opening.state === 'open';
+                const total = pts.length;
+                ctx.save();
+                const hasGap = opening !== null && (isFlashing || isOpen);
+                if (hasGap && total > 0) {
+                    const start = opening.startIdx,
+                        end = opening.endIdx;
+                    // Draw non-gap segments
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.lineWidth = 1.5;
+                    for (let i = 0; i < total; i++) {
+                        const j = (i + 1) % total;
+                        let inGap = false;
+                        if (start < end) {
+                            if (i >= start && i < end) inGap = true;
+                            if (j >= start && j < end) inGap = true;
+                        } else {
+                            if (i >= start || i < end) inGap = true;
+                            if (j >= start || j < end) inGap = true;
+                        }
+                        if (inGap) continue;
                         ctx.beginPath();
-                        ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
-                        ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
+                        ctx.moveTo(pts[i].x, pts[i].y);
+                        ctx.lineTo(pts[j].x, pts[j].y);
                         ctx.stroke();
                     }
-                    ctx.restore();
+                    // Flashing gap
+                    if (isFlashing) {
+                        const isRed = (opening.flashCount % 2 === 0);
+                        ctx.save();
+                        const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.15)';
+                        let gapSegments = [];
+                        if (start < end) {
+                            for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        } else {
+                            for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
+                            for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        }
+                        ctx.strokeStyle = flashColor;
+                        ctx.lineWidth = isRed ? 4 : 2.5;
+                        ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+                        ctx.shadowBlur = isRed ? 18 : 6;
+                        for (const seg of gapSegments) {
+                            ctx.beginPath();
+                            ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
+                            ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                    }
+                } else {
+                    // No gap: draw a faint outline (but we already have the rounded rect outline)
+                    // We can skip or draw a faint inner line
+                    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                    ctx.closePath();
+                    ctx.stroke();
                 }
-            } else if (total > 0) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-                ctx.lineWidth = 3;
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-                ctx.shadowBlur = 10;
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.stroke();
-                ctx.shadowBlur = 0;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-                ctx.lineWidth = 6;
-                ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y);
-                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
-                ctx.closePath();
-                ctx.stroke();
+                ctx.restore();
             }
-            ctx.restore();
 
-            // Players
+            // Players (clipped to the rounded rect? We'll clip to the rounded rect for better look)
+            // But we need to clip to the actual play area (server points). We'll use the rounded rect for clipping.
+            ctx.save();
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.clip();
+
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const px = p.x * s,
@@ -6206,6 +6234,8 @@
                 ctx.shadowBlur = 0;
                 ctx.restore();
             });
+
+            ctx.restore(); // clip
         }
 
         // ─── RENDER ICE ──────────────────────────────────────────────
@@ -6483,7 +6513,7 @@
                 iceCtx.restore();
             }
 
-            // Puck
+            // Puck - with shadow instead of glow
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6529,40 +6559,37 @@
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
 
-                let glowColor = 'rgba(255, 255, 255, 0.9)';
-                if (iceState.winnerPuckPop) {
-                    glowColor = 'rgba(255,215,0,0.9)';
-                }
-
+                // Draw shadow first
                 iceCtx.save();
-                iceCtx.shadowColor = glowColor;
-                iceCtx.shadowBlur = iceState.winnerPuckPop ? 24 : 14;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#ffffff';
-                iceCtx.lineWidth = iceState.winnerPuckPop ? 5.5 : 4.5;
+                iceCtx.shadowColor = 'rgba(0,0,0,0.4)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.shadowOffsetX = 3;
+                iceCtx.shadowOffsetY = 4;
+                iceCtx.fillStyle = 'rgba(0,0,0,0.2)';
+                iceCtx.beginPath();
+                iceCtx.arc(px + 3, py + 4, puckRadius, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.restore();
+
+                // Draw puck body (white outline, no glow)
+                iceCtx.save();
+                iceCtx.strokeStyle = '#ffffff';
+                iceCtx.lineWidth = 4;
+                iceCtx.shadowColor = 'transparent';
+                iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
+                // cross
                 const crossSize = puckRadius * 0.75;
-                iceCtx.shadowBlur = 0;
-                iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.9 : 0.65;
-                iceCtx.lineWidth = iceState.winnerPuckPop ? 2.5 : 2.0;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#ffffff';
+                iceCtx.globalAlpha = 0.6;
+                iceCtx.lineWidth = 2;
+                iceCtx.strokeStyle = '#ffffff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
                 iceCtx.lineTo(px + crossSize, py);
                 iceCtx.moveTo(px, py - crossSize);
                 iceCtx.lineTo(px, py + crossSize);
-                iceCtx.stroke();
-                iceCtx.globalAlpha = 1;
-                iceCtx.restore();
-
-                iceCtx.save();
-                iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.5 : 0.2;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#ffffff';
-                iceCtx.lineWidth = iceState.winnerPuckPop ? 3 : 1.5;
-                iceCtx.shadowBlur = 0;
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, puckRadius + 4, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
