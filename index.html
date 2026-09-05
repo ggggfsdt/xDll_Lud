@@ -42,8 +42,15 @@
             animation: orbPulse 4s ease-in-out infinite;
         }
         @keyframes orbPulse {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.3);
+                opacity: 1;
+            }
         }
         #grid-wrapper {
             position: relative;
@@ -93,21 +100,33 @@
             z-index: 1;
         }
         @keyframes squarePop {
-            0%   { transform: scale(0) rotate(-6deg); opacity: 0; }
-            60%  { transform: scale(1.10) rotate(1deg); opacity: 1; }
-            80%  { transform: scale(0.95) rotate(-0.5deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            0% {
+                transform: scale(0) rotate(-6deg);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.10) rotate(1deg);
+                opacity: 1;
+            }
+            80% {
+                transform: scale(0.95) rotate(-0.5deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
         }
         .load-square.pop {
             animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
         .load-square.slide {
             transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        border-radius 0.6s ease,
-                        box-shadow 0.6s ease,
-                        opacity 0.5s ease;
+                border-radius 0.6s ease,
+                box-shadow 0.6s ease,
+                opacity 0.5s ease;
             border-radius: 20px;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.8), 0 0 60px rgba(76,175,80,0.08);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(76, 175, 80, 0.08);
             z-index: 5;
             opacity: 1;
         }
@@ -123,7 +142,7 @@
             opacity: 0;
             z-index: 10;
             transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        opacity 0.6s ease;
+                opacity 0.6s ease;
             pointer-events: none;
             will-change: transform, opacity;
         }
@@ -165,9 +184,21 @@
             opacity: 1;
         }
         @keyframes ringPulse {
-            0%   { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
-            50%  { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
-            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
+            0% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.6;
+                border-width: 1.5px;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.6);
+                opacity: 0;
+                border-width: 0.5px;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(0.8);
+                opacity: 0.6;
+                border-width: 1.5px;
+            }
         }
         #loading-text {
             margin-top: 36px;
@@ -189,11 +220,21 @@
             text-align: left;
         }
         @keyframes dotsAnim {
-            0%   { content: ''; }
-            25%  { content: '.'; }
-            50%  { content: '..'; }
-            75%  { content: '...'; }
-            100% { content: ''; }
+            0% {
+                content: '';
+            }
+            25% {
+                content: '.';
+            }
+            50% {
+                content: '..';
+            }
+            75% {
+                content: '...';
+            }
+            100% {
+                content: '';
+            }
         }
         #brand-mark {
             position: absolute;
@@ -210,22 +251,56 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         @media (max-width: 420px) {
-            #grid-wrapper { width: 220px; height: 220px; }
-            #loading-grid { gap: 6px; padding: 3px; }
-            .load-square { border-radius: 14px; }
-            .load-square::after { border-radius: 14px; }
-            #merged-square { border-radius: 22px; }
-            #merged-square::after { border-radius: 22px; }
-            #loading-text { font-size: 12px; margin-top: 28px; }
+            #grid-wrapper {
+                width: 220px;
+                height: 220px;
+            }
+            #loading-grid {
+                gap: 6px;
+                padding: 3px;
+            }
+            .load-square {
+                border-radius: 14px;
+            }
+            .load-square::after {
+                border-radius: 14px;
+            }
+            #merged-square {
+                border-radius: 22px;
+            }
+            #merged-square::after {
+                border-radius: 22px;
+            }
+            #loading-text {
+                font-size: 12px;
+                margin-top: 28px;
+            }
         }
         @media (max-width: 340px) {
-            #grid-wrapper { width: 170px; height: 170px; }
-            #loading-grid { gap: 4px; padding: 2px; }
-            .load-square { border-radius: 10px; }
-            .load-square::after { border-radius: 10px; }
-            #merged-square { border-radius: 16px; }
-            #merged-square::after { border-radius: 16px; }
-            #loading-text { font-size: 10px; margin-top: 20px; }
+            #grid-wrapper {
+                width: 170px;
+                height: 170px;
+            }
+            #loading-grid {
+                gap: 4px;
+                padding: 2px;
+            }
+            .load-square {
+                border-radius: 10px;
+            }
+            .load-square::after {
+                border-radius: 10px;
+            }
+            #merged-square {
+                border-radius: 16px;
+            }
+            #merged-square::after {
+                border-radius: 16px;
+            }
+            #loading-text {
+                font-size: 10px;
+                margin-top: 20px;
+            }
         }
 
         /* ─── APP STYLES ──────────────────────────────────────── */
@@ -253,7 +328,8 @@
             --radius: 16px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-        html, body {
+        html,
+        body {
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -356,8 +432,13 @@
             animation: glowDiamond 2.8s ease-in-out infinite;
         }
         @keyframes glowDiamond {
-            0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
-            50% { filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2); }
+            0%,
+            100% {
+                filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2);
+            }
         }
         #balance {
             font-size: 15px;
@@ -455,7 +536,9 @@
             opacity: 0.9;
             display: none;
         }
-        #frog-gif.show { display: block; }
+        #frog-gif.show {
+            display: block;
+        }
         #timer-wrap {
             position: absolute;
             top: 14px;
@@ -491,7 +574,9 @@
             display: none;
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
         }
-        #timer-progress-wrap.visible { display: block; }
+        #timer-progress-wrap.visible {
+            display: block;
+        }
         #timer-progress {
             width: 0%;
             height: 100%;
@@ -520,8 +605,12 @@
             color: var(--text2);
             min-height: 36px;
         }
-        .win-panel.left { left: 10px; }
-        .win-panel.right { right: 10px; }
+        .win-panel.left {
+            left: 10px;
+        }
+        .win-panel.right {
+            right: 10px;
+        }
         .win-panel .panel-label {
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -630,7 +719,9 @@
             flex-direction: row;
             justify-content: center;
         }
-        #bet-overlay.collapsed>*:not(.bet-toggle) { display: none; }
+        #bet-overlay.collapsed>*:not(.bet-toggle) {
+            display: none;
+        }
         #bet-overlay.collapsed .bet-toggle {
             display: flex;
             width: 100%;
@@ -654,7 +745,9 @@
             transition: 0.2s;
             font-family: monospace;
         }
-        .bet-toggle:active { opacity: 0.6; }
+        .bet-toggle:active {
+            opacity: 0.6;
+        }
         #bet-overlay:not(.collapsed) .bet-toggle {
             display: flex;
             position: absolute;
@@ -678,15 +771,22 @@
             gap: 6px;
             color: var(--text2);
         }
-        #bet-overlay.collapsed .bet-toggle span { font-size: 11px; opacity: 0.5; }
+        #bet-overlay.collapsed .bet-toggle span {
+            font-size: 11px;
+            opacity: 0.5;
+        }
         #bet-overlay.collapsed .bet-toggle::before {
             content: '>';
             display: inline-block;
             transform: rotate(-90deg);
             margin-right: 4px;
         }
-        #bet-overlay:not(.collapsed) .bet-toggle-text { display: none; }
-        #bet-overlay.collapsed .bet-toggle-text { display: inline; }
+        #bet-overlay:not(.collapsed) .bet-toggle-text {
+            display: none;
+        }
+        #bet-overlay.collapsed .bet-toggle-text {
+            display: inline;
+        }
         .bet-row {
             display: flex;
             align-items: center;
@@ -728,7 +828,10 @@
             box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
             flex-shrink: 0;
         }
-        #all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
         #bet-btn {
             padding: 2px 0;
             height: 26px;
@@ -746,7 +849,10 @@
             text-align: center;
             margin-top: 2px;
         }
-        #bet-btn:active { transform: scale(0.96); opacity: 0.8; }
+        #bet-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
         #bet-btn:disabled {
             opacity: 0.4;
             transform: none;
@@ -766,7 +872,9 @@
         }
         #bet-overlay.collapsed #current-bet-display,
         #bet-overlay.collapsed .bet-row,
-        #bet-overlay.collapsed #bet-btn { display: none; }
+        #bet-overlay.collapsed #bet-btn {
+            display: none;
+        }
 
         /* ─── AUTO-BET ──────────────────────────────────────────── */
         .auto-bet-container {
@@ -801,7 +909,9 @@
             color: #fff;
             box-shadow: 0 0 24px var(--primary-glow);
         }
-        .auto-bet-toggle:active { transform: scale(0.9); }
+        .auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
         .auto-bet-panel {
             background: rgba(18, 18, 22, 0.95);
             backdrop-filter: blur(16px);
@@ -814,7 +924,9 @@
             gap: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
         }
-        .auto-bet-panel.open { display: flex; }
+        .auto-bet-panel.open {
+            display: flex;
+        }
         .auto-bet-panel .row {
             display: flex;
             align-items: center;
@@ -837,7 +949,9 @@
             text-align: center;
             outline: none;
         }
-        .auto-bet-panel .row input:focus { border-color: var(--primary); }
+        .auto-bet-panel .row input:focus {
+            border-color: var(--primary);
+        }
         .auto-bet-panel .switch-sm {
             position: relative;
             width: 34px;
@@ -905,8 +1019,13 @@
             pointer-events: none !important;
             margin-top: 0 !important;
         }
-        #player-list-container::-webkit-scrollbar { width: 3px; }
-        #player-list-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        #player-list-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        #player-list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
         .pl-entry {
             display: flex;
             align-items: center;
@@ -1013,10 +1132,15 @@
             overflow-y: auto;
             padding: 12px 0 4px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.05) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
         }
-        #profile-page .profile-scroll::-webkit-scrollbar { width: 3px; }
-        #profile-page .profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
+        #profile-page .profile-scroll::-webkit-scrollbar {
+            width: 3px;
+        }
+        #profile-page .profile-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+        }
 
         .profile-header-section {
             display: flex;
@@ -1029,7 +1153,10 @@
             transform: translateY(12px);
         }
         @keyframes fadeSlideUp {
-            to { opacity: 1; transform: translateY(0); }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .profile-header-section .pfp-wrap {
             position: relative;
@@ -1106,9 +1233,15 @@
             color: #fff;
             letter-spacing: 0.5px;
         }
-        .profile-stats-grid .stat-box .stat-num.win { color: var(--green); }
-        .profile-stats-grid .stat-box .stat-num.loss { color: var(--red); }
-        .profile-stats-grid .stat-box .stat-num.rate { color: #6ab8f0; }
+        .profile-stats-grid .stat-box .stat-num.win {
+            color: var(--green);
+        }
+        .profile-stats-grid .stat-box .stat-num.loss {
+            color: var(--red);
+        }
+        .profile-stats-grid .stat-box .stat-num.rate {
+            color: #6ab8f0;
+        }
         .profile-stats-grid .stat-box .stat-label {
             font-size: 10px;
             color: rgba(255, 255, 255, 0.25);
@@ -1132,7 +1265,9 @@
             transform: translateY(12px);
             margin: 6px 0 2px;
         }
-        .profile-balance-row:active { transform: scale(0.97); }
+        .profile-balance-row:active {
+            transform: scale(0.97);
+        }
         .profile-balance-row .bal-label {
             font-size: 13px;
             color: rgba(255, 255, 255, 0.4);
@@ -1209,7 +1344,7 @@
             background: #fff;
             border-radius: 50%;
             transition: transform 0.25s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         .switch input:checked+.slider {
             background: var(--primary);
@@ -1239,8 +1374,12 @@
             letter-spacing: 0.5px;
             transition: 0.2s;
         }
-        .promo-section input:focus { border-color: rgba(255, 255, 255, 0.15); }
-        .promo-section input::placeholder { color: rgba(255, 255, 255, 0.15); }
+        .promo-section input:focus {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .promo-section input::placeholder {
+            color: rgba(255, 255, 255, 0.15);
+        }
         .promo-section button {
             padding: 8px 18px;
             border-radius: 10px;
@@ -1253,8 +1392,14 @@
             transition: 0.2s;
             white-space: nowrap;
         }
-        .promo-section button:active { transform: scale(0.94); opacity: 0.8; }
-        .promo-section button:disabled { opacity: 0.4; pointer-events: none; }
+        .promo-section button:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        .promo-section button:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
         .promo-message {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.25);
@@ -1278,7 +1423,9 @@
             transform: translateY(12px);
             margin-top: 4px;
         }
-        #reload-pfp-btn:active { transform: scale(0.94); }
+        #reload-pfp-btn:active {
+            transform: scale(0.94);
+        }
 
         .recent-games {
             padding: 10px 0 6px;
@@ -1306,8 +1453,12 @@
         .rg-entry .rg-result {
             font-weight: 600;
         }
-        .rg-entry .rg-result.win { color: var(--green); }
-        .rg-entry .rg-result.loss { color: var(--red); }
+        .rg-entry .rg-result.win {
+            color: var(--green);
+        }
+        .rg-entry .rg-result.loss {
+            color: var(--red);
+        }
         .rg-entry .rg-amount {
             font-weight: 700;
             font-variant-numeric: tabular-nums;
@@ -1336,10 +1487,16 @@
             backdrop-filter: blur(20px);
             animation: cardFadeIn 0.4s ease;
         }
-        #card-overlay.show { display: flex; }
+        #card-overlay.show {
+            display: flex;
+        }
         @keyframes cardFadeIn {
-            0% { opacity: 0; }
-            100% { opacity: 1; }
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
         }
 
         /* ─── IDENTITY CARD OVERLAY ────────────────────────────── */
@@ -1353,7 +1510,9 @@
             background: #000000;
             animation: cardFadeIn 0.4s ease;
         }
-        #identity-overlay.show { display: flex; }
+        #identity-overlay.show {
+            display: flex;
+        }
 
         .card-wrapper {
             display: flex;
@@ -1371,7 +1530,9 @@
             cursor: grab;
             position: relative;
         }
-        .card-container:active { cursor: grabbing; }
+        .card-container:active {
+            cursor: grabbing;
+        }
         .card-3d {
             width: 100%;
             height: 100%;
@@ -1382,7 +1543,9 @@
             box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7), 0 0 60px rgba(91, 141, 239, 0.08);
             will-change: transform;
         }
-        .card-3d.dragging { transition: none !important; }
+        .card-3d.dragging {
+            transition: none !important;
+        }
         .card-face {
             position: absolute;
             inset: 0;
@@ -1439,11 +1602,22 @@
             color: rgba(255, 255, 255, 0.8);
             font-weight: 600;
         }
-        .card-welcome .cw-char.space { width: 6px; }
+        .card-welcome .cw-char.space {
+            width: 6px;
+        }
         @keyframes cwPop {
-            0% { opacity: 0; transform: translateY(6px) scale(0.9); }
-            60% { opacity: 1; transform: translateY(-2px) scale(1.05); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
+            0% {
+                opacity: 0;
+                transform: translateY(6px) scale(0.9);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(-2px) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
         .card-face.front .card-brand {
             font-size: 13px;
@@ -1568,14 +1742,14 @@
             gap: 8px;
         }
         .identity-field:hover {
-            background: rgba(255,255,255,0.03);
-            border-color: rgba(255,255,255,0.06);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.06);
         }
         .identity-field .id-label {
             font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            color: rgba(255,255,255,0.3);
+            color: rgba(255, 255, 255, 0.3);
             min-width: 50px;
         }
         .identity-field .id-value-wrap {
@@ -1600,18 +1774,23 @@
             cursor: text;
         }
         .identity-field .id-value:focus {
-            border-bottom: 1px solid rgba(255,255,255,0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
         }
         .identity-field .id-value.error {
             color: #ff6b6b;
         }
         .identity-field .id-value.editing {
-            border-bottom: 1px solid rgba(255,255,255,0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
             animation: pulseBorder 1.2s ease-in-out infinite;
         }
         @keyframes pulseBorder {
-            0%, 100% { border-bottom-color: rgba(255,255,255,0.5); }
-            50% { border-bottom-color: rgba(255,255,255,0.1); }
+            0%,
+            100% {
+                border-bottom-color: rgba(255, 255, 255, 0.5);
+            }
+            50% {
+                border-bottom-color: rgba(255, 255, 255, 0.1);
+            }
         }
 
         .char-anim {
@@ -1622,9 +1801,18 @@
             white-space: pre;
         }
         @keyframes charSlideUp {
-            0% { opacity: 0; transform: translateY(6px); }
-            60% { opacity: 1; transform: translateY(-2px); }
-            100% { opacity: 1; transform: translateY(0); }
+            0% {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(-2px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .card-close-btn {
@@ -1646,8 +1834,12 @@
             justify-content: center;
             transition: 0.25s;
         }
-        .card-close-btn:active { transform: scale(0.88); }
-        .card-close-btn.show { display: flex; }
+        .card-close-btn:active {
+            transform: scale(0.88);
+        }
+        .card-close-btn.show {
+            display: flex;
+        }
 
         /* Confirmation modal */
         #confirm-modal {
@@ -1657,11 +1849,13 @@
             display: none;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.8);
             backdrop-filter: blur(12px);
             animation: cardFadeIn 0.3s ease;
         }
-        #confirm-modal.show { display: flex; }
+        #confirm-modal.show {
+            display: flex;
+        }
         #confirm-modal .modal-box {
             background: #1a1a1e;
             border: 1px solid var(--border);
@@ -1670,7 +1864,7 @@
             max-width: 340px;
             width: 90%;
             text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
         }
         #confirm-modal .modal-title {
             font-size: 18px;
@@ -1680,7 +1874,7 @@
         }
         #confirm-modal .modal-desc {
             font-size: 14px;
-            color: rgba(255,255,255,0.6);
+            color: rgba(255, 255, 255, 0.6);
             margin-bottom: 16px;
             line-height: 1.5;
         }
@@ -1705,15 +1899,19 @@
             transition: 0.2s;
         }
         #confirm-modal .modal-actions .btn-cancel {
-            background: rgba(255,255,255,0.06);
-            color: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.5);
         }
-        #confirm-modal .modal-actions .btn-cancel:active { transform: scale(0.94); }
+        #confirm-modal .modal-actions .btn-cancel:active {
+            transform: scale(0.94);
+        }
         #confirm-modal .modal-actions .btn-confirm {
             background: var(--gold);
             color: #000;
         }
-        #confirm-modal .modal-actions .btn-confirm:active { transform: scale(0.94); }
+        #confirm-modal .modal-actions .btn-confirm:active {
+            transform: scale(0.94);
+        }
 
         /* ─── TRANSACTION HISTORY ────────────────────────────────── */
         .tx-history {
@@ -1725,10 +1923,15 @@
             padding: 6px 4px;
             border: 1px solid rgba(255, 255, 255, 0.04);
             scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.04) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.04) transparent;
         }
-        .tx-history::-webkit-scrollbar { width: 3px; }
-        .tx-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .tx-history::-webkit-scrollbar {
+            width: 3px;
+        }
+        .tx-history::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
         .tx-header {
             display: flex;
             justify-content: space-between;
@@ -1753,17 +1956,38 @@
             opacity: 0;
             transform: translateX(-8px);
         }
-        .tx-entry:nth-child(2) { animation-delay: 0.04s; }
-        .tx-entry:nth-child(3) { animation-delay: 0.08s; }
-        .tx-entry:nth-child(4) { animation-delay: 0.12s; }
-        .tx-entry:nth-child(5) { animation-delay: 0.16s; }
-        .tx-entry:nth-child(6) { animation-delay: 0.20s; }
-        .tx-entry:nth-child(7) { animation-delay: 0.24s; }
-        .tx-entry:nth-child(8) { animation-delay: 0.28s; }
-        .tx-entry:nth-child(9) { animation-delay: 0.32s; }
-        .tx-entry:nth-child(10) { animation-delay: 0.36s; }
+        .tx-entry:nth-child(2) {
+            animation-delay: 0.04s;
+        }
+        .tx-entry:nth-child(3) {
+            animation-delay: 0.08s;
+        }
+        .tx-entry:nth-child(4) {
+            animation-delay: 0.12s;
+        }
+        .tx-entry:nth-child(5) {
+            animation-delay: 0.16s;
+        }
+        .tx-entry:nth-child(6) {
+            animation-delay: 0.20s;
+        }
+        .tx-entry:nth-child(7) {
+            animation-delay: 0.24s;
+        }
+        .tx-entry:nth-child(8) {
+            animation-delay: 0.28s;
+        }
+        .tx-entry:nth-child(9) {
+            animation-delay: 0.32s;
+        }
+        .tx-entry:nth-child(10) {
+            animation-delay: 0.36s;
+        }
         @keyframes txSlide {
-            to { opacity: 1; transform: translateX(0); }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
         .tx-entry .tx-label {
             font-size: 11px;
@@ -1774,9 +1998,15 @@
             font-variant-numeric: tabular-nums;
             font-size: 13px;
         }
-        .tx-entry .tx-amount.win { color: var(--green); }
-        .tx-entry .tx-amount.loss { color: var(--red); }
-        .tx-entry .tx-amount.bet { color: #f0c040; }
+        .tx-entry .tx-amount.win {
+            color: var(--green);
+        }
+        .tx-entry .tx-amount.loss {
+            color: var(--red);
+        }
+        .tx-entry .tx-amount.bet {
+            color: #f0c040;
+        }
         .tx-entry .tx-time {
             font-size: 9px;
             color: rgba(255, 255, 255, 0.12);
@@ -1819,9 +2049,15 @@
             margin-top: 1px;
             font-variant-numeric: tabular-nums;
         }
-        .card-stats .cs-value.positive { color: var(--green); }
-        .card-stats .cs-value.negative { color: var(--red); }
-        .card-stats .cs-value.neutral { color: rgba(255,255,255,0.5); }
+        .card-stats .cs-value.positive {
+            color: var(--green);
+        }
+        .card-stats .cs-value.negative {
+            color: var(--red);
+        }
+        .card-stats .cs-value.neutral {
+            color: rgba(255, 255, 255, 0.5);
+        }
 
         .payment-methods {
             width: 100%;
@@ -1835,7 +2071,7 @@
             border-top: 1px solid rgba(255, 255, 255, 0.03);
         }
         .payment-methods span {
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
             padding: 2px 10px;
             border-radius: 12px;
         }
@@ -1850,7 +2086,9 @@
             display: none;
         }
         #particle-canvas.show,
-        #identity-particle-canvas.show { display: block; }
+        #identity-particle-canvas.show {
+            display: block;
+        }
 
         /* ─── TOP PAGE ──────────────────────────────────────────── */
         #top-page {
@@ -1982,9 +2220,15 @@
             min-height: 50px;
             box-shadow: 0 -4px 20px rgba(205, 138, 90, 0.2);
         }
-        .podium-col.p1 { transform: translateY(-6px); }
-        .podium-col.p2 { transform: translateY(0px); }
-        .podium-col.p3 { transform: translateY(6px); }
+        .podium-col.p1 {
+            transform: translateY(-6px);
+        }
+        .podium-col.p2 {
+            transform: translateY(0px);
+        }
+        .podium-col.p3 {
+            transform: translateY(6px);
+        }
 
         #top-list {
             display: flex;
@@ -2012,9 +2256,15 @@
             min-width: 28px;
             text-align: center;
         }
-        .top-entry .rank.gold { color: var(--gold); }
-        .top-entry .rank.silver { color: #b8b8c8; }
-        .top-entry .rank.bronze { color: #cd8a5a; }
+        .top-entry .rank.gold {
+            color: var(--gold);
+        }
+        .top-entry .rank.silver {
+            color: #b8b8c8;
+        }
+        .top-entry .rank.bronze {
+            color: #cd8a5a;
+        }
         .top-entry .t-pfp {
             width: 28px;
             height: 28px;
@@ -2244,7 +2494,10 @@
             text-align: center;
             margin-top: 4px;
         }
-        #win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
 
         /* ─── ICE ARENA ──────────────────────────────────────────── */
         #ice-page {
@@ -2265,11 +2518,11 @@
             min-height: 0;
             overflow: visible;
             flex-shrink: 0;
-            background: rgba(255,255,255,0.04);
+            background: rgba(255, 255, 255, 0.04);
             backdrop-filter: blur(8px);
             border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.06);
-            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
         #ice-canvas {
             width: 100%;
@@ -2370,7 +2623,9 @@
             box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
             transition: width 0.1s linear;
         }
-        #ice-stats-bar { display: none !important; }
+        #ice-stats-bar {
+            display: none !important;
+        }
 
         #ice-waiting-text {
             position: absolute;
@@ -2448,7 +2703,9 @@
             flex-direction: row;
             justify-content: center;
         }
-        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) { display: none; }
+        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) {
+            display: none;
+        }
         #ice-bet-overlay.collapsed .ice-bet-toggle {
             display: flex;
             width: 100%;
@@ -2472,7 +2729,9 @@
             transition: 0.2s;
             font-family: monospace;
         }
-        .ice-bet-toggle:active { opacity: 0.6; }
+        .ice-bet-toggle:active {
+            opacity: 0.6;
+        }
         #ice-bet-overlay:not(.collapsed) .ice-bet-toggle {
             display: flex;
             position: absolute;
@@ -2506,8 +2765,12 @@
             transform: rotate(-90deg);
             margin-right: 4px;
         }
-        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text { display: none; }
-        #ice-bet-overlay.collapsed .ice-bet-toggle-text { display: inline; }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text {
+            display: none;
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle-text {
+            display: inline;
+        }
         .ice-bet-row {
             display: flex;
             align-items: center;
@@ -2549,7 +2812,10 @@
             box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
             flex-shrink: 0;
         }
-        #ice-all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #ice-all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
         #ice-bet-btn {
             padding: 2px 0;
             height: 26px;
@@ -2567,7 +2833,10 @@
             text-align: center;
             margin-top: 2px;
         }
-        #ice-bet-btn:active { transform: scale(0.96); opacity: 0.8; }
+        #ice-bet-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
         #ice-bet-btn:disabled {
             opacity: 0.4;
             transform: none;
@@ -2587,7 +2856,9 @@
         }
         #ice-bet-overlay.collapsed #ice-current-bet-display,
         #ice-bet-overlay.collapsed .ice-bet-row,
-        #ice-bet-overlay.collapsed #ice-bet-btn { display: none; }
+        #ice-bet-overlay.collapsed #ice-bet-btn {
+            display: none;
+        }
 
         /* ─── ICE WIN PANEL ──────────────────────────────────────── */
         #ice-win-panel {
@@ -2679,7 +2950,10 @@
             text-align: center;
             margin-top: 4px;
         }
-        #ice-win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
+        #ice-win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
 
         /* ─── ICE AUTO-BET ───────────────────────────────────────── */
         #ice-auto-bet-container {
@@ -2714,7 +2988,9 @@
             color: #fff;
             box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
         }
-        .ice-auto-bet-toggle:active { transform: scale(0.9); }
+        .ice-auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
         .ice-auto-bet-panel {
             background: rgba(18, 18, 22, 0.95);
             backdrop-filter: blur(16px);
@@ -2727,7 +3003,9 @@
             gap: 8px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
         }
-        .ice-auto-bet-panel.open { display: flex; }
+        .ice-auto-bet-panel.open {
+            display: flex;
+        }
         .ice-auto-bet-panel .row {
             display: flex;
             align-items: center;
@@ -2750,7 +3028,9 @@
             text-align: center;
             outline: none;
         }
-        .ice-auto-bet-panel .row input:focus { border-color: #5b8def; }
+        .ice-auto-bet-panel .row input:focus {
+            border-color: #5b8def;
+        }
         .ice-auto-bet-panel .switch-sm {
             position: relative;
             width: 34px;
@@ -2830,43 +3110,125 @@
                 padding: 18px 24px;
                 max-width: 92%;
             }
-            #balance-wrap { padding: 2px 8px 2px 4px; }
-            #balance { font-size: 13px; }
-            #diamond-icon { width: 18px; height: 18px; }
-            #username-display { max-width: 60px; font-size: 10px; }
-            .win-panel .panel-pfp { width: 22px; height: 22px; }
-            .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
-            .win-panel .panel-amount { font-size: 11px; }
-            #ice-top-panel { padding: 2px 10px 3px; gap: 3px; top: 92px; width: 94%; }
-            #ice-top-panel .panel-value { font-size: 12px; }
-            #ice-countdown-timer { font-size: 14px; }
-            #ice-top-panel .panel-label { font-size: 7px; }
-            .card-face.front .card-balance .amount { font-size: 32px; }
-            .card-face.front { padding: 16px 18px; }
-            .card-face.back { padding: 16px 18px; }
-            .tx-entry { font-size: 11px; padding: 4px 10px; }
-            .tx-history { max-height: 120px; }
-            .card-welcome { font-size: 11px; }
-            .card-stats { grid-template-columns: 1fr 1fr; padding: 6px 8px; }
-            .card-stats .cs-value { font-size: 12px; }
-            .profile-header-section .pfp-wrap .prof-pfp { width: 52px; height: 52px; }
-            .profile-header-section .prof-info .prof-name { font-size: 17px; }
-            .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
-            .profile-balance-row .bal-amount { font-size: 17px; }
+            #balance-wrap {
+                padding: 2px 8px 2px 4px;
+            }
+            #balance {
+                font-size: 13px;
+            }
+            #diamond-icon {
+                width: 18px;
+                height: 18px;
+            }
+            #username-display {
+                max-width: 60px;
+                font-size: 10px;
+            }
+            .win-panel .panel-pfp {
+                width: 22px;
+                height: 22px;
+            }
+            .win-panel {
+                padding: 4px 8px;
+                font-size: 10px;
+                min-height: 30px;
+            }
+            .win-panel .panel-amount {
+                font-size: 11px;
+            }
+            #ice-top-panel {
+                padding: 2px 10px 3px;
+                gap: 3px;
+                top: 92px;
+                width: 94%;
+            }
+            #ice-top-panel .panel-value {
+                font-size: 12px;
+            }
+            #ice-countdown-timer {
+                font-size: 14px;
+            }
+            #ice-top-panel .panel-label {
+                font-size: 7px;
+            }
+            .card-face.front .card-balance .amount {
+                font-size: 32px;
+            }
+            .card-face.front {
+                padding: 16px 18px;
+            }
+            .card-face.back {
+                padding: 16px 18px;
+            }
+            .tx-entry {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+            .tx-history {
+                max-height: 120px;
+            }
+            .card-welcome {
+                font-size: 11px;
+            }
+            .card-stats {
+                grid-template-columns: 1fr 1fr;
+                padding: 6px 8px;
+            }
+            .card-stats .cs-value {
+                font-size: 12px;
+            }
+            .profile-header-section .pfp-wrap .prof-pfp {
+                width: 52px;
+                height: 52px;
+            }
+            .profile-header-section .prof-info .prof-name {
+                font-size: 17px;
+            }
+            .profile-stats-grid .stat-box .stat-num {
+                font-size: 18px;
+            }
+            .profile-balance-row .bal-amount {
+                font-size: 17px;
+            }
         }
         @media (max-width: 380px) {
-            #ice-top-panel { top: 86px; padding: 2px 8px 3px; width: 96%; }
-            #ice-top-panel .panel-value { font-size: 11px; }
-            #ice-countdown-timer { font-size: 13px; }
-            .card-face.front .card-balance .amount { font-size: 28px; }
-            .tx-entry { font-size: 10px; padding: 3px 8px; }
+            #ice-top-panel {
+                top: 86px;
+                padding: 2px 8px 3px;
+                width: 96%;
+            }
+            #ice-top-panel .panel-value {
+                font-size: 11px;
+            }
+            #ice-countdown-timer {
+                font-size: 13px;
+            }
+            .card-face.front .card-balance .amount {
+                font-size: 28px;
+            }
+            .tx-entry {
+                font-size: 10px;
+                padding: 3px 8px;
+            }
         }
         @media (max-width: 360px) {
-            #ice-top-panel { top: 80px; padding: 2px 8px 2px; width: 96%; }
-            #ice-top-panel .panel-value { font-size: 10px; }
-            #ice-countdown-timer { font-size: 12px; }
-            .card-face.front .card-balance .amount { font-size: 24px; }
-            .card-stats .cs-value { font-size: 11px; }
+            #ice-top-panel {
+                top: 80px;
+                padding: 2px 8px 2px;
+                width: 96%;
+            }
+            #ice-top-panel .panel-value {
+                font-size: 10px;
+            }
+            #ice-countdown-timer {
+                font-size: 12px;
+            }
+            .card-face.front .card-balance .amount {
+                font-size: 24px;
+            }
+            .card-stats .cs-value {
+                font-size: 11px;
+            }
         }
     </style>
 </head>
@@ -3316,7 +3678,8 @@
         const FLAME_GIF = 'https://i.postimg.cc/FHbt292h/fire-flame.gif';
 
         const tg = window.Telegram?.WebApp;
-        if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
+        if (tg) { tg.expand();
+            tg.enableClosingConfirmation(); }
 
         function haptic(style) {
             try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light');
@@ -3324,6 +3687,7 @@
         }
 
         let audioCtxForClicks = null;
+
         function playClickSound() {
             if (!state.soundEnabled) return;
             try {
@@ -3532,8 +3896,13 @@
         const identityParticleCtx = identityParticleCanvas.getContext('2d');
         let identityParticles = [];
         let identityParticleAnimId = null;
-        let identityDrag = false, identityPrevX = 0, identityPrevY = 0;
-        let identityRotX = 0, identityRotY = 0, identityTargetRotX = 0, identityTargetRotY = 0;
+        let identityDrag = false,
+            identityPrevX = 0,
+            identityPrevY = 0;
+        let identityRotX = 0,
+            identityRotY = 0,
+            identityTargetRotX = 0,
+            identityTargetRotY = 0;
         let identityIdlePhase = 0;
 
         // ─── Confirm modal ──────────────────────────────────────────
@@ -3582,7 +3951,8 @@
             if (offset <= newText.length) {
                 const range = document.createRange();
                 const charSpans = element.querySelectorAll('.char-anim');
-                let targetNode = element, targetOffset = 0;
+                let targetNode = element,
+                    targetOffset = 0;
                 let charCount = 0;
                 for (const span of charSpans) {
                     const text = span.textContent;
@@ -3727,9 +4097,12 @@
 
         // ─── CARD 3D INTERACTION ──────────────────────────────────────
         let cardDrag = false;
-        let cardPrevX = 0, cardPrevY = 0;
-        let cardRotX = 0, cardRotY = 0;
-        let cardTargetRotX = 0, cardTargetRotY = 0;
+        let cardPrevX = 0,
+            cardPrevY = 0;
+        let cardRotX = 0,
+            cardRotY = 0;
+        let cardTargetRotX = 0,
+            cardTargetRotY = 0;
         let cardIdlePhase = 0;
 
         function updateCardTransform() {
@@ -3785,7 +4158,9 @@
         // ─── Card stats update ────────────────────────────────────
         function updateCardStats() {
             const txs = state.transactions;
-            let totalWagered = 0, biggestWin = 0, netProfit = 0;
+            let totalWagered = 0,
+                biggestWin = 0,
+                netProfit = 0;
             txs.forEach(tx => {
                 if (tx.type === 'bet') totalWagered += Math.abs(tx.amount);
                 else if (tx.type === 'win') { netProfit += tx.amount; if (tx.amount > biggestWin) biggestWin = tx.amount; } else if (tx
@@ -4272,8 +4647,12 @@
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-        function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+
+        function easeOutBack(t) { const c1 = 1.70158,
+                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+
         function lightenColor(hex, amt) {
             let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
             let g = parseInt(hex.slice(2, 3), 16) * 17 || parseInt(hex.slice(3, 5), 16);
@@ -4283,6 +4662,7 @@
             b = Math.min(255, b + amt);
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
+
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(120,120,120,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
@@ -4388,6 +4768,7 @@
         }
 
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
+
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
         // ─── SOCKET ─────────────────────────────────────────────────────
@@ -4616,7 +4997,8 @@
             const nowTouching = new Set();
             state.players.forEach(p => {
                 if (p.id === me.id || !p.alive) return;
-                const dx = p.x - me.x, dy = p.y - me.y;
+                const dx = p.x - me.x,
+                    dy = p.y - me.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
                 if (dist < minDist) nowTouching.add(p.id);
@@ -4629,7 +5011,9 @@
         let touchingIds = new Set();
 
         function getPlayer(id) { return state.players.find(p => p.id === id); }
+
         function getAlive() { return state.players.filter(p => p.alive); }
+
         function updateStatsBar() { statsPlayers.textContent = getAlive().length;
             statsPot.textContent = state.pot; }
 
@@ -4683,7 +5067,8 @@
             playerListContainer.innerHTML = html;
         }
 
-        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158,
+                c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
 
         function getPopScale(player) {
             if (!player.isPopping) return 1;
@@ -5083,7 +5468,8 @@
             iceBetInput.value = val;
         });
 
-        let iceAutoBetInterval = null, iceAutoBetEnabled = false;
+        let iceAutoBetInterval = null,
+            iceAutoBetEnabled = false;
 
         function toggleIceAutoBet(enable) {
             if (enable && !iceAutoBetEnabled) {
@@ -5267,7 +5653,8 @@
             renderRecentGames();
         }
 
-        let audioCtx = null, victorySoundPlaying = false;
+        let audioCtx = null,
+            victorySoundPlaying = false;
 
         function playVictorySound() {
             if (!state.soundEnabled) return;
@@ -5326,7 +5713,8 @@
             haptic('light');
         });
 
-        let allInConfirming = false, allInTimeout = null;
+        let allInConfirming = false,
+            allInTimeout = null;
         allInBtn.addEventListener('click', () => {
             playClickSound();
             if (allInConfirming) {
@@ -5365,7 +5753,8 @@
         setupInputWithClear(autoAmount, 10);
         setupInputWithClear(iceAutoAmount, 10);
 
-        let autoBetInterval = null, autoBetEnabled = false;
+        let autoBetInterval = null,
+            autoBetEnabled = false;
 
         function toggleAutoBet(enable) {
             if (enable && !autoBetEnabled) {
@@ -5513,70 +5902,119 @@
             const half = w / 2;
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
+
+            // ─── Glass background ──────────────────────────────────
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(10,10,10,0.85)');
-            grad.addColorStop(1, 'rgba(0,0,0,0.95)');
+            grad.addColorStop(0, 'rgba(20, 22, 30, 0.75)');
+            grad.addColorStop(0.5, 'rgba(12, 14, 20, 0.82)');
+            grad.addColorStop(1, 'rgba(6, 8, 12, 0.92)');
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
+
+            // ─── Perimeter (liquid glass outline) ──────────────────
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             ctx.save();
-            ctx.shadowColor = 'rgba(0,0,0,0.9)';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             ctx.shadowBlur = 30;
-            ctx.fillStyle = 'rgba(26,26,30,0.80)';
-            if (pts.length > 0) { ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+
+            // Fill with glass-like semi-transparent color
+            ctx.fillStyle = 'rgba(24, 26, 34, 0.70)';
+            if (pts.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
-                ctx.fill(); }
+                ctx.fill();
+            }
             ctx.restore();
+
+            // ─── Inner glass highlight ─────────────────────────────
             ctx.save();
-            ctx.fillStyle = 'rgba(40,40,46,0.60)';
-            if (pts.length > 0) { ctx.beginPath();
-                ctx.moveTo(pts[0].x, pts[0].y); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+            ctx.fillStyle = 'rgba(48, 52, 62, 0.30)';
+            if (pts.length > 0) {
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
-                ctx.fill(); }
+                ctx.fill();
+            }
             ctx.restore();
+
+            // ─── Opening / gap logic ────────────────────────────────
             const opening = state.opening;
             const isFlashing = opening && opening.state === 'flashing';
             const isOpen = opening && opening.state === 'open';
             const total = pts.length;
             ctx.save();
+
+            // ─── Draw perimeter outline (liquid glass) ──────────────
             const hasGap = opening !== null && (isFlashing || isOpen);
             if (hasGap && total > 0) {
-                const start = opening.startIdx, end = opening.endIdx;
-                ctx.strokeStyle = 'rgba(160,160,176,0.3)';
-                ctx.lineWidth = 5;
+                const start = opening.startIdx,
+                    end = opening.endIdx;
+                // Draw the non-gap segments with liquid glass outline
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = 'rgba(180, 220, 255, 0.06)';
+                ctx.shadowBlur = 8;
                 for (let i = 0; i < total; i++) {
                     const j = (i + 1) % total;
                     let inGap = false;
-                    if (start < end) { if (i >= start && i < end) inGap = true; if (j >= start && j < end) inGap = true; } else { if (
-                            i >= start || i < end) inGap = true; if (j >= start || j < end) inGap = true; }
+                    if (start < end) {
+                        if (i >= start && i < end) inGap = true;
+                        if (j >= start && j < end) inGap = true;
+                    } else {
+                        if (i >= start || i < end) inGap = true;
+                        if (j >= start || j < end) inGap = true;
+                    }
                     if (inGap) continue;
                     ctx.beginPath();
                     ctx.moveTo(pts[i].x, pts[i].y);
                     ctx.lineTo(pts[j].x, pts[j].y);
                     ctx.stroke();
                 }
+                ctx.shadowBlur = 0;
+
+                // ─── Flashing gap segments ──────────────────────────
                 if (isFlashing) {
                     const isRed = (opening.flashCount % 2 === 0);
                     ctx.save();
-                    const flashColor = isRed ? '#ff0044' : 'rgba(160,160,176,0.25)';
+                    const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.10)';
                     let gapSegments = [];
-                    if (start < end) { for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total }); } else { for (
-                            let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total }); for (let i = 0; i <
-                            end; i++) gapSegments.push({ i, j: (i + 1) % total }); }
+                    if (start < end) {
+                        for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                    } else {
+                        for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                    }
                     ctx.strokeStyle = flashColor;
-                    ctx.lineWidth = isRed ? 5 : 3;
-                    ctx.shadowBlur = 0;
-                    ctx.shadowColor = 'transparent';
-                    for (const seg of gapSegments) { ctx.beginPath();
+                    ctx.lineWidth = isRed ? 4 : 2.5;
+                    ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.02)';
+                    ctx.shadowBlur = isRed ? 18 : 4;
+                    for (const seg of gapSegments) {
+                        ctx.beginPath();
                         ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
                         ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
-                        ctx.stroke(); }
+                        ctx.stroke();
+                    }
                     ctx.restore();
                 }
             } else if (total > 0) {
-                ctx.strokeStyle = 'rgba(160,160,176,0.25)';
-                ctx.lineWidth = 5;
+                // ─── No gap: draw full liquid glass outline ──────────
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+                ctx.lineWidth = 3;
+                ctx.shadowColor = 'rgba(180, 220, 255, 0.05)';
+                ctx.shadowBlur = 8;
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // ─── Secondary subtle glow ──────────────────────────
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                ctx.lineWidth = 6;
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
                 for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
@@ -5585,29 +6023,41 @@
             }
             ctx.restore();
 
+            // ─── Players ─────────────────────────────────────────────
             state.players.forEach(p => {
                 if (!p.alive) return;
-                const px = p.x * s, py = p.y * s;
+                const px = p.x * s,
+                    py = p.y * s;
                 const popScale = getPopScale(p);
                 const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
                 const displayRadius = radius * popScale;
                 let pulseScale = 1;
-                if (p.isPulsing) { const t = p.pulseTime; if (t < 0.6) { const phase = t / 0.6;
-                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase); } }
+                if (p.isPulsing) {
+                    const t = p.pulseTime;
+                    if (t < 0.6) {
+                        const phase = t / 0.6;
+                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase);
+                    }
+                }
                 const finalRadius = displayRadius * pulseScale;
                 const drawRadius = Math.max(finalRadius - 1, 1);
                 const topInfo = state.topPlayerIds.get(p.id);
                 let borderColor = 'rgba(255,255,255,0.35)';
                 let borderWidth = 1.5;
-                let shadowColor = 'transparent', shadowBlur = 0;
+                let shadowColor = 'transparent',
+                    shadowBlur = 0;
                 if (topInfo) {
-                    if (topInfo.rank === 1) { borderColor = '#FFD700';
+                    if (topInfo.rank === 1) {
+                        borderColor = '#FFD700';
                         borderWidth = 3.5;
                         shadowColor = 'rgba(255,215,0,0.6)';
-                        shadowBlur = 18; } else if (topInfo.rank === 2) { borderColor = '#C0C0C0';
+                        shadowBlur = 18;
+                    } else if (topInfo.rank === 2) {
+                        borderColor = '#C0C0C0';
                         borderWidth = 3.0;
                         shadowColor = 'rgba(192,192,192,0.5)';
-                        shadowBlur = 14; }
+                        shadowBlur = 14;
+                    }
                 }
                 const isMe = p.id === state.userId;
                 const isAnonymous = isMe && state.anonymous;
@@ -5666,27 +6116,38 @@
             // ─── Clear canvas ────────────────────────────────────────
             iceCtx.clearRect(0, 0, w, w);
 
-            // ─── Draw ice background ────────────────────────────────
+            // ─── Glass background ────────────────────────────────────
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(35,45,65,0.15)');
-            grad.addColorStop(1, 'rgba(5,10,20,0.30)');
+            grad.addColorStop(0, 'rgba(30, 40, 55, 0.45)');
+            grad.addColorStop(0.6, 'rgba(16, 22, 34, 0.50)');
+            grad.addColorStop(1, 'rgba(6, 10, 18, 0.55)');
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            // ─── Perimeter (collider wall, very faint) ─────────────
+            // ─── Perimeter (liquid glass outline) ──────────────────
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
             perimeterPath.moveTo(pts[0].x, pts[0].y);
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
+
+            // Glass outline for the ice arena (same style as fields)
             iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(255,255,255,0.02)';
-            iceCtx.lineWidth = 1;
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            iceCtx.lineWidth = 2.5;
+            iceCtx.shadowColor = 'rgba(180, 220, 255, 0.06)';
+            iceCtx.shadowBlur = 10;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.shadowBlur = 0;
+
+            // Secondary subtle glow
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            iceCtx.lineWidth = 5;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── Idle puck (always visible when gameState === 'idle') ──
+            // ─── Idle puck ────────────────────────────────────────────
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
@@ -5752,7 +6213,9 @@
 
             // ─── Draw fields ─────────────────────────────────────────
             const now = performance.now();
-            let zoomTx = 0, zoomTy = 0, zoomSc = 1;
+            let zoomTx = 0,
+                zoomTy = 0,
+                zoomSc = 1;
             const puck = iceState.puck;
 
             if (iceState.gameState === 'sliding') {
@@ -5806,7 +6269,8 @@
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
-                const cx = half, cy = half;
+                const cx = half,
+                    cy = half;
                 zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                 zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
@@ -5851,14 +6315,18 @@
                 iceCtx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
                 iceCtx.globalAlpha = 1;
 
+                // ─── Field outline (liquid glass) ──────────────────
+                iceCtx.strokeStyle = isWinner ? 'rgba(255,255,255,0.85)' : 'rgba(255, 255, 255, 0.15)';
+                iceCtx.lineWidth = isWinner ? 3 : 2;
                 if (isWinner) {
-                    iceCtx.strokeStyle = 'rgba(255,255,255,0.85)';
-                    iceCtx.lineWidth = 3;
                     iceCtx.shadowColor = hexToRgba(color, 0.8);
                     iceCtx.shadowBlur = 16;
-                    iceCtx.strokeRect(-drawW / 2, -drawH / 2, drawW, drawH);
-                    iceCtx.shadowBlur = 0;
+                } else {
+                    iceCtx.shadowColor = 'rgba(180, 220, 255, 0.04)';
+                    iceCtx.shadowBlur = 4;
                 }
+                iceCtx.strokeRect(-drawW / 2, -drawH / 2, drawW, drawH);
+                iceCtx.shadowBlur = 0;
 
                 const avatarR = Math.min(segW, segH) * 0.32;
                 let pfpScale = 1;
@@ -5906,10 +6374,11 @@
 
                 iceCtx.restore();
 
+                // Subtle divider lines between fields (liquid glass style)
                 iceCtx.save();
-                iceCtx.globalAlpha = 0.15;
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.15)';
-                iceCtx.lineWidth = 2;
+                iceCtx.globalAlpha = 0.10;
+                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+                iceCtx.lineWidth = 1;
                 iceCtx.beginPath();
                 iceCtx.moveTo(x2, y1);
                 iceCtx.lineTo(x2, y2);
@@ -6170,7 +6639,9 @@
             const loadingText = document.getElementById('loading-text');
             const selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
             let squares = [];
-            let squareSize = 0, gapSize = 0, gridSize = 0;
+            let squareSize = 0,
+                gapSize = 0,
+                gridSize = 0;
 
             function measureGrid() {
                 const rect = grid.getBoundingClientRect();
