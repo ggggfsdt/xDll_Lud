@@ -6025,7 +6025,7 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Perimeter
+            // Perimeter (more rounded corners)
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
@@ -6060,10 +6060,10 @@
             if (hasGap && total > 0) {
                 const start = opening.startIdx,
                     end = opening.endIdx;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
                 ctx.lineWidth = 3;
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
-                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                ctx.shadowBlur = 10;
                 for (let i = 0; i < total; i++) {
                     const j = (i + 1) % total;
                     let inGap = false;
@@ -6084,7 +6084,7 @@
                 if (isFlashing) {
                     const isRed = (opening.flashCount % 2 === 0);
                     ctx.save();
-                    const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.10)';
+                    const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.15)';
                     let gapSegments = [];
                     if (start < end) {
                         for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
@@ -6094,8 +6094,8 @@
                     }
                     ctx.strokeStyle = flashColor;
                     ctx.lineWidth = isRed ? 4 : 2.5;
-                    ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.02)';
-                    ctx.shadowBlur = isRed ? 18 : 4;
+                    ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+                    ctx.shadowBlur = isRed ? 18 : 6;
                     for (const seg of gapSegments) {
                         ctx.beginPath();
                         ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
@@ -6105,17 +6105,17 @@
                     ctx.restore();
                 }
             } else if (total > 0) {
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
                 ctx.lineWidth = 3;
-                ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
-                ctx.shadowBlur = 8;
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                ctx.shadowBlur = 10;
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
                 for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
                 ctx.closePath();
                 ctx.stroke();
                 ctx.shadowBlur = 0;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
                 ctx.lineWidth = 6;
                 ctx.beginPath();
                 ctx.moveTo(pts[0].x, pts[0].y);
@@ -6255,13 +6255,13 @@
 
             // Draw perimeter outline (white glass)
             iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             iceCtx.lineWidth = 3;
-            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.06)';
-            iceCtx.shadowBlur = 8;
+            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+            iceCtx.shadowBlur = 10;
             iceCtx.stroke(perimeterPath);
             iceCtx.shadowBlur = 0;
-            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             iceCtx.lineWidth = 6;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
@@ -6305,9 +6305,9 @@
                 const cy = y;
                 const puckRadius = 10 * s;
                 iceCtx.save();
-                iceCtx.shadowColor = 'rgba(180, 220, 255, 0.4)';
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
                 iceCtx.shadowBlur = 12;
-                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.strokeStyle = '#ffffff';
                 iceCtx.lineWidth = 3.5;
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
@@ -6316,7 +6316,7 @@
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.5;
                 iceCtx.lineWidth = 1.5;
-                iceCtx.strokeStyle = '#eaf6ff';
+                iceCtx.strokeStyle = '#ffffff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(cx - crossSize, cy);
                 iceCtx.lineTo(cx + crossSize, cy);
@@ -6391,17 +6391,17 @@
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
                 // Rounded rect helper (using arc)
-                const radius = Math.min(segW, segH) * 0.08;
+                const cornerRadius = Math.min(segW, segH) * 0.12;
                 const path = new Path2D();
-                path.moveTo(x1 + radius, y1);
-                path.lineTo(x2 - radius, y1);
-                path.quadraticCurveTo(x2, y1, x2, y1 + radius);
-                path.lineTo(x2, y2 - radius);
-                path.quadraticCurveTo(x2, y2, x2 - radius, y2);
-                path.lineTo(x1 + radius, y2);
-                path.quadraticCurveTo(x1, y2, x1, y2 - radius);
-                path.lineTo(x1, y1 + radius);
-                path.quadraticCurveTo(x1, y1, x1 + radius, y1);
+                path.moveTo(x1 + cornerRadius, y1);
+                path.lineTo(x2 - cornerRadius, y1);
+                path.quadraticCurveTo(x2, y1, x2, y1 + cornerRadius);
+                path.lineTo(x2, y2 - cornerRadius);
+                path.quadraticCurveTo(x2, y2, x2 - cornerRadius, y2);
+                path.lineTo(x1 + cornerRadius, y2);
+                path.quadraticCurveTo(x1, y2, x1, y2 - cornerRadius);
+                path.lineTo(x1, y1 + cornerRadius);
+                path.quadraticCurveTo(x1, y1, x1 + cornerRadius, y1);
                 path.closePath();
 
                 const color = isWinner ? lightenColor(p.color, 70) : p.color;
@@ -6413,9 +6413,9 @@
                 iceCtx.globalAlpha = 1;
 
                 // Field outline (white liquid glass)
-                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-                iceCtx.shadowBlur = 10;
-                iceCtx.strokeStyle = isWinner ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 255, 255, 0.25)';
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.10)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.strokeStyle = isWinner ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 255, 255, 0.30)';
                 iceCtx.lineWidth = isWinner ? 3 : 2.5;
                 iceCtx.stroke(path);
                 iceCtx.shadowBlur = 0;
@@ -6492,7 +6492,7 @@
                 iceCtx.lineTo(-tipOffset * 0.3, triSize * 0.5);
                 iceCtx.closePath();
                 iceCtx.fillStyle = '#e8f4ff';
-                iceCtx.shadowColor = 'rgba(139,197,255,0.8)';
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.fill();
                 iceCtx.shadowBlur = 0;
@@ -6548,7 +6548,7 @@
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
 
-                let glowColor = 'rgba(180,220,255,0.9)';
+                let glowColor = 'rgba(255, 255, 255, 0.9)';
                 if (iceState.winnerPuckPop) {
                     glowColor = 'rgba(255,215,0,0.9)';
                 }
@@ -6556,7 +6556,7 @@
                 iceCtx.save();
                 iceCtx.shadowColor = glowColor;
                 iceCtx.shadowBlur = iceState.winnerPuckPop ? 24 : 14;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#eaf6ff';
+                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#ffffff';
                 iceCtx.lineWidth = iceState.winnerPuckPop ? 5.5 : 4.5;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
@@ -6565,7 +6565,7 @@
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.9 : 0.65;
                 iceCtx.lineWidth = iceState.winnerPuckPop ? 2.5 : 2.0;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#eaf6ff';
+                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#ffffff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
                 iceCtx.lineTo(px + crossSize, py);
@@ -6577,7 +6577,7 @@
 
                 iceCtx.save();
                 iceCtx.globalAlpha = iceState.winnerPuckPop ? 0.5 : 0.2;
-                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#b8dcff';
+                iceCtx.strokeStyle = iceState.winnerPuckPop ? '#FFD700' : '#ffffff';
                 iceCtx.lineWidth = iceState.winnerPuckPop ? 3 : 1.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
