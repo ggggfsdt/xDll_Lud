@@ -6253,16 +6253,18 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter outline (white glass)
+            // Draw perimeter outline (white glass) - this is the main outline for the whole arena
             iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            iceCtx.lineWidth = 3;
-            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-            iceCtx.shadowBlur = 10;
+            // Primary outline
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            iceCtx.lineWidth = 3.5;
+            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.15)';
+            iceCtx.shadowBlur = 16;
             iceCtx.stroke(perimeterPath);
+            // Secondary glow
             iceCtx.shadowBlur = 0;
-            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-            iceCtx.lineWidth = 6;
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            iceCtx.lineWidth = 8;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
@@ -6378,7 +6380,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Draw fields (with rounded corners and white outline)
+            // Draw fields - NO individual outlines, only colored rectangles
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6390,35 +6392,14 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Rounded rect helper (using arc)
-                const cornerRadius = Math.min(segW, segH) * 0.12;
-                const path = new Path2D();
-                path.moveTo(x1 + cornerRadius, y1);
-                path.lineTo(x2 - cornerRadius, y1);
-                path.quadraticCurveTo(x2, y1, x2, y1 + cornerRadius);
-                path.lineTo(x2, y2 - cornerRadius);
-                path.quadraticCurveTo(x2, y2, x2 - cornerRadius, y2);
-                path.lineTo(x1 + cornerRadius, y2);
-                path.quadraticCurveTo(x1, y2, x1, y2 - cornerRadius);
-                path.lineTo(x1, y1 + cornerRadius);
-                path.quadraticCurveTo(x1, y1, x1 + cornerRadius, y1);
-                path.closePath();
-
                 const color = isWinner ? lightenColor(p.color, 70) : p.color;
 
+                // Fill the field
                 iceCtx.save();
                 iceCtx.fillStyle = color;
                 iceCtx.globalAlpha = isWinner ? 1 : 0.93;
-                iceCtx.fill(path);
+                iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
-
-                // Field outline (white liquid glass)
-                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.10)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.strokeStyle = isWinner ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 255, 255, 0.30)';
-                iceCtx.lineWidth = isWinner ? 3 : 2.5;
-                iceCtx.stroke(path);
-                iceCtx.shadowBlur = 0;
 
                 // Avatar
                 const avatarR = Math.min(segW, segH) * 0.32;
