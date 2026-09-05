@@ -6079,6 +6079,20 @@
             ctx.stroke();
             ctx.restore();
 
+            // Pulsing border glow when waiting
+            if (state.gameState === 'idle' && getAlive().length < 2) {
+                const pulse = Math.sin(Date.now() / 1000) * 0.5 + 0.5; // 0-1
+                const alpha = 0.08 + pulse * 0.15;
+                ctx.save();
+                ctx.shadowColor = `rgba(255,255,255,${alpha})`;
+                ctx.shadowBlur = 30 + pulse * 20;
+                ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.5})`;
+                ctx.lineWidth = 2;
+                roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+                ctx.stroke();
+                ctx.restore();
+            }
+
             // Now draw the perimeter path for the gap (using server points)
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length > 0) {
@@ -6148,8 +6162,7 @@
                 ctx.restore();
             }
 
-            // Players (clipped to the rounded rect? We'll clip to the rounded rect for better look)
-            // But we need to clip to the actual play area (server points). We'll use the rounded rect for clipping.
+            // Players (clipped to the rounded rect)
             ctx.save();
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.clip();
@@ -6263,6 +6276,19 @@
             perimeterPath.moveTo(pts[0].x, pts[0].y);
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
+
+            // Pulsing border glow when waiting
+            if (iceState.gameState === 'idle' && iceState.players.length < 2) {
+                const pulse = Math.sin(Date.now() / 1000) * 0.5 + 0.5;
+                const alpha = 0.08 + pulse * 0.15;
+                iceCtx.save();
+                iceCtx.shadowColor = `rgba(255,255,255,${alpha})`;
+                iceCtx.shadowBlur = 30 + pulse * 20;
+                iceCtx.strokeStyle = `rgba(255,255,255,${alpha * 0.5})`;
+                iceCtx.lineWidth = 2;
+                iceCtx.stroke(perimeterPath);
+                iceCtx.restore();
+            }
 
             // Zoom handling
             let zoomActive = iceState.zoom > 1.01;
@@ -6410,7 +6436,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Draw fields - fields fill with white glass, no individual outlines
+            // Draw fields - each field has its player's color
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6422,13 +6448,14 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                // Fill with white glass
+                const color = isWinner ? lightenColor(p.color, 70) : p.color;
+
+                // Fill with the player's color
                 iceCtx.save();
-                iceCtx.fillStyle = isWinner ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.25)';
-                iceCtx.shadowColor = 'rgba(0,0,0,0.2)';
-                iceCtx.shadowBlur = 8;
+                iceCtx.fillStyle = color;
+                iceCtx.globalAlpha = 0.9;
                 iceCtx.fillRect(x1, y1, segW, segH);
-                iceCtx.shadowBlur = 0;
+                iceCtx.globalAlpha = 1;
 
                 // Subtle border for winner (golden)
                 if (isWinner) {
@@ -6519,7 +6546,7 @@
                 iceCtx.restore();
             }
 
-            // Puck - with shadow and a subtle gray outline
+            // Puck - with realistic outline (thin, dark, less transparent)
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6577,29 +6604,29 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // Draw gray outline (slightly transparent, wide)
+                // Thin, dark, less transparent outline (realistic)
                 iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(160,160,160,0.35)';
-                iceCtx.lineWidth = 6;
+                iceCtx.strokeStyle = 'rgba(40,40,40,0.6)'; // dark, semi-transparent
+                iceCtx.lineWidth = 2.5; // thinner
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
-                iceCtx.arc(px, py, puckRadius + 3, 0, Math.PI * 2);
+                iceCtx.arc(px, py, puckRadius + 1.5, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // Draw white inner outline
+                // White inner outline (thin)
                 iceCtx.save();
-                iceCtx.strokeStyle = '#ffffff';
-                iceCtx.lineWidth = 3;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.5)';
+                iceCtx.lineWidth = 1.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, puckRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 // cross
-                const crossSize = puckRadius * 0.75;
-                iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 2;
-                iceCtx.strokeStyle = '#ffffff';
+                const crossSize = puckRadius * 0.7;
+                iceCtx.globalAlpha = 0.4;
+                iceCtx.lineWidth = 1.5;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.5)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
                 iceCtx.lineTo(px + crossSize, py);
