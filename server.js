@@ -1,10 +1,3 @@
-process.on('uncaughtException', (err) => {
-  console.error('💥 Uncaught Exception:', err.stack);
-});
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('💥 Unhandled Rejection:', reason);
-});
-
 const express = require('express');
 const http = require('http');
 const crypto = require('crypto');
@@ -157,8 +150,8 @@ const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
 
-// Uniform scale factor for fields – makes them smaller but keeps them adjacent
-const ICE_FIELD_SCALE = 0.88;
+// Uniform scale factor for fields – bigger fields
+const ICE_FIELD_SCALE = 0.98;
 
 function createIceRoom(id) {
   return {
@@ -374,7 +367,7 @@ function startIceSpin() {
 
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const baseSpeed = 10;
+  const baseSpeed = 16; // faster start
   const speed = baseSpeed + Math.random() * 2;
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
@@ -477,10 +470,10 @@ async function endIceGame() {
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 50;
+  const subSteps = 80; // smoother bounces
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 8;
+  const puckRadius = 10; // original size
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -526,7 +519,7 @@ function updateIcePhysics(dt) {
     if (elapsed < 3.5) {
       frictionPerSecond = 0.997;
     } else {
-      frictionPerSecond = 0.65;
+      frictionPerSecond = 0.65; // faster slowdown
     }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
