@@ -705,6 +705,48 @@
             }
         }
 
+        /* ─── ICE WAITING TEXT ─────────────────────────────────── */
+        #ice-waiting-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            line-height: 1.6;
+            display: none;
+            width: 80%;
+            max-width: 300px;
+        }
+        #ice-waiting-text .waiting-letter {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: none;
+            animation: letterBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            will-change: transform, opacity, text-shadow;
+        }
+        #ice-waiting-text .waiting-letter.light {
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.4);
+            color: #fff;
+        }
+        #ice-waiting-text .waiting-sub {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
+            display: block;
+            animation: subFade 1.5s ease forwards;
+            animation-delay: 0.3s;
+            opacity: 0;
+        }
+
         /* ─── BET OVERLAY ──────────────────────────────────────── */
         #bet-overlay-wrap {
             position: absolute;
@@ -2666,52 +2708,6 @@
             display: none !important;
         }
 
-        #ice-waiting-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 2;
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 18px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
-            line-height: 1.6;
-            display: none;
-            width: 80%;
-            max-width: 300px;
-        }
-        #ice-waiting-text .waiting-letter {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: none;
-            animation: letterBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-            will-change: transform, opacity, text-shadow;
-        }
-        #ice-waiting-text .waiting-letter.light {
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.4);
-            color: #fff;
-        }
-        #ice-waiting-text .waiting-sub {
-            font-size: 13px;
-            font-weight: 400;
-            opacity: 0.5;
-            margin-top: 2px;
-            display: block;
-            animation: subFade 1.5s ease forwards;
-            animation-delay: 0.3s;
-            opacity: 0;
-        }
-        @keyframes subFade {
-            to {
-                opacity: 0.5;
-            }
-        }
-
         /* ─── ICE BET OVERLAY ───────────────────────────────────── */
         #ice-bet-overlay-wrap {
             position: absolute;
@@ -3827,6 +3823,8 @@
 
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
+        // Larger fields: scale from 0.88 to 0.95
+        const ICE_FIELD_SCALE = 0.95;
 
         // ─── DOM refs ──────────────────────────────────────────────────
         const canvas = document.getElementById('game-canvas');
@@ -4970,33 +4968,22 @@
             const elements = [waitingText, iceWaitingText];
             elements.forEach(el => {
                 if (!el) return;
-                // Clear existing content
-                const textNodes = [];
-                const children = el.childNodes;
-                let fullText = '';
-                // We'll rebuild from the first child that is a text node or span
-                // Actually we want to keep the structure: first span and then sub
-                // Let's just take the innerHTML and parse
                 let mainSpan = el.querySelector('span');
                 let subSpan = el.querySelector('.sub');
                 if (!mainSpan) {
-                    // If structure is different, just wrap everything
                     mainSpan = document.createElement('span');
                     mainSpan.textContent = el.textContent.trim();
                     el.innerHTML = '';
                     el.appendChild(mainSpan);
                 }
-                // Now we have mainSpan with text
                 const text = mainSpan.textContent;
                 mainSpan.innerHTML = '';
-                // Split into letters
                 const letters = text.split('');
                 letters.forEach((char, idx) => {
                     const span = document.createElement('span');
                     span.className = 'waiting-letter';
                     span.textContent = char === ' ' ? '\u00A0' : char;
                     span.style.animationDelay = (idx * 0.08) + 's';
-                    // Add light effect after a delay
                     setTimeout(() => {
                         span.classList.add('light');
                         setTimeout(() => {
@@ -5005,19 +4992,18 @@
                     }, idx * 80 + 200);
                     mainSpan.appendChild(span);
                 });
-                // Add the sub if exists
                 if (!subSpan) {
                     subSpan = document.createElement('div');
                     subSpan.className = 'sub';
                     subSpan.textContent = 'place a bet to join';
                     el.appendChild(subSpan);
                 }
-                // Restart animation every 5 seconds
+                // Restart every 5 seconds
                 setInterval(() => {
                     const spans = mainSpan.querySelectorAll('.waiting-letter');
                     spans.forEach((s, i) => {
                         s.style.animation = 'none';
-                        s.offsetHeight; // trigger reflow
+                        s.offsetHeight;
                         s.style.animation = `letterBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`;
                         s.style.animationDelay = (i * 0.08) + 's';
                         s.classList.remove('light');
@@ -6024,14 +6010,14 @@
             });
         });
 
-        // ─── RENDER ──────────────────────────────────────────────────
+        // ─── RENDER PVP ──────────────────────────────────────────────
         function render() {
             const w = state.arenaSize;
             const half = w / 2;
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
 
-            // ─── Glass background ──────────────────────────────────
+            // Glass background
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(20, 22, 30, 0.75)');
             grad.addColorStop(0.5, 'rgba(12, 14, 20, 0.82)');
@@ -6039,13 +6025,11 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // ─── Perimeter (liquid glass outline) ──────────────────
+            // Perimeter
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
             ctx.shadowBlur = 30;
-
-            // Fill with glass-like semi-transparent color
             ctx.fillStyle = 'rgba(24, 26, 34, 0.70)';
             if (pts.length > 0) {
                 ctx.beginPath();
@@ -6055,8 +6039,6 @@
                 ctx.fill();
             }
             ctx.restore();
-
-            // ─── Inner glass highlight ─────────────────────────────
             ctx.save();
             ctx.fillStyle = 'rgba(48, 52, 62, 0.30)';
             if (pts.length > 0) {
@@ -6068,19 +6050,16 @@
             }
             ctx.restore();
 
-            // ─── Opening / gap logic ────────────────────────────────
+            // Opening/gap
             const opening = state.opening;
             const isFlashing = opening && opening.state === 'flashing';
             const isOpen = opening && opening.state === 'open';
             const total = pts.length;
             ctx.save();
-
-            // ─── Draw perimeter outline (liquid glass) ──────────────
             const hasGap = opening !== null && (isFlashing || isOpen);
             if (hasGap && total > 0) {
                 const start = opening.startIdx,
                     end = opening.endIdx;
-                // Draw the non-gap segments with liquid glass outline
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
                 ctx.lineWidth = 3;
                 ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
@@ -6102,8 +6081,6 @@
                     ctx.stroke();
                 }
                 ctx.shadowBlur = 0;
-
-                // ─── Flashing gap segments ──────────────────────────
                 if (isFlashing) {
                     const isRed = (opening.flashCount % 2 === 0);
                     ctx.save();
@@ -6128,7 +6105,6 @@
                     ctx.restore();
                 }
             } else if (total > 0) {
-                // ─── No gap: draw full liquid glass outline ──────────
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
                 ctx.lineWidth = 3;
                 ctx.shadowColor = 'rgba(255, 255, 255, 0.06)';
@@ -6139,8 +6115,6 @@
                 ctx.closePath();
                 ctx.stroke();
                 ctx.shadowBlur = 0;
-
-                // ─── Secondary subtle glow ──────────────────────────
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
                 ctx.lineWidth = 6;
                 ctx.beginPath();
@@ -6151,7 +6125,7 @@
             }
             ctx.restore();
 
-            // ─── Players ─────────────────────────────────────────────
+            // Players
             state.players.forEach(p => {
                 if (!p.alive) return;
                 const px = p.x * s,
@@ -6241,10 +6215,10 @@
             const half = w / 2;
             const s = iceScaleFactor();
 
-            // ─── Clear canvas ────────────────────────────────────────
+            // Clear
             iceCtx.clearRect(0, 0, w, w);
 
-            // ─── Glass background ────────────────────────────────────
+            // Glass background
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(30, 40, 55, 0.45)');
             grad.addColorStop(0.6, 'rgba(16, 22, 34, 0.50)');
@@ -6252,7 +6226,7 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            // ─── Perimeter (liquid glass outline) ──────────────────
+            // Perimeter
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
             const perimeterPath = new Path2D();
@@ -6260,13 +6234,12 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            // We'll draw everything with zoom if active
+            // Zoom handling
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0,
                 zoomTy = 0,
                 zoomSc = 1;
             if (zoomActive) {
-                // compute zoom transform based on puck position
                 const puck = iceState.puck;
                 const puckScreenX = puck.x * s;
                 const puckScreenY = puck.y * s;
@@ -6280,7 +6253,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Draw perimeter outline (scaled if zoom)
+            // Draw perimeter outline (white glass)
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             iceCtx.lineWidth = 3;
@@ -6288,13 +6261,12 @@
             iceCtx.shadowBlur = 8;
             iceCtx.stroke(perimeterPath);
             iceCtx.shadowBlur = 0;
-            // Secondary subtle glow
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
             iceCtx.lineWidth = 6;
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // ─── Idle puck ────────────────────────────────────────────
+            // Idle puck
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
@@ -6332,7 +6304,6 @@
                 const cx = x;
                 const cy = y;
                 const puckRadius = 10 * s;
-
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(180, 220, 255, 0.4)';
                 iceCtx.shadowBlur = 12;
@@ -6354,15 +6325,12 @@
                 iceCtx.stroke();
                 iceCtx.globalAlpha = 1;
                 iceCtx.restore();
-
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // ─── Draw fields ─────────────────────────────────────────
+            // Update zoom
             const now = performance.now();
             const puck = iceState.puck;
-
-            // Update zoom if sliding
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
@@ -6405,16 +6373,12 @@
                 renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpFactor;
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
             }
-
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // If zoom changed, we need to re-apply transform? We already applied before drawing fields.
-            // But fields are drawn after the perimeter, so they will be inside the zoom transform.
-
-            // Draw fields (inside zoom if active)
+            // Draw fields (with rounded corners and white outline)
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6426,44 +6390,37 @@
                 const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
 
-                const angleOptions = [0, Math.PI / 4, Math.PI / 2];
-                const rotAngle = angleOptions[index % angleOptions.length];
-
-                const cx = (x1 + x2) / 2;
-                const cy = (y1 + y2) / 2;
+                // Rounded rect helper (using arc)
+                const radius = Math.min(segW, segH) * 0.08;
+                const path = new Path2D();
+                path.moveTo(x1 + radius, y1);
+                path.lineTo(x2 - radius, y1);
+                path.quadraticCurveTo(x2, y1, x2, y1 + radius);
+                path.lineTo(x2, y2 - radius);
+                path.quadraticCurveTo(x2, y2, x2 - radius, y2);
+                path.lineTo(x1 + radius, y2);
+                path.quadraticCurveTo(x1, y2, x1, y2 - radius);
+                path.lineTo(x1, y1 + radius);
+                path.quadraticCurveTo(x1, y1, x1 + radius, y1);
+                path.closePath();
 
                 const color = isWinner ? lightenColor(p.color, 70) : p.color;
 
                 iceCtx.save();
-                iceCtx.beginPath();
-                iceCtx.rect(x1, y1, segW, segH);
-                iceCtx.clip();
-
-                iceCtx.translate(cx, cy);
-                iceCtx.rotate(rotAngle);
-                const diag = Math.sqrt(segW * segW + segH * segH);
-                const drawW = diag * 1.2;
-                const drawH = diag * 1.2;
-
-                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
                 iceCtx.fillStyle = color;
-                iceCtx.fillRect(-drawW / 2, -drawH / 2, drawW, drawH);
+                iceCtx.globalAlpha = isWinner ? 1 : 0.93;
+                iceCtx.fill(path);
                 iceCtx.globalAlpha = 1;
 
-                // ─── Field outline (liquid glass) ──────────────────
-                // Same as main perimeter outline
-                iceCtx.strokeStyle = isWinner ? 'rgba(255,255,255,0.85)' : 'rgba(255, 255, 255, 0.12)';
+                // Field outline (white liquid glass)
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                iceCtx.shadowBlur = 10;
+                iceCtx.strokeStyle = isWinner ? 'rgba(255, 215, 0, 0.8)' : 'rgba(255, 255, 255, 0.25)';
                 iceCtx.lineWidth = isWinner ? 3 : 2.5;
-                if (isWinner) {
-                    iceCtx.shadowColor = hexToRgba(color, 0.8);
-                    iceCtx.shadowBlur = 16;
-                } else {
-                    iceCtx.shadowColor = 'rgba(255, 255, 255, 0.06)';
-                    iceCtx.shadowBlur = 6;
-                }
-                iceCtx.strokeRect(-drawW / 2, -drawH / 2, drawW, drawH);
+                iceCtx.stroke(path);
                 iceCtx.shadowBlur = 0;
 
+                // Avatar
                 const avatarR = Math.min(segW, segH) * 0.32;
                 let pfpScale = 1;
                 const popData = iceState.pfpPop.get(p.id);
@@ -6478,9 +6435,11 @@
                     }
                 }
                 const drawR = avatarR * pfpScale;
+                const cx = (x1 + x2) / 2;
+                const cy = (y1 + y2) / 2;
                 iceCtx.save();
                 iceCtx.beginPath();
-                iceCtx.arc(0, 0, drawR, 0, Math.PI * 2);
+                iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
                 iceCtx.closePath();
                 iceCtx.clip();
 
@@ -6488,9 +6447,9 @@
                 const isAnonymous = isMe && state.anonymous;
                 const hidePfp = isMe && state.hidePfp;
                 if (isAnonymous || hidePfp) {
-                    const color = getAnonymousColor(state.userId);
-                    iceCtx.fillStyle = color;
-                    iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
+                    const col = getAnonymousColor(state.userId);
+                    iceCtx.fillStyle = col;
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
                     iceCtx.fillStyle = '#fff';
                     const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
                     iceCtx.font = `bold ${drawR*0.8}px system-ui, sans-serif`;
@@ -6498,35 +6457,20 @@
                     iceCtx.textBaseline = 'middle';
                     iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
                     iceCtx.shadowBlur = 4;
-                    iceCtx.fillText(letter, 0, 0);
+                    iceCtx.fillText(letter, cx, cy);
                     iceCtx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
-                    iceCtx.drawImage(p.pfpImg, -drawR, -drawR, drawR * 2, drawR * 2);
+                    iceCtx.drawImage(p.pfpImg, cx - drawR, cy - drawR, drawR * 2, drawR * 2);
                 } else {
                     iceCtx.fillStyle = p.color || '#555';
-                    iceCtx.fillRect(-drawR, -drawR, drawR * 2, drawR * 2);
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
                 }
                 iceCtx.restore();
-
                 iceCtx.restore();
-
-                // Subtle divider lines
-                iceCtx.save();
-                iceCtx.globalAlpha = 0.10;
-                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
-                iceCtx.lineWidth = 1;
-                iceCtx.beginPath();
-                iceCtx.moveTo(x2, y1);
-                iceCtx.lineTo(x2, y2);
-                iceCtx.moveTo(x1, y2);
-                iceCtx.lineTo(x2, y2);
-                iceCtx.stroke();
-                iceCtx.restore();
-                iceCtx.globalAlpha = 1;
             });
             iceCtx.restore();
 
-            // Spinning arrow (not zoomed? we want it zoomed too)
+            // Spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -6558,7 +6502,7 @@
                 iceCtx.restore();
             }
 
-            // Draw main puck (constant size, no speed scaling)
+            // Puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6641,6 +6585,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
+                // Owner name
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
@@ -6683,10 +6628,7 @@
                 }
             }
 
-            // End zoom transform if active
-            if (zoomActive) {
-                iceCtx.restore();
-            }
+            if (zoomActive) iceCtx.restore();
         }
 
         // ─── RENDER LOOP ─────────────────────────────────────────────
