@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN (unchanged) ──────────────────────────── */
+        /* ─── LOADING SCREEN ───────────────────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -253,8 +253,7 @@
             --radius: 16px;
             --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
-        html,
-        body {
+        html, body {
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -357,8 +356,7 @@
             animation: glowDiamond 2.8s ease-in-out infinite;
         }
         @keyframes glowDiamond {
-            0%,
-            100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
             50% { filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2); }
         }
         #balance {
@@ -680,8 +678,7 @@
             gap: 6px;
             color: var(--text2);
         }
-        #bet-overlay.collapsed .bet-toggle span { font-size: 11px;
-            opacity: 0.5; }
+        #bet-overlay.collapsed .bet-toggle span { font-size: 11px; opacity: 0.5; }
         #bet-overlay.collapsed .bet-toggle::before {
             content: '>';
             display: inline-block;
@@ -731,8 +728,7 @@
             box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
             flex-shrink: 0;
         }
-        #all-in-btn:active { transform: scale(0.94);
-            opacity: 0.8; }
+        #all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
         #bet-btn {
             padding: 2px 0;
             height: 26px;
@@ -750,8 +746,7 @@
             text-align: center;
             margin-top: 2px;
         }
-        #bet-btn:active { transform: scale(0.96);
-            opacity: 0.8; }
+        #bet-btn:active { transform: scale(0.96); opacity: 0.8; }
         #bet-btn:disabled {
             opacity: 0.4;
             transform: none;
@@ -911,8 +906,7 @@
             margin-top: 0 !important;
         }
         #player-list-container::-webkit-scrollbar { width: 3px; }
-        #player-list-container::-webkit-scrollbar-thumb { background: var(--border);
-            border-radius: 10px; }
+        #player-list-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
         .pl-entry {
             display: flex;
             align-items: center;
@@ -1000,7 +994,7 @@
             margin-right: 2px;
         }
 
-        /* ─── PROFILE TAB – clean, no emojis, smooth animations ── */
+        /* ─── PROFILE TAB ──────────────────────────────────────── */
         #profile-page {
             display: flex;
             flex-direction: column;
@@ -1022,8 +1016,7 @@
             scrollbar-color: rgba(255,255,255,0.05) transparent;
         }
         #profile-page .profile-scroll::-webkit-scrollbar { width: 3px; }
-        #profile-page .profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08);
-            border-radius: 10px; }
+        #profile-page .profile-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; }
 
         .profile-header-section {
             display: flex;
@@ -1036,8 +1029,7 @@
             transform: translateY(12px);
         }
         @keyframes fadeSlideUp {
-            to { opacity: 1;
-                transform: translateY(0); }
+            to { opacity: 1; transform: translateY(0); }
         }
         .profile-header-section .pfp-wrap {
             position: relative;
@@ -1261,10 +1253,8 @@
             transition: 0.2s;
             white-space: nowrap;
         }
-        .promo-section button:active { transform: scale(0.94);
-            opacity: 0.8; }
-        .promo-section button:disabled { opacity: 0.4;
-            pointer-events: none; }
+        .promo-section button:active { transform: scale(0.94); opacity: 0.8; }
+        .promo-section button:disabled { opacity: 0.4; pointer-events: none; }
         .promo-message {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.25);
@@ -1290,7 +1280,6 @@
         }
         #reload-pfp-btn:active { transform: scale(0.94); }
 
-        /* ─── Recent games ────────────────────────────────────────── */
         .recent-games {
             padding: 10px 0 6px;
             border-top: 1px solid rgba(255, 255, 255, 0.04);
@@ -1347,9 +1336,7 @@
             backdrop-filter: blur(20px);
             animation: cardFadeIn 0.4s ease;
         }
-        #card-overlay.show {
-            display: flex;
-        }
+        #card-overlay.show { display: flex; }
         @keyframes cardFadeIn {
             0% { opacity: 0; }
             100% { opacity: 1; }
@@ -1366,9 +1353,7 @@
             background: #000000;
             animation: cardFadeIn 0.4s ease;
         }
-        #identity-overlay.show {
-            display: flex;
-        }
+        #identity-overlay.show { display: flex; }
 
         .card-wrapper {
             display: flex;
@@ -1378,7 +1363,6 @@
             max-width: 420px;
             gap: 12px;
         }
-
         .card-container {
             width: 100%;
             aspect-ratio: 1.6 / 1;
@@ -1387,10 +1371,7 @@
             cursor: grab;
             position: relative;
         }
-        .card-container:active {
-            cursor: grabbing;
-        }
-
+        .card-container:active { cursor: grabbing; }
         .card-3d {
             width: 100%;
             height: 100%;
@@ -1401,10 +1382,7 @@
             box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7), 0 0 60px rgba(91, 141, 239, 0.08);
             will-change: transform;
         }
-        .card-3d.dragging {
-            transition: none !important;
-        }
-
+        .card-3d.dragging { transition: none !important; }
         .card-face {
             position: absolute;
             inset: 0;
@@ -1413,7 +1391,6 @@
             overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
-
         .card-face.front {
             background: linear-gradient(145deg, #1a3a6a, #0d2a4a, #2a5a8a);
             padding: 20px 24px;
@@ -1428,7 +1405,6 @@
             background: radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.04) 0%, transparent 70%);
             pointer-events: none;
         }
-
         .card-diamond-bg {
             position: absolute;
             top: 50%;
@@ -1440,7 +1416,6 @@
             pointer-events: none;
             object-fit: contain;
         }
-
         .card-welcome {
             position: relative;
             z-index: 2;
@@ -1464,15 +1439,12 @@
             color: rgba(255, 255, 255, 0.8);
             font-weight: 600;
         }
-        .card-welcome .cw-char.space {
-            width: 6px;
-        }
+        .card-welcome .cw-char.space { width: 6px; }
         @keyframes cwPop {
             0% { opacity: 0; transform: translateY(6px) scale(0.9); }
             60% { opacity: 1; transform: translateY(-2px) scale(1.05); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-
         .card-face.front .card-brand {
             font-size: 13px;
             font-weight: 700;
@@ -1483,7 +1455,6 @@
             position: relative;
             z-index: 2;
         }
-
         .card-face.front .card-balance {
             text-align: center;
             position: relative;
@@ -1505,7 +1476,6 @@
             letter-spacing: 4px;
             margin-top: 2px;
         }
-
         .card-face.front .card-bottom {
             display: flex;
             justify-content: space-between;
@@ -1540,7 +1510,6 @@
             letter-spacing: 1px;
             display: block;
         }
-
         .card-face.back {
             background: linear-gradient(145deg, #1a2a4a, #0a1a2a);
             transform: rotateY(180deg);
@@ -1586,7 +1555,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* Identity card specific field styles */
+        /* Identity card fields */
         .identity-field {
             cursor: pointer;
             transition: 0.2s;
@@ -1645,7 +1614,6 @@
             50% { border-bottom-color: rgba(255,255,255,0.1); }
         }
 
-        /* Per‑character animation for typing */
         .char-anim {
             display: inline-block;
             animation: charSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -1681,7 +1649,7 @@
         .card-close-btn:active { transform: scale(0.88); }
         .card-close-btn.show { display: flex; }
 
-        /* ─── CONFIRMATION MODAL ───────────────────────────────── */
+        /* Confirmation modal */
         #confirm-modal {
             position: fixed;
             inset: 0;
@@ -1693,9 +1661,7 @@
             backdrop-filter: blur(12px);
             animation: cardFadeIn 0.3s ease;
         }
-        #confirm-modal.show {
-            display: flex;
-        }
+        #confirm-modal.show { display: flex; }
         #confirm-modal .modal-box {
             background: #1a1a1e;
             border: 1px solid var(--border);
@@ -1762,9 +1728,7 @@
             scrollbar-color: rgba(255,255,255,0.04) transparent;
         }
         .tx-history::-webkit-scrollbar { width: 3px; }
-        .tx-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05);
-            border-radius: 10px; }
-
+        .tx-history::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
         .tx-header {
             display: flex;
             justify-content: space-between;
@@ -1798,10 +1762,8 @@
         .tx-entry:nth-child(8) { animation-delay: 0.28s; }
         .tx-entry:nth-child(9) { animation-delay: 0.32s; }
         .tx-entry:nth-child(10) { animation-delay: 0.36s; }
-
         @keyframes txSlide {
-            to { opacity: 1;
-                transform: translateX(0); }
+            to { opacity: 1; transform: translateX(0); }
         }
         .tx-entry .tx-label {
             font-size: 11px;
@@ -1828,7 +1790,7 @@
             letter-spacing: 0.5px;
         }
 
-        /* ─── Card stats – financial metrics ───────────────────── */
+        /* ─── Card stats ──────────────────────────────────────────── */
         .card-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1861,7 +1823,6 @@
         .card-stats .cs-value.negative { color: var(--red); }
         .card-stats .cs-value.neutral { color: rgba(255,255,255,0.5); }
 
-        /* ─── Payment methods ───────────────────────────────────── */
         .payment-methods {
             width: 100%;
             display: flex;
@@ -1889,9 +1850,7 @@
             display: none;
         }
         #particle-canvas.show,
-        #identity-particle-canvas.show {
-            display: block;
-        }
+        #identity-particle-canvas.show { display: block; }
 
         /* ─── TOP PAGE ──────────────────────────────────────────── */
         #top-page {
@@ -2053,15 +2012,9 @@
             min-width: 28px;
             text-align: center;
         }
-        .top-entry .rank.gold {
-            color: var(--gold);
-        }
-        .top-entry .rank.silver {
-            color: #b8b8c8;
-        }
-        .top-entry .rank.bronze {
-            color: #cd8a5a;
-        }
+        .top-entry .rank.gold { color: var(--gold); }
+        .top-entry .rank.silver { color: #b8b8c8; }
+        .top-entry .rank.bronze { color: #cd8a5a; }
         .top-entry .t-pfp {
             width: 28px;
             height: 28px;
@@ -2291,10 +2244,7 @@
             text-align: center;
             margin-top: 4px;
         }
-        #win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
+        #win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
 
         /* ─── ICE ARENA ──────────────────────────────────────────── */
         #ice-page {
@@ -2315,6 +2265,11 @@
             min-height: 0;
             overflow: visible;
             flex-shrink: 0;
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 4px 30px rgba(0,0,0,0.5);
         }
         #ice-canvas {
             width: 100%;
@@ -2331,7 +2286,6 @@
             border: 1px solid rgba(255, 255, 255, 0.04);
         }
 
-        /* ─── ICE TOP PANEL ─────────────────────────────────────── */
         #ice-top-panel {
             position: absolute;
             top: 82px;
@@ -2417,9 +2371,7 @@
             box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
             transition: width 0.1s linear;
         }
-        #ice-stats-bar {
-            display: none !important;
-        }
+        #ice-stats-bar { display: none !important; }
 
         #ice-waiting-text {
             position: absolute;
@@ -2598,10 +2550,7 @@
             box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
             flex-shrink: 0;
         }
-        #ice-all-in-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
+        #ice-all-in-btn:active { transform: scale(0.94); opacity: 0.8; }
         #ice-bet-btn {
             padding: 2px 0;
             height: 26px;
@@ -2619,10 +2568,7 @@
             text-align: center;
             margin-top: 2px;
         }
-        #ice-bet-btn:active {
-            transform: scale(0.96);
-            opacity: 0.8;
-        }
+        #ice-bet-btn:active { transform: scale(0.96); opacity: 0.8; }
         #ice-bet-btn:disabled {
             opacity: 0.4;
             transform: none;
@@ -2734,10 +2680,7 @@
             text-align: center;
             margin-top: 4px;
         }
-        #ice-win-continue-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
+        #ice-win-continue-btn:active { transform: scale(0.94); opacity: 0.8; }
 
         /* ─── ICE AUTO-BET ───────────────────────────────────────── */
         #ice-auto-bet-container {
@@ -2890,29 +2833,15 @@
             }
             #balance-wrap { padding: 2px 8px 2px 4px; }
             #balance { font-size: 13px; }
-            #diamond-icon { width: 18px;
-                height: 18px; }
-            #username-display { max-width: 60px;
-                font-size: 10px; }
-            .win-panel .panel-pfp { width: 22px;
-                height: 22px; }
-            .win-panel {
-                padding: 4px 8px;
-                font-size: 10px;
-                min-height: 30px;
-            }
+            #diamond-icon { width: 18px; height: 18px; }
+            #username-display { max-width: 60px; font-size: 10px; }
+            .win-panel .panel-pfp { width: 22px; height: 22px; }
+            .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
             .win-panel .panel-amount { font-size: 11px; }
-
-            #ice-top-panel {
-                padding: 2px 10px 3px;
-                gap: 3px;
-                top: 92px;
-                width: 94%;
-            }
+            #ice-top-panel { padding: 2px 10px 3px; gap: 3px; top: 92px; width: 94%; }
             #ice-top-panel .panel-value { font-size: 12px; }
             #ice-countdown-timer { font-size: 14px; }
             #ice-top-panel .panel-label { font-size: 7px; }
-
             .card-face.front .card-balance .amount { font-size: 32px; }
             .card-face.front { padding: 16px 18px; }
             .card-face.back { padding: 16px 18px; }
@@ -2921,26 +2850,20 @@
             .card-welcome { font-size: 11px; }
             .card-stats { grid-template-columns: 1fr 1fr; padding: 6px 8px; }
             .card-stats .cs-value { font-size: 12px; }
-
-            .profile-header-section .pfp-wrap .prof-pfp { width: 52px;
-                height: 52px; }
+            .profile-header-section .pfp-wrap .prof-pfp { width: 52px; height: 52px; }
             .profile-header-section .prof-info .prof-name { font-size: 17px; }
             .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
             .profile-balance-row .bal-amount { font-size: 17px; }
         }
         @media (max-width: 380px) {
-            #ice-top-panel { top: 86px;
-                padding: 2px 8px 3px;
-                width: 96%; }
+            #ice-top-panel { top: 86px; padding: 2px 8px 3px; width: 96%; }
             #ice-top-panel .panel-value { font-size: 11px; }
             #ice-countdown-timer { font-size: 13px; }
             .card-face.front .card-balance .amount { font-size: 28px; }
             .tx-entry { font-size: 10px; padding: 3px 8px; }
         }
         @media (max-width: 360px) {
-            #ice-top-panel { top: 80px;
-                padding: 2px 8px 2px;
-                width: 96%; }
+            #ice-top-panel { top: 80px; padding: 2px 8px 2px; width: 96%; }
             #ice-top-panel .panel-value { font-size: 10px; }
             #ice-countdown-timer { font-size: 12px; }
             .card-face.front .card-balance .amount { font-size: 24px; }
@@ -3399,8 +3322,7 @@
         const FLAME_GIF = 'https://i.postimg.cc/FHbt292h/fire-flame.gif';
 
         const tg = window.Telegram?.WebApp;
-        if (tg) { tg.expand();
-            tg.enableClosingConfirmation(); }
+        if (tg) { tg.expand(); tg.enableClosingConfirmation(); }
 
         function haptic(style) {
             try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light');
@@ -3408,12 +3330,12 @@
         }
 
         let audioCtxForClicks = null;
-
         function playClickSound() {
             if (!state.soundEnabled) return;
             try {
                 if (!audioCtxForClicks) audioCtxForClicks = new(window.AudioContext || window.webkitAudioContext)();
                 const now = audioCtxForClicks.currentTime;
+                // Noise burst
                 const bufferSize = audioCtxForClicks.sampleRate * 0.03;
                 const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
                 const data = buffer.getChannelData(0);
@@ -3429,7 +3351,7 @@
                 gainNoise.connect(audioCtxForClicks.destination);
                 noise.start(now);
                 noise.stop(now + 0.03);
-
+                // Sine click
                 const osc = audioCtxForClicks.createOscillator();
                 const gainOsc = audioCtxForClicks.createGain();
                 osc.type = 'sine';
@@ -3618,13 +3540,8 @@
         const identityParticleCtx = identityParticleCanvas.getContext('2d');
         let identityParticles = [];
         let identityParticleAnimId = null;
-        let identityDrag = false,
-            identityPrevX = 0,
-            identityPrevY = 0;
-        let identityRotX = 0,
-            identityRotY = 0,
-            identityTargetRotX = 0,
-            identityTargetRotY = 0;
+        let identityDrag = false, identityPrevX = 0, identityPrevY = 0;
+        let identityRotX = 0, identityRotY = 0, identityTargetRotX = 0, identityTargetRotY = 0;
         let identityIdlePhase = 0;
 
         // ─── Confirm modal ──────────────────────────────────────────
@@ -3634,7 +3551,7 @@
         const confirmFee = document.getElementById('confirm-fee');
         const confirmCancel = document.getElementById('confirm-cancel');
         const confirmOk = document.getElementById('confirm-ok');
-        let pendingChange = null; // { field, value, oldValue }
+        let pendingChange = null;
 
         // ─── Helpers ────────────────────────────────────────────────
         function getAnonymousColor(id) {
@@ -3673,8 +3590,7 @@
             if (offset <= newText.length) {
                 const range = document.createRange();
                 const charSpans = element.querySelectorAll('.char-anim');
-                let targetNode = element,
-                    targetOffset = 0;
+                let targetNode = element, targetOffset = 0;
                 let charCount = 0;
                 for (const span of charSpans) {
                     const text = span.textContent;
@@ -3696,13 +3612,8 @@
 
         // ─── RECENT GAMES ──────────────────────────────────────────────
         function addRecentGame(type, opponent, amount, result) {
-            const entry = {
-                type: type,
-                opponent: opponent || 'Unknown',
-                amount: amount || 0,
-                result: result || (amount >= 0 ? 'win' : 'loss'),
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
+            const entry = { type, opponent: opponent || 'Unknown', amount: amount || 0, result: result || (amount >= 0 ? 'win' : 'loss'),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
             state.recentGames.unshift(entry);
             if (state.recentGames.length > state.maxRecent) state.recentGames.pop();
             renderRecentGames();
@@ -3771,10 +3682,8 @@
         }
 
         function stopParticles() {
-            if (particleAnimId) {
-                cancelAnimationFrame(particleAnimId);
-                particleAnimId = null;
-            }
+            if (particleAnimId) { cancelAnimationFrame(particleAnimId);
+                particleAnimId = null; }
             particleCanvas.classList.remove('show');
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
         }
@@ -3818,22 +3727,17 @@
         }
 
         function stopIdentityParticles() {
-            if (identityParticleAnimId) {
-                cancelAnimationFrame(identityParticleAnimId);
-                identityParticleAnimId = null;
-            }
+            if (identityParticleAnimId) { cancelAnimationFrame(identityParticleAnimId);
+                identityParticleAnimId = null; }
             identityParticleCanvas.classList.remove('show');
             identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
         }
 
         // ─── CARD 3D INTERACTION ──────────────────────────────────────
         let cardDrag = false;
-        let cardPrevX = 0,
-            cardPrevY = 0;
-        let cardRotX = 0,
-            cardRotY = 0;
-        let cardTargetRotX = 0,
-            cardTargetRotY = 0;
+        let cardPrevX = 0, cardPrevY = 0;
+        let cardRotX = 0, cardRotY = 0;
+        let cardTargetRotX = 0, cardTargetRotY = 0;
         let cardIdlePhase = 0;
 
         function updateCardTransform() {
@@ -3889,18 +3793,11 @@
         // ─── Card stats update ────────────────────────────────────
         function updateCardStats() {
             const txs = state.transactions;
-            let totalWagered = 0;
-            let biggestWin = 0;
-            let netProfit = 0;
+            let totalWagered = 0, biggestWin = 0, netProfit = 0;
             txs.forEach(tx => {
-                if (tx.type === 'bet') {
-                    totalWagered += Math.abs(tx.amount);
-                } else if (tx.type === 'win') {
-                    netProfit += tx.amount;
-                    if (tx.amount > biggestWin) biggestWin = tx.amount;
-                } else if (tx.type === 'loss') {
-                    netProfit += tx.amount;
-                }
+                if (tx.type === 'bet') totalWagered += Math.abs(tx.amount);
+                else if (tx.type === 'win') { netProfit += tx.amount; if (tx.amount > biggestWin) biggestWin = tx.amount; } else if (tx
+                    .type === 'loss') netProfit += tx.amount;
             });
             csWagered.textContent = totalWagered;
             csBiggest.textContent = biggestWin;
@@ -3972,7 +3869,6 @@
                     const newValue = this.textContent.trim();
                     const oldValue = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
                     if (newValue === oldValue) return;
-                    // Show confirmation modal
                     const fee = getFeeForField(field);
                     confirmTitle.textContent = `Change ${field.charAt(0).toUpperCase() + field.slice(1)}`;
                     confirmDesc.textContent = `Update your anonymous ${field.toLowerCase()}.`;
@@ -3982,17 +3878,14 @@
                     haptic('light');
                 });
                 el.addEventListener('input', function(e) {
-                    // Re-render with animation while typing
                     if (this._animating) return;
                     this._animating = true;
                     animateIdentityField(this, this.textContent);
                     this._animating = false;
                 });
                 el.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.blur();
-                    }
+                    if (e.key === 'Enter') { e.preventDefault();
+                        this.blur(); }
                     if (e.key === 'Escape') {
                         const field = this.id.replace('id-', '');
                         const orig = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
@@ -4035,15 +3928,13 @@
             }
         }
 
-        // ─── Fee calculator ──────────────────────────────────────────
         function getFeeForField(field) {
             if (field === 'name') return state.nameChanged ? 467 : 0;
             if (field === 'username') return state.usernameChanged ? 700 : 32;
-            if (field === 'phone') return 1000; // first and subsequent same
+            if (field === 'phone') return 1000;
             return 0;
         }
 
-        // ─── Confirm modal handlers ─────────────────────────────────
         confirmCancel.addEventListener('click', () => {
             confirmModal.classList.remove('show');
             if (pendingChange) {
@@ -4058,16 +3949,11 @@
             if (!pendingChange) return;
             const { field, value } = pendingChange;
             confirmModal.classList.remove('show');
-            // Call API
             try {
                 const res = await fetch(SERVER_URL + '/api/change-anonymous', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: state.userId,
-                        field: field,
-                        value: value
-                    })
+                    body: JSON.stringify({ userId: state.userId, field, value })
                 });
                 const data = await res.json();
                 if (data.ok) {
@@ -4298,8 +4184,8 @@
         // ─── TRANSACTIONS ──────────────────────────────────────────────
         function addTransaction(type, amount, label) {
             const entry = {
-                type: type,
-                amount: amount,
+                type,
+                amount,
                 label: label || (type === 'win' ? 'Win' : type === 'loss' ? 'Loss' : 'Bet'),
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
@@ -4738,8 +4624,7 @@
             const nowTouching = new Set();
             state.players.forEach(p => {
                 if (p.id === me.id || !p.alive) return;
-                const dx = p.x - me.x,
-                    dy = p.y - me.y;
+                const dx = p.x - me.x, dy = p.y - me.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
                 if (dist < minDist) nowTouching.add(p.id);
@@ -5206,8 +5091,7 @@
             iceBetInput.value = val;
         });
 
-        let iceAutoBetInterval = null,
-            iceAutoBetEnabled = false;
+        let iceAutoBetInterval = null, iceAutoBetEnabled = false;
 
         function toggleIceAutoBet(enable) {
             if (enable && !iceAutoBetEnabled) {
@@ -5391,8 +5275,7 @@
             renderRecentGames();
         }
 
-        let audioCtx = null,
-            victorySoundPlaying = false;
+        let audioCtx = null, victorySoundPlaying = false;
 
         function playVictorySound() {
             if (!state.soundEnabled) return;
@@ -5451,8 +5334,7 @@
             haptic('light');
         });
 
-        let allInConfirming = false,
-            allInTimeout = null;
+        let allInConfirming = false, allInTimeout = null;
         allInBtn.addEventListener('click', () => {
             playClickSound();
             if (allInConfirming) {
@@ -5491,8 +5373,7 @@
         setupInputWithClear(autoAmount, 10);
         setupInputWithClear(iceAutoAmount, 10);
 
-        let autoBetInterval = null,
-            autoBetEnabled = false;
+        let autoBetInterval = null, autoBetEnabled = false;
 
         function toggleAutoBet(enable) {
             if (enable && !autoBetEnabled) {
@@ -5669,8 +5550,7 @@
             ctx.save();
             const hasGap = opening !== null && (isFlashing || isOpen);
             if (hasGap && total > 0) {
-                const start = opening.startIdx,
-                    end = opening.endIdx;
+                const start = opening.startIdx, end = opening.endIdx;
                 ctx.strokeStyle = 'rgba(160,160,176,0.3)';
                 ctx.lineWidth = 5;
                 for (let i = 0; i < total; i++) {
@@ -5715,8 +5595,7 @@
 
             state.players.forEach(p => {
                 if (!p.alive) return;
-                const px = p.x * s,
-                    py = p.y * s;
+                const px = p.x * s, py = p.y * s;
                 const popScale = getPopScale(p);
                 const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
                 const displayRadius = radius * popScale;
@@ -5728,8 +5607,7 @@
                 const topInfo = state.topPlayerIds.get(p.id);
                 let borderColor = 'rgba(255,255,255,0.35)';
                 let borderWidth = 1.5;
-                let shadowColor = 'transparent',
-                    shadowBlur = 0;
+                let shadowColor = 'transparent', shadowBlur = 0;
                 if (topInfo) {
                     if (topInfo.rank === 1) { borderColor = '#FFD700';
                         borderWidth = 3.5;
@@ -5793,70 +5671,12 @@
             const half = w / 2;
             const s = iceScaleFactor();
             iceCtx.clearRect(0, 0, w, w);
+            // Glass-like gradient
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
-            grad.addColorStop(0, 'rgba(12,16,22,0.85)');
-            grad.addColorStop(1, 'rgba(2,4,8,0.95)');
+            grad.addColorStop(0, 'rgba(40,50,70,0.25)');
+            grad.addColorStop(1, 'rgba(10,15,25,0.35)');
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
-
-            const showIdle = (iceState.players.length === 0 && iceState.gameState === 'idle');
-            if (showIdle) {
-                const margin = 20;
-                const r = 10;
-                if (!iceState.idlePuckInitialized) {
-                    iceState.idlePuck.x = w / 2;
-                    iceState.idlePuck.y = w / 2;
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = 2.0 + Math.random() * 1.5;
-                    iceState.idlePuck.vx = Math.cos(angle) * speed;
-                    iceState.idlePuck.vy = Math.sin(angle) * speed;
-                    iceState.idlePuck.radius = r;
-                    iceState.idlePuckInitialized = true;
-                }
-                let x = iceState.idlePuck.x;
-                let y = iceState.idlePuck.y;
-                let vx = iceState.idlePuck.vx;
-                let vy = iceState.idlePuck.vy;
-                x += vx;
-                y += vy;
-                if (x - r < margin) { x = margin + r;
-                    vx = -vx; }
-                if (x + r > w - margin) { x = w - margin - r;
-                    vx = -vx; }
-                if (y - r < margin) { y = margin + r;
-                    vy = -vy; }
-                if (y + r > w - margin) { y = w - margin - r;
-                    vy = -vy; }
-                iceState.idlePuck.x = x;
-                iceState.idlePuck.y = y;
-                iceState.idlePuck.vx = vx;
-                iceState.idlePuck.vy = vy;
-                const cx = x;
-                const cy = y;
-                const puckRadius = 10 * s;
-                iceCtx.save();
-                iceCtx.shadowColor = 'rgba(180, 220, 255, 0.7)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.lineWidth = 4.5;
-                iceCtx.beginPath();
-                iceCtx.arc(cx, cy, puckRadius, 0, Math.PI * 2);
-                iceCtx.stroke();
-                const crossSize = puckRadius * 0.75;
-                iceCtx.shadowBlur = 0;
-                iceCtx.globalAlpha = 0.65;
-                iceCtx.lineWidth = 2.0;
-                iceCtx.strokeStyle = '#eaf6ff';
-                iceCtx.beginPath();
-                iceCtx.moveTo(cx - crossSize, cy);
-                iceCtx.lineTo(cx + crossSize, cy);
-                iceCtx.moveTo(cx, cy - crossSize);
-                iceCtx.lineTo(cx, cy + crossSize);
-                iceCtx.stroke();
-                iceCtx.globalAlpha = 1;
-                iceCtx.restore();
-                return;
-            }
 
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
@@ -5866,9 +5686,7 @@
             perimeterPath.closePath();
 
             const now = performance.now();
-            let zoomTx = 0,
-                zoomTy = 0,
-                zoomSc = 1;
+            let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             const puck = iceState.puck;
 
             if (iceState.gameState === 'sliding') {
@@ -5922,8 +5740,7 @@
             if (iceState.zoom > 1.01) {
                 const puckScreenX = renderPuckX * s;
                 const puckScreenY = renderPuckY * s;
-                const cx = half,
-                    cy = half;
+                const cx = half, cy = half;
                 zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                 zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
@@ -5932,16 +5749,16 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
+            // Draw perimeter as near-invisible (just for collider visual)
             iceCtx.save();
-            iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
-            iceCtx.shadowBlur = 30;
-            iceCtx.fillStyle = 'rgba(20,28,38,0.85)';
-            iceCtx.fill(perimeterPath);
+            iceCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+            iceCtx.lineWidth = 1;
+            iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
+            // Draw fields (inset by ICE_FIELD_MARGIN on server)
             iceCtx.save();
             iceCtx.clip(perimeterPath);
-
             iceState.players.forEach((p, index) => {
                 const x1 = p.x1 * s;
                 const y1 = p.y1 * s;
@@ -6045,12 +5862,7 @@
             });
             iceCtx.restore();
 
-            iceCtx.save();
-            iceCtx.strokeStyle = 'rgba(160,190,220,0.35)';
-            iceCtx.lineWidth = 4;
-            iceCtx.stroke(perimeterPath);
-            iceCtx.restore();
-
+            // Spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -6082,6 +5894,7 @@
                 iceCtx.restore();
             }
 
+            // Draw puck
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6298,9 +6111,7 @@
             const loadingText = document.getElementById('loading-text');
             const selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
             let squares = [];
-            let squareSize = 0,
-                gapSize = 0,
-                gridSize = 0;
+            let squareSize = 0, gapSize = 0, gridSize = 0;
 
             function measureGrid() {
                 const rect = grid.getBoundingClientRect();
