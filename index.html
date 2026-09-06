@@ -2476,7 +2476,7 @@
 
         #ice-top-panel {
             position: absolute;
-            top: 12px;  /* ← FIX: changed from 82px to 12px */
+            top: 12px;
             left: 50%;
             transform: translateX(-50%) translateY(100%);
             width: 90%;
@@ -5163,10 +5163,6 @@
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
-                // Increase lerp factor from 30 to 60 for smoother following
-                const lerpFactor = 60;
-                // We'll use a dynamic lerp in the render loop based on time delta
-                // but we store the time and use it in renderIce.
             }
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -6189,7 +6185,7 @@
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                const lerpFactor = 60; // higher = faster catch-up
+                const lerpFactor = 60;
                 const lerpAmount = Math.min(elapsed * lerpFactor, 1);
                 renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
@@ -6347,16 +6343,16 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. Grey transparent collider circle (ring) ----
-                const colliderRadius = r * 0.6;
+                // ---- NEW: Grey outer collider (solid ring, larger) ----
+                // Remove the old dashed inner collider; draw a solid grey ring around the puck.
+                const colliderRadius = r * 1.15; // bigger than the puck
                 iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(200, 200, 200, 0.30)';
-                iceCtx.lineWidth = 2.5; // ← thicker
-                iceCtx.setLineDash([3, 4]);
+                iceCtx.strokeStyle = 'rgba(160, 160, 160, 0.45)';
+                iceCtx.lineWidth = 2.5;
+                iceCtx.setLineDash([]); // solid
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
-                iceCtx.setLineDash([]);
                 iceCtx.restore();
 
                 // ---- 2. Shadow ----
@@ -6381,7 +6377,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 4. Cross (larger: 0.7 * radius) ----
+                // ---- 4. Cross (0.7 * radius) ----
                 const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
