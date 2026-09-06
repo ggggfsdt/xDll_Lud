@@ -5999,7 +5999,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE ──────────────────────────────────────────────
+        // ─── RENDER ICE (modified) ────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6039,7 +6039,6 @@
                 const alpha = 0.08 + 0.22 * pulse;
                 const blur = 15 + 30 * pulse;
 
-                // Outer glow
                 iceCtx.save();
                 iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
                 iceCtx.shadowBlur = blur;
@@ -6048,7 +6047,6 @@
                 iceCtx.stroke(perimeterPath);
                 iceCtx.restore();
 
-                // Secondary wider glow
                 iceCtx.save();
                 iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.6})`;
                 iceCtx.shadowBlur = blur * 1.8;
@@ -6074,7 +6072,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Perimeter outline (always present)
+            // Perimeter outline
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             iceCtx.lineWidth = 3;
@@ -6121,17 +6119,16 @@
                 const cx = x;
                 const cy = y;
                 const puckRadius = 10 * s;
-                // Draw as circle with thick stroke
                 const r = puckRadius;
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.strokeStyle = '#ffffff';
-                iceCtx.lineWidth = 4; // thick outline
+                iceCtx.lineWidth = 4;
                 iceCtx.beginPath();
                 iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
                 iceCtx.stroke();
-                const crossSize = r * 0.5; // smaller cross
+                const crossSize = r * 0.7;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.5;
                 iceCtx.lineWidth = 2;
@@ -6197,7 +6194,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Draw fields - colored rectangles
+            // Draw fields
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6217,7 +6214,6 @@
                 iceCtx.fillRect(x1, y1, segW, segH);
                 iceCtx.globalAlpha = 1;
 
-                // Avatar
                 const avatarR = Math.min(segW, segH) * 0.32;
                 let pfpScale = 1;
                 const popData = iceState.pfpPop.get(p.id);
@@ -6299,7 +6295,7 @@
                 iceCtx.restore();
             }
 
-            // Puck - circle with thick outline
+            // ─── PUCK DRAWING (modified) ──────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6344,10 +6340,21 @@
                     py = renderPuckY * s;
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
-                // Use a circle, not ellipse
                 const r = puckRadius;
 
-                // Shadow
+                // ---- 1. Grey transparent collider circle ----
+                const colliderRadius = r * 0.6; // matches server collision radius ratio
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(200, 200, 200, 0.30)';
+                iceCtx.lineWidth = 1.5;
+                iceCtx.setLineDash([3, 4]);
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
+                iceCtx.stroke();
+                iceCtx.setLineDash([]);
+                iceCtx.restore();
+
+                // ---- 2. Shadow ----
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
                 iceCtx.shadowBlur = 12;
@@ -6359,16 +6366,19 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // White outline - thick
+                // ---- 3. White outline (thick) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4; // thick outline
+                iceCtx.lineWidth = 4;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Cross - smaller
-                const crossSize = r * 0.5;
+                iceCtx.restore();
+
+                // ---- 4. Cross (larger: 0.7 * radius) ----
+                const crossSize = r * 0.7;
+                iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
                 iceCtx.lineWidth = 2;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
