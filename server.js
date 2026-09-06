@@ -473,7 +473,7 @@ function updateIcePhysics(dt) {
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 6;
+  const puckRadius = 6; // small collision radius
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -529,12 +529,7 @@ function updateIcePhysics(dt) {
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  // ---- MINIMUM SPEED THRESHOLD ----
-  if (finalSpeed < 0.3) {
-    puck.vx = 0;
-    puck.vy = 0;
-    endIceGame();
-  }
+  if (finalSpeed < 0.08) endIceGame();
 }
 
 function broadcastIceState() {
@@ -547,7 +542,7 @@ function broadcastIceState() {
     spinFinalAngle: iceRoom.spinFinalAngle,
     spinStartX: iceRoom.spinStartX,
     spinStartY: iceRoom.spinStartY,
-    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y, vx: iceRoom.puck.vx, vy: iceRoom.puck.vy },
+    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
@@ -1038,7 +1033,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API (full)
+// ADMIN API
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -1459,7 +1454,6 @@ app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
   }
 });
 
-// ─── Promo redeem (unchanged) ──────────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
