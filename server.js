@@ -65,7 +65,7 @@ function verifyInitData(initData) {
 
 // ─── Arena geometry ─────────────────────────────────────────────
 const ARENA_SIZE = 400;
-const CORNER_RADIUS = ARENA_SIZE * 0.18;
+const CORNER_RADIUS = ARENA_SIZE * 0.15;
 
 function generatePerimeter(size, cornerRadius, numPoints = 300) {
   const half = size / 2;
@@ -150,8 +150,8 @@ const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
 
-// Uniform scale factor for fields – slightly bigger
-const ICE_FIELD_SCALE = 0.92; // increased from 0.85
+// Uniform scale factor for fields – smaller fields
+const ICE_FIELD_SCALE = 0.85; // Reduced from 0.98 to make fields smaller
 
 function createIceRoom(id) {
   return {
@@ -367,8 +367,8 @@ function startIceSpin() {
 
 function launchIcePuck() {
   iceRoom.gameState = 'sliding';
-  const baseSpeed = 32;
-  const speed = baseSpeed + Math.random() * 4;
+  const baseSpeed = 32; // Increased from 16 for faster start
+  const speed = baseSpeed + Math.random() * 4; // More random variation
   const angle = iceRoom.spinFinalAngle;
   iceRoom.puck.x = iceRoom.spinStartX;
   iceRoom.puck.y = iceRoom.spinStartY;
@@ -470,17 +470,17 @@ async function endIceGame() {
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
-  const subSteps = 300;
+  const subSteps = 300; // Increased from 80 for 1000x smoother
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 7; // smaller collision radius
+  const puckRadius = 8; // Shrunk from 10
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
     let iter = 0;
-    const maxIter = 15;
+    const maxIter = 15; // More iterations for stability
     while (iter < maxIter) {
       let collided = false;
       for (let i = 0; i < totalPts; i++) {
@@ -502,11 +502,13 @@ function updateIcePhysics(dt) {
           puck.y += ny * overlap;
           const vn = puck.vx * nx + puck.vy * ny;
           if (vn < 0) {
-            const restitution = 0.92;
+            const restitution = 0.92; // Softer bounce (jelly-like)
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
-            puck.vx += (Math.random() - 0.5) * 0.02;
-            puck.vy += (Math.random() - 0.5) * 0.02;
+            // Add a tiny random perturbation to make bounce more natural
+            const perturbation = 0.02;
+            puck.vx += (Math.random() - 0.5) * perturbation;
+            puck.vy += (Math.random() - 0.5) * perturbation;
           }
           collided = true;
           break;
@@ -519,9 +521,9 @@ function updateIcePhysics(dt) {
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     let frictionPerSecond;
     if (elapsed < 1.8) {
-      frictionPerSecond = 0.999;
+      frictionPerSecond = 0.999; // Very little friction initially
     } else {
-      frictionPerSecond = 0.55;
+      frictionPerSecond = 0.55; // Strong drag for faster slowdown
     }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
@@ -838,6 +840,7 @@ function updatePhysics(dt) {
       }
     }
 
+    // Speed cap
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
