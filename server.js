@@ -151,7 +151,7 @@ const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
 
 // Uniform scale factor for fields – slightly bigger
-const ICE_FIELD_SCALE = 0.92; // increased from 0.85
+const ICE_FIELD_SCALE = 0.92;
 
 function createIceRoom(id) {
   return {
@@ -473,7 +473,7 @@ function updateIcePhysics(dt) {
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 6; // smaller collision radius
+  const puckRadius = 6; // small collision radius
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
