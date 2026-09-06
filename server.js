@@ -1038,9 +1038,455 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API (unchanged)
+// ADMIN API (full)
 // ─────────────────────────────────────────────────────────────
-// ... (admin HTML and endpoints as before, omitted for brevity but present in your original code) ...
+const ADMIN_HTML = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Admin Panel</title>
+<style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
+table{width:100%;border-collapse:collapse;margin:10px 0}
+th,td{padding:8px;border:1px solid #333;text-align:left}
+button{padding:6px 12px;margin:2px;border:none;border-radius:6px;cursor:pointer;background:#4CAF50;color:#fff}
+button.danger{background:#e06060}
+button.warning{background:#f0a030}
+input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff}
+.auth{display:flex;gap:10px;margin-bottom:20px}
+.section{border:1px solid #333;padding:15px;margin-top:15px;border-radius:8px}
+.bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.bot-row input{width:120px}
+.bot-row button{background:#5b8def}
+.switch-wrap{display:flex;align-items:center;gap:12px;margin:6px 0}
+.switch-wrap .switch{position:relative;width:50px;height:26px;flex-shrink:0;cursor:pointer}
+.switch-wrap .switch input{opacity:0;width:0;height:0}
+.switch-wrap .switch .slider{position:absolute;inset:0;background:#444;border-radius:999px;transition:0.3s}
+.switch-wrap .switch .slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s}
+.switch-wrap .switch input:checked+.slider{background:#5b8def}
+.switch-wrap .switch input:checked+.slider::before{transform:translateX(24px)}
+.notification-row{display:flex;gap:10px;margin:8px 0;align-items:center}
+.notification-row input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #444;background:#222;color:#fff}
+.notification-row button{padding:6px 16px}
+</style></head>
+<body>
+<h2>dllump Admin</h2>
+<div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
+<div id="content" style="display:none">
+  <div class="section">
+    <h3>📢 Send Notification</h3>
+    <div class="notification-row">
+      <input id="notifInput" placeholder="Type message or emoji..." />
+      <button onclick="sendNotification()">Send</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>🤖 Auto Bot</h3>
+    <div class="switch-wrap">
+      <span style="color:#888;">Auto-spawn bots in ice arena</span>
+      <label class="switch">
+        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
+        <span class="slider"></span>
+      </label>
+      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
+    </div>
+  </div>
+  <div class="section">
+    <h3>🤖 Bot Spawn</h3>
+    <div class="bot-row">
+      <input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
+      <input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
+      <button onclick="spawnBots()">Spawn Bots</button>
+      <button class="danger" onclick="removeBots()">Remove All Bots</button>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Players</h3>
+    <button onclick="refreshPlayers()">Refresh Players</button>
+    <div id="players"></div>
+  </div>
+  <div class="section">
+    <h3>Actions</h3>
+    <button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button>
+    <button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button>
+    <button class="danger" onclick="wipeAll()">Wipe All Data</button>
+  </div>
+  <div class="section">
+    <h3>Promo Codes</h3>
+    <p>Generate a new code:</p>
+    <input id="promoAmount" placeholder="Amount" value="100"/>
+    <input id="promoCode" placeholder="Custom code (optional)"/>
+    <input id="promoMaxUses" placeholder="Max uses" value="1"/>
+    <button onclick="generatePromo()">Generate Promo</button>
+    <div id="promoCodes"></div>
+  </div>
+  <div class="section">
+    <h3>Individual Player</h3>
+    <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button>
+    <br/>
+    <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
+    <br/>
+    <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
+    <br/>
+    <input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button>
+  </div>
+</div>
+<script>
+const ADMIN_SECRET = '${ADMIN_SECRET}';
+async function fetchAdmin(path, method='GET', body=null) {
+  const headers = {'admin-secret': document.getElementById('secret').value};
+  if(body) headers['Content-Type'] = 'application/json';
+  const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
+  return res.json();
+}
+function auth(){
+  const secret = document.getElementById('secret').value;
+  if(secret === ADMIN_SECRET) {
+    document.getElementById('content').style.display = 'block';
+    refreshPlayers();
+    refreshPromoCodes();
+    fetchAutoBotStatus();
+  } else alert('Wrong secret');
+}
+async function fetchAutoBotStatus(){
+  const data = await fetchAdmin('/auto-bot-status');
+  document.getElementById('autoBotToggle').checked = data.enabled;
+  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
+}
+async function toggleAutoBot(enabled){
+  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
+  if(data.ok) {
+    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
+  } else alert('Error: '+data.error);
+}
+async function sendNotification(){
+  const msg = document.getElementById('notifInput').value.trim();
+  if(!msg) { alert('Please enter a message'); return; }
+  const data = await fetchAdmin('/send-notification', 'POST', {message: msg});
+  if(data.ok) {
+    alert('Notification sent!');
+    document.getElementById('notifInput').value = '';
+  } else alert('Error: '+data.error);
+}
+async function refreshPlayers(){
+  const data = await fetchAdmin('/players');
+  const players = data.players || [];
+  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
+  players.forEach(p => {
+    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
+    <td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`;
+  });
+  html += '</table>';
+  document.getElementById('players').innerHTML = html;
+}
+async function refreshPromoCodes(){
+  const data = await fetchAdmin('/promo-codes');
+  const codes = data.codes || [];
+  let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
+  codes.forEach(c => {
+    html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td>
+    <td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`;
+  });
+  html += '</table>';
+  document.getElementById('promoCodes').innerHTML = html;
+}
+async function spawnBots(){
+  const bet = parseInt(document.getElementById('botBet').value) || 100;
+  const count = parseInt(document.getElementById('botCount').value) || 1;
+  if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; }
+  const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count});
+  if(data.ok) alert('Spawned ' + data.spawned + ' bots!');
+  else alert('Error: ' + data.error);
+  refreshPlayers();
+}
+async function removeBots(){
+  if(!confirm('Remove all bots from the ice arena?')) return;
+  const data = await fetchAdmin('/remove-bots', 'POST');
+  if(data.ok) alert('Removed ' + data.removed + ' bots');
+  refreshPlayers();
+}
+async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
+async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
+async function wipeAll(){ if(confirm('Wipe ALL player data? This cannot be undone!')){ await fetchAdmin('/wipe', 'POST'); refreshPlayers(); } }
+async function addMoney(){
+  const id = document.getElementById('addUserId').value;
+  const amount = parseInt(document.getElementById('addAmount').value);
+  if(!id || !amount) return;
+  await fetchAdmin('/add-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function setMoney(){
+  const id = document.getElementById('setUserId').value;
+  const amount = parseInt(document.getElementById('setAmount').value);
+  if(!id || isNaN(amount)) return;
+  await fetchAdmin('/set-money', 'POST', {id, amount});
+  refreshPlayers();
+}
+async function banPlayer(id){
+  const userId = id || document.getElementById('banUserId').value;
+  if(!userId) return;
+  await fetchAdmin('/ban', 'POST', {id: userId});
+  refreshPlayers();
+}
+async function resetPlayer(){
+  const id = document.getElementById('resetUserId').value;
+  if(!id) return;
+  if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return;
+  await fetchAdmin('/reset-player', 'POST', {id});
+  refreshPlayers();
+}
+async function generatePromo(){
+  const amount = parseInt(document.getElementById('promoAmount').value) || 100;
+  const code = document.getElementById('promoCode').value || null;
+  const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1;
+  const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses});
+  if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); }
+  else alert('Error: '+data.error);
+}
+async function deletePromo(code){
+  if(!confirm('Delete promo '+code+'?')) return;
+  await fetchAdmin('/delete-promo', 'POST', {code});
+  refreshPromoCodes();
+}
+</script>
+</body></html>`;
+
+function adminAuth(req, res, next) {
+  const secret = req.headers['admin-secret'] || req.query.secret;
+  if (secret !== ADMIN_SECRET) {
+    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  }
+  next();
+}
+
+app.get('/admin', (req, res) => {
+  res.send(ADMIN_HTML);
+});
+
+app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
+  const { enabled } = req.body;
+  if (typeof enabled !== 'boolean') {
+    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
+  }
+  autoBotEnabled = enabled;
+  res.json({ ok: true, enabled: autoBotEnabled });
+});
+app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
+  res.json({ enabled: autoBotEnabled });
+});
+
+app.post('/admin/api/send-notification', adminAuth, (req, res) => {
+  const { message } = req.body;
+  if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    return res.status(400).json({ ok: false, error: 'Missing message' });
+  }
+  io.emit('notification', { message: message.trim(), timestamp: Date.now() });
+  res.json({ ok: true });
+});
+
+app.get('/admin/api/players', adminAuth, async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    res.json({ players: users });
+  } catch (err) {
+    console.error('Admin players error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    for (const u of users) {
+      u.balance = 50;
+      await saveUser(u);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Reset money error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
+  try {
+    const users = await getAllUsers();
+    for (const u of users) {
+      u.wins = 0;
+      u.losses = 0;
+      await saveUser(u);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Reset top error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/wipe', adminAuth, async (req, res) => {
+  try {
+    const all = await getAllUsers();
+    for (const u of all) {
+      u.balance = 50;
+      u.wins = 0;
+      u.losses = 0;
+      u.banned = false;
+      u.winHistory = [];
+      await saveUser(u);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Wipe error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/add-money', adminAuth, async (req, res) => {
+  try {
+    const { id, amount } = req.body;
+    if (!id || !amount || isNaN(amount)) return res.status(400).json({ ok: false, error: 'Invalid' });
+    const user = await getUser(id);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    user.balance += amount;
+    await saveUser(user);
+    res.json({ ok: true, balance: user.balance });
+  } catch (err) {
+    console.error('Add money error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/set-money', adminAuth, async (req, res) => {
+  try {
+    const { id, amount } = req.body;
+    if (!id || isNaN(amount) || amount < 0) return res.status(400).json({ ok: false, error: 'Invalid' });
+    const user = await getUser(id);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    user.balance = amount;
+    await saveUser(user);
+    res.json({ ok: true, balance: user.balance });
+  } catch (err) {
+    console.error('Set money error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/ban', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+    const user = await getUser(id);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    user.banned = !user.banned;
+    await saveUser(user);
+    res.json({ ok: true, banned: user.banned });
+  } catch (err) {
+    console.error('Ban error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/reset-player', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
+    const success = await resetPlayer(id);
+    if (!success) return res.status(404).json({ ok: false, error: 'User not found' });
+    res.json({ ok: true, message: 'Player stats reset' });
+  } catch (err) {
+    console.error('Reset player error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/create-promo', adminAuth, async (req, res) => {
+  try {
+    const { amount, code, maxUses } = req.body;
+    if (!amount || isNaN(amount) || amount < 1) return res.status(400).json({ ok: false, error: 'Invalid amount' });
+    const promo = await createPromoCode(amount, code || null, maxUses || 1);
+    res.json({ ok: true, code: promo.code });
+  } catch (err) {
+    console.error('Create promo error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/delete-promo', adminAuth, async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
+    await deletePromoCode(code);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Delete promo error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
+  try {
+    const codes = await getPromoCodes();
+    res.json({ codes });
+  } catch (err) {
+    console.error('Get promo codes error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
+  try {
+    const { bet, count } = req.body;
+    const betAmount = Math.max(10, parseInt(bet) || 100);
+    const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
+    let spawned = 0;
+    for (let i = 0; i < numBots; i++) {
+      const player = spawnBot(betAmount);
+      if (player) spawned++;
+    }
+    if (spawned > 0) repartitionIceArena();
+    broadcastIceState();
+    res.json({ ok: true, spawned });
+  } catch (err) {
+    console.error('Spawn bot error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
+  try {
+    const removed = removeAllBots();
+    broadcastIceState();
+    res.json({ ok: true, removed });
+  } catch (err) {
+    console.error('Remove bots error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+// ─── Promo redeem (unchanged) ──────────────────────────────────
+app.post('/redeem', async (req, res) => {
+  try {
+    const { code, userId } = req.body;
+    if (!code || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    }
+    const result = await redeemPromoCode(code, userId);
+    res.json(result);
+  } catch (err) {
+    console.error('Redeem promo error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
+
+app.get('/redeem', async (req, res) => {
+  try {
+    const { code, userId } = req.query;
+    if (!code || !userId) {
+      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
+    }
+    const result = await redeemPromoCode(code, userId);
+    res.json(result);
+  } catch (err) {
+    console.error('Redeem promo (GET) error:', err);
+    res.status(500).json({ ok: false, error: 'Internal error' });
+  }
+});
 
 // ─── NEW HTTP ENDPOINTS ──────────────────────────────────────────
 app.post('/api/change-anonymous', async (req, res) => {
