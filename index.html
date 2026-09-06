@@ -4471,6 +4471,9 @@
             winnerPuckPopStart: 0,
             winnerPuckPopDuration: 600,
             glowPhase: 0,
+            // store velocity for interpolation
+            puckVx: 0,
+            puckVy: 0,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -5148,6 +5151,11 @@
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
+                // store velocity if available
+                if (snapshot.puck.vx !== undefined) {
+                    iceState.puckVx = snapshot.puck.vx;
+                    iceState.puckVy = snapshot.puck.vy;
+                }
             }
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
@@ -5163,6 +5171,10 @@
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
+                if (snapshot.puck.vx !== undefined) {
+                    iceState.puckVx = snapshot.puck.vx;
+                    iceState.puckVy = snapshot.puck.vy;
+                }
             }
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -6144,12 +6156,15 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // Update zoom
+            // Update zoom - delay to 8.5 seconds
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
-                if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                // Only start zoom after 8.5 seconds and speed is low
+                const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
+                const speedThreshold = 2.0; // lower speed triggers zoom
+                if (slideElapsed > 8.5 && currentSpeed < speedThreshold && !iceState.isZoomingOut && !iceState.zoomLocked) {
                     if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
                         iceState.isZoomingIn = true;
                         iceState.zoomStartTime = now;
@@ -6185,10 +6200,9 @@
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                const lerpFactor = 60;
-                const lerpAmount = Math.min(elapsed * lerpFactor, 1);
-                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
-                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
+                const smoothFactor = Math.min(1, elapsed * 12); // adjust responsiveness
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * smoothFactor;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * smoothFactor;
             }
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
@@ -6344,45 +6358,61 @@
                 const r = puckRadius;
 
                 // ---- NEW: Grey outer collider (solid ring, larger) ----
-                // Remove the old dashed inner collider; draw a solid grey ring around the puck.
-                const colliderRadius = r * 1.15; // bigger than the puck
+                const colliderRadius = r * 1.15;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(160, 160, 160, 0.45)';
                 iceCtx.lineWidth = 2.5;
-                iceCtx.setLineDash([]); // solid
+                iceCtx.setLineDash([]);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 2. Shadow ----
+                // ---- 1. Shadow glow ----
                 iceCtx.save();
-                iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.shadowOffsetX = 3;
-                iceCtx.shadowOffsetY = 4;
-                iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
+                iceCtx.shadowColor = 'rgba(255,255,255,0.3)';
+                iceCtx.shadowBlur = 20;
                 iceCtx.beginPath();
-                iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
+                iceCtx.arc(px, py, r * 1.2, 0, Math.PI * 2);
+                iceCtx.fillStyle = 'rgba(255,255,255,0.05)';
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // ---- 3. White outline (thick) ----
+                // ---- 2. Outer soft ring ----
                 iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+                iceCtx.lineWidth = 6;
+                iceCtx.shadowBlur = 0;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r + 4, 0, Math.PI * 2);
+                iceCtx.stroke();
+                iceCtx.restore();
+
+                // ---- 3. Main white circle (thick) ----
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.95)';
+                iceCtx.lineWidth = 5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 4. Cross (0.7 * radius) ----
-                const crossSize = r * 0.7;
+                // ---- 4. Inner subtle fill ----
                 iceCtx.save();
-                iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 2;
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+                iceCtx.fillStyle = 'rgba(255,255,255,0.15)';
+                iceCtx.shadowBlur = 0;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r - 2, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.restore();
+
+                // ---- 5. Cross (thin) ----
+                const crossSize = r * 0.65;
+                iceCtx.save();
+                iceCtx.globalAlpha = 0.6;
+                iceCtx.lineWidth = 2.5;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
                 iceCtx.lineTo(px + crossSize, py);
