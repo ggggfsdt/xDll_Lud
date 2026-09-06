@@ -2476,7 +2476,7 @@
 
         #ice-top-panel {
             position: absolute;
-            top: 70px;  /* lowered to sit below win panels */
+            top: 12px;  /* ← FIX: changed from 82px to 12px */
             left: 50%;
             transform: translateX(-50%) translateY(100%);
             width: 90%;
@@ -3485,8 +3485,6 @@
 
     <script>
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
-        // (All JavaScript is exactly as in the previous full version.
-        //  The loading script below includes a 5-second fallback timeout.)
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
             'https://i.postimg.cc/9Frvpxhz/ezgif-3f0e907be807d1cc.gif',
@@ -5165,9 +5163,10 @@
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
-                // Increase lerp factor for smoother following
+                // Increase lerp factor from 30 to 60 for smoother following
                 const lerpFactor = 60;
-                // (We'll apply the lerp in renderIce using the elapsed time)
+                // We'll use a dynamic lerp in the render loop based on time delta
+                // but we store the time and use it in renderIce.
             }
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -5778,8 +5777,231 @@
         });
 
         // ─── RENDER PVP ──────────────────────────────────────────────
-        // (Same as before – omitted for brevity, but included in the full script)
-        // ... (full render functions as in the previous version) ...
+        function render() {
+            const w = state.arenaSize;
+            const half = w / 2;
+            const s = scaleFactor();
+            ctx.clearRect(0, 0, w, w);
+
+            // Glass background with center glow (liquid glass effect)
+            const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
+            grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
+            grad.addColorStop(0.7, 'rgba(16, 18, 26, 0.80)');
+            grad.addColorStop(1, 'rgba(6, 8, 12, 0.92)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, w);
+
+            // Center glow (liquid glass effect)
+            const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.save();
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, 0, w, w);
+            ctx.restore();
+
+            // Rounded rect for arena background
+            const cornerRadius = w * 0.20;
+            const rectX = 0, rectY = 0, rectW = w, rectH = w;
+
+            function roundRect(ctx, x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+            }
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = 'rgba(20, 22, 30, 0.70)';
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(40, 44, 54, 0.20)';
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.fill();
+            ctx.restore();
+
+            // Outline
+            ctx.save();
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
+            ctx.shadowBlur = 16;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 2.5;
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 6;
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.stroke();
+            ctx.restore();
+
+            // Perimeter path
+            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length > 0) {
+                const opening = state.opening;
+                const isFlashing = opening && opening.state === 'flashing';
+                const isOpen = opening && opening.state === 'open';
+                const total = pts.length;
+                ctx.save();
+                const hasGap = opening !== null && (isFlashing || isOpen);
+                if (hasGap && total > 0) {
+                    const start = opening.startIdx,
+                        end = opening.endIdx;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.lineWidth = 1.5;
+                    for (let i = 0; i < total; i++) {
+                        const j = (i + 1) % total;
+                        let inGap = false;
+                        if (start < end) {
+                            if (i >= start && i < end) inGap = true;
+                            if (j >= start && j < end) inGap = true;
+                        } else {
+                            if (i >= start || i < end) inGap = true;
+                            if (j >= start || j < end) inGap = true;
+                        }
+                        if (inGap) continue;
+                        ctx.beginPath();
+                        ctx.moveTo(pts[i].x, pts[i].y);
+                        ctx.lineTo(pts[j].x, pts[j].y);
+                        ctx.stroke();
+                    }
+                    if (isFlashing) {
+                        const isRed = (opening.flashCount % 2 === 0);
+                        ctx.save();
+                        const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.15)';
+                        let gapSegments = [];
+                        if (start < end) {
+                            for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        } else {
+                            for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
+                            for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        }
+                        ctx.strokeStyle = flashColor;
+                        ctx.lineWidth = isRed ? 4 : 2.5;
+                        ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+                        ctx.shadowBlur = isRed ? 18 : 6;
+                        for (const seg of gapSegments) {
+                            ctx.beginPath();
+                            ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
+                            ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                    }
+                } else {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // Clip to rounded rect for players
+            ctx.save();
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.clip();
+
+            state.players.forEach(p => {
+                if (!p.alive) return;
+                const px = p.x * s,
+                    py = p.y * s;
+                const popScale = getPopScale(p);
+                const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
+                const displayRadius = radius * popScale;
+                let pulseScale = 1;
+                if (p.isPulsing) {
+                    const t = p.pulseTime;
+                    if (t < 0.6) {
+                        const phase = t / 0.6;
+                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase);
+                    }
+                }
+                const finalRadius = displayRadius * pulseScale;
+                const drawRadius = Math.max(finalRadius - 1, 1);
+                const topInfo = state.topPlayerIds.get(p.id);
+                let borderColor = 'rgba(255,255,255,0.35)';
+                let borderWidth = 1.5;
+                let shadowColor = 'transparent',
+                    shadowBlur = 0;
+                if (topInfo) {
+                    if (topInfo.rank === 1) {
+                        borderColor = '#FFD700';
+                        borderWidth = 3.5;
+                        shadowColor = 'rgba(255,215,0,0.6)';
+                        shadowBlur = 18;
+                    } else if (topInfo.rank === 2) {
+                        borderColor = '#C0C0C0';
+                        borderWidth = 3.0;
+                        shadowColor = 'rgba(192,192,192,0.5)';
+                        shadowBlur = 14;
+                    }
+                }
+                const isMe = p.id === state.userId;
+                const isAnonymous = isMe && state.anonymous;
+                const hidePfp = isMe && state.hidePfp;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                if (isAnonymous || hidePfp) {
+                    const color = getAnonymousColor(state.userId);
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
+                    ctx.fillStyle = '#fff';
+                    const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
+                    ctx.font = `bold ${drawRadius*0.6}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(letter, px, py + 1);
+                    ctx.shadowBlur = 0;
+                } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                    const size = drawRadius * 2;
+                    ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
+                } else {
+                    ctx.fillStyle = p.color || '#555';
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${drawRadius*0.5}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
+                }
+                ctx.restore();
+                ctx.save();
+                ctx.shadowBlur = shadowBlur;
+                ctx.shadowColor = shadowColor;
+                ctx.beginPath();
+                ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = borderWidth;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            });
+
+            ctx.restore(); // clip
+        }
 
         // ─── RENDER ICE (modified) ────────────────────────────────────
         function renderIce() {
@@ -5790,7 +6012,293 @@
 
             iceCtx.clearRect(0, 0, w, w);
 
-            // ... (background, glow, perimeter, idle puck, zoom, fields, spinning arrow – same as before) ...
+            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(45, 55, 70, 0.35)');
+            grad.addColorStop(0.4, 'rgba(28, 35, 48, 0.45)');
+            grad.addColorStop(0.8, 'rgba(14, 18, 26, 0.55)');
+            grad.addColorStop(1, 'rgba(6, 10, 18, 0.60)');
+            iceCtx.fillStyle = grad;
+            iceCtx.fillRect(0, 0, w, w);
+
+            const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            iceCtx.save();
+            iceCtx.fillStyle = glowGrad;
+            iceCtx.fillRect(0, 0, w, w);
+            iceCtx.restore();
+
+            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length === 0) return;
+            const perimeterPath = new Path2D();
+            perimeterPath.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
+            perimeterPath.closePath();
+
+            // ─── PULSE GLOW EFFECT (idle state) ─────────────────────
+            if (iceState.gameState === 'idle') {
+                iceState.glowPhase += 0.03;
+                const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
+                const alpha = 0.08 + 0.22 * pulse;
+                const blur = 15 + 30 * pulse;
+
+                iceCtx.save();
+                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
+                iceCtx.shadowBlur = blur;
+                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
+                iceCtx.lineWidth = 4;
+                iceCtx.stroke(perimeterPath);
+                iceCtx.restore();
+
+                iceCtx.save();
+                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.6})`;
+                iceCtx.shadowBlur = blur * 1.8;
+                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.15})`;
+                iceCtx.lineWidth = 8;
+                iceCtx.stroke(perimeterPath);
+                iceCtx.restore();
+            }
+
+            // Zoom handling
+            let zoomActive = iceState.zoom > 1.01;
+            let zoomTx = 0, zoomTy = 0, zoomSc = 1;
+            if (zoomActive) {
+                const puck = iceState.puck;
+                const puckScreenX = puck.x * s;
+                const puckScreenY = puck.y * s;
+                const cx = half, cy = half;
+                zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
+                zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
+                zoomSc = iceState.zoom;
+                iceCtx.save();
+                iceCtx.translate(zoomTx, zoomTy);
+                iceCtx.scale(zoomSc, zoomSc);
+            }
+
+            // Perimeter outline
+            iceCtx.save();
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+            iceCtx.lineWidth = 3;
+            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+            iceCtx.shadowBlur = 14;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.shadowBlur = 0;
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            iceCtx.lineWidth = 6;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
+
+            // Idle puck
+            if (iceState.gameState === 'idle') {
+                if (!iceState.idlePuckInitialized) {
+                    const margin = 20;
+                    const r = 10;
+                    iceState.idlePuck.x = w / 2;
+                    iceState.idlePuck.y = w / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2.0 + Math.random() * 1.5;
+                    iceState.idlePuck.vx = Math.cos(angle) * speed;
+                    iceState.idlePuck.vy = Math.sin(angle) * speed;
+                    iceState.idlePuck.radius = r;
+                    iceState.idlePuckInitialized = true;
+                }
+                let x = iceState.idlePuck.x;
+                let y = iceState.idlePuck.y;
+                let vx = iceState.idlePuck.vx;
+                let vy = iceState.idlePuck.vy;
+                x += vx;
+                y += vy;
+                const radius = iceState.idlePuck.radius;
+                const margin = 15;
+                if (x - radius < margin) { x = margin + radius; vx = -vx; }
+                if (x + radius > w - margin) { x = w - margin - radius; vx = -vx; }
+                if (y - radius < margin) { y = margin + radius; vy = -vy; }
+                if (y + radius > w - margin) { y = w - margin - radius; vy = -vy; }
+                iceState.idlePuck.x = x;
+                iceState.idlePuck.y = y;
+                iceState.idlePuck.vx = vx;
+                iceState.idlePuck.vy = vy;
+
+                const cx = x;
+                const cy = y;
+                const puckRadius = 10 * s;
+                const r = puckRadius;
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.strokeStyle = '#ffffff';
+                iceCtx.lineWidth = 4;
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
+                iceCtx.stroke();
+                const crossSize = r * 0.7;
+                iceCtx.shadowBlur = 0;
+                iceCtx.globalAlpha = 0.5;
+                iceCtx.lineWidth = 2;
+                iceCtx.strokeStyle = '#ffffff';
+                iceCtx.beginPath();
+                iceCtx.moveTo(cx - crossSize, cy);
+                iceCtx.lineTo(cx + crossSize, cy);
+                iceCtx.moveTo(cx, cy - crossSize);
+                iceCtx.lineTo(cx, cy + crossSize);
+                iceCtx.stroke();
+                iceCtx.globalAlpha = 1;
+                iceCtx.restore();
+                if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
+            }
+
+            // Update zoom
+            const now = performance.now();
+            const puck = iceState.puck;
+            if (iceState.gameState === 'sliding') {
+                const slideElapsed = (now - iceState.slideStartTime) / 1000;
+                if (slideElapsed > 6.0 && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                    if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
+                        iceState.isZoomingIn = true;
+                        iceState.zoomStartTime = now;
+                        iceState.zoomTarget = 1.8;
+                    }
+                }
+            }
+            if (iceState.isZoomingOut) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = iceState.zoomTarget + (1 - iceState.zoomTarget) * (1 - eased);
+                if (progress >= 1) {
+                    iceState.isZoomingOut = false;
+                    iceState.zoom = 1;
+                    iceState.zoomLocked = false;
+                    iceState.zoomOutTriggered = false;
+                }
+            }
+            if (iceState.isZoomingIn) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
+                if (progress >= 1) {
+                    iceState.isZoomingIn = false;
+                    iceState.zoomLocked = true;
+                    iceState.zoom = iceState.zoomTarget;
+                }
+            }
+
+            let renderPuckX = puck.x;
+            let renderPuckY = puck.y;
+            if (iceState.puckUpdateTime > 0) {
+                const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
+                const lerpFactor = 60; // higher = faster catch-up
+                const lerpAmount = Math.min(elapsed * lerpFactor, 1);
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
+            }
+            const speed = Math.sqrt(
+                Math.pow(renderPuckX - iceState.puckPrevX, 2) +
+                Math.pow(renderPuckY - iceState.puckPrevY, 2)
+            );
+
+            // Draw fields
+            iceCtx.save();
+            iceCtx.clip(perimeterPath);
+            iceState.players.forEach((p, index) => {
+                const x1 = p.x1 * s;
+                const y1 = p.y1 * s;
+                const x2 = p.x2 * s;
+                const y2 = p.y2 * s;
+                const segW = x2 - x1;
+                const segH = y2 - y1;
+                const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
+
+                const color = isWinner ? lightenColor(p.color, 70) : p.color;
+
+                iceCtx.save();
+                iceCtx.fillStyle = color;
+                iceCtx.globalAlpha = isWinner ? 1 : 0.92;
+                iceCtx.fillRect(x1, y1, segW, segH);
+                iceCtx.globalAlpha = 1;
+
+                const avatarR = Math.min(segW, segH) * 0.32;
+                let pfpScale = 1;
+                const popData = iceState.pfpPop.get(p.id);
+                if (popData) {
+                    const elapsed = (now - popData.startTime) / 1000;
+                    const progress = Math.min(elapsed / (popData.duration / 1000), 1);
+                    if (progress < 1) {
+                        pfpScale = easeOutBack(progress);
+                        pfpScale = Math.min(1.2, Math.max(0, pfpScale));
+                    } else {
+                        iceState.pfpPop.delete(p.id);
+                    }
+                }
+                const drawR = avatarR * pfpScale;
+                const cx = (x1 + x2) / 2;
+                const cy = (y1 + y2) / 2;
+                iceCtx.save();
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
+                iceCtx.closePath();
+                iceCtx.clip();
+
+                const isMe = p.id === state.userId;
+                const isAnonymous = isMe && state.anonymous;
+                const hidePfp = isMe && state.hidePfp;
+                if (isAnonymous || hidePfp) {
+                    const col = getAnonymousColor(state.userId);
+                    iceCtx.fillStyle = col;
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                    iceCtx.fillStyle = '#fff';
+                    const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
+                    iceCtx.font = `bold ${drawR*0.8}px system-ui, sans-serif`;
+                    iceCtx.textAlign = 'center';
+                    iceCtx.textBaseline = 'middle';
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                    iceCtx.shadowBlur = 4;
+                    iceCtx.fillText(letter, cx, cy);
+                    iceCtx.shadowBlur = 0;
+                } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                    iceCtx.drawImage(p.pfpImg, cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                } else {
+                    iceCtx.fillStyle = p.color || '#555';
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                }
+                iceCtx.restore();
+                iceCtx.restore();
+            });
+            iceCtx.restore();
+
+            // Spinning arrow
+            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+                const extraSpins = 4;
+                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+                const centerX = iceState.spinStartX * s;
+                const centerY = iceState.spinStartY * s;
+                const puckRadius = PUCK_RENDER_RADIUS * s;
+                const orbitRadius = puckRadius + 4;
+                const triSize = Math.min(w * 0.035, 10);
+                const tipOffset = triSize * 0.4;
+                iceCtx.save();
+                iceCtx.translate(centerX, centerY);
+                iceCtx.rotate(angle);
+                iceCtx.translate(orbitRadius, 0);
+                iceCtx.beginPath();
+                iceCtx.moveTo(tipOffset, 0);
+                iceCtx.lineTo(-tipOffset * 0.3, -triSize * 0.5);
+                iceCtx.lineTo(-tipOffset * 0.3, triSize * 0.5);
+                iceCtx.closePath();
+                iceCtx.fillStyle = '#e8f4ff';
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.fill();
+                iceCtx.shadowBlur = 0;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+                iceCtx.lineWidth = 1;
+                iceCtx.stroke();
+                iceCtx.restore();
+            }
 
             // ─── PUCK DRAWING (modified) ──────────────────────────────
             if (iceState.puckVisible) {
@@ -5833,12 +6341,8 @@
                     px = iceState.spinStartX * s;
                     py = iceState.spinStartY * s;
                 } else {
-                    // Apply lerp for smooth following
-                    const lerpFactor = 60;
-                    const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                    const lerpAmount = Math.min(elapsed * lerpFactor, 1);
-                    px = (iceState.puckPrevX + (iceState.puck.x - iceState.puckPrevX) * lerpAmount) * s;
-                    py = (iceState.puckPrevY + (iceState.puck.y - iceState.puckPrevY) * lerpAmount) * s;
+                    px = renderPuckX * s;
+                    py = renderPuckY * s;
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
@@ -5846,12 +6350,13 @@
                 // ---- 1. Grey transparent collider circle (ring) ----
                 const colliderRadius = r * 0.6;
                 iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
-                iceCtx.lineWidth = 3;
-                // no dash – solid ring
+                iceCtx.strokeStyle = 'rgba(200, 200, 200, 0.30)';
+                iceCtx.lineWidth = 2.5; // ← thicker
+                iceCtx.setLineDash([3, 4]);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
+                iceCtx.setLineDash([]);
                 iceCtx.restore();
 
                 // ---- 2. Shadow ----
@@ -5876,7 +6381,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 4. Cross (0.7 * radius) ----
+                // ---- 4. Cross (larger: 0.7 * radius) ----
                 const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
@@ -5891,16 +6396,12 @@
                 iceCtx.restore();
 
                 // Owner name (if slow)
-                const speed = Math.sqrt(
-                    Math.pow(iceState.puck.x - iceState.puckPrevX, 2) +
-                    Math.pow(iceState.puck.y - iceState.puckPrevY, 2)
-                );
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
                 if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
-                    const pxLocal = iceState.puck.x;
-                    const pyLocal = iceState.puck.y;
+                    const pxLocal = renderPuckX;
+                    const pyLocal = renderPuckY;
                     for (const p of iceState.players) {
                         if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
                             ownerName = p.name || 'Player';
@@ -5940,16 +6441,77 @@
             if (zoomActive) iceCtx.restore();
         }
 
-        // ─── RENDER LOOP (unchanged) ──────────────────────────────────
-        // ... (render loop as before) ...
+        // ─── RENDER LOOP ─────────────────────────────────────────────
+        function renderLoop() {
+            updatePlayerAnimations();
+            const now = Date.now();
+
+            if (state.gameState === 'countdown' && state.countdownStartTime) {
+                const elapsed = (now - state.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                const progress = Math.min(1, elapsed / 10.0) * 100;
+                timerProgress.style.width = progress + '%';
+                timerProgressWrap.classList.add('visible');
+            } else if (state.gameState === 'prestart') {
+                countdownTimer.textContent = 'GO!';
+                timerProgress.style.width = '100%';
+                timerProgressWrap.classList.add('visible');
+            } else if (state.gameState === 'idle') {
+                timerProgressWrap.classList.remove('visible');
+            }
+
+            if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
+                const elapsed = (now - iceState.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
+            }
+
+            updateIceTopPanelVisibility();
+
+            render();
+            renderIce();
+            requestAnimationFrame(renderLoop);
+        }
 
         // ─── INIT ─────────────────────────────────────────────────────
-        // ... (init function as before) ...
-
-        // The loading script below includes a 5‑second fallback timeout.
+        function init() {
+            if (tg?.initDataUnsafe?.user) {
+                const u = tg.initDataUnsafe.user;
+                state.username = u.username || u.first_name || 'player';
+                state.pfp = u.photo_url || '';
+            } else {
+                state.username = 'player';
+            }
+            usernameDisplay.textContent = '@' + state.username;
+            profilePfp.src = state.pfp || state.defaultAvatar;
+            profileName.textContent = state.username;
+            profileUsername.textContent = '@' + state.username;
+            memberSince.textContent = `Member since ${state.memberSince}`;
+            resizeCanvas();
+            resizeIceCanvas();
+            window.addEventListener('resize', () => { resizeCanvas();
+                resizeIceCanvas(); });
+            Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
+            document.getElementById('tabs').style.pointerEvents = 'auto';
+            tabBtns.forEach(b => b.style.pointerEvents = 'auto');
+            setupBalanceCardTriggers();
+            renderRecentGames();
+            renderTransactions();
+            updateCardStats();
+            requestAnimationFrame(renderLoop);
+            setOnline(false);
+        }
+        init();
+        window.__state = state;
     </script>
 
-    <!-- ─── LOADING SCREEN CONTROLLER (with fallback) ──────────── -->
+    <!-- ─── LOADING SCREEN CONTROLLER ──────────────────────────── -->
     <script>
         (function() {
             'use strict';
@@ -6088,29 +6650,14 @@
             }
 
             async function start() {
-                try {
-                    buildGrid();
-                    measureGrid();
-                    await runPop();
-                    await runSlide();
-                    await runMerge();
-                    await runFadeOut();
-                } catch (e) {
-                    console.warn('Loading animation error, forcing hide:', e);
-                    // Fallback: hide loading screen immediately if something fails
-                    loadingScreen.classList.add('hidden');
-                }
+                buildGrid();
+                measureGrid();
+                await runPop();
+                await runSlide();
+                await runMerge();
+                await runFadeOut();
                 console.log('Loading complete.');
             }
-
-            // ─── FALLBACK: force hide loading screen after 5 seconds ──
-            setTimeout(() => {
-                if (!loadingScreen.classList.contains('hidden')) {
-                    console.warn('Loading screen timed out – forcing hide.');
-                    loadingScreen.classList.add('hidden');
-                }
-            }, 5000);
-
             if (document.readyState === 'complete' || document.readyState === 'interactive') {
                 setTimeout(start, 200);
             } else {
