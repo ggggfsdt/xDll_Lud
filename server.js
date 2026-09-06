@@ -65,7 +65,7 @@ function verifyInitData(initData) {
 
 // ─── Arena geometry ─────────────────────────────────────────────
 const ARENA_SIZE = 400;
-const CORNER_RADIUS = ARENA_SIZE * 0.15;
+const CORNER_RADIUS = ARENA_SIZE * 0.18;
 
 function generatePerimeter(size, cornerRadius, numPoints = 300) {
   const half = size / 2;
@@ -473,7 +473,7 @@ function updateIcePhysics(dt) {
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 6; // smaller collision radius
+  const puckRadius = 7; // smaller collision radius
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
