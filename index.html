@@ -3592,7 +3592,7 @@
 
         let SERVER_ARENA_SIZE = 400;
         const VISUAL_RADIUS_SCALE = 0.75;
-        const ICE_FIELD_SCALE = 0.92; // match server
+        const ICE_FIELD_SCALE = 0.85; // match server
 
         // ─── DOM refs ──────────────────────────────────────────────────
         const canvas = document.getElementById('game-canvas');
@@ -4470,7 +4470,6 @@
             winnerPuckPop: false,
             winnerPuckPopStart: 0,
             winnerPuckPopDuration: 600,
-            glowPhase: 0, // for pulse effect
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -4491,7 +4490,7 @@
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
-        const PUCK_RENDER_RADIUS = 10; // smaller radius, but we'll draw thicker
+        const PUCK_RENDER_RADIUS = 14; // wider
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -6032,32 +6031,6 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            // ─── PULSE GLOW EFFECT (idle state) ─────────────────────
-            if (iceState.gameState === 'idle') {
-                // Update glow phase
-                iceState.glowPhase += 0.03;
-                const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
-                const alpha = 0.05 + 0.15 * pulse;
-                const blur = 10 + 20 * pulse;
-
-                iceCtx.save();
-                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
-                iceCtx.shadowBlur = blur;
-                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.3})`;
-                iceCtx.lineWidth = 3;
-                iceCtx.stroke(perimeterPath);
-                iceCtx.restore();
-
-                // secondary glow
-                iceCtx.save();
-                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.5})`;
-                iceCtx.shadowBlur = blur * 1.5;
-                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.1})`;
-                iceCtx.lineWidth = 6;
-                iceCtx.stroke(perimeterPath);
-                iceCtx.restore();
-            }
-
             // Zoom handling
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
@@ -6074,7 +6047,7 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Perimeter outline (always present)
+            // Perimeter outline
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             iceCtx.lineWidth = 3;
@@ -6121,22 +6094,22 @@
                 const cx = x;
                 const cy = y;
                 const puckRadius = 10 * s;
-                // Draw as ellipse: wider but smaller radius
-                const rx = puckRadius * 1.4;
-                const ry = puckRadius * 0.6;
+                // Draw as ellipse: wider
+                const rx = puckRadius * 1.6;
+                const ry = puckRadius * 0.7;
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
                 iceCtx.shadowBlur = 12;
                 iceCtx.strokeStyle = '#ffffff';
-                iceCtx.lineWidth = 4; // thicker outline
+                iceCtx.lineWidth = 3.5;
                 iceCtx.beginPath();
                 iceCtx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
                 iceCtx.stroke();
-                const crossSizeX = rx * 0.5; // smaller cross
-                const crossSizeY = ry * 0.5;
+                const crossSizeX = rx * 0.7;
+                const crossSizeY = ry * 0.7;
                 iceCtx.shadowBlur = 0;
                 iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 2;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = '#ffffff';
                 iceCtx.beginPath();
                 iceCtx.moveTo(cx - crossSizeX, cy);
@@ -6301,7 +6274,7 @@
                 iceCtx.restore();
             }
 
-            // Puck - smaller radius, thicker outline
+            // Puck - wider ellipse
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6346,9 +6319,9 @@
                     py = renderPuckY * s;
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
-                // Wider ellipse but smaller radius
-                const rx = puckRadius * 1.4;
-                const ry = puckRadius * 0.6;
+                // Wider ellipse: rx larger, ry smaller
+                const rx = puckRadius * 1.6;
+                const ry = puckRadius * 0.7;
 
                 // Shadow
                 iceCtx.save();
@@ -6362,19 +6335,19 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // White outline - thick
+                // White outline
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4; // thicker
+                iceCtx.lineWidth = 2.5;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
                 iceCtx.stroke();
-                // Cross - smaller
-                const crossSizeX = rx * 0.5;
-                const crossSizeY = ry * 0.5;
+                // Cross
+                const crossSizeX = rx * 0.7;
+                const crossSizeY = ry * 0.7;
                 iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 2;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSizeX, py);
