@@ -2476,7 +2476,7 @@
 
         #ice-top-panel {
             position: absolute;
-            top: 82px;
+            top: 12px;  /* ← FIX: changed from 82px to 12px */
             left: 50%;
             transform: translateX(-50%) translateY(100%);
             width: 90%;
@@ -5163,6 +5163,10 @@
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
+                // Increase lerp factor from 30 to 60 for smoother following
+                const lerpFactor = 60;
+                // We'll use a dynamic lerp in the render loop based on time delta
+                // but we store the time and use it in renderIce.
             }
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -6185,9 +6189,10 @@
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                const lerpFactor = Math.min(elapsed * 30, 1);
-                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpFactor;
-                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpFactor;
+                const lerpFactor = 60; // higher = faster catch-up
+                const lerpAmount = Math.min(elapsed * lerpFactor, 1);
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
             }
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
@@ -6342,11 +6347,11 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. Grey transparent collider circle ----
-                const colliderRadius = r * 0.6; // matches server collision radius ratio
+                // ---- 1. Grey transparent collider circle (ring) ----
+                const colliderRadius = r * 0.6;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(200, 200, 200, 0.30)';
-                iceCtx.lineWidth = 1.5;
+                iceCtx.lineWidth = 2.5; // ← thicker
                 iceCtx.setLineDash([3, 4]);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
