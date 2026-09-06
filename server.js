@@ -65,7 +65,7 @@ function verifyInitData(initData) {
 
 // ─── Arena geometry ─────────────────────────────────────────────
 const ARENA_SIZE = 400;
-const CORNER_RADIUS = ARENA_SIZE * 0.15;
+const CORNER_RADIUS = ARENA_SIZE * 0.35;
 
 function generatePerimeter(size, cornerRadius, numPoints = 300) {
   const half = size / 2;
