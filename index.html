@@ -6011,7 +6011,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE (PATCHED) ────────────────────────────────────
+        // ─── RENDER ICE (FIXED) ──────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6156,14 +6156,15 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // Update zoom - delayed to 8.5 seconds (already in code, unchanged)
+            // Update zoom - NOW TRIGGERS AT 6.0 SECONDS
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
                 const speedThreshold = 2.0;
-                if (slideElapsed > 8.5 && currentSpeed < speedThreshold && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                // Changed from 8.5 to 6.0
+                if (slideElapsed > 6.0 && currentSpeed < speedThreshold && !iceState.isZoomingOut && !iceState.zoomLocked) {
                     if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
                         iceState.isZoomingIn = true;
                         iceState.zoomStartTime = now;
@@ -6195,14 +6196,12 @@
                 }
             }
 
-            // ---- PATCH: Speed-aware interpolation ----
+            // Speed‑aware interpolation (smooth low-speed)
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                // Compute current speed to adjust smoothing
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                // Use a lower factor when speed is low to smooth out jitter
                 const baseFactor = 60;
                 const speedFactor = Math.max(15, Math.min(60, baseFactor / (1 + currentSpeed * 0.5)));
                 const lerpAmount = Math.min(elapsed * speedFactor, 1);
@@ -6315,7 +6314,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (PATCHED: larger collider) ──────────────
+            // ─── PUCK DRAWING (VISUAL FIXES) ──────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6362,10 +6361,10 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- Larger grey outer collider (solid ring) ----
-                const colliderRadius = r * 1.4; // increased from 1.15 to 1.4
+                // ---- 1. LARGE GREY COLLIDER (2x radius) ----
+                const colliderRadius = r * 2.0;
                 iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(160, 160, 160, 0.45)';
+                iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
                 iceCtx.lineWidth = 2.5;
                 iceCtx.setLineDash([]);
                 iceCtx.beginPath();
@@ -6385,10 +6384,10 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // ---- 3. White outline (thick) ----
+                // ---- 3. White outline (THINNER: lineWidth 2) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4;
+                iceCtx.lineWidth = 2; // REDUCED from 4 to 2
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
