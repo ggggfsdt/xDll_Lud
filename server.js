@@ -466,7 +466,7 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH & BOUNCY ICE PHYSICS (PATCHED) ──────────────────
+// ─── SMOOTH & BOUNCY ICE PHYSICS (PATCHED – FASTER STOP) ────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
@@ -520,18 +520,19 @@ function updateIcePhysics(dt) {
       iter++;
     }
 
-    // Gradual friction (speed‑dependent)
+    // ─── AGGRESSIVE FRICTION – stops much faster ───
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
     const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-    // friction per second: 0.995 when fast, 0.85 when very slow
-    const frictionPerSecond = 0.995 - 0.145 * Math.min(1, (currentSpeed / 10));
+    // Friction per second: 0.90 when fast, 0.65 when very slow
+    // This gives strong damping at low speeds, ending the slide quickly.
+    const frictionPerSecond = 0.90 - 0.25 * Math.min(1, (currentSpeed / 3));
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.5) { // raised from 0.08
+  if (finalSpeed < 0.4) { // raised threshold – stops even sooner
     puck.vx = 0;
     puck.vy = 0;
     endIceGame();
@@ -1039,7 +1040,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API
+// ADMIN API (unchanged)
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
