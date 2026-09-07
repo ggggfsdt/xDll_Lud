@@ -466,14 +466,14 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
+// ─── SMOOTH & BOUNCY ICE PHYSICS (PATCHED) ──────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 6; // small collision radius
+  const puckRadius = 10; // increased from 6
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -505,8 +505,12 @@ function updateIcePhysics(dt) {
             const restitution = 0.92;
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
-            puck.vx += (Math.random() - 0.5) * 0.02;
-            puck.vy += (Math.random() - 0.5) * 0.02;
+            // Only add jitter if speed is above threshold
+            const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+            if (currentSpeed > 1.0) {
+              puck.vx += (Math.random() - 0.5) * 0.02;
+              puck.vy += (Math.random() - 0.5) * 0.02;
+            }
           }
           collided = true;
           break;
@@ -516,20 +520,22 @@ function updateIcePhysics(dt) {
       iter++;
     }
 
+    // Gradual friction (speed‑dependent)
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    let frictionPerSecond;
-    if (elapsed < 1.8) {
-      frictionPerSecond = 0.999;
-    } else {
-      frictionPerSecond = 0.55;
-    }
+    const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+    // friction per second: 0.995 when fast, 0.85 when very slow
+    const frictionPerSecond = 0.995 - 0.145 * Math.min(1, (currentSpeed / 10));
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.08) endIceGame();
+  if (finalSpeed < 0.5) { // raised from 0.08
+    puck.vx = 0;
+    puck.vy = 0;
+    endIceGame();
+  }
 }
 
 function broadcastIceState() {
@@ -542,7 +548,7 @@ function broadcastIceState() {
     spinFinalAngle: iceRoom.spinFinalAngle,
     spinStartX: iceRoom.spinStartX,
     spinStartY: iceRoom.spinStartY,
-    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
+    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y, vx: iceRoom.puck.vx, vy: iceRoom.puck.vy },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
@@ -1033,7 +1039,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API
+// ADMIN API (full)
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
@@ -1454,6 +1460,7 @@ app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
   }
 });
 
+// ─── Promo redeem ──────────────────────────────────────────────
 app.post('/redeem', async (req, res) => {
   try {
     const { code, userId } = req.body;
