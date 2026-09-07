@@ -1482,16 +1482,17 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── NEW HTTP ENDPOINTS ──────────────────────────────────────────
+// ─── HTTP ENDPOINTS ──────────────────────────────────────────
 
-// 1. Set anonymous mode (ENABLE / DISABLE)
+// 1. Set anonymous mode (ENABLE / DISABLE) – FIXED
 app.post('/api/set-anonymous', async (req, res) => {
   try {
     const { userId, enabled } = req.body;
     if (!userId || typeof enabled !== 'boolean') {
       return res.status(400).json({ ok: false, error: 'Missing userId or invalid enabled flag' });
     }
-    const result = await setAnonymousData(userId, enabled);
+    // ✅ Pass as object { enabled }
+    const result = await setAnonymousData(userId, { enabled });
     if (!result) {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
