@@ -6009,7 +6009,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE (FINAL WITH FIXES) ──────────────────────────
+        // ─── RENDER ICE (FINAL) ──────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6199,7 +6199,7 @@
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                const baseFactor = 80; // faster response
+                const baseFactor = 80;
                 const speedFactor = Math.max(30, Math.min(80, baseFactor / (1 + currentSpeed * 0.3)));
                 const lerpAmount = Math.min(elapsed * speedFactor, 1);
                 renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
@@ -6311,7 +6311,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING ─────────────────────────────────────────
+            // ─── PUCK DRAWING (FINAL FIX) ──────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6358,11 +6358,11 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. GREY COLLIDER (1.2x radius, lineWidth 2.0) ----
-                const colliderRadius = r * 1.2;
+                // ---- 1. GREY COLLIDER (same radius as white circle, lineWidth 2) ----
+                const colliderRadius = r; // exactly at the edge
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
-                iceCtx.lineWidth = 2.0; // slightly thicker
+                iceCtx.lineWidth = 2.0;
                 iceCtx.setLineDash([]);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
@@ -6381,21 +6381,21 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // ---- 3. WHITE OUTLINE (lineWidth 4) ----
+                // ---- 3. WHITE OUTLINE (thick) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4; // thick
+                iceCtx.lineWidth = 4;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 4. Cross ----
+                // ---- 4. Cross (thinner) ----
                 const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 2;
+                iceCtx.lineWidth = 1.5; // thinner
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
