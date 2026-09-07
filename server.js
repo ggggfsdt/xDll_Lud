@@ -466,14 +466,14 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH & BOUNCY ICE PHYSICS (PATCHED – FASTER STOP) ────
+// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
   const totalPts = ICE_PERIMETER.length;
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 10; // increased from 6
+  const puckRadius = 6; // small collision radius
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -505,12 +505,8 @@ function updateIcePhysics(dt) {
             const restitution = 0.92;
             puck.vx -= (1 + restitution) * vn * nx;
             puck.vy -= (1 + restitution) * vn * ny;
-            // Only add jitter if speed is above threshold
-            const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-            if (currentSpeed > 1.0) {
-              puck.vx += (Math.random() - 0.5) * 0.02;
-              puck.vy += (Math.random() - 0.5) * 0.02;
-            }
+            puck.vx += (Math.random() - 0.5) * 0.02;
+            puck.vy += (Math.random() - 0.5) * 0.02;
           }
           collided = true;
           break;
@@ -520,23 +516,20 @@ function updateIcePhysics(dt) {
       iter++;
     }
 
-    // ─── AGGRESSIVE FRICTION – stops much faster ───
     const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    const currentSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-    // Friction per second: 0.90 when fast, 0.65 when very slow
-    // This gives strong damping at low speeds, ending the slide quickly.
-    const frictionPerSecond = 0.90 - 0.25 * Math.min(1, (currentSpeed / 3));
+    let frictionPerSecond;
+    if (elapsed < 1.8) {
+      frictionPerSecond = 0.999;
+    } else {
+      frictionPerSecond = 0.55;
+    }
     const decay = Math.pow(frictionPerSecond, subDt);
     puck.vx *= decay;
     puck.vy *= decay;
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.4) { // raised threshold – stops even sooner
-    puck.vx = 0;
-    puck.vy = 0;
-    endIceGame();
-  }
+  if (finalSpeed < 0.08) endIceGame();
 }
 
 function broadcastIceState() {
@@ -549,7 +542,7 @@ function broadcastIceState() {
     spinFinalAngle: iceRoom.spinFinalAngle,
     spinStartX: iceRoom.spinStartX,
     spinStartY: iceRoom.spinStartY,
-    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y, vx: iceRoom.puck.vx, vy: iceRoom.puck.vy },
+    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
@@ -1040,7 +1033,7 @@ io.on('connection', (socket) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ADMIN API (unchanged)
+// ADMIN API
 // ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
