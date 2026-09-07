@@ -6009,7 +6009,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE (PATCHED) ──────────────────────────────────────
+        // ─── RENDER ICE (FINAL: smaller grey ring) ──────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6311,7 +6311,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (FINAL FIX) ──────────────────────────────
+            // ─── PUCK DRAWING (SMALLER GREY RING) ──────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6358,11 +6358,12 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. LARGE GREY COLLIDER (2x radius) ----
-                const colliderRadius = r * 2.0;
+                // ---- 1. GREY COLLIDER (SMALLER, THINNER) ----
+                // Changed from 2.0 to 1.2, lineWidth from 2.5 to 1.5
+                const colliderRadius = r * 1.2;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
-                iceCtx.lineWidth = 2.5;
+                iceCtx.lineWidth = 1.5;
                 iceCtx.setLineDash([]);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
@@ -6384,7 +6385,7 @@
                 // ---- 3. WHITE OUTLINE (THICK - lineWidth 4) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4;  // Thick, as requested
+                iceCtx.lineWidth = 4;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
@@ -6405,7 +6406,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // Owner name (if slow)
+                // Owner name (if slow) – unchanged
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
