@@ -6009,7 +6009,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE (FINAL: smaller grey ring) ──────────────────
+        // ─── RENDER ICE (FINAL WITH FIXES) ──────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6154,7 +6154,7 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // Update zoom - at 5.5 seconds (a bit sooner)
+            // Update zoom - at 5.5 seconds
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
@@ -6193,14 +6193,14 @@
                 }
             }
 
-            // Speed‑aware interpolation
+            // Speed‑aware interpolation (smooth, responsive)
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                const baseFactor = 60;
-                const speedFactor = Math.max(15, Math.min(60, baseFactor / (1 + currentSpeed * 0.5)));
+                const baseFactor = 80; // faster response
+                const speedFactor = Math.max(30, Math.min(80, baseFactor / (1 + currentSpeed * 0.3)));
                 const lerpAmount = Math.min(elapsed * speedFactor, 1);
                 renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
@@ -6311,7 +6311,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (SMALLER GREY RING) ──────────────────
+            // ─── PUCK DRAWING ─────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6358,12 +6358,11 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. GREY COLLIDER (SMALLER, THINNER) ----
-                // Changed from 2.0 to 1.2, lineWidth from 2.5 to 1.5
+                // ---- 1. GREY COLLIDER (1.2x radius, lineWidth 2.0) ----
                 const colliderRadius = r * 1.2;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
-                iceCtx.lineWidth = 1.5;
+                iceCtx.lineWidth = 2.0; // slightly thicker
                 iceCtx.setLineDash([]);
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
@@ -6382,17 +6381,17 @@
                 iceCtx.fill();
                 iceCtx.restore();
 
-                // ---- 3. WHITE OUTLINE (THICK - lineWidth 4) ----
+                // ---- 3. WHITE OUTLINE (lineWidth 4) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4;
+                iceCtx.lineWidth = 4; // thick
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 4. Cross (0.7 * radius) ----
+                // ---- 4. Cross ----
                 const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
@@ -6406,7 +6405,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // Owner name (if slow) – unchanged
+                // Owner name (if slow)
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
