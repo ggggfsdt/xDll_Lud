@@ -3056,6 +3056,79 @@
             .card-face.front .card-balance .amount { font-size: 24px; }
             .card-stats .cs-value { font-size: 11px; }
         }
+
+        /* ─── TOGGLE ANIMATION OVERLAY ────────────────────────── */
+        #toggle-anim-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #toggle-anim-overlay.show {
+            display: flex !important;
+            opacity: 1;
+        }
+        #toggle-anim-overlay.show #toggle-anim-box {
+            transform: scale(1) !important;
+        }
+        #toggle-anim-overlay.hide {
+            opacity: 0;
+        }
+        #toggle-anim-overlay.hide #toggle-anim-box {
+            transform: scale(0.6) !important;
+        }
+        #toggle-anim-box {
+            background: rgba(26, 26, 30, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 30px 40px;
+            text-align: center;
+            transform: scale(0.6);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+        }
+        #toggle-anim-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+        }
+        #toggle-anim-switch {
+            position: relative;
+            display: inline-block;
+            width: 64px;
+            height: 36px;
+        }
+        #toggle-anim-slider {
+            position: absolute;
+            inset: 0;
+            background: #444;
+            border-radius: 999px;
+            transition: background 0.3s;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        #toggle-anim-knob {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: #fff;
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        #toggle-anim-status {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -3479,6 +3552,18 @@
                         <div style="position:absolute;bottom:40px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.08);font-size:10px;letter-spacing:2px;">anonymous identity · dllump</div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <!-- ─── TOGGLE ANIMATION OVERLAY ────────────────────────── -->
+        <div id="toggle-anim-overlay">
+            <div id="toggle-anim-box">
+                <div id="toggle-anim-label">Enabling Anonymous</div>
+                <div id="toggle-anim-switch">
+                    <div id="toggle-anim-slider">
+                        <div id="toggle-anim-knob"></div>
+                    </div>
+                </div>
+                <div id="toggle-anim-status">Switching…</div>
             </div>
         </div>
     </div>
@@ -4177,7 +4262,34 @@
 
         // ─── Identity toggle button ─────────────────────────────────
         identityToggleBtn.addEventListener('click', async function() {
-            const enabled = !state.anonymous;
+            const enabled = !state.anonymous; // we want to toggle to this state
+
+            // Show and animate the toggle overlay
+            const overlay = document.getElementById('toggle-anim-overlay');
+            const box = document.getElementById('toggle-anim-box');
+            const knob = document.getElementById('toggle-anim-knob');
+            const label = document.getElementById('toggle-anim-label');
+            const status = document.getElementById('toggle-anim-status');
+
+            // Set initial state
+            label.textContent = enabled ? 'Enabling Anonymous' : 'Disabling Anonymous';
+            status.textContent = 'Switching…';
+            knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
+            document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
+
+            // Show with pop-in
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+                overlay.classList.remove('hide');
+                // After a tiny delay, animate knob
+                setTimeout(() => {
+                    knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
+                    document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
+                }, 100);
+            });
+
+            // Perform the actual toggle
             try {
                 const res = await fetch(SERVER_URL + '/api/set-anonymous', {
                     method: 'POST',
@@ -4190,14 +4302,28 @@
                     document.getElementById('profile-status').textContent = enabled ? 'anonymous' : 'online';
                     updateIdentityToggleButton();
                     haptic('medium');
+                    status.textContent = '✓ Done!';
                     showNotification(enabled ? 'Anonymous mode enabled.' : 'Anonymous mode disabled.');
                 } else {
+                    status.textContent = '❌ Failed';
                     showNotification(data.error || 'Failed to toggle.');
                 }
             } catch (err) {
                 console.error('Toggle anonymous error:', err);
+                status.textContent = '❌ Error';
                 showNotification('Network error.');
             }
+
+            // Pop out after a short delay
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                overlay.classList.add('hide');
+                // After fade-out, hide completely
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    overlay.classList.remove('hide');
+                }, 500);
+            }, 1200);
         });
 
         // ─── Hide PFP toggle ─────────────────────────────────────────
