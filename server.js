@@ -542,7 +542,12 @@ function broadcastIceState() {
     spinFinalAngle: iceRoom.spinFinalAngle,
     spinStartX: iceRoom.spinStartX,
     spinStartY: iceRoom.spinStartY,
-    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
+    puck: {
+      x: iceRoom.puck.x,
+      y: iceRoom.puck.y,
+      vx: iceRoom.puck.vx,   // added velocity
+      vy: iceRoom.puck.vy
+    },
     players: iceRoom.players.map(p => ({
       id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
       x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
@@ -1491,12 +1496,10 @@ app.post('/api/set-anonymous', async (req, res) => {
     if (!userId || typeof enabled !== 'boolean') {
       return res.status(400).json({ ok: false, error: 'Missing userId or invalid enabled flag' });
     }
-    // ✅ Pass as object { enabled }
     const result = await setAnonymousData(userId, { enabled });
     if (!result) {
       return res.status(404).json({ ok: false, error: 'User not found' });
     }
-    // Update in‑memory players if present
     const pvpPlayer = getPlayer(userId);
     if (pvpPlayer) {
       const user = await getUser(userId);
