@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN ───────────────────────────────────────── */
+        /* ─── LOADING SCREEN (unchanged) ───────────────────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -3569,6 +3569,12 @@
     </div>
 
     <script>
+        // ─── MOBILE DETECTION & PERFORMANCE SETTINGS ──────────────────
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+        const TARGET_FPS = isMobile ? 30 : 60;
+        const FRAME_INTERVAL = 1000 / TARGET_FPS;
+        let lastFrameTime = 0;
+
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
@@ -3913,11 +3919,11 @@
             recentGamesList.innerHTML = html;
         }
 
-        // ─── PARTICLES ──────────────────────────────────────────────────
+        // ─── PARTICLES (reduced count on mobile) ─────────────────────
         function initParticles() {
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
-            const count = 50;
+            const count = isMobile ? 20 : 50;
             particles = [];
             for (let i = 0; i < count; i++) {
                 particles.push({
@@ -3947,10 +3953,12 @@
                 particleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 particleCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
                 particleCtx.fill();
-                particleCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-                particleCtx.shadowBlur = 10;
-                particleCtx.fill();
-                particleCtx.shadowBlur = 0;
+                if (!isMobile) {
+                    particleCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                    particleCtx.shadowBlur = 10;
+                    particleCtx.fill();
+                    particleCtx.shadowBlur = 0;
+                }
             });
             particleAnimId = requestAnimationFrame(animateParticles);
         }
@@ -3962,11 +3970,11 @@
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
         }
 
-        // ─── Identity particles ──────────────────────────────────────
+        // ─── Identity particles (reduced) ──────────────────────────
         function initIdentityParticles() {
             identityParticleCanvas.width = window.innerWidth;
             identityParticleCanvas.height = window.innerHeight;
-            const count = 40;
+            const count = isMobile ? 15 : 40;
             identityParticles = [];
             for (let i = 0; i < count; i++) {
                 identityParticles.push({
@@ -4007,7 +4015,7 @@
             identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
         }
 
-        // ─── CARD 3D INTERACTION ──────────────────────────────────────
+        // ─── CARD 3D INTERACTION (unchanged) ──────────────────────
         let cardDrag = false;
         let cardPrevX = 0,
             cardPrevY = 0;
@@ -4130,7 +4138,6 @@
             identityDrag = false;
             requestAnimationFrame(startIdentityIdleAnimation);
             haptic('medium');
-            // Make fields editable on click
             document.querySelectorAll('.id-value').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -4262,34 +4269,28 @@
 
         // ─── Identity toggle button ─────────────────────────────────
         identityToggleBtn.addEventListener('click', async function() {
-            const enabled = !state.anonymous; // we want to toggle to this state
-
-            // Show and animate the toggle overlay
+            const enabled = !state.anonymous;
             const overlay = document.getElementById('toggle-anim-overlay');
             const box = document.getElementById('toggle-anim-box');
             const knob = document.getElementById('toggle-anim-knob');
             const label = document.getElementById('toggle-anim-label');
             const status = document.getElementById('toggle-anim-status');
 
-            // Set initial state
             label.textContent = enabled ? 'Enabling Anonymous' : 'Disabling Anonymous';
             status.textContent = 'Switching…';
             knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
             document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
 
-            // Show with pop-in
             overlay.style.display = 'flex';
             requestAnimationFrame(() => {
                 overlay.classList.add('show');
                 overlay.classList.remove('hide');
-                // After a tiny delay, animate knob
                 setTimeout(() => {
                     knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
                     document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
                 }, 100);
             });
 
-            // Perform the actual toggle
             try {
                 const res = await fetch(SERVER_URL + '/api/set-anonymous', {
                     method: 'POST',
@@ -4314,11 +4315,9 @@
                 showNotification('Network error.');
             }
 
-            // Pop out after a short delay
             setTimeout(() => {
                 overlay.classList.remove('show');
                 overlay.classList.add('hide');
-                // After fade-out, hide completely
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     overlay.classList.remove('hide');
@@ -4552,7 +4551,7 @@
             });
         }
 
-        // ─── ICE STATE (with smooth interpolation additions) ──────────
+        // ─── ICE STATE (with smooth interpolation) ──────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -4599,13 +4598,12 @@
             glowPhase: 0,
             puckVx: 0,
             puckVy: 0,
-            // --- SMOOTH INTERPOLATION FIELDS ---
             smoothX: 0,
             smoothY: 0,
             targetX: 0,
             targetY: 0,
             lastUpdateTime: 0,
-            lerpDuration: 0.08, // 80ms window
+            lerpDuration: 0.08,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -4702,11 +4700,11 @@
             img.src = src;
         }
 
-        // ─── CANVAS RESIZE ─────────────────────────────────────────────
+        // ─── CANVAS RESIZE (lower DPR on mobile) ────────────────────
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = isMobile ? 1 : (window.devicePixelRatio || 1);
             canvas.width = size * dpr;
             canvas.height = size * dpr;
             canvas.style.width = size + 'px';
@@ -4718,7 +4716,7 @@
         function resizeIceCanvas() {
             const rect = iceCanvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = isMobile ? 1 : (window.devicePixelRatio || 1);
             iceCanvas.width = size * dpr;
             iceCanvas.height = size * dpr;
             iceCanvas.style.width = size + 'px';
@@ -4798,7 +4796,6 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
-                        // Initialize smooth positions
                         iceState.smoothX = iceState.puck.x || 200;
                         iceState.smoothY = iceState.puck.y || 200;
                         iceState.targetX = iceState.smoothX;
@@ -5280,7 +5277,7 @@
         // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
-        // ─── applyIceServerState (with smooth interpolation) ──────────
+        // ─── applyIceServerState ──────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
@@ -5303,20 +5300,16 @@
             iceState.spinStartX = snapshot.spinStartX || iceState.arenaSize / 2;
             iceState.spinStartY = snapshot.spinStartY || iceState.arenaSize / 2;
 
-            // --- Store target puck position for smooth interpolation ---
             if (snapshot.puck) {
                 iceState.targetX = snapshot.puck.x;
                 iceState.targetY = snapshot.puck.y;
                 iceState.lastUpdateTime = performance.now() / 1000;
-                // Also keep the original puck for fallback
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
-                // Initialize smooth positions if not set
                 if (iceState.smoothX === 0 && iceState.smoothY === 0) {
                     iceState.smoothX = iceState.targetX;
                     iceState.smoothY = iceState.targetY;
                 }
-                // Keep velocity if available
                 if (snapshot.puck.vx !== undefined) {
                     iceState.puckVx = snapshot.puck.vx;
                     iceState.puckVy = snapshot.puck.vy;
@@ -5336,7 +5329,6 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
-                // Reset smooth positions to spin start
                 iceState.smoothX = iceState.spinStartX;
                 iceState.smoothY = iceState.spinStartY;
                 iceState.targetX = iceState.spinStartX;
@@ -5351,7 +5343,6 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
-                // Reset smooth interpolation
                 iceState.smoothX = snapshot.puck.x;
                 iceState.smoothY = snapshot.puck.y;
                 iceState.targetX = snapshot.puck.x;
@@ -5380,7 +5371,6 @@
                 iceState.currentOwnerName = '';
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
-                // Reset smooth positions
                 iceState.smoothX = 200;
                 iceState.smoothY = 200;
                 iceState.targetX = 200;
@@ -5956,7 +5946,7 @@
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
 
-            // Glass background with center glow (liquid glass effect)
+            // Glass background with center glow (reduced on mobile)
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
             grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
@@ -5965,17 +5955,17 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Center glow (liquid glass effect)
-            const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
-            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
-            glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
-            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.save();
-            ctx.fillStyle = glowGrad;
-            ctx.fillRect(0, 0, w, w);
-            ctx.restore();
+            if (!isMobile) {
+                const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
+                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+                glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+                glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.save();
+                ctx.fillStyle = glowGrad;
+                ctx.fillRect(0, 0, w, w);
+                ctx.restore();
+            }
 
-            // Rounded rect for arena background
             const cornerRadius = w * 0.20;
             const rectX = 0, rectY = 0, rectW = w, rectH = w;
 
@@ -5995,7 +5985,7 @@
 
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = isMobile ? 15 : 30;
             ctx.fillStyle = 'rgba(20, 22, 30, 0.70)';
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.fill();
@@ -6007,10 +5997,11 @@
             ctx.fill();
             ctx.restore();
 
-            // Outline
             ctx.save();
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
-            ctx.shadowBlur = 16;
+            if (!isMobile) {
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
+                ctx.shadowBlur = 16;
+            }
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             ctx.lineWidth = 2.5;
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
@@ -6022,7 +6013,6 @@
             ctx.stroke();
             ctx.restore();
 
-            // Perimeter path
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length > 0) {
                 const opening = state.opening;
@@ -6065,8 +6055,10 @@
                         }
                         ctx.strokeStyle = flashColor;
                         ctx.lineWidth = isRed ? 4 : 2.5;
-                        ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
-                        ctx.shadowBlur = isRed ? 18 : 6;
+                        if (!isMobile) {
+                            ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+                            ctx.shadowBlur = isRed ? 18 : 6;
+                        }
                         for (const seg of gapSegments) {
                             ctx.beginPath();
                             ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
@@ -6087,7 +6079,6 @@
                 ctx.restore();
             }
 
-            // Clip to rounded rect for players
             ctx.save();
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.clip();
@@ -6118,13 +6109,13 @@
                     if (topInfo.rank === 1) {
                         borderColor = '#FFD700';
                         borderWidth = 3.5;
-                        shadowColor = 'rgba(255,215,0,0.6)';
-                        shadowBlur = 18;
+                        if (!isMobile) { shadowColor = 'rgba(255,215,0,0.6)';
+                            shadowBlur = 18; }
                     } else if (topInfo.rank === 2) {
                         borderColor = '#C0C0C0';
                         borderWidth = 3.0;
-                        shadowColor = 'rgba(192,192,192,0.5)';
-                        shadowBlur = 14;
+                        if (!isMobile) { shadowColor = 'rgba(192,192,192,0.5)';
+                            shadowBlur = 14; }
                     }
                 }
                 const isMe = p.id === state.userId;
@@ -6144,8 +6135,8 @@
                     ctx.font = `bold ${drawRadius*0.6}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                    ctx.shadowBlur = 4;
+                    if (!isMobile) { ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                        ctx.shadowBlur = 4; }
                     ctx.fillText(letter, px, py + 1);
                     ctx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
@@ -6162,8 +6153,8 @@
                 }
                 ctx.restore();
                 ctx.save();
-                ctx.shadowBlur = shadowBlur;
-                ctx.shadowColor = shadowColor;
+                if (!isMobile) { ctx.shadowBlur = shadowBlur;
+                    ctx.shadowColor = shadowColor; }
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = borderColor;
@@ -6173,10 +6164,10 @@
                 ctx.restore();
             });
 
-            ctx.restore(); // clip
+            ctx.restore();
         }
 
-        // ─── RENDER ICE (FINAL with smooth interpolation) ─────────────
+        // ─── RENDER ICE (with mobile optimizations) ──────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6193,14 +6184,16 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
-            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
-            glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
-            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            iceCtx.save();
-            iceCtx.fillStyle = glowGrad;
-            iceCtx.fillRect(0, 0, w, w);
-            iceCtx.restore();
+            if (!isMobile) {
+                const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
+                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+                glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
+                glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                iceCtx.save();
+                iceCtx.fillStyle = glowGrad;
+                iceCtx.fillRect(0, 0, w, w);
+                iceCtx.restore();
+            }
 
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
@@ -6209,8 +6202,8 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            // ─── PULSE GLOW EFFECT (idle state) ─────────────────────
-            if (iceState.gameState === 'idle') {
+            // Pulse glow effect – skip on mobile
+            if (!isMobile && iceState.gameState === 'idle') {
                 iceState.glowPhase += 0.03;
                 const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
                 const alpha = 0.08 + 0.22 * pulse;
@@ -6253,8 +6246,8 @@
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             iceCtx.lineWidth = 3;
-            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-            iceCtx.shadowBlur = 14;
+            if (!isMobile) { iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                iceCtx.shadowBlur = 14; }
             iceCtx.stroke(perimeterPath);
             iceCtx.shadowBlur = 0;
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
@@ -6299,7 +6292,7 @@
                 const r = puckRadius;
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-                iceCtx.shadowBlur = 12;
+                iceCtx.shadowBlur = isMobile ? 6 : 12;
                 iceCtx.strokeStyle = '#ffffff';
                 iceCtx.lineWidth = 4;
                 iceCtx.beginPath();
@@ -6321,7 +6314,7 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // Update zoom - at 5.5 seconds
+            // Update zoom (unchanged)
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
@@ -6363,23 +6356,18 @@
             // --- SMOOTH INTERPOLATION FOR PUCK ---
             let renderPuckX, renderPuckY;
             if (iceState.gameState === 'spinning') {
-                // During spin, the puck is fixed at spin center
                 renderPuckX = iceState.spinStartX * s;
                 renderPuckY = iceState.spinStartY * s;
             } else {
-                // Use smooth interpolation for sliding/finished states
                 const nowSec = performance.now() / 1000;
                 const elapsed = nowSec - iceState.lastUpdateTime;
 
-                // If we haven't received a new update for a while, snap to target
                 if (elapsed > 0.5) {
                     iceState.smoothX = iceState.targetX;
                     iceState.smoothY = iceState.targetY;
                 } else {
-                    // Interpolate smoothly over the lerpDuration (80ms)
                     const progress = Math.min(elapsed / iceState.lerpDuration, 1);
                     const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-                    // Move smooth toward target with dampening
                     iceState.smoothX += (iceState.targetX - iceState.smoothX) * eased * 0.9;
                     iceState.smoothY += (iceState.targetY - iceState.smoothY) * eased * 0.9;
                 }
@@ -6388,7 +6376,6 @@
                 renderPuckY = iceState.smoothY * s;
             }
 
-            // Compute speed for owner name display
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX * s, 2) +
                 Math.pow(renderPuckY - iceState.puckPrevY * s, 2)
@@ -6448,8 +6435,8 @@
                     iceCtx.font = `bold ${drawR*0.8}px system-ui, sans-serif`;
                     iceCtx.textAlign = 'center';
                     iceCtx.textBaseline = 'middle';
-                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                    iceCtx.shadowBlur = 4;
+                    if (!isMobile) { iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                        iceCtx.shadowBlur = 4; }
                     iceCtx.fillText(letter, cx, cy);
                     iceCtx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
@@ -6485,8 +6472,8 @@
                 iceCtx.lineTo(-tipOffset * 0.3, triSize * 0.5);
                 iceCtx.closePath();
                 iceCtx.fillStyle = '#e8f4ff';
-                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-                iceCtx.shadowBlur = 12;
+                if (!isMobile) { iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                    iceCtx.shadowBlur = 12; }
                 iceCtx.fill();
                 iceCtx.shadowBlur = 0;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
@@ -6542,7 +6529,7 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. GREY COLLIDER (same radius as white circle, lineWidth 2) ----
+                // ---- 1. GREY COLLIDER (always draw) ----
                 const colliderRadius = r;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
@@ -6553,17 +6540,19 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 2. Shadow ----
-                iceCtx.save();
-                iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.shadowOffsetX = 3;
-                iceCtx.shadowOffsetY = 4;
-                iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
-                iceCtx.beginPath();
-                iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
-                iceCtx.fill();
-                iceCtx.restore();
+                // ---- 2. Shadow (skip on mobile) ----
+                if (!isMobile) {
+                    iceCtx.save();
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                    iceCtx.shadowBlur = 12;
+                    iceCtx.shadowOffsetX = 3;
+                    iceCtx.shadowOffsetY = 4;
+                    iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
+                    iceCtx.beginPath();
+                    iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
+                    iceCtx.fill();
+                    iceCtx.restore();
+                }
 
                 // ---- 3. WHITE OUTLINE (thick) ----
                 iceCtx.save();
@@ -6635,41 +6624,44 @@
             if (zoomActive) iceCtx.restore();
         }
 
-        // ─── RENDER LOOP ─────────────────────────────────────────────
-        function renderLoop() {
-            updatePlayerAnimations();
-            const now = Date.now();
+        // ─── RENDER LOOP (with frame rate limiting) ──────────────────
+        function renderLoop(timestamp) {
+            const elapsed = timestamp - lastFrameTime;
+            if (elapsed >= FRAME_INTERVAL) {
+                lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
+                updatePlayerAnimations();
+                const now = Date.now();
 
-            if (state.gameState === 'countdown' && state.countdownStartTime) {
-                const elapsed = (now - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
-                const secs = Math.floor(remaining);
-                const ms = Math.floor((remaining - secs) * 100);
-                countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                const progress = Math.min(1, elapsed / 10.0) * 100;
-                timerProgress.style.width = progress + '%';
-                timerProgressWrap.classList.add('visible');
-            } else if (state.gameState === 'prestart') {
-                countdownTimer.textContent = 'GO!';
-                timerProgress.style.width = '100%';
-                timerProgressWrap.classList.add('visible');
-            } else if (state.gameState === 'idle') {
-                timerProgressWrap.classList.remove('visible');
+                if (state.gameState === 'countdown' && state.countdownStartTime) {
+                    const elapsedSec = (now - state.countdownStartTime) / 1000;
+                    const remaining = Math.max(0, 10.0 - elapsedSec);
+                    const secs = Math.floor(remaining);
+                    const ms = Math.floor((remaining - secs) * 100);
+                    countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                    const progress = Math.min(1, elapsedSec / 10.0) * 100;
+                    timerProgress.style.width = progress + '%';
+                    timerProgressWrap.classList.add('visible');
+                } else if (state.gameState === 'prestart') {
+                    countdownTimer.textContent = 'GO!';
+                    timerProgress.style.width = '100%';
+                    timerProgressWrap.classList.add('visible');
+                } else if (state.gameState === 'idle') {
+                    timerProgressWrap.classList.remove('visible');
+                }
+
+                if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
+                    const elapsedSec = (now - iceState.countdownStartTime) / 1000;
+                    const remaining = Math.max(0, 10.0 - elapsedSec);
+                    const secs = Math.floor(remaining);
+                    const ms = Math.floor((remaining - secs) * 100);
+                    iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                    iceTimerProgress.style.width = (Math.min(1, elapsedSec / 10.0) * 100) + '%';
+                }
+
+                updateIceTopPanelVisibility();
+                render();
+                renderIce();
             }
-
-            if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
-                const elapsed = (now - iceState.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
-                const secs = Math.floor(remaining);
-                const ms = Math.floor((remaining - secs) * 100);
-                iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
-            }
-
-            updateIceTopPanelVisibility();
-
-            render();
-            renderIce();
             requestAnimationFrame(renderLoop);
         }
 
@@ -6698,9 +6690,10 @@
             renderRecentGames();
             renderTransactions();
             updateCardStats();
+            // Start the render loop with frame limiting
+            lastFrameTime = performance.now();
             requestAnimationFrame(renderLoop);
             setOnline(false);
-            // Initialize smooth puck position
             iceState.smoothX = iceState.puck.x || 200;
             iceState.smoothY = iceState.puck.y || 200;
             iceState.targetX = iceState.smoothX;
