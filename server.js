@@ -260,7 +260,6 @@ function repartitionIceArena() {
   players.forEach(p => {
     const assigned = map[p.id];
     if (assigned) {
-      // Scale around center
       const cx1 = assigned.x1 - half;
       const cy1 = assigned.y1 - half;
       const cx2 = assigned.x2 - half;
@@ -473,7 +472,7 @@ function updateIcePhysics(dt) {
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 6; // small collision radius
+  const puckRadius = 6;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -545,7 +544,7 @@ function broadcastIceState() {
     puck: {
       x: iceRoom.puck.x,
       y: iceRoom.puck.y,
-      vx: iceRoom.puck.vx,   // added velocity
+      vx: iceRoom.puck.vx,
       vy: iceRoom.puck.vy
     },
     players: iceRoom.players.map(p => ({
@@ -1489,7 +1488,7 @@ app.get('/redeem', async (req, res) => {
 
 // ─── HTTP ENDPOINTS ──────────────────────────────────────────
 
-// 1. Set anonymous mode (ENABLE / DISABLE) – FIXED
+// 1. Set anonymous mode (ENABLE / DISABLE)
 app.post('/api/set-anonymous', async (req, res) => {
   try {
     const { userId, enabled } = req.body;
@@ -1604,6 +1603,59 @@ app.post('/api/toggle-hide-pfp', async (req, res) => {
     res.status(500).json({ ok: false, error: err.message || 'Internal error' });
   }
 });
+
+// ─── ROLL PHONE NUMBER ──────────────────────────────────────────
+app.post('/api/roll-phone', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
+
+    const user = await getUser(userId);
+    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+
+    if (user.balance < 500) {
+      return res.status(400).json({ ok: false, error: 'Not enough gems (need 500)' });
+    }
+
+    user.balance -= 500;
+    const newPhone = generateRandomPhone();
+    const legendary = newPhone.startsWith('+888');
+
+    user.anonymousPhone = newPhone;
+    user.phoneChanged = true;
+    await saveUser(user);
+
+    res.json({
+      ok: true,
+      newPhone,
+      newBalance: user.balance,
+      legendary
+    });
+  } catch (err) {
+    console.error('Roll phone error:', err);
+    res.status(500).json({ ok: false, error: 'Internal server error' });
+  }
+});
+
+// Helper: generate a random phone number with 10% chance of legendary (+888)
+function generateRandomPhone() {
+  const isLegendary = Math.random() < 0.10;
+  if (isLegendary) {
+    const parts = [];
+    for (let i = 0; i < 3; i++) {
+      parts.push(String(Math.floor(Math.random() * 900) + 100));
+    }
+    return `+888 ${parts[0]} ${parts[1]} ${parts[2]}`;
+  } else {
+    const countryCodes = ['+1', '+44', '+49', '+33', '+91', '+61', '+81', '+86', '+7', '+39', '+34', '+31', '+46'];
+    const cc = countryCodes[Math.floor(Math.random() * countryCodes.length)];
+    const parts = [];
+    for (let i = 0; i < 3; i++) {
+      parts.push(String(Math.floor(Math.random() * 900) + 100));
+    }
+    return `${cc} ${parts[0]} ${parts[1]} ${parts[2]}`;
+  }
+}
 
 app.get('/leaderboard', async (req, res) => {
   try {
