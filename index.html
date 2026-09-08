@@ -4552,7 +4552,7 @@
             });
         }
 
-        // ─── ICE STATE ──────────────────────────────────────────────────
+        // ─── ICE STATE (with smooth interpolation additions) ──────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -4599,6 +4599,13 @@
             glowPhase: 0,
             puckVx: 0,
             puckVy: 0,
+            // --- SMOOTH INTERPOLATION FIELDS ---
+            smoothX: 0,
+            smoothY: 0,
+            targetX: 0,
+            targetY: 0,
+            lastUpdateTime: 0,
+            lerpDuration: 0.08, // 80ms window
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -4791,6 +4798,12 @@
                         }));
                         iceState.pot = res.icePot || 0;
                         iceState.players.forEach(p => loadIcePlayerPFP(p));
+                        // Initialize smooth positions
+                        iceState.smoothX = iceState.puck.x || 200;
+                        iceState.smoothY = iceState.puck.y || 200;
+                        iceState.targetX = iceState.smoothX;
+                        iceState.targetY = iceState.smoothY;
+                        iceState.lastUpdateTime = performance.now() / 1000;
                         updateIceStatsBar();
                         updateIceBetUI();
                         updateIceWaitingText();
@@ -5267,7 +5280,7 @@
         // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
-        // ─── applyIceServerState ───────────────────────────────────────
+        // ─── applyIceServerState (with smooth interpolation) ──────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
@@ -5289,17 +5302,27 @@
             iceState.spinFinalAngle = snapshot.spinFinalAngle;
             iceState.spinStartX = snapshot.spinStartX || iceState.arenaSize / 2;
             iceState.spinStartY = snapshot.spinStartY || iceState.arenaSize / 2;
-            if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
-                iceState.puckPrevX = iceState.puck.x;
-                iceState.puckPrevY = iceState.puck.y;
+
+            // --- Store target puck position for smooth interpolation ---
+            if (snapshot.puck) {
+                iceState.targetX = snapshot.puck.x;
+                iceState.targetY = snapshot.puck.y;
+                iceState.lastUpdateTime = performance.now() / 1000;
+                // Also keep the original puck for fallback
                 iceState.puck.x = snapshot.puck.x;
                 iceState.puck.y = snapshot.puck.y;
-                iceState.puckUpdateTime = Date.now();
+                // Initialize smooth positions if not set
+                if (iceState.smoothX === 0 && iceState.smoothY === 0) {
+                    iceState.smoothX = iceState.targetX;
+                    iceState.smoothY = iceState.targetY;
+                }
+                // Keep velocity if available
                 if (snapshot.puck.vx !== undefined) {
                     iceState.puckVx = snapshot.puck.vx;
                     iceState.puckVy = snapshot.puck.vy;
                 }
             }
+
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
             }
@@ -5313,6 +5336,12 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
+                // Reset smooth positions to spin start
+                iceState.smoothX = iceState.spinStartX;
+                iceState.smoothY = iceState.spinStartY;
+                iceState.targetX = iceState.spinStartX;
+                iceState.targetY = iceState.spinStartY;
+                iceState.lastUpdateTime = performance.now() / 1000;
             }
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.slideStartTime = performance.now();
@@ -5322,6 +5351,12 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
+                // Reset smooth interpolation
+                iceState.smoothX = snapshot.puck.x;
+                iceState.smoothY = snapshot.puck.y;
+                iceState.targetX = snapshot.puck.x;
+                iceState.targetY = snapshot.puck.y;
+                iceState.lastUpdateTime = performance.now() / 1000;
             }
             if (snapshot.gameState === 'finished' && prevGameState !== 'finished') {
                 if (iceState.zoom > 1.1 && !iceState.zoomOutTriggered) {
@@ -5345,6 +5380,12 @@
                 iceState.currentOwnerName = '';
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
+                // Reset smooth positions
+                iceState.smoothX = 200;
+                iceState.smoothY = 200;
+                iceState.targetX = 200;
+                iceState.targetY = 200;
+                iceState.lastUpdateTime = performance.now() / 1000;
             }
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -6135,7 +6176,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE (FINAL) ──────────────────────────────────────
+        // ─── RENDER ICE (FINAL with smooth interpolation) ─────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6319,21 +6360,38 @@
                 }
             }
 
-            // Speed‑aware interpolation (smooth, responsive)
-            let renderPuckX = puck.x;
-            let renderPuckY = puck.y;
-            if (iceState.puckUpdateTime > 0) {
-                const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                const baseFactor = 80;
-                const speedFactor = Math.max(30, Math.min(80, baseFactor / (1 + currentSpeed * 0.3)));
-                const lerpAmount = Math.min(elapsed * speedFactor, 1);
-                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
-                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
+            // --- SMOOTH INTERPOLATION FOR PUCK ---
+            let renderPuckX, renderPuckY;
+            if (iceState.gameState === 'spinning') {
+                // During spin, the puck is fixed at spin center
+                renderPuckX = iceState.spinStartX * s;
+                renderPuckY = iceState.spinStartY * s;
+            } else {
+                // Use smooth interpolation for sliding/finished states
+                const nowSec = performance.now() / 1000;
+                const elapsed = nowSec - iceState.lastUpdateTime;
+
+                // If we haven't received a new update for a while, snap to target
+                if (elapsed > 0.5) {
+                    iceState.smoothX = iceState.targetX;
+                    iceState.smoothY = iceState.targetY;
+                } else {
+                    // Interpolate smoothly over the lerpDuration (80ms)
+                    const progress = Math.min(elapsed / iceState.lerpDuration, 1);
+                    const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    // Move smooth toward target with dampening
+                    iceState.smoothX += (iceState.targetX - iceState.smoothX) * eased * 0.9;
+                    iceState.smoothY += (iceState.targetY - iceState.smoothY) * eased * 0.9;
+                }
+
+                renderPuckX = iceState.smoothX * s;
+                renderPuckY = iceState.smoothY * s;
             }
+
+            // Compute speed for owner name display
             const speed = Math.sqrt(
-                Math.pow(renderPuckX - iceState.puckPrevX, 2) +
-                Math.pow(renderPuckY - iceState.puckPrevY, 2)
+                Math.pow(renderPuckX - iceState.puckPrevX * s, 2) +
+                Math.pow(renderPuckY - iceState.puckPrevY * s, 2)
             );
 
             // Draw fields
@@ -6437,7 +6495,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (FINAL FIX) ──────────────────────────
+            // ─── PUCK DRAWING (using interpolated position) ──────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6478,14 +6536,14 @@
                     px = iceState.spinStartX * s;
                     py = iceState.spinStartY * s;
                 } else {
-                    px = renderPuckX * s;
-                    py = renderPuckY * s;
+                    px = renderPuckX;
+                    py = renderPuckY;
                 }
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
                 // ---- 1. GREY COLLIDER (same radius as white circle, lineWidth 2) ----
-                const colliderRadius = r; // exactly at the edge
+                const colliderRadius = r;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
                 iceCtx.lineWidth = 2.0;
@@ -6521,7 +6579,7 @@
                 const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 1.5; // thinner
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
@@ -6536,8 +6594,8 @@
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
                 if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
-                    const pxLocal = renderPuckX;
-                    const pyLocal = renderPuckY;
+                    const pxLocal = iceState.smoothX;
+                    const pyLocal = iceState.smoothY;
                     for (const p of iceState.players) {
                         if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
                             ownerName = p.name || 'Player';
@@ -6642,6 +6700,12 @@
             updateCardStats();
             requestAnimationFrame(renderLoop);
             setOnline(false);
+            // Initialize smooth puck position
+            iceState.smoothX = iceState.puck.x || 200;
+            iceState.smoothY = iceState.puck.y || 200;
+            iceState.targetX = iceState.smoothX;
+            iceState.targetY = iceState.smoothY;
+            iceState.lastUpdateTime = performance.now() / 1000;
         }
         init();
         window.__state = state;
