@@ -4552,7 +4552,9 @@
             });
         }
 
-        // ─── ICE STATE ──────────────────────────────────────────────────
+        // ════════════════════════════════════════════════════════════════
+        // ICE STATE – with fixed zoom center & smooth interpolation
+        // ════════════════════════════════════════════════════════════════
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -4599,6 +4601,10 @@
             glowPhase: 0,
             puckVx: 0,
             puckVy: 0,
+            // NEW: fixed zoom center (world coordinates)
+            zoomCenterX: 0,
+            zoomCenterY: 0,
+            zoomCenterFixed: false,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -5313,6 +5319,7 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
             }
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.slideStartTime = performance.now();
@@ -5322,6 +5329,7 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
             }
             if (snapshot.gameState === 'finished' && prevGameState !== 'finished') {
                 if (iceState.zoom > 1.1 && !iceState.zoomOutTriggered) {
@@ -5345,6 +5353,9 @@
                 iceState.currentOwnerName = '';
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
+                iceState.zoomCenterX = 0;
+                iceState.zoomCenterY = 0;
             }
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -6192,16 +6203,16 @@
                 iceCtx.restore();
             }
 
-            // Zoom handling
+            // ─── ZOOM TRANSFORMATION (fixed center) ────────────────
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
-            if (zoomActive) {
-                const puck = iceState.puck;
-                const puckScreenX = puck.x * s;
-                const puckScreenY = puck.y * s;
+            if (zoomActive && iceState.zoomCenterFixed) {
+                // Use the stored world coordinates as fixed center
+                const centerScreenX = iceState.zoomCenterX * s;
+                const centerScreenY = iceState.zoomCenterY * s;
                 const cx = half, cy = half;
-                zoomTx = (cx - puckScreenX) * iceState.zoom + cx - cx * iceState.zoom;
-                zoomTy = (cy - puckScreenY) * iceState.zoom + cy - cy * iceState.zoom;
+                zoomTx = (cx - centerScreenX) * iceState.zoom + cx - cx * iceState.zoom;
+                zoomTy = (cy - centerScreenY) * iceState.zoom + cy - cy * iceState.zoom;
                 zoomSc = iceState.zoom;
                 iceCtx.save();
                 iceCtx.translate(zoomTx, zoomTy);
@@ -6280,19 +6291,23 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // Update zoom - at 5.5 seconds
+            // ─── ZOOM LOGIC (only once) ─────────────────────────────
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
                 const speedThreshold = 2.0;
-                if (slideElapsed > 5.5 && currentSpeed < speedThreshold && !iceState.isZoomingOut && !iceState.zoomLocked) {
-                    if (!iceState.isZoomingIn && iceState.zoom < 1.7) {
-                        iceState.isZoomingIn = true;
-                        iceState.zoomStartTime = now;
-                        iceState.zoomTarget = 1.8;
-                    }
+                // Trigger zoom only once, when speed drops and we haven't zoomed yet
+                if (slideElapsed > 5.5 && currentSpeed < speedThreshold && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
+                    .zoomLocked) {
+                    // Store the puck's world position at this moment (before scaling)
+                    iceState.zoomCenterX = puck.x;
+                    iceState.zoomCenterY = puck.y;
+                    iceState.zoomCenterFixed = true;
+                    iceState.isZoomingIn = true;
+                    iceState.zoomStartTime = now;
+                    iceState.zoomTarget = 1.5; // less extreme
                 }
             }
             if (iceState.isZoomingOut) {
@@ -6319,17 +6334,15 @@
                 }
             }
 
-            // Speed‑aware interpolation (smooth, responsive)
+            // ─── SMOOTH PUCK INTERPOLATION ──────────────────────────
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
                 const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                const baseFactor = 80;
-                const speedFactor = Math.max(30, Math.min(80, baseFactor / (1 + currentSpeed * 0.3)));
-                const lerpAmount = Math.min(elapsed * speedFactor, 1);
-                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * lerpAmount;
-                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * lerpAmount;
+                // Assume updates arrive every ~33ms (30 Hz), clamp interpolation to 1
+                const t = Math.min(elapsed / (1/30), 1);
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * t;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * t;
             }
             const speed = Math.sqrt(
                 Math.pow(renderPuckX - iceState.puckPrevX, 2) +
@@ -6437,7 +6450,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (FINAL FIX) ──────────────────────────
+            // ─── PUCK DRAWING ──────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
