@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN ───────────────────────────────────────── */
+        /* ─── LOADING SCREEN (unchanged) ───────────────────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -3129,21 +3129,6 @@
             color: rgba(255, 255, 255, 0.3);
             margin-top: 10px;
         }
-
-        /* ─── ROLL CONFIRMATION CARD ────────────────────────────── */
-        #roll-confirm-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            z-index: 100000;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(12px);
-        }
-        #roll-confirm-overlay.show {
-            display: flex;
-        }
     </style>
 </head>
 <body>
@@ -3539,22 +3524,19 @@
                             <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
                         </div>
                         <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
-                            <!-- Name -->
                             <div class="identity-field">
                                 <span class="id-label">Name</span>
                                 <div class="id-value-wrap">
                                     <span class="id-value" id="id-name" contenteditable="false">Anonymous</span>
                                 </div>
                             </div>
-                            <!-- Username -->
                             <div class="identity-field">
                                 <span class="id-label">Username</span>
                                 <div class="id-value-wrap">
                                     <span class="id-value" id="id-username" contenteditable="false">@anon_user</span>
                                 </div>
                             </div>
-                            <!-- Phone (clickable) -->
-                            <div class="identity-field" id="phone-field" style="cursor:pointer;">
+                            <div class="identity-field">
                                 <span class="id-label">Phone</span>
                                 <div class="id-value-wrap">
                                     <span class="id-value" id="id-phone" contenteditable="false">+0 000 000 000</span>
@@ -3584,25 +3566,15 @@
                 <div id="toggle-anim-status">Switching…</div>
             </div>
         </div>
-
-        <!-- ─── ROLL CONFIRMATION CARD ────────────────────────────── -->
-        <div id="roll-confirm-overlay">
-            <div style="background:linear-gradient(145deg,#1a2a3a,#0d1a2a);border-radius:24px;padding:28px 24px;max-width:340px;width:90%;border:1px solid rgba(255,255,255,0.06);box-shadow:0 20px 80px rgba(0,0,0,0.8);">
-                <div style="text-align:center;margin-bottom:12px;">
-                    <div style="font-size:14px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:2px;">Roll Phone</div>
-                    <div style="font-size:36px;font-weight:800;color:#fff;margin:4px 0;">🎲</div>
-                    <div style="font-size:18px;font-weight:600;color:rgba(255,255,255,0.8);">Pay 500 💎</div>
-                    <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:4px;">This will assign a new random number</div>
-                </div>
-                <div style="display:flex;gap:12px;margin-top:16px;">
-                    <button id="roll-confirm-cancel" style="flex:1;padding:10px;border-radius:30px;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-weight:600;font-size:16px;cursor:pointer;">Cancel</button>
-                    <button id="roll-confirm-ok" style="flex:1;padding:10px;border-radius:30px;border:none;background:#c8a84e;color:#000;font-weight:700;font-size:16px;cursor:pointer;">Confirm</button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
+        // ─── MOBILE DETECTION & PERFORMANCE SETTINGS ──────────────────
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|Opera Mini|IEMobile/i.test(navigator.userAgent) || window.innerWidth < 768;
+        const TARGET_FPS = isMobile ? 30 : 60;
+        const FRAME_INTERVAL = 1000 / TARGET_FPS;
+        let lastFrameTime = 0;
+
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
@@ -3860,11 +3832,6 @@
         const confirmOk = document.getElementById('confirm-ok');
         let pendingChange = null;
 
-        // ─── ROLL CONFIRMATION OVERLAY ──────────────────────────────
-        const rollConfirmOverlay = document.getElementById('roll-confirm-overlay');
-        const rollConfirmOk = document.getElementById('roll-confirm-ok');
-        const rollConfirmCancel = document.getElementById('roll-confirm-cancel');
-
         // ─── Helpers ────────────────────────────────────────────────
         function getAnonymousColor(id) {
             let hash = 0;
@@ -3952,11 +3919,11 @@
             recentGamesList.innerHTML = html;
         }
 
-        // ─── PARTICLES ──────────────────────────────────────────────────
+        // ─── PARTICLES (reduced count on mobile) ─────────────────────
         function initParticles() {
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
-            const count = 50;
+            const count = isMobile ? 20 : 50;
             particles = [];
             for (let i = 0; i < count; i++) {
                 particles.push({
@@ -3986,10 +3953,12 @@
                 particleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
                 particleCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
                 particleCtx.fill();
-                particleCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-                particleCtx.shadowBlur = 10;
-                particleCtx.fill();
-                particleCtx.shadowBlur = 0;
+                if (!isMobile) {
+                    particleCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                    particleCtx.shadowBlur = 10;
+                    particleCtx.fill();
+                    particleCtx.shadowBlur = 0;
+                }
             });
             particleAnimId = requestAnimationFrame(animateParticles);
         }
@@ -4001,11 +3970,11 @@
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
         }
 
-        // ─── Identity particles ──────────────────────────────────────
+        // ─── Identity particles (reduced) ──────────────────────────
         function initIdentityParticles() {
             identityParticleCanvas.width = window.innerWidth;
             identityParticleCanvas.height = window.innerHeight;
-            const count = 40;
+            const count = isMobile ? 15 : 40;
             identityParticles = [];
             for (let i = 0; i < count; i++) {
                 identityParticles.push({
@@ -4046,7 +4015,7 @@
             identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
         }
 
-        // ─── CARD 3D INTERACTION ──────────────────────────────────────
+        // ─── CARD 3D INTERACTION (unchanged) ──────────────────────
         let cardDrag = false;
         let cardPrevX = 0,
             cardPrevY = 0;
@@ -4169,8 +4138,7 @@
             identityDrag = false;
             requestAnimationFrame(startIdentityIdleAnimation);
             haptic('medium');
-            // Make name & username editable, but NOT phone
-            document.querySelectorAll('.id-value:not(#id-phone)').forEach(el => {
+            document.querySelectorAll('.id-value').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
                     if (this.isContentEditable) return;
@@ -4253,213 +4221,6 @@
             return 0;
         }
 
-        // ─── PHONE ROLL LOGIC ────────────────────────────────────────
-        let rollAnimating = false;
-
-        async function rollPhoneNumber() {
-            if (rollAnimating) return;
-            if (!state.userId) {
-                showNotification('Not logged in.');
-                return;
-            }
-            if (state.balance < 500) {
-                showNotification('Not enough gems! Need 500 💎');
-                haptic('light');
-                return;
-            }
-
-            rollAnimating = true;
-            // Deduct locally for immediate feedback
-            state.balance -= 500;
-            updateBalance();
-
-            try {
-                const res = await fetch(SERVER_URL + '/api/roll-phone', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: state.userId })
-                });
-                const data = await res.json();
-                if (data.ok) {
-                    state.anonymousPhone = data.newPhone;
-                    state.balance = data.newBalance;
-                    state.phoneChanged = true;
-                    updateBalance();
-                    updateProfile();
-                    await animatePhoneRoll(data.newPhone);
-                    if (data.legendary) {
-                        showNotification('🎉 LEGENDARY NUMBER! +888 ✨');
-                        haptic('heavy');
-                        triggerConfetti();
-                    } else {
-                        showNotification('📱 New phone number assigned!');
-                        haptic('medium');
-                    }
-                } else {
-                    state.balance += 500;
-                    updateBalance();
-                    showNotification(data.error || 'Roll failed.');
-                    haptic('light');
-                }
-            } catch (err) {
-                console.error('Roll phone error:', err);
-                state.balance += 500;
-                updateBalance();
-                showNotification('Network error. Try again.');
-            } finally {
-                rollAnimating = false;
-            }
-        }
-
-        // ─── PHONE ROLL ANIMATION ────────────────────────────────────
-        function animatePhoneRoll(newNumber) {
-            return new Promise((resolve) => {
-                const phoneEl = document.getElementById('id-phone');
-                const container = phoneEl.parentElement; // .id-value-wrap
-                const oldSpan = phoneEl;
-                const newSpan = document.createElement('span');
-                newSpan.className = 'id-value';
-                newSpan.style.cssText = 'font-size:inherit;font-weight:600;color:#fff;flex:1;min-width:80px;';
-                newSpan.textContent = newNumber;
-                oldSpan.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                newSpan.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                oldSpan.style.transform = 'translateY(-20px) scale(0.8)';
-                oldSpan.style.opacity = '0';
-                newSpan.style.transform = 'translateY(20px) scale(0.8)';
-                newSpan.style.opacity = '0';
-                container.insertBefore(newSpan, oldSpan.nextSibling);
-                void newSpan.offsetHeight;
-                newSpan.style.transform = 'translateY(0) scale(1)';
-                newSpan.style.opacity = '1';
-                setTimeout(() => {
-                    oldSpan.remove();
-                    animateDigitRoll(newSpan, newNumber, resolve);
-                }, 300);
-            });
-        }
-
-        function animateDigitRoll(element, finalNumber, resolve) {
-            const chars = finalNumber.split('');
-            element.innerHTML = '';
-            const charSpans = [];
-            chars.forEach((char, idx) => {
-                const span = document.createElement('span');
-                span.className = 'phone-roll-digit';
-                span.textContent = char;
-                span.style.display = 'inline-block';
-                span.style.transition = 'transform 0.06s linear, opacity 0.06s ease';
-                span.style.willChange = 'transform, opacity';
-                element.appendChild(span);
-                charSpans.push(span);
-            });
-
-            const totalCycles = 3;
-            const cycleDuration = 200;
-            let cycle = 0;
-
-            function spinCycle() {
-                if (cycle >= totalCycles) {
-                    settleDigits(charSpans, finalNumber, resolve);
-                    return;
-                }
-                charSpans.forEach((span, idx) => {
-                    const char = finalNumber[idx];
-                    if (char === '+' || char === ' ') {
-                        span.style.transform = 'translateY(0) scale(1)';
-                        span.style.opacity = '1';
-                        return;
-                    }
-                    const randDigit = Math.floor(Math.random() * 10);
-                    span.textContent = randDigit;
-                    span.style.transform = 'translateY(-12px) scale(0.7)';
-                    span.style.opacity = '0.3';
-                    void span.offsetHeight;
-                    span.style.transform = 'translateY(0) scale(1)';
-                    span.style.opacity = '1';
-                });
-                cycle++;
-                setTimeout(spinCycle, cycleDuration);
-            }
-
-            setTimeout(spinCycle, 100);
-
-            function settleDigits(spans, finalChars, resolve) {
-                let delay = 0;
-                spans.forEach((span, idx) => {
-                    const char = finalChars[idx];
-                    if (char === '+' || char === ' ') {
-                        span.textContent = char;
-                        span.style.transform = 'translateY(0) scale(1)';
-                        span.style.opacity = '1';
-                        return;
-                    }
-                    setTimeout(() => {
-                        span.textContent = char;
-                        span.style.transform = 'translateY(-6px) scale(1.1)';
-                        span.style.opacity = '1';
-                        setTimeout(() => {
-                            span.style.transform = 'translateY(0) scale(1)';
-                        }, 80);
-                    }, delay);
-                    delay += 60;
-                });
-                setTimeout(resolve, delay + 200);
-            }
-        }
-
-        // ─── CONFETTI ──────────────────────────────────────────────────
-        function triggerConfetti() {
-            const canvas = document.getElementById('particle-canvas');
-            if (!canvas) return;
-            const ctx2 = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            canvas.classList.add('show');
-            const particles = [];
-            const colors = ['#ff0', '#f0f', '#0ff', '#f44', '#4f4', '#44f', '#fa0', '#a0f', '#0fa'];
-            for (let i = 0; i < 100; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height - canvas.height,
-                    vx: (Math.random() - 0.5) * 8,
-                    vy: Math.random() * 6 + 2,
-                    size: Math.random() * 6 + 2,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    life: 1,
-                });
-            }
-            let animId = null;
-
-            function drawConfetti() {
-                ctx2.clearRect(0, 0, canvas.width, canvas.height);
-                let alive = false;
-                particles.forEach(p => {
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += 0.1;
-                    p.life -= 0.005;
-                    if (p.life <= 0) return;
-                    alive = true;
-                    ctx2.globalAlpha = p.life;
-                    ctx2.fillStyle = p.color;
-                    ctx2.fillRect(p.x, p.y, p.size, p.size * 0.6);
-                });
-                if (alive) {
-                    animId = requestAnimationFrame(drawConfetti);
-                } else {
-                    canvas.classList.remove('show');
-                    ctx2.clearRect(0, 0, canvas.width, canvas.height);
-                }
-            }
-            drawConfetti();
-            setTimeout(() => {
-                if (animId) cancelAnimationFrame(animId);
-                canvas.classList.remove('show');
-                ctx2.clearRect(0, 0, canvas.width, canvas.height);
-            }, 3000);
-        }
-
-        // ─── CONFIRM MODAL ──────────────────────────────────────────
         confirmCancel.addEventListener('click', () => {
             confirmModal.classList.remove('show');
             if (pendingChange) {
@@ -4601,44 +4362,6 @@
 
         identityOverlay.addEventListener('click', (e) => {
             if (e.target === identityOverlay) closeIdentityCard();
-        });
-
-        // ─── PHONE CLICK HANDLER (opens confirmation card) ────────────
-        document.addEventListener('DOMContentLoaded', () => {
-            const phoneField = document.getElementById('phone-field');
-            const phoneEl = document.getElementById('id-phone');
-
-            if (phoneField) {
-                phoneField.addEventListener('click', function(e) {
-                    // Don't trigger if editing (but phone is not editable)
-                    if (phoneEl.isContentEditable) return;
-                    if (state.balance < 500) {
-                        showNotification('Not enough gems! Need 500 💎');
-                        haptic('light');
-                        return;
-                    }
-                    rollConfirmOverlay.classList.add('show');
-                    haptic('medium');
-                });
-            }
-
-            if (rollConfirmOk) {
-                rollConfirmOk.addEventListener('click', function() {
-                    rollConfirmOverlay.classList.remove('show');
-                    rollPhoneNumber();
-                });
-            }
-
-            if (rollConfirmCancel) {
-                rollConfirmCancel.addEventListener('click', function() {
-                    rollConfirmOverlay.classList.remove('show');
-                    haptic('light');
-                });
-            }
-
-            rollConfirmOverlay?.addEventListener('click', function(e) {
-                if (e.target === this) this.classList.remove('show');
-            });
         });
 
         // ─── Card Touch/Mouse events ──────────────────────────────────
@@ -4828,7 +4551,7 @@
             });
         }
 
-        // ─── ICE STATE (unchanged) ──────────────────────────────────
+        // ─── ICE STATE (with smooth interpolation) ──────────────────
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -4977,11 +4700,11 @@
             img.src = src;
         }
 
-        // ─── CANVAS RESIZE ─────────────────────────────────────────────
+        // ─── CANVAS RESIZE (lower DPR on mobile) ────────────────────
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = isMobile ? 1 : (window.devicePixelRatio || 1);
             canvas.width = size * dpr;
             canvas.height = size * dpr;
             canvas.style.width = size + 'px';
@@ -4993,7 +4716,7 @@
         function resizeIceCanvas() {
             const rect = iceCanvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = isMobile ? 1 : (window.devicePixelRatio || 1);
             iceCanvas.width = size * dpr;
             iceCanvas.height = size * dpr;
             iceCanvas.style.width = size + 'px';
@@ -5196,7 +4919,7 @@
             });
         }
 
-        // ─── applyServerState (unchanged) ──────────────────────────
+        // ─── applyServerState ──────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState = state.gameState;
             state.gameState = snapshot.gameState;
@@ -5554,7 +5277,7 @@
         // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
-        // ─── applyIceServerState (unchanged) ──────────────────────
+        // ─── applyIceServerState ──────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
@@ -6223,6 +5946,7 @@
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
 
+            // Glass background with center glow (reduced on mobile)
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
             grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
@@ -6231,14 +5955,16 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
-            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
-            glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
-            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.save();
-            ctx.fillStyle = glowGrad;
-            ctx.fillRect(0, 0, w, w);
-            ctx.restore();
+            if (!isMobile) {
+                const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
+                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+                glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+                glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                ctx.save();
+                ctx.fillStyle = glowGrad;
+                ctx.fillRect(0, 0, w, w);
+                ctx.restore();
+            }
 
             const cornerRadius = w * 0.20;
             const rectX = 0, rectY = 0, rectW = w, rectH = w;
@@ -6259,7 +5985,7 @@
 
             ctx.save();
             ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-            ctx.shadowBlur = 30;
+            ctx.shadowBlur = isMobile ? 15 : 30;
             ctx.fillStyle = 'rgba(20, 22, 30, 0.70)';
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.fill();
@@ -6272,8 +5998,10 @@
             ctx.restore();
 
             ctx.save();
-            ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
-            ctx.shadowBlur = 16;
+            if (!isMobile) {
+                ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
+                ctx.shadowBlur = 16;
+            }
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             ctx.lineWidth = 2.5;
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
@@ -6327,8 +6055,10 @@
                         }
                         ctx.strokeStyle = flashColor;
                         ctx.lineWidth = isRed ? 4 : 2.5;
-                        ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
-                        ctx.shadowBlur = isRed ? 18 : 6;
+                        if (!isMobile) {
+                            ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+                            ctx.shadowBlur = isRed ? 18 : 6;
+                        }
                         for (const seg of gapSegments) {
                             ctx.beginPath();
                             ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
@@ -6379,13 +6109,13 @@
                     if (topInfo.rank === 1) {
                         borderColor = '#FFD700';
                         borderWidth = 3.5;
-                        shadowColor = 'rgba(255,215,0,0.6)';
-                        shadowBlur = 18;
+                        if (!isMobile) { shadowColor = 'rgba(255,215,0,0.6)';
+                            shadowBlur = 18; }
                     } else if (topInfo.rank === 2) {
                         borderColor = '#C0C0C0';
                         borderWidth = 3.0;
-                        shadowColor = 'rgba(192,192,192,0.5)';
-                        shadowBlur = 14;
+                        if (!isMobile) { shadowColor = 'rgba(192,192,192,0.5)';
+                            shadowBlur = 14; }
                     }
                 }
                 const isMe = p.id === state.userId;
@@ -6405,8 +6135,8 @@
                     ctx.font = `bold ${drawRadius*0.6}px system-ui, sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                    ctx.shadowBlur = 4;
+                    if (!isMobile) { ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                        ctx.shadowBlur = 4; }
                     ctx.fillText(letter, px, py + 1);
                     ctx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
@@ -6423,8 +6153,8 @@
                 }
                 ctx.restore();
                 ctx.save();
-                ctx.shadowBlur = shadowBlur;
-                ctx.shadowColor = shadowColor;
+                if (!isMobile) { ctx.shadowBlur = shadowBlur;
+                    ctx.shadowColor = shadowColor; }
                 ctx.beginPath();
                 ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
                 ctx.strokeStyle = borderColor;
@@ -6437,7 +6167,7 @@
             ctx.restore();
         }
 
-        // ─── RENDER ICE (unchanged) ─────────────────────────────
+        // ─── RENDER ICE (with mobile optimizations) ──────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6454,14 +6184,16 @@
             iceCtx.fillStyle = grad;
             iceCtx.fillRect(0, 0, w, w);
 
-            const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
-            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
-            glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
-            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            iceCtx.save();
-            iceCtx.fillStyle = glowGrad;
-            iceCtx.fillRect(0, 0, w, w);
-            iceCtx.restore();
+            if (!isMobile) {
+                const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
+                glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+                glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
+                glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                iceCtx.save();
+                iceCtx.fillStyle = glowGrad;
+                iceCtx.fillRect(0, 0, w, w);
+                iceCtx.restore();
+            }
 
             const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length === 0) return;
@@ -6470,7 +6202,8 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            if (iceState.gameState === 'idle') {
+            // Pulse glow effect – skip on mobile
+            if (!isMobile && iceState.gameState === 'idle') {
                 iceState.glowPhase += 0.03;
                 const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
                 const alpha = 0.08 + 0.22 * pulse;
@@ -6493,6 +6226,7 @@
                 iceCtx.restore();
             }
 
+            // Zoom handling
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             if (zoomActive) {
@@ -6508,11 +6242,12 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
+            // Perimeter outline
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             iceCtx.lineWidth = 3;
-            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
-            iceCtx.shadowBlur = 14;
+            if (!isMobile) { iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                iceCtx.shadowBlur = 14; }
             iceCtx.stroke(perimeterPath);
             iceCtx.shadowBlur = 0;
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
@@ -6520,6 +6255,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
+            // Idle puck
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
@@ -6556,7 +6292,7 @@
                 const r = puckRadius;
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-                iceCtx.shadowBlur = 12;
+                iceCtx.shadowBlur = isMobile ? 6 : 12;
                 iceCtx.strokeStyle = '#ffffff';
                 iceCtx.lineWidth = 4;
                 iceCtx.beginPath();
@@ -6578,6 +6314,7 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
+            // Update zoom (unchanged)
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
@@ -6616,6 +6353,7 @@
                 }
             }
 
+            // --- SMOOTH INTERPOLATION FOR PUCK ---
             let renderPuckX, renderPuckY;
             if (iceState.gameState === 'spinning') {
                 renderPuckX = iceState.spinStartX * s;
@@ -6623,6 +6361,7 @@
             } else {
                 const nowSec = performance.now() / 1000;
                 const elapsed = nowSec - iceState.lastUpdateTime;
+
                 if (elapsed > 0.5) {
                     iceState.smoothX = iceState.targetX;
                     iceState.smoothY = iceState.targetY;
@@ -6632,6 +6371,7 @@
                     iceState.smoothX += (iceState.targetX - iceState.smoothX) * eased * 0.9;
                     iceState.smoothY += (iceState.targetY - iceState.smoothY) * eased * 0.9;
                 }
+
                 renderPuckX = iceState.smoothX * s;
                 renderPuckY = iceState.smoothY * s;
             }
@@ -6641,6 +6381,7 @@
                 Math.pow(renderPuckY - iceState.puckPrevY * s, 2)
             );
 
+            // Draw fields
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6694,8 +6435,8 @@
                     iceCtx.font = `bold ${drawR*0.8}px system-ui, sans-serif`;
                     iceCtx.textAlign = 'center';
                     iceCtx.textBaseline = 'middle';
-                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                    iceCtx.shadowBlur = 4;
+                    if (!isMobile) { iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                        iceCtx.shadowBlur = 4; }
                     iceCtx.fillText(letter, cx, cy);
                     iceCtx.shadowBlur = 0;
                 } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
@@ -6709,6 +6450,7 @@
             });
             iceCtx.restore();
 
+            // Spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -6730,8 +6472,8 @@
                 iceCtx.lineTo(-tipOffset * 0.3, triSize * 0.5);
                 iceCtx.closePath();
                 iceCtx.fillStyle = '#e8f4ff';
-                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-                iceCtx.shadowBlur = 12;
+                if (!isMobile) { iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                    iceCtx.shadowBlur = 12; }
                 iceCtx.fill();
                 iceCtx.shadowBlur = 0;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
@@ -6740,6 +6482,7 @@
                 iceCtx.restore();
             }
 
+            // ─── PUCK DRAWING (using interpolated position) ──────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6786,6 +6529,7 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
+                // ---- 1. GREY COLLIDER (always draw) ----
                 const colliderRadius = r;
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
@@ -6796,17 +6540,21 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                iceCtx.save();
-                iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.shadowOffsetX = 3;
-                iceCtx.shadowOffsetY = 4;
-                iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
-                iceCtx.beginPath();
-                iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
-                iceCtx.fill();
-                iceCtx.restore();
+                // ---- 2. Shadow (skip on mobile) ----
+                if (!isMobile) {
+                    iceCtx.save();
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                    iceCtx.shadowBlur = 12;
+                    iceCtx.shadowOffsetX = 3;
+                    iceCtx.shadowOffsetY = 4;
+                    iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
+                    iceCtx.beginPath();
+                    iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
+                    iceCtx.fill();
+                    iceCtx.restore();
+                }
 
+                // ---- 3. WHITE OUTLINE (thick) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
                 iceCtx.lineWidth = 4;
@@ -6816,6 +6564,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
+                // ---- 4. Cross (thinner) ----
                 const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
@@ -6829,6 +6578,7 @@
                 iceCtx.stroke();
                 iceCtx.restore();
 
+                // Owner name (if slow)
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
@@ -6874,41 +6624,44 @@
             if (zoomActive) iceCtx.restore();
         }
 
-        // ─── RENDER LOOP ─────────────────────────────────────────────
-        function renderLoop() {
-            updatePlayerAnimations();
-            const now = Date.now();
+        // ─── RENDER LOOP (with frame rate limiting) ──────────────────
+        function renderLoop(timestamp) {
+            const elapsed = timestamp - lastFrameTime;
+            if (elapsed >= FRAME_INTERVAL) {
+                lastFrameTime = timestamp - (elapsed % FRAME_INTERVAL);
+                updatePlayerAnimations();
+                const now = Date.now();
 
-            if (state.gameState === 'countdown' && state.countdownStartTime) {
-                const elapsed = (now - state.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
-                const secs = Math.floor(remaining);
-                const ms = Math.floor((remaining - secs) * 100);
-                countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                const progress = Math.min(1, elapsed / 10.0) * 100;
-                timerProgress.style.width = progress + '%';
-                timerProgressWrap.classList.add('visible');
-            } else if (state.gameState === 'prestart') {
-                countdownTimer.textContent = 'GO!';
-                timerProgress.style.width = '100%';
-                timerProgressWrap.classList.add('visible');
-            } else if (state.gameState === 'idle') {
-                timerProgressWrap.classList.remove('visible');
+                if (state.gameState === 'countdown' && state.countdownStartTime) {
+                    const elapsedSec = (now - state.countdownStartTime) / 1000;
+                    const remaining = Math.max(0, 10.0 - elapsedSec);
+                    const secs = Math.floor(remaining);
+                    const ms = Math.floor((remaining - secs) * 100);
+                    countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                    const progress = Math.min(1, elapsedSec / 10.0) * 100;
+                    timerProgress.style.width = progress + '%';
+                    timerProgressWrap.classList.add('visible');
+                } else if (state.gameState === 'prestart') {
+                    countdownTimer.textContent = 'GO!';
+                    timerProgress.style.width = '100%';
+                    timerProgressWrap.classList.add('visible');
+                } else if (state.gameState === 'idle') {
+                    timerProgressWrap.classList.remove('visible');
+                }
+
+                if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
+                    const elapsedSec = (now - iceState.countdownStartTime) / 1000;
+                    const remaining = Math.max(0, 10.0 - elapsedSec);
+                    const secs = Math.floor(remaining);
+                    const ms = Math.floor((remaining - secs) * 100);
+                    iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                    iceTimerProgress.style.width = (Math.min(1, elapsedSec / 10.0) * 100) + '%';
+                }
+
+                updateIceTopPanelVisibility();
+                render();
+                renderIce();
             }
-
-            if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
-                const elapsed = (now - iceState.countdownStartTime) / 1000;
-                const remaining = Math.max(0, 10.0 - elapsed);
-                const secs = Math.floor(remaining);
-                const ms = Math.floor((remaining - secs) * 100);
-                iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
-                iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
-            }
-
-            updateIceTopPanelVisibility();
-
-            render();
-            renderIce();
             requestAnimationFrame(renderLoop);
         }
 
@@ -6937,6 +6690,8 @@
             renderRecentGames();
             renderTransactions();
             updateCardStats();
+            // Start the render loop with frame limiting
+            lastFrameTime = performance.now();
             requestAnimationFrame(renderLoop);
             setOnline(false);
             iceState.smoothX = iceState.puck.x || 200;
