@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <style>
-        /* ─── LOADING SCREEN (unchanged) ───────────────────────────────────────── */
+        /* ─── LOADING SCREEN ───────────────────────────────────────── */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -228,7 +228,7 @@
             #loading-text { font-size: 10px; margin-top: 20px; }
         }
 
-        /* ─── APP STYLES (unchanged) ──────────────────────────────────────── */
+        /* ─── APP STYLES ──────────────────────────────────────── */
         * {
             margin: 0;
             padding: 0;
@@ -1759,66 +1759,6 @@
             50% { border-bottom-color: rgba(255, 255, 255, 0.1); }
         }
 
-        /* ─── ROLL ANIMATION STYLES ───────────────────────────── */
-        .phone-roll-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex: 1;
-            overflow: hidden;
-        }
-        .phone-roll-text {
-            display: inline-block;
-            transition: transform 0.1s linear, opacity 0.1s ease;
-            will-change: transform, opacity;
-            font-size: inherit;
-            font-weight: 600;
-            color: #fff;
-            white-space: nowrap;
-        }
-        .phone-roll-digit {
-            display: inline-block;
-            transition: transform 0.08s linear, opacity 0.08s ease;
-            will-change: transform, opacity;
-            font-size: inherit;
-            font-weight: 600;
-            color: #fff;
-        }
-        .phone-roll-digit.rolling {
-            transform: translateY(-20px) scale(0.7);
-            opacity: 0.3;
-        }
-        .phone-roll-digit.settling {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
-        .roll-btn {
-            background: #5b8def;
-            border: none;
-            border-radius: 8px;
-            color: #fff;
-            font-weight: 700;
-            font-size: 14px;
-            padding: 4px 12px;
-            cursor: pointer;
-            transition: 0.2s;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .roll-btn:active {
-            transform: scale(0.94);
-            opacity: 0.8;
-        }
-        .roll-btn:disabled {
-            opacity: 0.4;
-            pointer-events: none;
-        }
-        .roll-cost {
-            font-size: 10px;
-            color: rgba(255,255,255,0.3);
-            margin-left: 4px;
-        }
-
         .char-anim {
             display: inline-block;
             animation: charSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
@@ -3189,6 +3129,21 @@
             color: rgba(255, 255, 255, 0.3);
             margin-top: 10px;
         }
+
+        /* ─── ROLL CONFIRMATION CARD ────────────────────────────── */
+        #roll-confirm-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+        }
+        #roll-confirm-overlay.show {
+            display: flex;
+        }
     </style>
 </head>
 <body>
@@ -3571,7 +3526,7 @@
         </div>
     </div>
 
-    <!-- ─── IDENTITY CARD OVERLAY (with Phone Roll) ────────────── -->
+    <!-- ─── IDENTITY CARD OVERLAY ──────────────────────────────── -->
     <div id="identity-overlay">
         <button class="card-close-btn show" id="identity-close-btn">✕</button>
         <canvas id="identity-particle-canvas"></canvas>
@@ -3598,12 +3553,11 @@
                                     <span class="id-value" id="id-username" contenteditable="false">@anon_user</span>
                                 </div>
                             </div>
-                            <!-- Phone with Roll Button -->
-                            <div class="identity-field">
+                            <!-- Phone (clickable) -->
+                            <div class="identity-field" id="phone-field" style="cursor:pointer;">
                                 <span class="id-label">Phone</span>
-                                <div class="phone-roll-container">
-                                    <span class="id-value" id="id-phone" contenteditable="false" style="flex:1;min-width:80px;">+0 000 000 000</span>
-                                    <button class="roll-btn" id="phone-roll-btn">🎲 Roll <span class="roll-cost">(500💎)</span></button>
+                                <div class="id-value-wrap">
+                                    <span class="id-value" id="id-phone" contenteditable="false">+0 000 000 000</span>
                                 </div>
                             </div>
                         </div>
@@ -3628,6 +3582,22 @@
                     </div>
                 </div>
                 <div id="toggle-anim-status">Switching…</div>
+            </div>
+        </div>
+
+        <!-- ─── ROLL CONFIRMATION CARD ────────────────────────────── -->
+        <div id="roll-confirm-overlay">
+            <div style="background:linear-gradient(145deg,#1a2a3a,#0d1a2a);border-radius:24px;padding:28px 24px;max-width:340px;width:90%;border:1px solid rgba(255,255,255,0.06);box-shadow:0 20px 80px rgba(0,0,0,0.8);">
+                <div style="text-align:center;margin-bottom:12px;">
+                    <div style="font-size:14px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:2px;">Roll Phone</div>
+                    <div style="font-size:36px;font-weight:800;color:#fff;margin:4px 0;">🎲</div>
+                    <div style="font-size:18px;font-weight:600;color:rgba(255,255,255,0.8);">Pay 500 💎</div>
+                    <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:4px;">This will assign a new random number</div>
+                </div>
+                <div style="display:flex;gap:12px;margin-top:16px;">
+                    <button id="roll-confirm-cancel" style="flex:1;padding:10px;border-radius:30px;border:none;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-weight:600;font-size:16px;cursor:pointer;">Cancel</button>
+                    <button id="roll-confirm-ok" style="flex:1;padding:10px;border-radius:30px;border:none;background:#c8a84e;color:#000;font-weight:700;font-size:16px;cursor:pointer;">Confirm</button>
+                </div>
             </div>
         </div>
     </div>
@@ -3743,7 +3713,7 @@
         const VISUAL_RADIUS_SCALE = 0.75;
         const ICE_FIELD_SCALE = 0.92;
 
-        // ─── DOM refs (unchanged, except we add phone-roll-btn) ──────
+        // ─── DOM refs ──────────────────────────────────────────────────
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         const balanceEl = document.getElementById('balance');
@@ -3890,6 +3860,11 @@
         const confirmOk = document.getElementById('confirm-ok');
         let pendingChange = null;
 
+        // ─── ROLL CONFIRMATION OVERLAY ──────────────────────────────
+        const rollConfirmOverlay = document.getElementById('roll-confirm-overlay');
+        const rollConfirmOk = document.getElementById('roll-confirm-ok');
+        const rollConfirmCancel = document.getElementById('roll-confirm-cancel');
+
         // ─── Helpers ────────────────────────────────────────────────
         function getAnonymousColor(id) {
             let hash = 0;
@@ -3977,7 +3952,7 @@
             recentGamesList.innerHTML = html;
         }
 
-        // ─── PARTICLES (unchanged) ──────────────────────────────────
+        // ─── PARTICLES ──────────────────────────────────────────────────
         function initParticles() {
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
@@ -4026,7 +4001,7 @@
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
         }
 
-        // ─── Identity particles (unchanged) ──────────────────────
+        // ─── Identity particles ──────────────────────────────────────
         function initIdentityParticles() {
             identityParticleCanvas.width = window.innerWidth;
             identityParticleCanvas.height = window.innerHeight;
@@ -4071,7 +4046,7 @@
             identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
         }
 
-        // ─── CARD 3D INTERACTION (unchanged) ──────────────────────
+        // ─── CARD 3D INTERACTION ──────────────────────────────────────
         let cardDrag = false;
         let cardPrevX = 0,
             cardPrevY = 0;
@@ -4176,7 +4151,7 @@
             stopParticles();
         }
 
-        // ─── Identity Card functions (enhanced with roll) ────────────
+        // ─── Identity Card functions ──────────────────────────────────
         function openIdentityCard() {
             identityOverlay.classList.add('show');
             identityCloseBtn.classList.add('show');
@@ -4194,7 +4169,7 @@
             identityDrag = false;
             requestAnimationFrame(startIdentityIdleAnimation);
             haptic('medium');
-            // Make fields editable on click (excluding phone roll)
+            // Make name & username editable, but NOT phone
             document.querySelectorAll('.id-value:not(#id-phone)').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -4236,12 +4211,6 @@
                         this.blur();
                     }
                 });
-            });
-            // Phone roll button
-            const rollBtn = document.getElementById('phone-roll-btn');
-            rollBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                rollPhoneNumber();
             });
         }
 
@@ -4300,10 +4269,6 @@
             }
 
             rollAnimating = true;
-            const rollBtn = document.getElementById('phone-roll-btn');
-            rollBtn.disabled = true;
-            rollBtn.textContent = '⏳ Rolling...';
-
             // Deduct locally for immediate feedback
             state.balance -= 500;
             updateBalance();
@@ -4318,12 +4283,10 @@
                 if (data.ok) {
                     state.anonymousPhone = data.newPhone;
                     state.balance = data.newBalance;
-                    state.phoneChanged = true; // mark as changed
+                    state.phoneChanged = true;
                     updateBalance();
                     updateProfile();
-                    // Animate the new number
                     await animatePhoneRoll(data.newPhone);
-                    // Check if legendary
                     if (data.legendary) {
                         showNotification('🎉 LEGENDARY NUMBER! +888 ✨');
                         haptic('heavy');
@@ -4333,7 +4296,6 @@
                         haptic('medium');
                     }
                 } else {
-                    // Revert balance
                     state.balance += 500;
                     updateBalance();
                     showNotification(data.error || 'Roll failed.');
@@ -4346,8 +4308,6 @@
                 showNotification('Network error. Try again.');
             } finally {
                 rollAnimating = false;
-                rollBtn.disabled = false;
-                rollBtn.innerHTML = '🎲 Roll <span class="roll-cost">(500💎)</span>';
             }
         }
 
@@ -4355,44 +4315,31 @@
         function animatePhoneRoll(newNumber) {
             return new Promise((resolve) => {
                 const phoneEl = document.getElementById('id-phone');
-                const currentText = phoneEl.textContent;
-                // Phase 1: Full text roll (slide up/down with scale)
-                // We'll create a temporary container
-                const container = phoneEl.parentElement; // .phone-roll-container
+                const container = phoneEl.parentElement; // .id-value-wrap
                 const oldSpan = phoneEl;
-                // Create a new span for the new number
                 const newSpan = document.createElement('span');
                 newSpan.className = 'id-value';
                 newSpan.style.cssText = 'font-size:inherit;font-weight:600;color:#fff;flex:1;min-width:80px;';
                 newSpan.textContent = newNumber;
-                // Append new span, hide old
                 oldSpan.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
                 newSpan.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                // Start full-text animation: old slides up and fades, new slides down and fades in
                 oldSpan.style.transform = 'translateY(-20px) scale(0.8)';
                 oldSpan.style.opacity = '0';
                 newSpan.style.transform = 'translateY(20px) scale(0.8)';
                 newSpan.style.opacity = '0';
-                // Insert new span after old
                 container.insertBefore(newSpan, oldSpan.nextSibling);
-                // Force reflow
                 void newSpan.offsetHeight;
-                // Animate in
                 newSpan.style.transform = 'translateY(0) scale(1)';
                 newSpan.style.opacity = '1';
-                // After 300ms, remove old span and continue to digit-by-digit
                 setTimeout(() => {
                     oldSpan.remove();
-                    // Now digit-by-digit roll
                     animateDigitRoll(newSpan, newNumber, resolve);
                 }, 300);
             });
         }
 
         function animateDigitRoll(element, finalNumber, resolve) {
-            // Split final number into characters (including +, spaces)
             const chars = finalNumber.split('');
-            // Clear element and create a span for each char
             element.innerHTML = '';
             const charSpans = [];
             chars.forEach((char, idx) => {
@@ -4406,18 +4353,15 @@
                 charSpans.push(span);
             });
 
-            // Phase 1: Random spin for each digit (3 cycles)
             const totalCycles = 3;
-            const cycleDuration = 200; // ms per digit per cycle
+            const cycleDuration = 200;
             let cycle = 0;
 
             function spinCycle() {
                 if (cycle >= totalCycles) {
-                    // Settle: each digit settles one by one
                     settleDigits(charSpans, finalNumber, resolve);
                     return;
                 }
-                // Randomize each digit (keep + and spaces as is)
                 charSpans.forEach((span, idx) => {
                     const char = finalNumber[idx];
                     if (char === '+' || char === ' ') {
@@ -4425,15 +4369,11 @@
                         span.style.opacity = '1';
                         return;
                     }
-                    // Random digit 0-9
                     const randDigit = Math.floor(Math.random() * 10);
                     span.textContent = randDigit;
-                    // Animate: move up and scale down
                     span.style.transform = 'translateY(-12px) scale(0.7)';
                     span.style.opacity = '0.3';
-                    // Force reflow
                     void span.offsetHeight;
-                    // Back to normal
                     span.style.transform = 'translateY(0) scale(1)';
                     span.style.opacity = '1';
                 });
@@ -4441,11 +4381,9 @@
                 setTimeout(spinCycle, cycleDuration);
             }
 
-            // Start spinning after a small delay
             setTimeout(spinCycle, 100);
 
             function settleDigits(spans, finalChars, resolve) {
-                // Settle each digit with delay, one by one
                 let delay = 0;
                 spans.forEach((span, idx) => {
                     const char = finalChars[idx];
@@ -4457,7 +4395,6 @@
                     }
                     setTimeout(() => {
                         span.textContent = char;
-                        // Bounce effect: overshoot
                         span.style.transform = 'translateY(-6px) scale(1.1)';
                         span.style.opacity = '1';
                         setTimeout(() => {
@@ -4466,7 +4403,6 @@
                     }, delay);
                     delay += 60;
                 });
-                // Resolve after all settled
                 setTimeout(resolve, delay + 200);
             }
         }
@@ -4516,7 +4452,6 @@
                 }
             }
             drawConfetti();
-            // Auto stop after 3s
             setTimeout(() => {
                 if (animId) cancelAnimationFrame(animId);
                 canvas.classList.remove('show');
@@ -4571,7 +4506,7 @@
             pendingChange = null;
         });
 
-        // ─── Identity toggle button (unchanged) ──────────────────
+        // ─── Identity toggle button ─────────────────────────────────
         identityToggleBtn.addEventListener('click', async function() {
             const enabled = !state.anonymous;
             const overlay = document.getElementById('toggle-anim-overlay');
@@ -4629,7 +4564,7 @@
             }, 1200);
         });
 
-        // ─── Hide PFP toggle (unchanged) ─────────────────────────
+        // ─── Hide PFP toggle ─────────────────────────────────────────
         hidePfpToggle.addEventListener('change', async function() {
             const hide = this.checked;
             try {
@@ -4668,7 +4603,45 @@
             if (e.target === identityOverlay) closeIdentityCard();
         });
 
-        // ─── Card Touch/Mouse events (unchanged) ────────────────────
+        // ─── PHONE CLICK HANDLER (opens confirmation card) ────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            const phoneField = document.getElementById('phone-field');
+            const phoneEl = document.getElementById('id-phone');
+
+            if (phoneField) {
+                phoneField.addEventListener('click', function(e) {
+                    // Don't trigger if editing (but phone is not editable)
+                    if (phoneEl.isContentEditable) return;
+                    if (state.balance < 500) {
+                        showNotification('Not enough gems! Need 500 💎');
+                        haptic('light');
+                        return;
+                    }
+                    rollConfirmOverlay.classList.add('show');
+                    haptic('medium');
+                });
+            }
+
+            if (rollConfirmOk) {
+                rollConfirmOk.addEventListener('click', function() {
+                    rollConfirmOverlay.classList.remove('show');
+                    rollPhoneNumber();
+                });
+            }
+
+            if (rollConfirmCancel) {
+                rollConfirmCancel.addEventListener('click', function() {
+                    rollConfirmOverlay.classList.remove('show');
+                    haptic('light');
+                });
+            }
+
+            rollConfirmOverlay?.addEventListener('click', function(e) {
+                if (e.target === this) this.classList.remove('show');
+            });
+        });
+
+        // ─── Card Touch/Mouse events ──────────────────────────────────
         cardContainer.addEventListener('mousedown', (e) => {
             cardDrag = true;
             cardPrevX = e.clientX;
@@ -4732,7 +4705,7 @@
             }
         }, { passive: true });
 
-        // ─── Identity card touch/mouse events (unchanged) ──────────
+        // ─── Identity card touch/mouse events ──────────────────────
         identityCardContainer.addEventListener('mousedown', (e) => {
             identityDrag = true;
             identityPrevX = e.clientX;
@@ -4804,7 +4777,7 @@
             if (e.target === cardOverlay) closeCard();
         });
 
-        // ─── TRANSACTIONS (unchanged) ──────────────────────────────
+        // ─── TRANSACTIONS ──────────────────────────────────────────────
         function addTransaction(type, amount, label) {
             const entry = {
                 type,
@@ -4930,7 +4903,7 @@
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
         const PUCK_RENDER_RADIUS = 10;
 
-        // ─── PFP CACHE (unchanged) ──────────────────────────────────
+        // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
 
         function generateDefaultAvatar(initial, colorIndex) {
@@ -5431,7 +5404,7 @@
                 delete betInput.dataset.empty; }
         }
 
-        // ─── WIN PANEL UPDATES (unchanged) ──────────────────────
+        // ─── WIN PANEL UPDATES ──────────────────────────────────────
         function updateLastGamePanel(entry) {
             lastGamePfp.src = entry.pfp || state.defaultAvatar;
             lastGameAmount.textContent = `+${entry.amount || 0}`;
@@ -5478,7 +5451,7 @@
             addRecentGame('ice', name, amount, 'win');
         }
 
-        // ─── ROUND END HANDLERS (unchanged) ─────────────────────
+        // ─── ROUND END HANDLERS ─────────────────────────────────────
         function handleRoundEnd(payload) {
             if (!payload) { hideWinPanelAndReset(); return; }
             addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
@@ -5529,7 +5502,7 @@
             hideWinPanelAndReset();
         });
 
-        // ─── ICE ROUND END (unchanged) ──────────────────────────
+        // ─── ICE ROUND END ──────────────────────────────────────────
         function handleIceRoundEnd(payload) {
             if (!payload) { hideIceWinPanelAndReset(); return; }
             iceState.winnerId = payload.winnerId;
@@ -5578,7 +5551,7 @@
             hideIceWinPanelAndReset();
         });
 
-        // ─── getIcePlayerLocal (unchanged) ──────────────────────
+        // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
         // ─── applyIceServerState (unchanged) ──────────────────────
@@ -5780,7 +5753,7 @@
                 delete iceBetInput.dataset.empty; }
         }
 
-        // ─── PLACE BETS (unchanged) ──────────────────────────────
+        // ─── PLACE BETS ──────────────────────────────────────────────
         function placeIceBet(amount) {
             if (!socket || !socket.connected) return;
             let addAmount = parseInt(amount) || 10;
@@ -6150,7 +6123,7 @@
             toggleAutoBet(autoSwitch.checked);
         });
 
-        // ─── PROMO (unchanged) ────────────────────────────────────
+        // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
             playClickSound();
             const code = promoInput.value.trim().toUpperCase();
@@ -6195,7 +6168,7 @@
             promoModal.classList.remove('show');
         });
 
-        // ─── RELOAD PFP (unchanged) ──────────────────────────────
+        // ─── RELOAD PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
             playClickSound();
             const user = getPlayer(state.userId);
@@ -6212,14 +6185,14 @@
             }
         });
 
-        // ─── SOUND TOGGLE (unchanged) ────────────────────────────
+        // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
             playClickSound();
             state.soundEnabled = soundToggle.checked;
         });
         soundToggle.checked = state.soundEnabled;
 
-        // ─── TAB SWITCHING (unchanged) ────────────────────────────
+        // ─── TAB SWITCHING ────────────────────────────────────────────
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
@@ -6243,7 +6216,7 @@
             });
         });
 
-        // ─── RENDER PVP (unchanged) ──────────────────────────────
+        // ─── RENDER PVP ──────────────────────────────────────────────
         function render() {
             const w = state.arenaSize;
             const half = w / 2;
@@ -6901,7 +6874,7 @@
             if (zoomActive) iceCtx.restore();
         }
 
-        // ─── RENDER LOOP (unchanged) ─────────────────────────────
+        // ─── RENDER LOOP ─────────────────────────────────────────────
         function renderLoop() {
             updatePlayerAnimations();
             const now = Date.now();
