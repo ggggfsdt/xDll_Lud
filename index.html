@@ -3570,12 +3570,7 @@
 
     <script>
         // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
-        console.log('🟢 App starting...');
-
         const SERVER_URL = 'https://dllump-production.up.railway.app';
-        // If running locally, uncomment and change:
-        // const SERVER_URL = 'http://localhost:3000';
-
         const WIN_GIFS = [
             'https://i.postimg.cc/9Frvpxhz/ezgif-3f0e907be807d1cc.gif',
             'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
@@ -4558,7 +4553,7 @@
         }
 
         // ════════════════════════════════════════════════════════════════
-        // ICE STATE – fixed zoom, earlier trigger, bigger collider ring
+        // ICE STATE – with fixed zoom center & smooth interpolation
         // ════════════════════════════════════════════════════════════════
         const iceState = {
             gameState: 'idle',
@@ -4606,7 +4601,7 @@
             glowPhase: 0,
             puckVx: 0,
             puckVy: 0,
-            // Fixed zoom center (stored when zoom starts)
+            // NEW: fixed zoom center (world coordinates)
             zoomCenterX: 0,
             zoomCenterY: 0,
             zoomCenterFixed: false,
@@ -4630,13 +4625,7 @@
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
-
-        // Base radius for physics/collider (original small radius)
-        const PUCK_BASE_RADIUS = 10;
-        // Visual scale factor – keep as is
-        const PUCK_VISUAL_SCALE = 1.5;
-        // Collider ring scale factor (much bigger)
-        const COLLIDER_RING_SCALE = 2.5;
+        const PUCK_RENDER_RADIUS = 10;
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -4745,35 +4734,15 @@
 
         function setOnline(isOnline) { statusDot.classList.toggle('offline', !isOnline); }
 
-        // Force-loading hide after 6 seconds (fallback)
-        setTimeout(() => {
-            const ls = document.getElementById('loading-screen');
-            if (ls && !ls.classList.contains('hidden')) {
-                console.warn('⚠️ Loading screen forced hidden after 6s (socket may be slow)');
-                ls.classList.add('hidden');
-            }
-        }, 6000);
-
-        if (!socket) {
-            console.error('❌ Socket.IO failed to load');
-            setOnline(false);
-            document.getElementById('loading-screen').classList.add('hidden');
-            waitingText.innerHTML =
-                `<span style="color:var(--red)">Connection error</span><div class="sub">Please refresh</div>`;
-        } else {
+        if (!socket) { console.error('Socket.IO failed to load');
+            setOnline(false); } else {
             socket.on('connect', () => {
-                console.log('✅ Socket connected');
                 setOnline(true);
                 const initData = tg?.initData || '';
-                console.log('📡 Emitting join...');
                 socket.emit('join', { initData }, (res) => {
-                    console.log('📥 Join response:', res);
-                    if (!res?.ok) {
-                        waitingText.innerHTML =
+                    if (!res?.ok) { waitingText.innerHTML =
                             `<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error||'try reopening'}</div>`;
-                        document.getElementById('loading-screen').classList.add('hidden');
-                        return;
-                    }
+                        return; }
                     state.userId = res.user.id;
                     state.username = res.user.username;
                     state.pfp = res.user.pfp;
@@ -4861,8 +4830,6 @@
                     if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
                     window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
                     animateWaitingText();
-                    // Hide loading screen now that we're ready
-                    document.getElementById('loading-screen').classList.add('hidden');
                 });
             });
             socket.on('disconnect', () => setOnline(false));
@@ -5319,10 +5286,6 @@
                     iceState.puckVx = snapshot.puck.vx;
                     iceState.puckVy = snapshot.puck.vy;
                 }
-                // Store the puck position when sliding starts (for possible zoom)
-                iceState.zoomCenterX = snapshot.puck.x;
-                iceState.zoomCenterY = snapshot.puck.y;
-                iceState.zoomCenterFixed = false; // will be set later when zoom triggers
             }
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
@@ -5342,8 +5305,6 @@
                     iceState.puckVx = snapshot.puck.vx;
                     iceState.puckVy = snapshot.puck.vy;
                 }
-                iceState.zoomCenterX = snapshot.puck.x;
-                iceState.zoomCenterY = snapshot.puck.y;
             }
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -5393,8 +5354,8 @@
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
                 iceState.zoomCenterFixed = false;
-                iceState.zoomCenterX = iceState.arenaSize / 2;
-                iceState.zoomCenterY = iceState.arenaSize / 2;
+                iceState.zoomCenterX = 0;
+                iceState.zoomCenterY = 0;
             }
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -5965,6 +5926,7 @@
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
 
+            // Glass background with center glow (liquid glass effect)
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
             grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
@@ -5973,6 +5935,7 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
+            // Center glow (liquid glass effect)
             const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
             glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
             glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
@@ -5982,6 +5945,7 @@
             ctx.fillRect(0, 0, w, w);
             ctx.restore();
 
+            // Rounded rect for arena background
             const cornerRadius = w * 0.20;
             const rectX = 0, rectY = 0, rectW = w, rectH = w;
 
@@ -6013,6 +5977,7 @@
             ctx.fill();
             ctx.restore();
 
+            // Outline
             ctx.save();
             ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
             ctx.shadowBlur = 16;
@@ -6027,6 +5992,7 @@
             ctx.stroke();
             ctx.restore();
 
+            // Perimeter path
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length > 0) {
                 const opening = state.opening;
@@ -6091,6 +6057,7 @@
                 ctx.restore();
             }
 
+            // Clip to rounded rect for players
             ctx.save();
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.clip();
@@ -6179,7 +6146,7 @@
             ctx.restore(); // clip
         }
 
-        // ─── RENDER ICE (UPDATED) ────────────────────────────────────
+        // ─── RENDER ICE (FINAL) ──────────────────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6188,7 +6155,6 @@
 
             iceCtx.clearRect(0, 0, w, w);
 
-            // Simplified background for performance
             const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(45, 55, 70, 0.35)');
             grad.addColorStop(0.4, 'rgba(28, 35, 48, 0.45)');
@@ -6198,7 +6164,8 @@
             iceCtx.fillRect(0, 0, w, w);
 
             const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
-            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
             glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
             iceCtx.save();
             iceCtx.fillStyle = glowGrad;
@@ -6212,26 +6179,35 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            // ─── PULSE GLOW (reduced intensity for performance) ──
+            // ─── PULSE GLOW EFFECT (idle state) ─────────────────────
             if (iceState.gameState === 'idle') {
                 iceState.glowPhase += 0.03;
                 const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
-                const alpha = 0.05 + 0.15 * pulse;
-                const blur = 10 + 20 * pulse;
+                const alpha = 0.08 + 0.22 * pulse;
+                const blur = 15 + 30 * pulse;
+
                 iceCtx.save();
                 iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
                 iceCtx.shadowBlur = blur;
                 iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
-                iceCtx.lineWidth = 3;
+                iceCtx.lineWidth = 4;
+                iceCtx.stroke(perimeterPath);
+                iceCtx.restore();
+
+                iceCtx.save();
+                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.6})`;
+                iceCtx.shadowBlur = blur * 1.8;
+                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.15})`;
+                iceCtx.lineWidth = 8;
                 iceCtx.stroke(perimeterPath);
                 iceCtx.restore();
             }
 
-            // ─── ZOOM – fixed center ─────────────────────────────
+            // ─── ZOOM TRANSFORMATION (fixed center) ────────────────
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             if (zoomActive && iceState.zoomCenterFixed) {
-                // Use the stored fixed center
+                // Use the stored world coordinates as fixed center
                 const centerScreenX = iceState.zoomCenterX * s;
                 const centerScreenY = iceState.zoomCenterY * s;
                 const cx = half, cy = half;
@@ -6315,34 +6291,23 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // ─── ZOOM LOGIC (trigger zoom earlier, store position) ──
+            // ─── ZOOM LOGIC (trigger at 4.5 sec instead of 5.5) ──
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
                 const speedThreshold = 2.0;
-                // Trigger at 4.5 seconds (was 5.5)
+                // Trigger zoom at 4.5 seconds (changed from 5.5)
                 if (slideElapsed > 4.5 && currentSpeed < speedThreshold && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
                     .zoomLocked) {
-                    // Store the puck position at this moment (fixed)
+                    // Store the puck's world position at this moment (fixed center)
                     iceState.zoomCenterX = puck.x;
                     iceState.zoomCenterY = puck.y;
                     iceState.zoomCenterFixed = true;
                     iceState.isZoomingIn = true;
                     iceState.zoomStartTime = now;
-                    iceState.zoomTarget = 1.8;
-                }
-            }
-            if (iceState.isZoomingIn) {
-                const elapsed = (now - iceState.zoomStartTime) / 1000;
-                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
-                const eased = easeInOutCubic(progress);
-                iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
-                if (progress >= 1) {
-                    iceState.isZoomingIn = false;
-                    iceState.zoomLocked = true;
-                    iceState.zoom = iceState.zoomTarget;
+                    iceState.zoomTarget = 1.5; // zoom factor
                 }
             }
             if (iceState.isZoomingOut) {
@@ -6355,6 +6320,17 @@
                     iceState.zoom = 1;
                     iceState.zoomLocked = false;
                     iceState.zoomOutTriggered = false;
+                }
+            }
+            if (iceState.isZoomingIn) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
+                if (progress >= 1) {
+                    iceState.isZoomingIn = false;
+                    iceState.zoomLocked = true;
+                    iceState.zoom = iceState.zoomTarget;
                 }
             }
 
@@ -6449,7 +6425,7 @@
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
                 const centerX = iceState.spinStartX * s;
                 const centerY = iceState.spinStartY * s;
-                const puckRadius = PUCK_BASE_RADIUS * s * PUCK_VISUAL_SCALE;
+                const puckRadius = PUCK_RENDER_RADIUS * s;
                 const orbitRadius = puckRadius + 4;
                 const triSize = Math.min(w * 0.035, 10);
                 const tipOffset = triSize * 0.4;
@@ -6473,7 +6449,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (visual size same, collider ring much bigger) ──
+            // ─── PUCK DRAWING ──────────────────────────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6517,52 +6493,47 @@
                     px = renderPuckX * s;
                     py = renderPuckY * s;
                 }
+                const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
+                const r = puckRadius;
 
-                // Base radius for physics (small)
-                const baseRadius = PUCK_BASE_RADIUS * s;
-                // Visual radius (scaled up)
-                const visualRadius = baseRadius * PUCK_VISUAL_SCALE * totalScale;
-                // Collider ring radius (much bigger)
-                const colliderRadius = visualRadius * COLLIDER_RING_SCALE;
-
-                // ---- 1. GREY COLLIDER (bigger) ----
+                // ---- 1. GREY COLLIDER (MUCH BIGGER) ----
+                const colliderRadius = r * 2.5; // <-- increased from r to r*2.5
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
                 iceCtx.lineWidth = 2.0;
-                iceCtx.setLineDash([4, 4]);
+                iceCtx.setLineDash([4, 4]); // dashed for visibility
                 iceCtx.beginPath();
                 iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 2. Shadow (scaled with visual radius) ----
-                const shadowOffset = visualRadius * 0.25;
+                // ---- 2. Shadow ---- (unchanged, based on r)
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                iceCtx.shadowBlur = visualRadius * 0.8;
-                iceCtx.shadowOffsetX = shadowOffset * 0.3;
-                iceCtx.shadowOffsetY = shadowOffset * 0.4;
+                iceCtx.shadowBlur = 12;
+                iceCtx.shadowOffsetX = 3;
+                iceCtx.shadowOffsetY = 4;
                 iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
                 iceCtx.beginPath();
-                iceCtx.arc(px + shadowOffset * 0.3, py + shadowOffset * 0.4, visualRadius, 0, Math.PI * 2);
+                iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
                 iceCtx.fill();
                 iceCtx.restore();
 
                 // ---- 3. WHITE OUTLINE (thick) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = Math.max(2.5, visualRadius * 0.2);
+                iceCtx.lineWidth = 4;
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
-                iceCtx.arc(px, py, visualRadius, 0, Math.PI * 2);
+                iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 4. Cross (scaled) ----
-                const crossSize = visualRadius * 0.7;
+                // ---- 4. Cross (thinner) ----
+                const crossSize = r * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = Math.max(1.5, visualRadius * 0.1);
+                iceCtx.lineWidth = 1.5;
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
@@ -6598,7 +6569,7 @@
                 }
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
-                    const fontSize = Math.max(9, Math.min(14, visualRadius * 0.9));
+                    const fontSize = Math.max(9, Math.min(14, r * 0.9));
                     iceCtx.save();
                     iceCtx.globalAlpha = alpha;
                     iceCtx.textAlign = 'center';
@@ -6609,7 +6580,7 @@
                     iceCtx.shadowBlur = 6;
                     let displayName = iceState.currentOwnerName;
                     if (displayName.length > 10) displayName = displayName.slice(0, 9) + '…';
-                    const textY = py + visualRadius + 4;
+                    const textY = py + r + 4;
                     iceCtx.fillText(displayName, px, textY);
                     iceCtx.restore();
                 }
@@ -6658,7 +6629,6 @@
 
         // ─── INIT ─────────────────────────────────────────────────────
         function init() {
-            console.log('🚀 Initializing app...');
             if (tg?.initDataUnsafe?.user) {
                 const u = tg.initDataUnsafe.user;
                 state.username = u.username || u.first_name || 'player';
