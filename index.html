@@ -6291,15 +6291,15 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // ─── ZOOM LOGIC (trigger at 2.5 sec) ──────────────────
+            // ─── ZOOM LOGIC (trigger 0.3 sec before stop) ──────────
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                const speedThreshold = 2.0;
-                // Trigger zoom at 2.5 seconds (much sooner)
-                if (slideElapsed > 2.5 && currentSpeed < speedThreshold && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
+                // Trigger when speed is low (< 0.8) and we are near the end (slideElapsed > 5.5)
+                // This is about 0.3 seconds before full stop (stops at ~6.0-6.5s)
+                if (slideElapsed > 5.5 && currentSpeed < 0.8 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
                     .zoomLocked) {
                     // Store the puck's world position at this moment (fixed center)
                     iceState.zoomCenterX = puck.x;
@@ -6496,7 +6496,16 @@
                 const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
                 const r = puckRadius;
 
-                // ---- 1. GREY COLLIDER – REMOVED (no dashed outline) ----
+                // ---- 1. GREY COLLIDER (2.5x bigger) ----
+                const colliderRadius = r * 2.5;
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
+                iceCtx.lineWidth = 2.0;
+                iceCtx.setLineDash([4, 4]); // dashed
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
+                iceCtx.stroke();
+                iceCtx.restore();
 
                 // ---- 2. Shadow ----
                 iceCtx.save();
