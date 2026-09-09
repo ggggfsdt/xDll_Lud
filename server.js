@@ -1482,52 +1482,7 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── HTTP ENDPOINTS ──────────────────────────────────────────
-
-// 1. Set anonymous mode (ENABLE / DISABLE) – FIXED
-app.post('/api/set-anonymous', async (req, res) => {
-  try {
-    const { userId, enabled } = req.body;
-    if (!userId || typeof enabled !== 'boolean') {
-      return res.status(400).json({ ok: false, error: 'Missing userId or invalid enabled flag' });
-    }
-    // ✅ Pass as object { enabled }
-    const result = await setAnonymousData(userId, { enabled });
-    if (!result) {
-      return res.status(404).json({ ok: false, error: 'User not found' });
-    }
-    // Update in‑memory players if present
-    const pvpPlayer = getPlayer(userId);
-    if (pvpPlayer) {
-      const user = await getUser(userId);
-      if (enabled) {
-        pvpPlayer.name = user.anonymousName || 'Anonymous';
-        pvpPlayer.pfp = null;
-      } else {
-        pvpPlayer.name = user.username;
-        pvpPlayer.pfp = user.pfp;
-      }
-      broadcastState();
-    }
-    const iceP = getIcePlayer(userId);
-    if (iceP) {
-      const user = await getUser(userId);
-      if (enabled) {
-        iceP.name = user.anonymousName || 'Anonymous';
-        iceP.pfp = null;
-      } else {
-        iceP.name = user.username;
-        iceP.pfp = user.pfp;
-      }
-      broadcastIceState();
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Set anonymous error:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
-  }
-});
-
+// ─── NEW HTTP ENDPOINTS ──────────────────────────────────────────
 app.post('/api/change-anonymous', async (req, res) => {
   try {
     const { userId, field, value } = req.body;
