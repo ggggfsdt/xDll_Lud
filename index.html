@@ -4558,7 +4558,7 @@
         }
 
         // ════════════════════════════════════════════════════════════════
-        // ICE STATE – with smooth zoom tracking and bigger puck
+        // ICE STATE – smooth zoom tracking, larger visual puck (same collider)
         // ════════════════════════════════════════════════════════════════
         const iceState = {
             gameState: 'idle',
@@ -4630,8 +4630,10 @@
                 g = parseInt(hex.slice(3, 5), 16),
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
 
-        // Bigger puck – all elements scaled uniformly
-        const PUCK_RENDER_RADIUS = 15; // base radius, will be scaled further
+        // Base radius for physics/collider (original small radius)
+        const PUCK_BASE_RADIUS = 10;
+        // Visual scale factor – make everything bigger without changing collider
+        const PUCK_VISUAL_SCALE = 1.5; // adjust as desired (1.4–1.6)
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -6442,7 +6444,7 @@
                 const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
                 const centerX = iceState.spinStartX * s;
                 const centerY = iceState.spinStartY * s;
-                const puckRadius = PUCK_RENDER_RADIUS * s;
+                const puckRadius = PUCK_BASE_RADIUS * s * PUCK_VISUAL_SCALE;
                 const orbitRadius = puckRadius + 4;
                 const triSize = Math.min(w * 0.035, 10);
                 const tipOffset = triSize * 0.4;
@@ -6466,7 +6468,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (bigger) ──────────────────────────────────
+            // ─── PUCK DRAWING (visually scaled) ──────────────────────
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6510,12 +6512,13 @@
                     px = renderPuckX * s;
                     py = renderPuckY * s;
                 }
-                // Base radius is PUCK_RENDER_RADIUS; we multiply by totalScale and also by a global scale factor (1.0 here, but you can increase)
-                const baseRadius = PUCK_RENDER_RADIUS * s;
-                const puckRadius = baseRadius * totalScale;
-                const r = puckRadius;
 
-                // ---- 1. GREY COLLIDER (same size as white outline) ----
+                // Use base radius for collider (small), but visual radius = base * visualScale
+                const baseRadius = PUCK_BASE_RADIUS * s;
+                const visualRadius = baseRadius * PUCK_VISUAL_SCALE * totalScale;
+                const r = visualRadius;
+
+                // ---- 1. GREY COLLIDER (drawn at visual size) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
                 iceCtx.lineWidth = 2.0;
