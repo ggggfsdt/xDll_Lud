@@ -4558,7 +4558,7 @@
         }
 
         // ════════════════════════════════════════════════════════════════
-        // ICE STATE – smooth zoom tracking, larger visual puck (same collider)
+        // ICE STATE – fixed zoom, earlier trigger, bigger collider ring
         // ════════════════════════════════════════════════════════════════
         const iceState = {
             gameState: 'idle',
@@ -4606,9 +4606,10 @@
             glowPhase: 0,
             puckVx: 0,
             puckVy: 0,
-            // Smooth zoom center (lerped toward puck)
-            smoothZoomCenterX: 200,
-            smoothZoomCenterY: 200,
+            // Fixed zoom center (stored when zoom starts)
+            zoomCenterX: 0,
+            zoomCenterY: 0,
+            zoomCenterFixed: false,
         };
 
         // ─── SHARED HELPERS ────────────────────────────────────────────
@@ -4632,8 +4633,10 @@
 
         // Base radius for physics/collider (original small radius)
         const PUCK_BASE_RADIUS = 10;
-        // Visual scale factor – make everything bigger without changing collider
-        const PUCK_VISUAL_SCALE = 1.5; // adjust as desired (1.4–1.6)
+        // Visual scale factor – keep as is
+        const PUCK_VISUAL_SCALE = 1.5;
+        // Collider ring scale factor (much bigger)
+        const COLLIDER_RING_SCALE = 2.5;
 
         // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
@@ -5316,9 +5319,10 @@
                     iceState.puckVx = snapshot.puck.vx;
                     iceState.puckVy = snapshot.puck.vy;
                 }
-                // Initialize smooth center to the puck position
-                iceState.smoothZoomCenterX = snapshot.puck.x;
-                iceState.smoothZoomCenterY = snapshot.puck.y;
+                // Store the puck position when sliding starts (for possible zoom)
+                iceState.zoomCenterX = snapshot.puck.x;
+                iceState.zoomCenterY = snapshot.puck.y;
+                iceState.zoomCenterFixed = false; // will be set later when zoom triggers
             }
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
@@ -5338,8 +5342,8 @@
                     iceState.puckVx = snapshot.puck.vx;
                     iceState.puckVy = snapshot.puck.vy;
                 }
-                iceState.smoothZoomCenterX = snapshot.puck.x;
-                iceState.smoothZoomCenterY = snapshot.puck.y;
+                iceState.zoomCenterX = snapshot.puck.x;
+                iceState.zoomCenterY = snapshot.puck.y;
             }
             if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
                 iceState.idlePuckInitialized = false;
@@ -5354,6 +5358,7 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
             }
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
                 iceState.slideStartTime = performance.now();
@@ -5363,6 +5368,7 @@
                 iceState.zoomLocked = false;
                 iceState.zoomOutTriggered = false;
                 iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
             }
             if (snapshot.gameState === 'finished' && prevGameState !== 'finished') {
                 if (iceState.zoom > 1.1 && !iceState.zoomOutTriggered) {
@@ -5386,8 +5392,9 @@
                 iceState.currentOwnerName = '';
                 iceState.idlePuckInitialized = false;
                 iceState.winnerPuckPop = false;
-                iceState.smoothZoomCenterX = iceState.arenaSize / 2;
-                iceState.smoothZoomCenterY = iceState.arenaSize / 2;
+                iceState.zoomCenterFixed = false;
+                iceState.zoomCenterX = iceState.arenaSize / 2;
+                iceState.zoomCenterY = iceState.arenaSize / 2;
             }
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -6220,20 +6227,13 @@
                 iceCtx.restore();
             }
 
-            // ─── ZOOM – smooth tracking ─────────────────────────────
-            // Lerp smooth center toward puck (world coords)
-            const puckWorldX = iceState.puck.x;
-            const puckWorldY = iceState.puck.y;
-            const lerpFactor = 0.15; // adjust for smoothness
-            iceState.smoothZoomCenterX += (puckWorldX - iceState.smoothZoomCenterX) * lerpFactor;
-            iceState.smoothZoomCenterY += (puckWorldY - iceState.smoothZoomCenterY) * lerpFactor;
-
+            // ─── ZOOM – fixed center ─────────────────────────────
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
-            if (zoomActive) {
-                // Use smooth center for zoom
-                const centerScreenX = iceState.smoothZoomCenterX * s;
-                const centerScreenY = iceState.smoothZoomCenterY * s;
+            if (zoomActive && iceState.zoomCenterFixed) {
+                // Use the stored fixed center
+                const centerScreenX = iceState.zoomCenterX * s;
+                const centerScreenY = iceState.zoomCenterY * s;
                 const cx = half, cy = half;
                 zoomTx = (cx - centerScreenX) * iceState.zoom + cx - cx * iceState.zoom;
                 zoomTy = (cy - centerScreenY) * iceState.zoom + cy - cy * iceState.zoom;
@@ -6315,15 +6315,20 @@
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // ─── ZOOM LOGIC (trigger zoom, track puck) ──────────────
+            // ─── ZOOM LOGIC (trigger zoom earlier, store position) ──
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
                 const speedThreshold = 2.0;
-                if (slideElapsed > 5.5 && currentSpeed < speedThreshold && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
+                // Trigger at 4.5 seconds (was 5.5)
+                if (slideElapsed > 4.5 && currentSpeed < speedThreshold && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
                     .zoomLocked) {
+                    // Store the puck position at this moment (fixed)
+                    iceState.zoomCenterX = puck.x;
+                    iceState.zoomCenterY = puck.y;
+                    iceState.zoomCenterFixed = true;
                     iceState.isZoomingIn = true;
                     iceState.zoomStartTime = now;
                     iceState.zoomTarget = 1.8;
@@ -6468,7 +6473,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (visually scaled) ──────────────────────
+            // ─── PUCK DRAWING (visual size same, collider ring much bigger) ──
             if (iceState.puckVisible) {
                 let scale = 1;
                 if (iceState.puckPopStart) {
@@ -6513,49 +6518,51 @@
                     py = renderPuckY * s;
                 }
 
-                // Use base radius for collider (small), but visual radius = base * visualScale
+                // Base radius for physics (small)
                 const baseRadius = PUCK_BASE_RADIUS * s;
+                // Visual radius (scaled up)
                 const visualRadius = baseRadius * PUCK_VISUAL_SCALE * totalScale;
-                const r = visualRadius;
+                // Collider ring radius (much bigger)
+                const colliderRadius = visualRadius * COLLIDER_RING_SCALE;
 
-                // ---- 1. GREY COLLIDER (drawn at visual size) ----
+                // ---- 1. GREY COLLIDER (bigger) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(180, 180, 180, 0.5)';
                 iceCtx.lineWidth = 2.0;
-                iceCtx.setLineDash([]);
+                iceCtx.setLineDash([4, 4]);
                 iceCtx.beginPath();
-                iceCtx.arc(px, py, r, 0, Math.PI * 2);
+                iceCtx.arc(px, py, colliderRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
-                // ---- 2. Shadow (scaled) ----
-                const shadowOffset = r * 0.25;
+                // ---- 2. Shadow (scaled with visual radius) ----
+                const shadowOffset = visualRadius * 0.25;
                 iceCtx.save();
                 iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                iceCtx.shadowBlur = r * 0.8;
+                iceCtx.shadowBlur = visualRadius * 0.8;
                 iceCtx.shadowOffsetX = shadowOffset * 0.3;
                 iceCtx.shadowOffsetY = shadowOffset * 0.4;
                 iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
                 iceCtx.beginPath();
-                iceCtx.arc(px + shadowOffset * 0.3, py + shadowOffset * 0.4, r, 0, Math.PI * 2);
+                iceCtx.arc(px + shadowOffset * 0.3, py + shadowOffset * 0.4, visualRadius, 0, Math.PI * 2);
                 iceCtx.fill();
                 iceCtx.restore();
 
                 // ---- 3. WHITE OUTLINE (thick) ----
                 iceCtx.save();
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = Math.max(2.5, r * 0.2);
+                iceCtx.lineWidth = Math.max(2.5, visualRadius * 0.2);
                 iceCtx.shadowBlur = 0;
                 iceCtx.beginPath();
-                iceCtx.arc(px, py, r, 0, Math.PI * 2);
+                iceCtx.arc(px, py, visualRadius, 0, Math.PI * 2);
                 iceCtx.stroke();
                 iceCtx.restore();
 
                 // ---- 4. Cross (scaled) ----
-                const crossSize = r * 0.7;
+                const crossSize = visualRadius * 0.7;
                 iceCtx.save();
                 iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = Math.max(1.5, r * 0.1);
+                iceCtx.lineWidth = Math.max(1.5, visualRadius * 0.1);
                 iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
                 iceCtx.beginPath();
                 iceCtx.moveTo(px - crossSize, py);
@@ -6591,7 +6598,7 @@
                 }
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
-                    const fontSize = Math.max(9, Math.min(14, r * 0.9));
+                    const fontSize = Math.max(9, Math.min(14, visualRadius * 0.9));
                     iceCtx.save();
                     iceCtx.globalAlpha = alpha;
                     iceCtx.textAlign = 'center';
@@ -6602,7 +6609,7 @@
                     iceCtx.shadowBlur = 6;
                     let displayName = iceState.currentOwnerName;
                     if (displayName.length > 10) displayName = displayName.slice(0, 9) + '…';
-                    const textY = py + r + 4;
+                    const textY = py + visualRadius + 4;
                     iceCtx.fillText(displayName, px, textY);
                     iceCtx.restore();
                 }
