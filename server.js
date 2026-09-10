@@ -473,7 +473,7 @@ function updateIcePhysics(dt) {
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 10; // small collision radius
+  const puckRadius = 15; // small collision radius
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
