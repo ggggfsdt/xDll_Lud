@@ -1,1578 +1,7376 @@
-const express = require('express');
-const http = require('http');
-const crypto = require('crypto');
-const cors = require('cors');
-const { Server } = require('socket.io');
-const {
-  getUser,
-  saveUser,
-  addWinToHistory,
-  getAllUsers,
-  topPlayers,
-  allUsersCount,
-  createPromoCode,
-  redeemPromoCode,
-  getPromoCodes,
-  deletePromoCode,
-  resetPlayer,
-  setAnonymousData,
-  checkAnonymousUnique,
-  changeAnonymousField,
-  toggleHidePfp,
-} = require('./store');
-
-const PORT = process.env.PORT || 3000;
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
-const ALLOW_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === 'true';
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'change-me-in-production';
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
-
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' },
-  transports: ['websocket', 'polling'],
-});
-
-// ─── Telegram auth ─────────────────────────────────────────────
-function verifyInitData(initData) {
-  if (!BOT_TOKEN) return null;
-  try {
-    const params = new URLSearchParams(initData);
-    const hash = params.get('hash');
-    params.delete('hash');
-    const dataCheckArr = [];
-    for (const [key, value] of [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-      dataCheckArr.push(`${key}=${value}`);
-    }
-    const dataCheckString = dataCheckArr.join('\n');
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-    const computedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
-    if (computedHash !== hash) return null;
-    const authDate = parseInt(params.get('auth_date') || '0', 10);
-    if (Date.now() / 1000 - authDate > 86400) return null;
-    const userJson = params.get('user');
-    if (!userJson) return null;
-    return JSON.parse(userJson);
-  } catch (e) {
-    console.error('Auth error:', e);
-    return null;
-  }
-}
-
-// ─── Arena geometry ─────────────────────────────────────────────
-const ARENA_SIZE = 400;
-const CORNER_RADIUS = ARENA_SIZE * 0.35;
-
-function generatePerimeter(size, cornerRadius, numPoints = 300) {
-  const half = size / 2;
-  const r = Math.min(cornerRadius, half);
-  const sections = [
-    { type: 'line', x1: -half + r, y1: -half, x2: half - r, y2: -half },
-    { type: 'arc', cx: half - r, cy: -half + r, start: -Math.PI / 2, end: 0 },
-    { type: 'line', x1: half, y1: -half + r, x2: half, y2: half - r },
-    { type: 'arc', cx: half - r, cy: half - r, start: 0, end: Math.PI / 2 },
-    { type: 'line', x1: half - r, y1: half, x2: -half + r, y2: half },
-    { type: 'arc', cx: -half + r, cy: half - r, start: Math.PI / 2, end: Math.PI },
-    { type: 'line', x1: -half, y1: half - r, x2: -half, y2: -half + r },
-    { type: 'arc', cx: -half + r, cy: -half + r, start: Math.PI, end: 3 * Math.PI / 2 }
-  ];
-  const segLengths = sections.map(seg => seg.type === 'line'
-    ? Math.hypot(seg.x2 - seg.x1, seg.y2 - seg.y1)
-    : r * (seg.end - seg.start));
-  const totalLen = segLengths.reduce((a, b) => a + b, 0);
-  const step = totalLen / numPoints;
-  const points = [];
-  let accumulated = 0, segIdx = 0;
-  for (let i = 0; i < numPoints; i++) {
-    const target = i * step;
-    while (accumulated + segLengths[segIdx] < target) {
-      accumulated += segLengths[segIdx];
-      segIdx = (segIdx + 1) % sections.length;
-    }
-    const localT = (target - accumulated) / segLengths[segIdx];
-    const seg = sections[segIdx];
-    let px, py;
-    if (seg.type === 'line') {
-      px = seg.x1 + localT * (seg.x2 - seg.x1);
-      py = seg.y1 + localT * (seg.y2 - seg.y1);
-    } else {
-      const angle = seg.start + localT * (seg.end - seg.start);
-      px = seg.cx + r * Math.cos(angle);
-      py = seg.cy + r * Math.sin(angle);
-    }
-    points.push({ x: px + half, y: py + half });
-  }
-  return points;
-}
-
-const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
-
-// ─── ORIGINAL SPEED (8–28) ──────────────────────────────────────
-function speedForRadius(radius) {
-  const minR = 18;
-  const maxR = 52;
-  const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
-  const speed = 28.0 - norm * 20.0;
-  return Math.max(8.0, Math.min(28.0, speed));
-}
-
-// ─── Room ──────────────────────────────────────────────────────
-const COLORS = ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#e84393'];
-const MAX_PLAYERS = 8;
-
-function createRoom(id) {
-  return {
-    id,
-    gameState: 'idle',
-    players: [],
-    pot: 0,
-    opening: null,
-    openingTimer: 0,
-    gameTime: 0,
-    countdownStartTime: 0,
-    prestartTimer: 0,
-    recentWinners: [],
-  };
-}
-const room = createRoom('main');
-
-function getAlive() { return room.players.filter(p => p.alive); }
-function getPlayer(id) { return room.players.find(p => p.id === id); }
-
-// ═══════════════════════════════════════════════════════════════
-// ICE ARENA – BSP LAYOUT (no gaps, fields scaled uniformly)
-// ═══════════════════════════════════════════════════════════════
-const ICE_SIZE = ARENA_SIZE;
-const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
-const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
-
-// Uniform scale factor for fields – slightly bigger
-const ICE_FIELD_SCALE = 0.92;
-
-function createIceRoom(id) {
-  return {
-    id,
-    gameState: 'idle',
-    players: [],
-    pot: 0,
-    countdownStartTime: 0,
-    spinStartTime: 0,
-    spinDuration: 0,
-    spinFinalAngle: 0,
-    spinStartX: ICE_SIZE / 2,
-    spinStartY: ICE_SIZE / 2,
-    puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
-    recentWinners: [],
-    slideStartTime: 0,
-  };
-}
-const iceRoom = createIceRoom('ice');
-
-function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
-
-// ─── BOT MANAGEMENT ─────────────────────────────────────────────
-let botCounter = 0;
-const botIds = new Set();
-let autoBotEnabled = false;
-let autoBotInterval = null;
-
-function generateBotId() {
-  return `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function isBot(id) {
-  return id && typeof id === 'string' && id.startsWith('bot_');
-}
-
-function spawnBot(betAmount) {
-  const id = generateBotId();
-  botCounter++;
-  const name = `Bot_${String(botCounter).padStart(3, '0')}`;
-  const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
-  const player = makeIcePlayer(id, betAmount, name, pfp);
-  if (player) {
-    botIds.add(id);
-    console.log(`🤖 Spawned bot: ${name} (${id}) with bet ${betAmount}`);
-    return player;
-  }
-  return null;
-}
-
-function removeAllBots() {
-  const toRemove = [];
-  iceRoom.players.forEach(p => {
-    if (isBot(p.id)) toRemove.push(p.id);
-  });
-  toRemove.forEach(id => {
-    const idx = iceRoom.players.findIndex(p => p.id === id);
-    if (idx !== -1) iceRoom.players.splice(idx, 1);
-    botIds.delete(id);
-  });
-  if (toRemove.length > 0) {
-    console.log(`🧹 Removed ${toRemove.length} bots from ice arena`);
-    if (iceRoom.players.length > 0) repartitionIceArena();
-  }
-  return toRemove.length;
-}
-
-function startAutoBot() {
-  if (autoBotInterval) clearInterval(autoBotInterval);
-  autoBotInterval = setInterval(() => {
-    if (!autoBotEnabled) return;
-    if (iceRoom.gameState !== 'idle') return;
-    if (iceRoom.players.length >= MAX_PLAYERS) return;
-    const bet = Math.floor(Math.random() * 140) + 10;
-    const bot = spawnBot(bet);
-    if (bot) {
-      console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
-    }
-  }, 4000);
-}
-startAutoBot();
-
-function stopAutoBot() {
-  if (autoBotInterval) {
-    clearInterval(autoBotInterval);
-    autoBotInterval = null;
-  }
-}
-
-// ─── BSP Partition with uniform scaling ──────────────────────
-function repartitionIceArena() {
-  const players = iceRoom.players;
-  if (players.length === 0) return;
-  const shuffled = [...players];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
-  const map = {};
-  shuffled.forEach(p => { map[p.id] = p; });
-
-  // Apply uniform scale to all fields, centered
-  const half = ICE_SIZE / 2;
-  const scale = ICE_FIELD_SCALE;
-  players.forEach(p => {
-    const assigned = map[p.id];
-    if (assigned) {
-      // Scale around center
-      const cx1 = assigned.x1 - half;
-      const cy1 = assigned.y1 - half;
-      const cx2 = assigned.x2 - half;
-      const cy2 = assigned.y2 - half;
-      p.x1 = half + cx1 * scale;
-      p.y1 = half + cy1 * scale;
-      p.x2 = half + cx2 * scale;
-      p.y2 = half + cy2 * scale;
-    }
-  });
-}
-
-function partitionRect(players, x, y, w, h, startIdx, endIdx) {
-  const count = endIdx - startIdx;
-  if (count <= 0) return;
-  if (count === 1) {
-    const p = players[startIdx];
-    p.x1 = x; p.y1 = y; p.x2 = x + w; p.y2 = y + h;
-    return;
-  }
-  const totalBet = players.slice(startIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
-  if (totalBet === 0) {
-    const mid = Math.floor((startIdx + endIdx) / 2);
-    const dir = Math.random() < 0.5 ? 'h' : 'v';
-    if (dir === 'h') {
-      const splitY = y + h / 2;
-      partitionRect(players, x, y, w, splitY - y, startIdx, mid);
-      partitionRect(players, x, splitY, w, y + h - splitY, mid, endIdx);
-    } else {
-      const splitX = x + w / 2;
-      partitionRect(players, x, y, splitX - x, h, startIdx, mid);
-      partitionRect(players, splitX, y, x + w - splitX, h, mid, endIdx);
-    }
-    return;
-  }
-  const cum = [];
-  let sum = 0;
-  for (let i = startIdx; i < endIdx; i++) {
-    sum += Math.max(players[i].bet, 1);
-    cum.push(sum);
-  }
-  const r = Math.random() * sum;
-  let splitIdx = startIdx;
-  for (let i = 0; i < cum.length; i++) {
-    if (r <= cum[i]) {
-      splitIdx = startIdx + i + 1;
-      break;
-    }
-  }
-  if (splitIdx <= startIdx) splitIdx = startIdx + 1;
-  if (splitIdx >= endIdx) splitIdx = endIdx - 1;
-  const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
-  const rightBet = players.slice(splitIdx, endIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
-  const ratio = leftBet / (leftBet + rightBet);
-  const clampedRatio = Math.max(0.10, Math.min(0.90, ratio));
-  const dir = Math.random() < 0.5 ? 'h' : 'v';
-  if (dir === 'h') {
-    const splitY = y + h * clampedRatio;
-    partitionRect(players, x, y, w, splitY - y, startIdx, splitIdx);
-    partitionRect(players, x, splitY, w, y + h - splitY, splitIdx, endIdx);
-  } else {
-    const splitX = x + w * clampedRatio;
-    partitionRect(players, x, y, splitX - x, h, startIdx, splitIdx);
-    partitionRect(players, splitX, y, x + w - splitX, h, splitIdx, endIdx);
-  }
-}
-
-// ─── Player management ──────────────────────────────────────────
-function makeIcePlayer(id, bet, name, pfp) {
-  const colorIdx = iceRoom.players.length % COLORS.length;
-  const p = {
-    id, bet, name: name || 'player', pfp: pfp || '',
-    color: COLORS[colorIdx],
-    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
-  };
-  iceRoom.players.push(p);
-  repartitionIceArena();
-  return p;
-}
-
-function removeIcePlayer(id) {
-  const idx = iceRoom.players.findIndex(p => p.id === id);
-  if (idx === -1) return;
-  iceRoom.players.splice(idx, 1);
-  if (iceRoom.players.length > 0) repartitionIceArena();
-}
-
-function startIceCountdown() {
-  if (iceRoom.gameState !== 'idle') return;
-  if (iceRoom.players.length < 2) return;
-  iceRoom.gameState = 'countdown';
-  iceRoom.countdownStartTime = Date.now();
-}
-
-function startIceSpin() {
-  iceRoom.gameState = 'spinning';
-  iceRoom.spinStartTime = Date.now();
-  iceRoom.spinDuration = 2.6 + Math.random() * 1.6;
-  iceRoom.spinFinalAngle = Math.random() * Math.PI * 2;
-  const margin = 30;
-  iceRoom.spinStartX = margin + Math.random() * (ICE_SIZE - 2 * margin);
-  iceRoom.spinStartY = margin + Math.random() * (ICE_SIZE - 2 * margin);
-}
-
-function launchIcePuck() {
-  iceRoom.gameState = 'sliding';
-  const baseSpeed = 32;
-  const speed = baseSpeed + Math.random() * 4;
-  const angle = iceRoom.spinFinalAngle;
-  iceRoom.puck.x = iceRoom.spinStartX;
-  iceRoom.puck.y = iceRoom.spinStartY;
-  iceRoom.puck.vx = Math.cos(angle) * speed;
-  iceRoom.puck.vy = Math.sin(angle) * speed;
-  iceRoom.slideStartTime = Date.now();
-}
-
-function getIceWinner() {
-  const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
-  const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
-  for (const p of iceRoom.players) {
-    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) {
-      return p;
-    }
-  }
-  let closest = null;
-  let minDist = Infinity;
-  for (const p of iceRoom.players) {
-    const cx = (p.x1 + p.x2) / 2;
-    const cy = (p.y1 + p.y2) / 2;
-    const d = Math.hypot(px - cx, py - cy);
-    if (d < minDist) { minDist = d; closest = p; }
-  }
-  return closest;
-}
-
-async function endIceGame() {
-  if (iceRoom.gameState === 'finished') return;
-  iceRoom.gameState = 'finished';
-
-  const winner = getIceWinner();
-  let payload = null;
-  if (winner) {
-    const totalPot = iceRoom.pot;
-    const winnerBet = winner.bet;
-    const losersBets = totalPot - winnerBet;
-    const commission = Math.floor(losersBets * 0.02);
-    const winnings = totalPot - commission;
-    payload = {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      winnerPfp: winner.pfp,
-      winnings,
-      multiplier: +(winnings / winnerBet).toFixed(2),
-    };
-
-    iceRoom.recentWinners.unshift({
-      name: winner.name,
-      pfp: winner.pfp,
-      amount: winnings
-    });
-    if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
-
-    if (!isBot(winner.id)) {
-      try {
-        const winnerUser = await getUser(winner.id);
-        if (winnerUser) {
-          winnerUser.balance += winnings;
-          winnerUser.wins += 1;
-          await saveUser(winnerUser);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>dllump · bump arena</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
+    <style>
+        /* ─── LOADING SCREEN ───────────────────────────────────────── */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at center, #0e0e14 0%, #050507 100%);
+            transition: opacity 0.9s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.9s ease;
+            opacity: 1;
+            visibility: visible;
+            will-change: opacity;
+            pointer-events: all;
         }
-      } catch (err) {
-        console.error('endIceGame: failed to credit winner balance:', err);
-      }
-    }
-
-    for (const p of iceRoom.players) {
-      if (p.id === winner.id) continue;
-      if (!isBot(p.id)) {
-        try {
-          const u = await getUser(p.id);
-          if (u) { u.losses += 1; await saveUser(u); }
-        } catch (err) {
-          console.error('endIceGame: failed to update loser stats for', p.id, err);
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
-      }
-    }
-
-    try {
-      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-    } catch (err) {
-      console.error('endIceGame: failed to write win history:', err);
-    }
-  }
-
-  io.emit('iceRoundEnd', payload);
-  setTimeout(() => {
-    iceRoom.players = [];
-    iceRoom.pot = 0;
-    iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
-    iceRoom.gameState = 'idle';
-    botIds.clear();
-    botCounter = 0;
-  }, 3000);
-}
-
-// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
-function updateIcePhysics(dt) {
-  if (iceRoom.gameState !== 'sliding') return;
-  const totalPts = ICE_PERIMETER.length;
-  const subSteps = 300;
-  const subDt = dt / subSteps;
-  const puck = iceRoom.puck;
-  const puckRadius = 11; // small collision radius
-
-  for (let step = 0; step < subSteps; step++) {
-    puck.x += puck.vx * subDt * 60;
-    puck.y += puck.vy * subDt * 60;
-
-    let iter = 0;
-    const maxIter = 15;
-    while (iter < maxIter) {
-      let collided = false;
-      for (let i = 0; i < totalPts; i++) {
-        const j = (i + 1) % totalPts;
-        const ax = ICE_PERIMETER[i].x, ay = ICE_PERIMETER[i].y;
-        const bx = ICE_PERIMETER[j].x, by = ICE_PERIMETER[j].y;
-        const dx = bx - ax, dy = by - ay;
-        const lenSq = dx * dx + dy * dy;
-        if (lenSq === 0) continue;
-        let t = ((puck.x - ax) * dx + (puck.y - ay) * dy) / lenSq;
-        t = Math.max(0, Math.min(1, t));
-        const nearX = ax + t * dx, nearY = ay + t * dy;
-        const distX = puck.x - nearX, distY = puck.y - nearY;
-        const dist = Math.sqrt(distX * distX + distY * distY);
-        if (dist < puckRadius && dist > 0.0001) {
-          const nx = distX / dist, ny = distY / dist;
-          const overlap = puckRadius - dist;
-          puck.x += nx * overlap;
-          puck.y += ny * overlap;
-          const vn = puck.vx * nx + puck.vy * ny;
-          if (vn < 0) {
-            const restitution = 0.92;
-            puck.vx -= (1 + restitution) * vn * nx;
-            puck.vy -= (1 + restitution) * vn * ny;
-            puck.vx += (Math.random() - 0.5) * 0.02;
-            puck.vy += (Math.random() - 0.5) * 0.02;
-          }
-          collided = true;
-          break;
+        #loading-screen::before {
+            content: '';
+            position: absolute;
+            width: 70vmin;
+            height: 70vmin;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: orbPulse 4s ease-in-out infinite;
         }
-      }
-      if (!collided) break;
-      iter++;
-    }
-
-    const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    let frictionPerSecond;
-    if (elapsed < 1.8) {
-      frictionPerSecond = 0.999;
-    } else {
-      frictionPerSecond = 0.55;
-    }
-    const decay = Math.pow(frictionPerSecond, subDt);
-    puck.vx *= decay;
-    puck.vy *= decay;
-  }
-
-  const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.08) endIceGame();
-}
-
-function broadcastIceState() {
-  io.emit('iceState', {
-    gameState: iceRoom.gameState,
-    pot: iceRoom.pot,
-    countdownStartTime: iceRoom.countdownStartTime,
-    spinStartTime: iceRoom.spinStartTime,
-    spinDuration: iceRoom.spinDuration,
-    spinFinalAngle: iceRoom.spinFinalAngle,
-    spinStartX: iceRoom.spinStartX,
-    spinStartY: iceRoom.spinStartY,
-    puck: { x: iceRoom.puck.x, y: iceRoom.puck.y },
-    players: iceRoom.players.map(p => ({
-      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-      x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
-    })),
-  });
-}
-
-// ─── Radius scaling for bump arena ──────────────────────────────
-function computeRadii() {
-  const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
-  if (totalBet === 0) return;
-  const minR = 18, maxR = 52;
-  room.players.forEach(p => {
-    const ratio = p.bet / totalBet;
-    const adjustedRatio = Math.pow(ratio, 1.8);
-    const r = minR + adjustedRatio * (maxR - minR);
-    p.targetRadius = Math.min(Math.max(r, minR), maxR);
-    p.mass = p.targetRadius * p.targetRadius * 1.2;
-    p.displayRadius = p.targetRadius;
-  });
-}
-
-function makePlayer(id, bet, name, pfp) {
-  const half = ARENA_SIZE / 2;
-  const radius = 18;
-  let x, y, attempts = 0, overlap = true;
-  while (overlap && attempts < 100) {
-    x = half + (Math.random() - 0.5) * (ARENA_SIZE * 0.6);
-    y = half + (Math.random() - 0.5) * (ARENA_SIZE * 0.6);
-    overlap = room.players.some(p => Math.hypot(p.x - x, p.y - y) < p.radius + radius + 5);
-    attempts++;
-  }
-  const colorIdx = room.players.length % COLORS.length;
-  const p = {
-    id, bet, name: name || 'player', pfp: pfp || '',
-    color: COLORS[colorIdx],
-    radius, displayRadius: radius, targetRadius: radius,
-    mass: radius * radius * 1.2,
-    x: x ?? half, y: y ?? half, vx: 0, vy: 0,
-    alive: true,
-  };
-  room.players.push(p);
-  computeRadii();
-  return p;
-}
-
-function startCountdown() {
-  if (room.gameState !== 'idle') return;
-  if (getAlive().length < 2) return;
-  room.gameState = 'countdown';
-  room.countdownStartTime = Date.now();
-}
-
-function startPrestart() {
-  room.gameState = 'prestart';
-  room.prestartTimer = 2.0;
-}
-
-function startGame() {
-  room.gameState = 'playing';
-  room.gameTime = 0;
-  room.openingTimer = 0;
-  room.opening = null;
-  const alive = getAlive();
-  const half = ARENA_SIZE / 2;
-  alive.forEach((p, i) => {
-    const angle = (i / alive.length) * Math.PI * 2 + Math.random() * 0.3;
-    const baseSpeed = speedForRadius(p.displayRadius || p.radius);
-    const speed = baseSpeed * (0.8 + Math.random() * 0.4);
-    p.vx = Math.cos(angle) * speed;
-    p.vy = Math.sin(angle) * speed;
-    p.x = half + Math.cos(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
-    p.y = half + Math.sin(angle) * (ARENA_SIZE * 0.15 + Math.random() * 15);
-    p.alive = true;
-  });
-  room.openingTimer = 3.0 + Math.random() * 3.5;
-}
-
-async function endGame(winnerId) {
-  if (room.gameState === 'finished') return;
-  room.gameState = 'finished';
-  const winner = getPlayer(winnerId);
-  let payload = null;
-
-  if (winner) {
-    const totalPot = room.pot;
-    const winnerBet = winner.bet;
-    const losersBets = totalPot - winnerBet;
-    const commission = Math.floor(losersBets * 0.02);
-    const winnings = totalPot - commission;
-    payload = {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      winnerPfp: winner.pfp,
-      winnings,
-      multiplier: +(winnings / winnerBet).toFixed(2),
-    };
-
-    room.recentWinners.unshift({
-      name: winner.name,
-      pfp: winner.pfp,
-      amount: winnings
-    });
-    if (room.recentWinners.length > 8) room.recentWinners.length = 8;
-
-    try {
-      const winnerUser = await getUser(winner.id);
-      if (winnerUser) {
-        winnerUser.balance += winnings;
-        winnerUser.wins += 1;
-        await saveUser(winnerUser);
-      }
-    } catch (err) {
-      console.error('endGame: failed to credit winner balance:', err);
-    }
-
-    for (const p of room.players) {
-      if (p.id === winner.id) continue;
-      try {
-        const u = await getUser(p.id);
-        if (u) { u.losses += 1; await saveUser(u); }
-      } catch (err) {
-        console.error('endGame: failed to update loser stats for', p.id, err);
-      }
-    }
-
-    try {
-      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-    } catch (err) {
-      console.error('endGame: failed to write win history:', err);
-    }
-  }
-
-  io.to(room.id).emit('roundEnd', payload);
-  setTimeout(() => {
-    room.players = [];
-    room.pot = 0;
-    room.opening = null;
-    room.gameState = 'idle';
-  }, 3000);
-}
-
-function isInGap(idx) {
-  const opening = room.opening;
-  if (!opening || opening.state !== 'open') return false;
-  const { startIdx, endIdx } = opening;
-  return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
-}
-
-// ─── PHYSICS with speed cap ────────────────────────────────────
-function updatePhysics(dt) {
-  if (room.gameState !== 'playing') return;
-  room.gameTime += dt;
-  const alive = getAlive();
-  if (alive.length <= 1) {
-    if (alive.length === 1) endGame(alive[0].id);
-    else { room.gameState = 'idle'; room.players = []; room.opening = null; }
-    return;
-  }
-  const half = ARENA_SIZE / 2;
-  const totalPts = PERIMETER.length;
-
-  room.openingTimer -= dt;
-  if (room.openingTimer <= 0) {
-    if (!room.opening) {
-      const gameTime = room.gameTime;
-      let minGap, maxGap;
-      if (gameTime < 5) { [minGap, maxGap] = [0.05, 0.16]; }
-      else if (gameTime < 12) { [minGap, maxGap] = [0.12, 0.26]; }
-      else { [minGap, maxGap] = [0.20, 0.42]; }
-      const gapSize = Math.floor((minGap + Math.random() * (maxGap - minGap)) * totalPts);
-      const startIdx = Math.floor(Math.random() * totalPts);
-      const endIdx = (startIdx + gapSize) % totalPts;
-      const flashInterval = 0.18 + Math.random() * 0.14;
-      room.opening = { startIdx, endIdx, flashCount: 0, flashTimer: 0, flashInterval, state: 'flashing' };
-      room.openingTimer = 3.0 + Math.random() * 3.5;
-    } else {
-      room.opening = null;
-      room.openingTimer = 1.2 + Math.random() * 2.6;
-    }
-  }
-  const opening = room.opening;
-  if (opening && opening.state === 'flashing') {
-    opening.flashTimer += dt;
-    if (opening.flashTimer > (opening.flashInterval || 0.25)) {
-      opening.flashTimer = 0;
-      opening.flashCount++;
-      if (opening.flashCount >= 4) opening.state = 'open';
-    }
-  }
-
-  const SUBSTEPS = 10;
-  const DRAG_PER_SEC = 0.6;
-  const RESTITUTION_WALL = 1.0;
-  const RESTITUTION_PLAYER = 0.9;
-  const FRICTION_PLAYER = 0.05;
-
-  const subDt = dt / SUBSTEPS;
-  for (let step = 0; step < SUBSTEPS; step++) {
-    const decay = 1 - DRAG_PER_SEC * subDt;
-    alive.forEach(p => {
-      p.x += p.vx * subDt * 60;
-      p.y += p.vy * subDt * 60;
-      p.vx *= decay;
-      p.vy *= decay;
-    });
-
-    alive.forEach(p => {
-      const radius = p.displayRadius || p.radius;
-      for (let i = 0; i < totalPts; i++) {
-        const j = (i + 1) % totalPts;
-        if (opening && opening.state === 'open' && isInGap(i) && isInGap(j)) continue;
-        const ax = PERIMETER[i].x, ay = PERIMETER[i].y;
-        const bx = PERIMETER[j].x, by = PERIMETER[j].y;
-        const dx = bx - ax, dy = by - ay;
-        const lenSq = dx * dx + dy * dy;
-        if (lenSq === 0) continue;
-        let t = ((p.x - ax) * dx + (p.y - ay) * dy) / lenSq;
-        t = Math.max(0, Math.min(1, t));
-        const nearX = ax + t * dx, nearY = ay + t * dy;
-        const distX = p.x - nearX, distY = p.y - nearY;
-        const dist = Math.sqrt(distX * distX + distY * distY);
-        if (dist < radius) {
-          const nx = distX / dist, ny = distY / dist;
-          const overlap = radius - dist;
-          p.x += nx * overlap;
-          p.y += ny * overlap;
-          const vn = p.vx * nx + p.vy * ny;
-          if (vn < 0) {
-            p.vx -= (1 + RESTITUTION_WALL) * vn * nx;
-            p.vy -= (1 + RESTITUTION_WALL) * vn * ny;
-          }
-          break;
+        @keyframes orbPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
         }
-      }
-      if (opening && opening.state === 'open') {
-        const cx = half, cy = half;
-        const dx = p.x - cx, dy = p.y - cy;
-        const distFromCenter = Math.sqrt(dx * dx + dy * dy);
-        const escapeThreshold = half * 1.12 + radius;
-        if (distFromCenter > escapeThreshold) {
-          let nearestGapIdx = -1, minDist = Infinity;
-          for (let i = 0; i < totalPts; i++) {
-            if (isInGap(i)) {
-              const d = (p.x - PERIMETER[i].x) ** 2 + (p.y - PERIMETER[i].y) ** 2;
-              if (d < minDist) { minDist = d; nearestGapIdx = i; }
-            }
-          }
-          if (nearestGapIdx >= 0) {
-            const angle = Math.atan2(dy, dx);
-            const gapAngle = Math.atan2(PERIMETER[nearestGapIdx].y - cy, PERIMETER[nearestGapIdx].x - cx);
-            let diff = Math.abs(angle - gapAngle);
-            diff = Math.min(diff, 2 * Math.PI - diff);
-            const vOut = p.vx * dx + p.vy * dy;
-            if (diff < 0.8 && vOut > 0) { p.alive = false; return; }
-          }
+        #grid-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
         }
-      }
-    });
-
-    const stillAlive = alive.filter(p => p.alive);
-    for (let i = 0; i < stillAlive.length; i++) {
-      for (let j = i + 1; j < stillAlive.length; j++) {
-        const a = stillAlive[i], b = stillAlive[j];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const rA = a.displayRadius || a.radius, rB = b.displayRadius || b.radius;
-        const minDist = rA + rB;
-        if (dist < minDist && dist > 0.001) {
-          const nx = dx / dist, ny = dy / dist;
-          const overlap = (minDist - dist) * 0.5;
-          a.x -= nx * overlap; a.y -= ny * overlap;
-          b.x += nx * overlap; b.y += ny * overlap;
-
-          const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
-          const dvn = dvx * nx + dvy * ny;
-          if (dvn > 0) {
-            const totalMass = a.mass + b.mass;
-            const impulse = (1 + RESTITUTION_PLAYER) * dvn / (1 / a.mass + 1 / b.mass);
-            a.vx -= (impulse / a.mass) * nx;
-            a.vy -= (impulse / a.mass) * ny;
-            b.vx += (impulse / b.mass) * nx;
-            b.vy += (impulse / b.mass) * ny;
-
-            const vt = dvx * (-ny) + dvy * nx;
-            const frictionImpulse = FRICTION_PLAYER * vt / (1 / a.mass + 1 / b.mass);
-            a.vx -= (frictionImpulse / a.mass) * (-ny);
-            a.vy -= (frictionImpulse / a.mass) * nx;
-            b.vx += (frictionImpulse / b.mass) * (-ny);
-            b.vy += (frictionImpulse / b.mass) * nx;
-          }
+        #loading-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            padding: 4px;
+            position: relative;
         }
-      }
-    }
+        .load-square {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            background: rgba(26, 26, 34, 0.7);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.6), inset 0 0 60px rgba(0, 0, 0, 0.4);
+            transform: scale(0) rotate(-6deg);
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+        .load-square .gif-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            opacity: 0.92;
+        }
+        .load-square::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 18px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%, rgba(0, 0, 0, 0.2) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        @keyframes squarePop {
+            0% { transform: scale(0) rotate(-6deg); opacity: 0; }
+            60% { transform: scale(1.10) rotate(1deg); opacity: 1; }
+            80% { transform: scale(0.95) rotate(-0.5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .load-square.pop {
+            animation: squarePop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .load-square.slide {
+            transition: transform 0.9s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        border-radius 0.6s ease,
+                        box-shadow 0.6s ease,
+                        opacity 0.5s ease;
+            border-radius: 20px;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 255, 255, 0.05);
+            z-index: 5;
+            opacity: 1;
+        }
+        #merged-square {
+            position: absolute;
+            border-radius: 28px;
+            overflow: hidden;
+            background: rgba(26, 26, 34, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            box-shadow: 0 8px 60px rgba(0, 0, 0, 0.9), 0 0 80px rgba(255, 255, 255, 0.05);
+            transform: scale(0);
+            opacity: 0;
+            z-index: 10;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.6s ease;
+            pointer-events: none;
+            will-change: transform, opacity;
+        }
+        #merged-square.show {
+            transform: scale(1);
+            opacity: 1;
+        }
+        #merged-square .gif-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #merged-square::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 28px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, transparent 50%, rgba(0, 0, 0, 0.3) 100%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        #pulse-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.10);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 120%;
+            height: 120%;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        #pulse-ring.pulse {
+            animation: ringPulse 2.2s ease-in-out infinite;
+            opacity: 1;
+        }
+        @keyframes ringPulse {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
+            50% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; border-width: 0.5px; }
+            100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; border-width: 1.5px; }
+        }
+        #loading-text {
+            margin-top: 36px;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.30);
+            z-index: 2;
+            position: relative;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: opacity 0.6s ease;
+        }
+        #loading-text .dots::after {
+            content: '';
+            animation: dotsAnim 1.4s steps(4, end) infinite;
+            display: inline-block;
+            width: 1.2em;
+            text-align: left;
+        }
+        @keyframes dotsAnim {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+            100% { content: ''; }
+        }
+        #brand-mark {
+            position: absolute;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.06);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            z-index: 1;
+            pointer-events: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        @media (max-width: 420px) {
+            #grid-wrapper { width: 220px; height: 220px; }
+            #loading-grid { gap: 6px; padding: 3px; }
+            .load-square { border-radius: 14px; }
+            .load-square::after { border-radius: 14px; }
+            #merged-square { border-radius: 22px; }
+            #merged-square::after { border-radius: 22px; }
+            #loading-text { font-size: 12px; margin-top: 28px; }
+        }
+        @media (max-width: 340px) {
+            #grid-wrapper { width: 170px; height: 170px; }
+            #loading-grid { gap: 4px; padding: 2px; }
+            .load-square { border-radius: 10px; }
+            .load-square::after { border-radius: 10px; }
+            #merged-square { border-radius: 16px; }
+            #merged-square::after { border-radius: 16px; }
+            #loading-text { font-size: 10px; margin-top: 20px; }
+        }
 
-    stillAlive.forEach(p => {
-      const maxSp = speedForRadius(p.displayRadius || p.radius);
-      const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (sp > maxSp) {
-        p.vx = (p.vx / sp) * maxSp;
-        p.vy = (p.vy / sp) * maxSp;
-      }
-    });
-  }
+        /* ─── APP STYLES ──────────────────────────────────────── */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        :root {
+            --bg: #08080a;
+            --surface: #121214;
+            --surface2: #1a1a1e;
+            --surface3: #242428;
+            --primary: #4CAF50;
+            --primary-glow: rgba(76, 175, 80, 0.45);
+            --text: #e8e8e8;
+            --text2: #888;
+            --border: #2a2a2e;
+            --gold: #c8a84e;
+            --gold-dim: rgba(200, 168, 78, 0.2);
+            --red: #d45a5a;
+            --green: #5ac88a;
+            --radius: 16px;
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #08080a;
+            color: var(--text);
+            touch-action: none;
+        }
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-width: 440px;
+            margin: 0 auto;
+            background: #08080a;
+            background-image: url('https://i.postimg.cc/ncz4Kznn/photo-5202192649983563686-y.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            overflow: hidden;
+            position: relative;
+        }
+        #app::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.70);
+            z-index: 0;
+            pointer-events: none;
+        }
+        #app>* {
+            position: relative;
+            z-index: 1;
+        }
 
-  room.players.forEach(p => {
-    const diff = p.targetRadius - p.displayRadius;
-    if (Math.abs(diff) > 0.01) p.displayRadius += diff * Math.min(1, 8.0 * dt);
-  });
-}
+        /* ─── TOP BAR ──────────────────────────────────────────── */
+        #topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px 6px 12px;
+            background: rgba(18, 18, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            min-height: 40px;
+            z-index: 10;
+            gap: 6px;
+        }
+        #top-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #username-display {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text2);
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 10px var(--green);
+            transition: 0.3s;
+        }
+        #status-dot.offline {
+            background: var(--red);
+            box-shadow: 0 0 10px var(--red);
+        }
+        #top-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #balance-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--surface2);
+            padding: 2px 10px 2px 4px;
+            border-radius: 28px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #balance-wrap:active {
+            transform: scale(0.94);
+        }
+        #diamond-icon {
+            width: 22px;
+            height: 22px;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: block;
+            animation: glowDiamond 2.8s ease-in-out infinite;
+        }
+        @keyframes glowDiamond {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(200, 168, 78, 0.3)); }
+            50% { filter: drop-shadow(0 0 24px rgba(200, 168, 78, 0.7)) brightness(1.2); }
+        }
+        #balance {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.2px;
+            font-variant-numeric: tabular-nums;
+            display: inline-block;
+            min-width: 36px;
+        }
 
-// ─── Game Loop ────────────────────────────────────────────────
-const TICK_HZ = 30;
-let lastTick = Date.now();
-setInterval(() => {
-  const now = Date.now();
-  const dt = Math.min((now - lastTick) / 1000, 0.1);
-  lastTick = now;
-  try {
-    if (room.gameState === 'playing') updatePhysics(dt);
-    else if (room.gameState === 'countdown') {
-      const elapsed = (now - room.countdownStartTime) / 1000;
-      if (elapsed >= 10.0) startPrestart();
-    } else if (room.gameState === 'prestart') {
-      room.prestartTimer -= dt;
-      if (room.prestartTimer <= 0) startGame();
-    } else if (room.gameState === 'idle') {
-      if (getAlive().length >= 2) startCountdown();
-    }
-    broadcastState();
+        /* ─── MAIN PAGES ──────────────────────────────────────── */
+        #main {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background: transparent;
+        }
+        .tab-page {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(30px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease, visibility 0.35s ease;
+            overflow: hidden;
+            background: transparent;
+            will-change: transform, opacity;
+        }
+        .tab-page.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 2;
+        }
+        .tab-page.exit {
+            opacity: 0;
+            transform: translateX(-30px);
+            z-index: 1;
+            transition: transform 0.3s ease, opacity 0.3s ease, visibility 0s 0.3s;
+        }
 
-    if (iceRoom.gameState === 'sliding') updateIcePhysics(dt);
-    else if (iceRoom.gameState === 'countdown') {
-      const elapsed = (now - iceRoom.countdownStartTime) / 1000;
-      if (elapsed >= 10.0) startIceSpin();
-    } else if (iceRoom.gameState === 'spinning') {
-      const elapsed = (now - iceRoom.spinStartTime) / 1000;
-      if (elapsed >= iceRoom.spinDuration) launchIcePuck();
-    } else if (iceRoom.gameState === 'idle') {
-      if (iceRoom.players.length >= 2) startIceCountdown();
-    }
-    broadcastIceState();
-  } catch (err) {
-    console.error('Game loop error:', err);
-  }
-}, 1000 / TICK_HZ);
+        /* ─── PVP ARENA ────────────────────────────────────────── */
+        #pvp-page {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+        #arena-wrap {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px 0 10px;
+            min-height: 0;
+            overflow: visible;
+            flex-shrink: 0;
+        }
+        #game-canvas {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: var(--radius);
+            background: rgba(18, 18, 20, 0.60);
+            backdrop-filter: blur(6px);
+            touch-action: none;
+            display: block;
+            box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.9), 0 0 50px rgba(255, 255, 255, 0.03);
+            flex-shrink: 0;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        #frog-gif {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40%;
+            max-width: 160px;
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.9;
+            display: none;
+        }
+        #frog-gif.show {
+            display: block;
+        }
+        #timer-wrap {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 4;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 3px;
+            pointer-events: none;
+            background: transparent;
+            min-width: 50px;
+        }
+        #countdown-timer {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.8);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+            line-height: 1;
+            display: none;
+            background: transparent;
+            border: none;
+            padding: 0;
+        }
+        #timer-progress-wrap {
+            width: 44px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+        }
+        #timer-progress-wrap.visible {
+            display: block;
+        }
+        #timer-progress {
+            width: 0%;
+            height: 100%;
+            background: #ffffff;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+            transition: width 0.06s linear;
+        }
 
-function broadcastState() {
-  io.to(room.id).emit('state', {
-    gameState: room.gameState,
-    pot: room.pot,
-    countdownStartTime: room.countdownStartTime,
-    players: room.players.map(p => ({
-      id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-      x: p.x, y: p.y, displayRadius: p.displayRadius, alive: p.alive,
-    })),
-    opening: room.opening,
-  });
-}
+        /* ─── WIN PANELS ────────────────────────────────────────── */
+        .win-panel {
+            position: absolute;
+            top: 10px;
+            background: rgba(18, 18, 22, 0.80);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 6px 12px 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 6;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+            font-size: 11px;
+            color: var(--text2);
+            min-height: 36px;
+        }
+        .win-panel.left {
+            left: 10px;
+        }
+        .win-panel.right {
+            right: 10px;
+        }
+        .win-panel .panel-label {
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            opacity: 0.6;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+        .win-panel .panel-content {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .win-panel .panel-pfp {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1.5px solid var(--gold);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .win-panel .panel-amount {
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .win-panel .panel-amount.big {
+            color: #fff;
+            font-size: 15px;
+        }
 
-// ─── Socket.io ────────────────────────────────────────────────
-io.on('connection', (socket) => {
-  let userId = null;
-  socket.on('join', async ({ initData }, ack) => {
-    try {
-      let tgUser = verifyInitData(initData);
-      if (!tgUser && ALLOW_DEV_LOGIN) {
-        tgUser = { id: 'dev_' + socket.id.slice(0, 6), username: 'dev_player', photo_url: '' };
-      }
-      if (!tgUser) {
-        ack?.({ ok: false, error: 'Could not verify Telegram login.' });
-        return;
-      }
-      userId = String(tgUser.id);
-      socket.data.userId = userId;
-      socket.join(room.id);
+        #waiting-text {
+            position: absolute;
+            top: 18%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            line-height: 1.6;
+            display: block;
+            width: 80%;
+            max-width: 300px;
+        }
+        .waiting-letter {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: none;
+            animation: letterBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            will-change: transform, opacity, text-shadow;
+        }
+        .waiting-letter.light {
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.4);
+            color: #fff;
+        }
+        @keyframes letterBounce {
+            0% { opacity: 0; transform: translateY(30px) scale(0.8); }
+            40% { opacity: 1; transform: translateY(-10px) scale(1.05); }
+            70% { transform: translateY(5px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .waiting-sub {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
+            display: block;
+            animation: subFade 1.5s ease forwards;
+            animation-delay: 0.3s;
+            opacity: 0;
+        }
+        @keyframes subFade {
+            to { opacity: 0.5; }
+        }
 
-      const user = await getUser(userId, {
-        username: tgUser.username || tgUser.first_name || 'player',
-        pfp: tgUser.photo_url || '',
-      });
-      if (user.banned) {
-        ack?.({ ok: false, error: 'You have been banned.' });
-        return;
-      }
+        /* ─── ICE WAITING TEXT ─────────────────────────────────── */
+        #ice-waiting-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
+            line-height: 1.6;
+            display: none;
+            width: 80%;
+            max-width: 300px;
+        }
+        #ice-waiting-text .waiting-letter {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: none;
+            animation: letterBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            will-change: transform, opacity, text-shadow;
+        }
+        #ice-waiting-text .waiting-letter.light {
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 60px rgba(255, 255, 255, 0.4);
+            color: #fff;
+        }
+        #ice-waiting-text .waiting-sub {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.5;
+            margin-top: 2px;
+            display: block;
+            animation: subFade 1.5s ease forwards;
+            animation-delay: 0.3s;
+            opacity: 0;
+        }
 
-      const icePlayers = iceRoom.players.map(p => ({
-        id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
-        x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2,
-      }));
+        /* ─── BET OVERLAY ──────────────────────────────────────── */
+        #bet-overlay-wrap {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            width: 92%;
+            max-width: 360px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        #bet-overlay-wrap.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
+        }
+        #bet-overlay {
+            background: rgba(18, 18, 22, 0.96);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 12px 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: 0.3s;
+            position: relative;
+            background-image: url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        #bet-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 12px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #bet-overlay>* {
+            position: relative;
+            z-index: 1;
+        }
+        #bet-overlay.collapsed {
+            padding: 6px 12px;
+            gap: 4px;
+            cursor: pointer;
+            flex-direction: row;
+            justify-content: center;
+        }
+        #bet-overlay.collapsed>*:not(.bet-toggle) {
+            display: none;
+        }
+        #bet-overlay.collapsed .bet-toggle {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            color: var(--text2);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            gap: 6px;
+            align-items: center;
+        }
+        .bet-toggle {
+            display: none;
+            cursor: pointer;
+            user-select: none;
+            background: none;
+            border: none;
+            color: var(--text2);
+            font-size: 16px;
+            padding: 2px 8px;
+            transition: 0.2s;
+            font-family: monospace;
+        }
+        .bet-toggle:active {
+            opacity: 0.6;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle {
+            display: flex;
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-size: 16px;
+            color: var(--text2);
+            opacity: 0.6;
+            padding: 2px;
+            transform: rotate(0deg);
+            z-index: 2;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle::before {
+            content: '>';
+            display: inline-block;
+            transform: rotate(90deg);
+        }
+        #bet-overlay.collapsed .bet-toggle {
+            display: flex;
+            font-size: 14px;
+            gap: 6px;
+            color: var(--text2);
+        }
+        #bet-overlay.collapsed .bet-toggle span {
+            font-size: 11px;
+            opacity: 0.5;
+        }
+        #bet-overlay.collapsed .bet-toggle::before {
+            content: '>';
+            display: inline-block;
+            transform: rotate(-90deg);
+            margin-right: 4px;
+        }
+        #bet-overlay:not(.collapsed) .bet-toggle-text {
+            display: none;
+        }
+        #bet-overlay.collapsed .bet-toggle-text {
+            display: inline;
+        }
+        .bet-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        #bet-input {
+            flex: 1;
+            max-width: 120px;
+            padding: 2px 6px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.10);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+        #bet-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 24px var(--primary-glow);
+        }
+        #all-in-btn {
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 8px;
+            border: none;
+            background: var(--gold);
+            color: #000;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
+            flex-shrink: 0;
+        }
+        #all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        #bet-btn {
+            padding: 2px 0;
+            height: 26px;
+            border-radius: 8px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 24px var(--primary-glow);
+            letter-spacing: 0.2px;
+            width: 100%;
+            text-align: center;
+            margin-top: 2px;
+        }
+        #bet-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
+        #bet-btn:disabled {
+            opacity: 0.4;
+            transform: none;
+            pointer-events: none;
+        }
+        #current-bet-display {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-align: center;
+            margin-top: 2px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 4px;
+        }
+        #current-bet-display span {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        #bet-overlay.collapsed #current-bet-display,
+        #bet-overlay.collapsed .bet-row,
+        #bet-overlay.collapsed #bet-btn {
+            display: none;
+        }
 
-      ack?.({
-        ok: true,
-        user: {
-          ...user,
-          winHistory: user.winHistory || [],
-          anonymousEnabled: user.anonymousEnabled || false,
-          anonymousName: user.anonymousName || '',
-          anonymousUsername: user.anonymousUsername || '',
-          anonymousPhone: user.anonymousPhone || '',
-          nameChanged: user.nameChanged || false,
-          usernameChanged: user.usernameChanged || false,
-          phoneChanged: user.phoneChanged || false,
-          hidePfp: user.hidePfp || false,
-        },
-        arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
-        iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
-        recentWinners: room.recentWinners,
-        iceRecentWinners: iceRoom.recentWinners,
-        icePlayers: icePlayers,
-        icePot: iceRoom.pot,
-      });
-      broadcastState();
-    } catch (err) {
-      console.error('Join error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
+        /* ─── AUTO-BET ──────────────────────────────────────────── */
+        .auto-bet-container {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 6;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .auto-bet-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(26, 26, 30, 0.85);
+            backdrop-filter: blur(12px);
+            color: var(--text);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+        .auto-bet-toggle.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 24px var(--primary-glow);
+        }
+        .auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
+        .auto-bet-panel {
+            background: rgba(18, 18, 22, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            width: 160px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+        }
+        .auto-bet-panel.open {
+            display: flex;
+        }
+        .auto-bet-panel .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .auto-bet-panel .row label {
+            font-size: 12px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+        .auto-bet-panel .row input {
+            width: 70px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text);
+            font-size: 13px;
+            text-align: center;
+            outline: none;
+        }
+        .auto-bet-panel .row input:focus {
+            border-color: var(--primary);
+        }
+        .auto-bet-panel .switch-sm {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .auto-bet-panel .switch-sm input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .auto-bet-panel .switch-sm .slider-sm {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            transition: 0.2s;
+        }
+        .auto-bet-panel .switch-sm .slider-sm::before {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            left: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .auto-bet-panel .switch-sm input:checked+.slider-sm {
+            background: var(--primary);
+        }
+        .auto-bet-panel .switch-sm input:checked+.slider-sm::before {
+            transform: translateY(-50%) translateX(16px);
+        }
 
-  socket.on('placeBet', async ({ amount }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      if (!['idle', 'countdown', 'prestart'].includes(room.gameState)) {
-        return ack?.({ ok: false, error: 'Round already in progress.' });
-      }
-      const amt = Math.max(10, Math.floor(Number(amount) || 0));
-      const user = await getUser(userId);
-      if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
-      if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
-      if (room.players.length >= MAX_PLAYERS && !getPlayer(userId)) {
-        return ack?.({ ok: false, error: 'Arena is full.' });
-      }
-      user.balance -= amt;
-      await saveUser(user);
-      const existing = getPlayer(userId);
-      if (existing) { existing.bet += amt; computeRadii(); }
-      else { makePlayer(userId, amt, user.username, user.pfp); }
-      room.pot += amt;
-      ack?.({ ok: true, balance: user.balance });
-      broadcastState();
-    } catch (err) {
-      console.error('Bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
+        /* ─── PLAYER LIST ────────────────────────────────────────── */
+        #player-list-container {
+            width: 100%;
+            max-height: 56px !important;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 2px 4px !important;
+            flex-shrink: 0;
+            scrollbar-width: thin;
+            transition: max-height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease, margin 0.3s ease, padding 0.3s ease;
+            margin-top: 0;
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+        }
+        #player-list-container.shift-up {
+            max-height: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            overflow: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            margin-top: 0 !important;
+        }
+        #player-list-container::-webkit-scrollbar {
+            width: 3px;
+        }
+        #player-list-container::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .pl-entry {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(26, 26, 30, 0.80);
+            border-radius: 20px;
+            padding: 1px 8px 1px 4px;
+            border: 1px solid var(--border);
+            font-size: 11px;
+            color: #ccc;
+            opacity: 0.85;
+            width: auto;
+            min-width: 100px;
+            max-width: 160px;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .pl-entry.you {
+            border-color: var(--primary);
+            opacity: 1;
+        }
+        .pl-entry .pl-avatar {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        .pl-entry .pl-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .pl-entry .pl-name {
+            font-weight: 600;
+            max-width: 50px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 11px;
+        }
+        .pl-entry .pl-bet {
+            color: var(--gold);
+            font-weight: 700;
+            font-size: 11px;
+        }
+        .pl-entry .pl-chance {
+            color: var(--text2);
+            font-size: 9px;
+            margin-left: 2px;
+        }
 
-  socket.on('leaderboard', async (_, ack) => {
-    try {
-      ack?.({ ok: true, top: await topPlayers(20) });
-    } catch (err) {
-      console.error('Leaderboard error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
+        #stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 14px 10px 14px;
+            flex-shrink: 0;
+            color: var(--text2);
+            font-size: 14px;
+            font-weight: 600;
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid var(--border);
+            margin-top: 0;
+        }
+        #stats-bar .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #stats-bar .stat-item .icon {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+        }
+        #stats-bar .stat-item .value {
+            color: #fff;
+            font-weight: 700;
+        }
+        #stats-bar .stat-item .label {
+            color: var(--text2);
+            font-size: 12px;
+            margin-right: 2px;
+        }
 
-  socket.on('icePlaceBet', async ({ amount }, ack) => {
-    try {
-      if (!userId) return ack?.({ ok: false, error: 'Not joined.' });
-      if (!['idle', 'countdown'].includes(iceRoom.gameState)) {
-        return ack?.({ ok: false, error: 'Round already in progress.' });
-      }
-      const amt = Math.max(10, Math.floor(Number(amount) || 0));
-      const user = await getUser(userId);
-      if (!user || amt > user.balance) return ack?.({ ok: false, error: 'Insufficient balance.' });
-      if (user.banned) return ack?.({ ok: false, error: 'You are banned.' });
-      if (iceRoom.players.length >= MAX_PLAYERS && !getIcePlayer(userId)) {
-        return ack?.({ ok: false, error: 'Rink is full.' });
-      }
-      user.balance -= amt;
-      await saveUser(user);
-      const existing = getIcePlayer(userId);
-      if (existing) { existing.bet += amt; repartitionIceArena(); }
-      else { makeIcePlayer(userId, amt, user.username, user.pfp); }
-      iceRoom.pot += amt;
-      ack?.({ ok: true, balance: user.balance });
-      broadcastIceState();
-    } catch (err) {
-      console.error('Ice bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
-  });
+        /* ─── PROFILE TAB ──────────────────────────────────────── */
+        #profile-page {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0f18;
+            padding: 0 16px 10px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+        #profile-page .profile-scroll {
+            flex: 1;
+            width: 100%;
+            max-width: 400px;
+            overflow-y: auto;
+            padding: 12px 0 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+        }
+        #profile-page .profile-scroll::-webkit-scrollbar {
+            width: 3px;
+        }
+        #profile-page .profile-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+        }
 
-  socket.on('disconnect', () => {
-    if (userId) {
-      console.log(`User ${userId} disconnected, keeping their ice arena bet.`);
-    }
-  });
-});
+        .profile-header-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 4px 14px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        @keyframes fadeSlideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .profile-header-section .pfp-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .profile-header-section .pfp-wrap .prof-pfp {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            object-fit: cover;
+            transition: 0.3s;
+        }
+        .profile-header-section .pfp-wrap .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--green);
+            border: 2px solid #0a0f18;
+            box-shadow: 0 0 12px var(--green);
+        }
+        .profile-header-section .prof-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .profile-header-section .prof-info .prof-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.3px;
+        }
+        .profile-header-section .prof-info .prof-username {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 1px;
+        }
+        .profile-header-section .prof-info .prof-status {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+        .profile-header-section .prof-info .member-since {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.15);
+            margin-top: 2px;
+        }
 
-// ─────────────────────────────────────────────────────────────
-// ADMIN API
-// ─────────────────────────────────────────────────────────────
-const ADMIN_HTML = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Admin Panel</title>
-<style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
-table{width:100%;border-collapse:collapse;margin:10px 0}
-th,td{padding:8px;border:1px solid #333;text-align:left}
-button{padding:6px 12px;margin:2px;border:none;border-radius:6px;cursor:pointer;background:#4CAF50;color:#fff}
-button.danger{background:#e06060}
-button.warning{background:#f0a030}
-input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff}
-.auth{display:flex;gap:10px;margin-bottom:20px}
-.section{border:1px solid #333;padding:15px;margin-top:15px;border-radius:8px}
-.bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
-.bot-row input{width:120px}
-.bot-row button{background:#5b8def}
-.switch-wrap{display:flex;align-items:center;gap:12px;margin:6px 0}
-.switch-wrap .switch{position:relative;width:50px;height:26px;flex-shrink:0;cursor:pointer}
-.switch-wrap .switch input{opacity:0;width:0;height:0}
-.switch-wrap .switch .slider{position:absolute;inset:0;background:#444;border-radius:999px;transition:0.3s}
-.switch-wrap .switch .slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.3s}
-.switch-wrap .switch input:checked+.slider{background:#5b8def}
-.switch-wrap .switch input:checked+.slider::before{transform:translateX(24px)}
-.notification-row{display:flex;gap:10px;margin:8px 0;align-items:center}
-.notification-row input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #444;background:#222;color:#fff}
-.notification-row button{padding:6px 16px}
-</style></head>
+        .profile-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease 0.06s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .profile-stats-grid .stat-box {
+            text-align: center;
+            padding: 10px 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            transition: 0.2s;
+        }
+        .profile-stats-grid .stat-box .stat-num {
+            font-size: 22px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .profile-stats-grid .stat-box .stat-num.win {
+            color: var(--green);
+        }
+        .profile-stats-grid .stat-box .stat-num.loss {
+            color: var(--red);
+        }
+        .profile-stats-grid .stat-box .stat-num.rate {
+            color: #6ab8f0;
+        }
+        .profile-stats-grid .stat-box .stat-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-top: 4px;
+        }
+
+        .profile-balance-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(255, 215, 0, 0.06);
+            border: 1px solid rgba(255, 215, 0, 0.10);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.25s;
+            animation: fadeSlideUp 0.6s ease 0.10s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+            margin: 6px 0 2px;
+        }
+        .profile-balance-row:active {
+            transform: scale(0.97);
+        }
+        .profile-balance-row .bal-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.3px;
+        }
+        .profile-balance-row .bal-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gold);
+            margin-left: auto;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .profile-settings {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 12px 0 6px;
+            animation: fadeSlideUp 0.6s ease 0.14s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .profile-settings .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .profile-settings .setting-row .set-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .profile-settings .setting-row .set-sub {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.25);
+            display: block;
+            font-weight: 400;
+        }
+        .profile-settings .setting-row .set-value {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+        .switch {
+            position: relative;
+            flex-shrink: 0;
+            width: 44px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 999px;
+            transition: background 0.25s ease;
+        }
+        .switch .slider::before {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .switch input:checked+.slider {
+            background: var(--primary);
+        }
+        .switch input:checked+.slider::before {
+            transform: translateY(-50%) translateX(20px);
+        }
+
+        .promo-section {
+            display: flex;
+            gap: 8px;
+            padding: 6px 0 10px;
+            animation: fadeSlideUp 0.6s ease 0.18s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .promo-section input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: 0.2s;
+        }
+        .promo-section input:focus {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .promo-section input::placeholder {
+            color: rgba(255, 255, 255, 0.15);
+        }
+        .promo-section button {
+            padding: 8px 18px;
+            border-radius: 10px;
+            border: none;
+            background: var(--gold);
+            color: #000;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .promo-section button:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        .promo-section button:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+        .promo-message {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.25);
+            text-align: center;
+            min-height: 18px;
+            animation: fadeSlideUp 0.6s ease 0.22s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        #reload-pfp-btn {
+            padding: 6px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            animation: fadeSlideUp 0.6s ease 0.26s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+            margin-top: 4px;
+        }
+        #reload-pfp-btn:active {
+            transform: scale(0.94);
+        }
+
+        .recent-games {
+            padding: 10px 0 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            animation: fadeSlideUp 0.6s ease 0.20s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        .recent-games .rg-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .rg-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 2px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .rg-entry .rg-result {
+            font-weight: 600;
+        }
+        .rg-entry .rg-result.win {
+            color: var(--green);
+        }
+        .rg-entry .rg-result.loss {
+            color: var(--red);
+        }
+        .rg-entry .rg-amount {
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .profile-footer {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.08);
+            text-align: center;
+            padding: 12px 0 4px;
+            letter-spacing: 1px;
+            animation: fadeSlideUp 0.6s ease 0.32s forwards;
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        /* ─── 3D BANK CARD OVERLAY ────────────────────────────── */
+        #card-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(20px);
+            animation: cardFadeIn 0.4s ease;
+        }
+        #card-overlay.show {
+            display: flex;
+        }
+        @keyframes cardFadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* ─── IDENTITY CARD OVERLAY ────────────────────────────── */
+        #identity-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99997;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: #000000;
+            animation: cardFadeIn 0.4s ease;
+        }
+        #identity-overlay.show {
+            display: flex;
+        }
+
+        .card-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 92%;
+            max-width: 420px;
+            gap: 12px;
+        }
+        .card-container {
+            width: 100%;
+            aspect-ratio: 1.6 / 1;
+            perspective: 900px;
+            touch-action: none;
+            cursor: grab;
+            position: relative;
+        }
+        .card-container:active {
+            cursor: grabbing;
+        }
+        .card-3d {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-radius: 20px;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.7), 0 0 60px rgba(255, 255, 255, 0.05);
+            will-change: transform;
+        }
+        .card-3d.dragging {
+            transition: none !important;
+        }
+        .card-face {
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            backface-visibility: hidden;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .card-face.front {
+            background: linear-gradient(145deg, #1a2a3a, #0d1a2a);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .card-face.front::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 30%, rgba(255, 255, 255, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .card-diamond-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1.2);
+            width: 55%;
+            height: 55%;
+            opacity: 0.05;
+            pointer-events: none;
+            object-fit: contain;
+        }
+        .card-welcome {
+            position: relative;
+            z-index: 2;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.3);
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .card-welcome .cw-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(6px) scale(0.9);
+            animation: cwPop 0.5s ease forwards;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .card-welcome .cw-char.highlight {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+        .card-welcome .cw-char.space {
+            width: 6px;
+        }
+        @keyframes cwPop {
+            0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+            60% { opacity: 1; transform: translateY(-2px) scale(1.05); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .card-face.front .card-brand {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.25);
+            text-transform: uppercase;
+            text-align: right;
+            position: relative;
+            z-index: 2;
+        }
+        .card-face.front .card-balance {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            margin: auto 0;
+        }
+        .card-face.front .card-balance .amount {
+            font-size: 42px;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+        .card-face.front .card-balance .label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-top: 2px;
+        }
+        .card-face.front .card-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            z-index: 2;
+        }
+        .card-face.front .card-bottom .card-holder {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .card-face.front .card-bottom .card-holder .label {
+            font-size: 7px;
+            font-weight: 400;
+            opacity: 0.3;
+            letter-spacing: 1px;
+            display: block;
+        }
+        .card-face.front .card-bottom .card-expiry {
+            font-size: 12px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.5);
+            text-align: right;
+        }
+        .card-face.front .card-bottom .card-expiry .label {
+            font-size: 7px;
+            font-weight: 400;
+            opacity: 0.3;
+            letter-spacing: 1px;
+            display: block;
+        }
+        .card-face.back {
+            background: linear-gradient(145deg, #1a2a3a, #0a1a2a);
+            transform: rotateY(180deg);
+            padding: 20px 24px;
+        }
+        .card-face.back .card-stripe {
+            position: absolute;
+            top: 35px;
+            left: 0;
+            right: 0;
+            height: 35px;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .card-face.back .card-cvv {
+            position: absolute;
+            bottom: 45px;
+            right: 25px;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 3px 14px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a2a3a;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        }
+        .card-face.back .card-cvv .label {
+            font-size: 7px;
+            font-weight: 400;
+            color: rgba(0, 0, 0, 0.25);
+            display: block;
+            text-align: center;
+            letter-spacing: 1px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .card-face.back .card-back-text {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.10);
+            letter-spacing: 0.5px;
+        }
+
+        /* Identity card fields */
+        .identity-field {
+            cursor: pointer;
+            transition: 0.2s;
+            padding: 2px 4px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .identity-field:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+        .identity-field .id-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: rgba(255, 255, 255, 0.3);
+            min-width: 50px;
+        }
+        .identity-field .id-value-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: text;
+        }
+        .identity-field .id-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            outline: none;
+            background: transparent;
+            border: none;
+            padding: 2px 0;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            flex: 1;
+            min-width: 80px;
+            cursor: text;
+        }
+        .identity-field .id-value:focus {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .identity-field .id-value.error {
+            color: #ff6b6b;
+        }
+        .identity-field .id-value.editing {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            animation: pulseBorder 1.2s ease-in-out infinite;
+        }
+        @keyframes pulseBorder {
+            0%, 100% { border-bottom-color: rgba(255, 255, 255, 0.5); }
+            50% { border-bottom-color: rgba(255, 255, 255, 0.1); }
+        }
+
+        .char-anim {
+            display: inline-block;
+            animation: charSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: translateY(6px);
+            white-space: pre;
+        }
+        @keyframes charSlideUp {
+            0% { opacity: 0; transform: translateY(6px); }
+            60% { opacity: 1; transform: translateY(-2px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-close-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(18, 18, 22, 0.5);
+            backdrop-filter: blur(8px);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: 0.25s;
+        }
+        .card-close-btn:active {
+            transform: scale(0.88);
+        }
+        .card-close-btn.show {
+            display: flex;
+        }
+
+        /* Confirmation modal */
+        #confirm-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(12px);
+            animation: cardFadeIn 0.3s ease;
+        }
+        #confirm-modal.show {
+            display: flex;
+        }
+        #confirm-modal .modal-box {
+            background: #1a1a1e;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px 28px;
+            max-width: 340px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+        }
+        #confirm-modal .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+        #confirm-modal .modal-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+        #confirm-modal .modal-fee {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gold);
+            margin: 8px 0 16px;
+        }
+        #confirm-modal .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        #confirm-modal .modal-actions button {
+            padding: 8px 28px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        #confirm-modal .modal-actions .btn-cancel {
+            background: rgba(255, 255, 255, 0.06);
+            color: rgba(255, 255, 255, 0.5);
+        }
+        #confirm-modal .modal-actions .btn-cancel:active {
+            transform: scale(0.94);
+        }
+        #confirm-modal .modal-actions .btn-confirm {
+            background: var(--gold);
+            color: #000;
+        }
+        #confirm-modal .modal-actions .btn-confirm:active {
+            transform: scale(0.94);
+        }
+
+        /* ─── TRANSACTION HISTORY ────────────────────────────────── */
+        .tx-history {
+            width: 100%;
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 14px;
+            padding: 6px 4px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.04) transparent;
+        }
+        .tx-history::-webkit-scrollbar {
+            width: 3px;
+        }
+        .tx-history::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .tx-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 12px 6px 12px;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .tx-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            font-size: 12px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.4);
+            transition: 0.15s;
+            animation: txSlide 0.4s ease forwards;
+            opacity: 0;
+            transform: translateX(-8px);
+        }
+        .tx-entry:nth-child(2) { animation-delay: 0.04s; }
+        .tx-entry:nth-child(3) { animation-delay: 0.08s; }
+        .tx-entry:nth-child(4) { animation-delay: 0.12s; }
+        .tx-entry:nth-child(5) { animation-delay: 0.16s; }
+        .tx-entry:nth-child(6) { animation-delay: 0.20s; }
+        .tx-entry:nth-child(7) { animation-delay: 0.24s; }
+        .tx-entry:nth-child(8) { animation-delay: 0.28s; }
+        .tx-entry:nth-child(9) { animation-delay: 0.32s; }
+        .tx-entry:nth-child(10) { animation-delay: 0.36s; }
+        @keyframes txSlide {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .tx-entry .tx-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        .tx-entry .tx-amount {
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            font-size: 13px;
+        }
+        .tx-entry .tx-amount.win {
+            color: var(--green);
+        }
+        .tx-entry .tx-amount.loss {
+            color: var(--red);
+        }
+        .tx-entry .tx-amount.bet {
+            color: #f0c040;
+        }
+        .tx-entry .tx-time {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.12);
+            margin-left: 8px;
+        }
+        .tx-empty {
+            text-align: center;
+            padding: 16px 0;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.1);
+            letter-spacing: 0.5px;
+        }
+
+        /* ─── Card stats ──────────────────────────────────────────── */
+        .card-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 14px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+        .card-stats .cs-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card-stats .cs-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: rgba(255, 255, 255, 0.2);
+        }
+        .card-stats .cs-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+        .card-stats .cs-value.positive {
+            color: var(--green);
+        }
+        .card-stats .cs-value.negative {
+            color: var(--red);
+        }
+        .card-stats .cs-value.neutral {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .payment-methods {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            padding: 4px 0;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 0.5px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .payment-methods span {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+
+        /* ─── PARTICLES ───────────────────────────────────────────── */
+        #particle-canvas,
+        #identity-particle-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 99996;
+            pointer-events: none;
+            display: none;
+        }
+        #particle-canvas.show,
+        #identity-particle-canvas.show {
+            display: block;
+        }
+
+        /* ─── TOP PAGE ──────────────────────────────────────────── */
+        #top-page {
+            padding: 14px 14px 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: transparent;
+        }
+        #podium {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            max-width: 400px;
+            padding: 20px 0 10px;
+            flex-wrap: wrap;
+        }
+        .podium-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 70px;
+            max-width: 110px;
+            transition: 0.2s;
+        }
+        .podium-col .rank-badge {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text2);
+            background: rgba(26, 26, 30, 0.80);
+            padding: 2px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(4px);
+        }
+        .podium-col .rank-badge.gold {
+            color: var(--gold);
+            border-color: var(--gold);
+        }
+        .podium-col .rank-badge.silver {
+            color: #b8b8c8;
+            border-color: #b8b8c8;
+        }
+        .podium-col .rank-badge.bronze {
+            color: #cd8a5a;
+            border-color: #cd8a5a;
+        }
+        .podium-col .podium-pfp {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 2px solid var(--border);
+            object-fit: cover;
+            flex-shrink: 0;
+            transition: 0.2s;
+        }
+        .podium-col .podium-pfp.gold {
+            border-color: var(--gold);
+            box-shadow: 0 0 30px var(--gold-dim);
+        }
+        .podium-col .podium-pfp.silver {
+            border-color: #b8b8c8;
+            box-shadow: 0 0 20px rgba(184, 184, 200, 0.2);
+        }
+        .podium-col .podium-pfp.bronze {
+            border-color: #cd8a5a;
+            box-shadow: 0 0 20px rgba(205, 138, 90, 0.2);
+        }
+        .podium-col .podium-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .podium-col .podium-prize {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 2px 8px;
+            border-radius: 12px;
+            white-space: nowrap;
+        }
+        .podium-col .podium-prize img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+        .podium-col .podium-stats {
+            font-size: 10px;
+            color: var(--text2);
+            opacity: 0.6;
+        }
+        .podium-col .podium-base {
+            width: 100%;
+            border-radius: 3px 3px 0 0;
+            background: var(--border);
+            margin-top: 2px;
+            min-height: 6px;
+        }
+        .podium-col .podium-base.gold {
+            background: linear-gradient(180deg, #f0d080, var(--gold));
+            height: 100px;
+            min-height: 100px;
+            box-shadow: 0 -4px 40px rgba(200, 168, 78, 0.4);
+        }
+        .podium-col .podium-base.silver {
+            background: linear-gradient(180deg, #d0d0e0, #b8b8c8);
+            height: 75px;
+            min-height: 75px;
+            box-shadow: 0 -4px 30px rgba(184, 184, 200, 0.25);
+        }
+        .podium-col .podium-base.bronze {
+            background: linear-gradient(180deg, #e0a070, #cd8a5a);
+            height: 50px;
+            min-height: 50px;
+            box-shadow: 0 -4px 20px rgba(205, 138, 90, 0.2);
+        }
+        .podium-col.p1 {
+            transform: translateY(-6px);
+        }
+        .podium-col.p2 {
+            transform: translateY(0px);
+        }
+        .podium-col.p3 {
+            transform: translateY(6px);
+        }
+
+        #top-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-width: 400px;
+            margin: 10px auto 0;
+            width: 100%;
+        }
+        .top-entry {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(18, 18, 20, 0.80);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            transition: 0.2s;
+        }
+        .top-entry .rank {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text2);
+            min-width: 28px;
+            text-align: center;
+        }
+        .top-entry .rank.gold {
+            color: var(--gold);
+        }
+        .top-entry .rank.silver {
+            color: #b8b8c8;
+        }
+        .top-entry .rank.bronze {
+            color: #cd8a5a;
+        }
+        .top-entry .t-pfp {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .top-entry .t-name {
+            flex: 1;
+            font-weight: 600;
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .top-entry .t-wins {
+            font-size: 11px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+        .top-entry .t-score {
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 13px;
+            white-space: nowrap;
+        }
+        .top-entry .t-prize {
+            font-size: 11px;
+            color: #fff;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1px 8px;
+            border-radius: 12px;
+        }
+        .top-entry .t-prize img {
+            width: 18px;
+            height: 18px;
+            object-fit: contain;
+        }
+        .top-entry .t-flame {
+            width: 20px;
+            height: 20px;
+            object-fit: contain;
+            margin-left: 4px;
+        }
+
+        /* ─── TABS ──────────────────────────────────────────────── */
+        #tabs {
+            display: flex;
+            flex-shrink: 0;
+            background: rgba(18, 18, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            padding-bottom: var(--safe-bottom);
+            padding-top: 2px;
+            z-index: 9999 !important;
+            position: relative;
+            pointer-events: auto !important;
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 4px 0 8px;
+            border: none;
+            background: transparent;
+            color: var(--text2);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            gap: 1px;
+            position: relative;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            pointer-events: auto !important;
+            touch-action: manipulation;
+        }
+        .tab-btn .tab-icon {
+            font-size: 20px;
+            line-height: 1.2;
+            transition: 0.2s;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        .tab-btn.active {
+            color: #ffffff !important;
+        }
+        .tab-btn.active .tab-icon {
+            opacity: 1;
+            transform: translateY(-1px);
+            color: #ffffff !important;
+        }
+        .tab-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 30%;
+            right: 30%;
+            height: 2px;
+            border-radius: 0 0 4px 4px;
+            background: #ffffff;
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .tab-btn.active::after {
+            opacity: 1;
+            left: 15%;
+            right: 15%;
+        }
+        .tab-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+        .tab-btn.active .tab-icon svg {
+            stroke: #ffffff !important;
+        }
+
+        /* ─── WIN PANEL ──────────────────────────────────────────── */
+        #win-panel {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%) translateY(100%);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(26, 26, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 20px 18px 24px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.8);
+            z-index: 25;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        #win-panel.show {
+            transform: translateX(-50%) translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #win-gif-container {
+            width: 70%;
+            max-width: 220px;
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: transparent;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        #win-gif-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 8px;
+        }
+        #win-avatar-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--gold);
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        #win-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #win-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            width: 100%;
+        }
+        #win-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gold);
+            text-align: center;
+        }
+        #win-multiplier {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+        }
+        #win-continue-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--primary-glow);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+
+        /* ─── ICE ARENA ──────────────────────────────────────────── */
+        #ice-page {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            height: 100%;
+            overflow: hidden;
+            background: transparent;
+        }
+        #ice-arena-wrap {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 10px 0 10px;
+            min-height: 0;
+            overflow: visible;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        #ice-canvas {
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: var(--radius);
+            background: transparent;
+            touch-action: none;
+            display: block;
+            box-shadow: none;
+            flex-shrink: 0;
+            border: none;
+        }
+
+        #ice-top-panel {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100%);
+            width: 90%;
+            max-width: 420px;
+            background: rgba(18, 18, 22, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 3px 12px 4px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            z-index: 10;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #ice-top-panel.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: none;
+        }
+        #ice-top-panel .panel-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            flex: 1;
+        }
+        #ice-top-panel .panel-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: var(--text2);
+            opacity: 0.6;
+            font-weight: 600;
+        }
+        #ice-top-panel .panel-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+        }
+        #ice-top-panel .panel-value.gold {
+            color: var(--gold);
+        }
+        #ice-timer-section {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+            min-width: 50px;
+            transition: opacity 0.3s ease;
+        }
+        #ice-countdown-timer {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            display: block;
+        }
+        #ice-timer-progress-wrap {
+            width: 100%;
+            height: 2px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+        }
+        #ice-timer-progress {
+            height: 100%;
+            width: 0%;
+            border-radius: 2px;
+            background: #fff;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+            transition: width 0.1s linear;
+        }
+        #ice-stats-bar {
+            display: none !important;
+        }
+
+        /* ─── ICE BET OVERLAY ───────────────────────────────────── */
+        #ice-bet-overlay-wrap {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5;
+            width: 92%;
+            max-width: 360px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+            opacity: 1;
+        }
+        #ice-bet-overlay-wrap.hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(20px);
+        }
+        #ice-bet-overlay {
+            background: rgba(18, 18, 22, 0.96);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 8px 12px 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: 0.3s;
+            position: relative;
+            background-image: url('https://i.postimg.cc/W4jSpS0k/photo-5210812881274873069-y.jpg');
+            background-size: cover;
+            background-position: center;
+        }
+        #ice-bet-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 12px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        #ice-bet-overlay>* {
+            position: relative;
+            z-index: 1;
+        }
+        #ice-bet-overlay.collapsed {
+            padding: 6px 12px;
+            gap: 4px;
+            cursor: pointer;
+            flex-direction: row;
+            justify-content: center;
+        }
+        #ice-bet-overlay.collapsed>*:not(.ice-bet-toggle) {
+            display: none;
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            color: var(--text2);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            gap: 6px;
+            align-items: center;
+        }
+        .ice-bet-toggle {
+            display: none;
+            cursor: pointer;
+            user-select: none;
+            background: none;
+            border: none;
+            color: var(--text2);
+            font-size: 16px;
+            padding: 2px 8px;
+            transition: 0.2s;
+            font-family: monospace;
+        }
+        .ice-bet-toggle:active {
+            opacity: 0.6;
+        }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle {
+            display: flex;
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-size: 16px;
+            color: var(--text2);
+            opacity: 0.6;
+            padding: 2px;
+            transform: rotate(0deg);
+            z-index: 2;
+        }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle::before {
+            content: '>';
+            display: inline-block;
+            transform: rotate(90deg);
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle {
+            display: flex;
+            font-size: 14px;
+            gap: 6px;
+            color: var(--text2);
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle span {
+            font-size: 11px;
+            opacity: 0.5;
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle::before {
+            content: '>';
+            display: inline-block;
+            transform: rotate(-90deg);
+            margin-right: 4px;
+        }
+        #ice-bet-overlay:not(.collapsed) .ice-bet-toggle-text {
+            display: none;
+        }
+        #ice-bet-overlay.collapsed .ice-bet-toggle-text {
+            display: inline;
+        }
+        .ice-bet-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        #ice-bet-input {
+            flex: 1;
+            max-width: 120px;
+            padding: 2px 6px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.10);
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            outline: none;
+            font-variant-numeric: tabular-nums;
+        }
+        #ice-bet-input:focus {
+            border-color: #5b8def;
+            box-shadow: 0 0 20px rgba(91, 141, 239, 0.35);
+        }
+        #ice-all-in-btn {
+            height: 28px;
+            padding: 0 10px;
+            border-radius: 8px;
+            border: none;
+            background: var(--gold);
+            color: #000;
+            font-weight: 700;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 0 20px rgba(200, 168, 78, 0.3);
+            flex-shrink: 0;
+        }
+        #ice-all-in-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+        #ice-bet-btn {
+            padding: 2px 0;
+            height: 26px;
+            border-radius: 8px;
+            border: none;
+            background: #5b8def;
+            color: #fff;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
+            letter-spacing: 0.2px;
+            width: 100%;
+            text-align: center;
+            margin-top: 2px;
+        }
+        #ice-bet-btn:active {
+            transform: scale(0.96);
+            opacity: 0.8;
+        }
+        #ice-bet-btn:disabled {
+            opacity: 0.4;
+            transform: none;
+            pointer-events: none;
+        }
+        #ice-current-bet-display {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            text-align: center;
+            margin-top: 2px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 4px;
+        }
+        #ice-current-bet-display span {
+            color: var(--gold);
+            font-weight: 700;
+        }
+        #ice-bet-overlay.collapsed #ice-current-bet-display,
+        #ice-bet-overlay.collapsed .ice-bet-row,
+        #ice-bet-overlay.collapsed #ice-bet-btn {
+            display: none;
+        }
+
+        /* ─── ICE WIN PANEL ──────────────────────────────────────── */
+        #ice-win-panel {
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%) translateY(100%);
+            width: 92%;
+            max-width: 380px;
+            background: rgba(26, 26, 30, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius) var(--radius) 0 0;
+            padding: 20px 18px 24px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            box-shadow: 0 -8px 60px rgba(0, 0, 0, 0.8);
+            z-index: 25;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.35s ease;
+            opacity: 0;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        #ice-win-panel.show {
+            transform: translateX(-50%) translateY(0%);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #ice-win-gif-container {
+            width: 70%;
+            max-width: 220px;
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: transparent;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        #ice-win-gif-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 8px;
+        }
+        #ice-win-avatar-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #5b8def;
+            flex-shrink: 0;
+            background: var(--surface3);
+        }
+        #ice-win-avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #ice-win-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5b8def;
+            text-align: center;
+        }
+        #ice-win-multiplier {
+            font-size: 30px;
+            font-weight: 800;
+            color: #fff;
+            text-align: center;
+        }
+        #ice-win-continue-btn {
+            padding: 10px 0;
+            border-radius: 30px;
+            border: none;
+            background: #5b8def;
+            color: #fff;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(91, 141, 239, 0.4);
+            transition: 0.2s;
+            letter-spacing: 0.3px;
+            width: 100%;
+            text-align: center;
+            margin-top: 4px;
+        }
+        #ice-win-continue-btn:active {
+            transform: scale(0.94);
+            opacity: 0.8;
+        }
+
+        /* ─── ICE AUTO-BET ───────────────────────────────────────── */
+        #ice-auto-bet-container {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 6;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .ice-auto-bet-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: rgba(26, 26, 30, 0.85);
+            backdrop-filter: blur(12px);
+            color: var(--text);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+        .ice-auto-bet-toggle.active {
+            border-color: #5b8def;
+            background: #5b8def;
+            color: #fff;
+            box-shadow: 0 0 24px rgba(91, 141, 239, 0.4);
+        }
+        .ice-auto-bet-toggle:active {
+            transform: scale(0.9);
+        }
+        .ice-auto-bet-panel {
+            background: rgba(18, 18, 22, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+            width: 160px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+        }
+        .ice-auto-bet-panel.open {
+            display: flex;
+        }
+        .ice-auto-bet-panel .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .ice-auto-bet-panel .row label {
+            font-size: 12px;
+            color: var(--text2);
+            white-space: nowrap;
+        }
+        .ice-auto-bet-panel .row input {
+            width: 70px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface3);
+            color: var(--text);
+            font-size: 13px;
+            text-align: center;
+            outline: none;
+        }
+        .ice-auto-bet-panel .row input:focus {
+            border-color: #5b8def;
+        }
+        .ice-auto-bet-panel .switch-sm {
+            position: relative;
+            width: 34px;
+            height: 18px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .ice-auto-bet-panel .switch-sm input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .ice-auto-bet-panel .switch-sm .slider-sm {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--surface3);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            transition: 0.2s;
+        }
+        .ice-auto-bet-panel .switch-sm .slider-sm::before {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            left: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm {
+            background: #5b8def;
+        }
+        .ice-auto-bet-panel .switch-sm input:checked+.slider-sm::before {
+            transform: translateY(-50%) translateX(16px);
+        }
+
+        /* ─── NOTIFICATION ────────────────────────────────────────── */
+        #notification-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 24px 36px;
+            max-width: 85%;
+            color: #fff;
+            font-size: 28px;
+            font-weight: 700;
+            text-align: center;
+            z-index: 99999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.9);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        #notification-overlay.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: none;
+        }
+
+        /* ─── RESPONSIVE ──────────────────────────────────────────── */
+        @media (max-width: 420px) {
+            #notification-overlay { font-size: 20px; padding: 18px 24px; max-width: 92%; }
+            #balance-wrap { padding: 2px 8px 2px 4px; }
+            #balance { font-size: 13px; }
+            #diamond-icon { width: 18px; height: 18px; }
+            #username-display { max-width: 60px; font-size: 10px; }
+            .win-panel .panel-pfp { width: 22px; height: 22px; }
+            .win-panel { padding: 4px 8px; font-size: 10px; min-height: 30px; }
+            .win-panel .panel-amount { font-size: 11px; }
+            #ice-top-panel { padding: 2px 10px 3px; gap: 3px; top: 92px; width: 94%; }
+            #ice-top-panel .panel-value { font-size: 12px; }
+            #ice-countdown-timer { font-size: 14px; }
+            #ice-top-panel .panel-label { font-size: 7px; }
+            .card-face.front .card-balance .amount { font-size: 32px; }
+            .card-face.front { padding: 16px 18px; }
+            .card-face.back { padding: 16px 18px; }
+            .tx-entry { font-size: 11px; padding: 4px 10px; }
+            .tx-history { max-height: 120px; }
+            .card-welcome { font-size: 11px; }
+            .card-stats { grid-template-columns: 1fr 1fr; padding: 6px 8px; }
+            .card-stats .cs-value { font-size: 12px; }
+            .profile-header-section .pfp-wrap .prof-pfp { width: 52px; height: 52px; }
+            .profile-header-section .prof-info .prof-name { font-size: 17px; }
+            .profile-stats-grid .stat-box .stat-num { font-size: 18px; }
+            .profile-balance-row .bal-amount { font-size: 17px; }
+        }
+        @media (max-width: 380px) {
+            #ice-top-panel { top: 86px; padding: 2px 8px 3px; width: 96%; }
+            #ice-top-panel .panel-value { font-size: 11px; }
+            #ice-countdown-timer { font-size: 13px; }
+            .card-face.front .card-balance .amount { font-size: 28px; }
+            .tx-entry { font-size: 10px; padding: 3px 8px; }
+        }
+        @media (max-width: 360px) {
+            #ice-top-panel { top: 80px; padding: 2px 8px 2px; width: 96%; }
+            #ice-top-panel .panel-value { font-size: 10px; }
+            #ice-countdown-timer { font-size: 12px; }
+            .card-face.front .card-balance .amount { font-size: 24px; }
+            .card-stats .cs-value { font-size: 11px; }
+        }
+
+        /* ─── TOGGLE ANIMATION OVERLAY ────────────────────────── */
+        #toggle-anim-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        #toggle-anim-overlay.show {
+            display: flex !important;
+            opacity: 1;
+        }
+        #toggle-anim-overlay.show #toggle-anim-box {
+            transform: scale(1) !important;
+        }
+        #toggle-anim-overlay.hide {
+            opacity: 0;
+        }
+        #toggle-anim-overlay.hide #toggle-anim-box {
+            transform: scale(0.6) !important;
+        }
+        #toggle-anim-box {
+            background: rgba(26, 26, 30, 0.95);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 30px 40px;
+            text-align: center;
+            transform: scale(0.6);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+        }
+        #toggle-anim-label {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+        }
+        #toggle-anim-switch {
+            position: relative;
+            display: inline-block;
+            width: 64px;
+            height: 36px;
+        }
+        #toggle-anim-slider {
+            position: absolute;
+            inset: 0;
+            background: #444;
+            border-radius: 999px;
+            transition: background 0.3s;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        #toggle-anim-knob {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            background: #fff;
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        #toggle-anim-status {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 10px;
+        }
+    </style>
+<style>
+
+        /* ─── DLBALLS GAME ─────────────────────────────────────────── */
+        #dlballs-page {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            background:
+                radial-gradient(circle at 50% 15%, rgba(75, 95, 125, .22), transparent 42%),
+                linear-gradient(180deg, #090b10 0%, #050608 100%);
+            color: #fff;
+        }
+        #dlballs-page.hidden { display: none; }
+        .dlb-top {
+            height: 48px; flex-shrink: 0; display:flex; align-items:center; justify-content:space-between;
+            padding: 0 12px; border-bottom:1px solid rgba(255,255,255,.08);
+            background:rgba(8,9,12,.82); backdrop-filter:blur(14px); z-index:5;
+        }
+        .dlb-back, .dlb-buy {
+            border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06);
+            color:#fff; border-radius:11px; padding:8px 12px; font-weight:700; font-size:12px;
+            cursor:pointer; touch-action:manipulation;
+        }
+        .dlb-buy { background:linear-gradient(145deg,#262a32,#111319); }
+        .dlb-title { font-weight:800; letter-spacing:2px; font-size:13px; }
+        #dlballs-stage { flex:1; min-height:0; position:relative; overflow:hidden; }
+        #dlballs-canvas { width:100%; height:100%; display:block; touch-action:none; }
+        .dlb-hud {
+            position:absolute; left:12px; right:12px; bottom:10px; z-index:4; pointer-events:none;
+            display:flex; flex-direction:column; gap:8px;
+        }
+        .dlb-hud-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+        .dlb-pill {
+            background:rgba(10,11,15,.80); border:1px solid rgba(255,255,255,.09);
+            border-radius:12px; padding:7px 10px; font-size:11px; backdrop-filter:blur(10px);
+            box-shadow:0 8px 25px rgba(0,0,0,.35);
+        }
+        .dlb-pill b { font-size:14px; }
+        #dlballs-launch {
+            pointer-events:auto; flex:1; border:0; border-radius:13px; padding:12px;
+            background:linear-gradient(145deg,#d7b85a,#8d6d20); color:#111; font-weight:900;
+            letter-spacing:.5px; cursor:pointer; box-shadow:0 8px 30px rgba(190,155,50,.20);
+        }
+        #dlballs-launch:disabled { opacity:.38; cursor:default; }
+        .dlb-status { text-align:center; color:rgba(255,255,255,.55); font-size:11px; min-height:14px; }
+        .dlb-modal {
+            position:absolute; inset:0; z-index:10; display:none; align-items:center; justify-content:center;
+            padding:18px; background:rgba(0,0,0,.68); backdrop-filter:blur(12px);
+        }
+        .dlb-modal.show { display:flex; }
+        .dlb-box {
+            width:min(360px,100%); border:1px solid rgba(255,255,255,.12); border-radius:20px;
+            background:linear-gradient(145deg,#17191e,#0c0d10); padding:18px;
+            box-shadow:0 25px 80px rgba(0,0,0,.75);
+        }
+        .dlb-box h3 { margin-bottom:5px; font-size:18px; }
+        .dlb-box p { color:rgba(255,255,255,.45); font-size:11px; margin-bottom:14px; }
+        .dlb-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+        .dlb-mode {
+            padding:11px 8px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+            background:rgba(255,255,255,.04); color:#fff; text-align:left; cursor:pointer;
+        }
+        .dlb-mode.active { border-color:rgba(218,186,90,.75); background:rgba(200,168,78,.12); }
+        .dlb-mode strong { display:block; font-size:12px; }
+        .dlb-mode span { display:block; margin-top:3px; font-size:9px; color:rgba(255,255,255,.42); }
+        .dlb-field { margin:9px 0; }
+        .dlb-field label { display:block; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.35); margin-bottom:5px; }
+        .dlb-field input, .dlb-field select {
+            width:100%; padding:11px 12px; border-radius:11px; border:1px solid rgba(255,255,255,.09);
+            background:#090a0d; color:#fff; outline:none;
+        }
+        .dlb-confirm { width:100%; margin-top:9px; padding:12px; border:0; border-radius:12px; background:#eee; color:#111; font-weight:900; cursor:pointer; }
+        .dlb-cancel { width:100%; margin-top:6px; padding:10px; border:0; background:transparent; color:rgba(255,255,255,.45); cursor:pointer; }
+        .dlb-reward {
+            position:absolute; left:50%; top:13%; transform:translate(-50%,-20px) scale(.8);
+            opacity:0; z-index:7; pointer-events:none; text-align:center; transition:.45s cubic-bezier(.2,1.4,.3,1);
+        }
+        .dlb-reward.show { opacity:1; transform:translate(-50%,0) scale(1); }
+        .dlb-reward .big { font-size:30px; font-weight:900; text-shadow:0 0 35px rgba(255,255,255,.28); }
+        .dlb-reward .small { font-size:11px; color:rgba(255,255,255,.48); }
+        .dlb-pointer { position:absolute; top:44%; left:50%; transform:translateX(-50%); z-index:3; color:#fff; font-size:18px; text-shadow:0 0 16px rgba(255,255,255,.7); pointer-events:none; animation:dlbPointerPulse 1s ease-in-out infinite; }
+        @keyframes dlbPointerPulse { 0%,100%{transform:translateX(-50%) translateY(0);opacity:.75}50%{transform:translateX(-50%) translateY(4px);opacity:1} }
+        .dlb-help { position:absolute; top:56px; left:50%; transform:translateX(-50%); z-index:3; font-size:9px; color:rgba(255,255,255,.22); pointer-events:none; }
+        @media (max-width:420px) {
+            .dlb-top { height:44px; }
+            .dlb-back,.dlb-buy { padding:7px 9px; font-size:11px; }
+            .dlb-title { font-size:12px; }
+        }
+
+
+        .dlb-card-launch {
+            width:100%; display:flex; align-items:center; gap:10px; padding:11px 13px; margin-top:8px;
+            border:1px solid rgba(200,168,78,.20); border-radius:13px;
+            background:linear-gradient(145deg,rgba(200,168,78,.13),rgba(255,255,255,.035));
+            color:#fff; cursor:pointer; text-align:left; transition:.2s;
+        }
+        .dlb-card-launch:active { transform:scale(.98); }
+        .dlb-card-launch .dlb-card-icon {
+            width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+            background:radial-gradient(circle at 32% 25%,#fff,#bfc3c8 28%,#70757c 65%,#292c31);
+            box-shadow:inset -3px -4px 8px rgba(0,0,0,.45),0 0 12px rgba(255,255,255,.10);
+            color:transparent; flex-shrink:0;
+        }
+        .dlb-card-launch b { display:block; font-size:12px; }
+        .dlb-card-launch small { display:block; margin-top:2px; font-size:9px; color:rgba(255,255,255,.38); }
+        .dlb-card-arrow { margin-left:auto; font-size:22px; color:rgba(255,255,255,.35); }
+
+</style>
+</head>
 <body>
-<h2>dllump Admin</h2>
-<div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
-<div id="content" style="display:none">
-  <div class="section">
-    <h3>📢 Send Notification</h3>
-    <div class="notification-row">
-      <input id="notifInput" placeholder="Type message or emoji..." />
-      <button onclick="sendNotification()">Send</button>
+
+    <!-- ═══ LOADING SCREEN ─────────────────────────────────────── -->
+    <div id="loading-screen">
+        <div id="grid-wrapper">
+            <div id="loading-grid"></div>
+            <div id="merged-square"></div>
+            <div id="pulse-ring"></div>
+        </div>
+        <div id="loading-text">Loading<span class="dots"></span></div>
+        <div id="brand-mark">Dllump</div>
     </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Auto Bot</h3>
-    <div class="switch-wrap">
-      <span style="color:#888;">Auto-spawn bots in ice arena</span>
-      <label class="switch">
-        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
-        <span class="slider"></span>
-      </label>
-      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
+
+    <!-- ═══ APP ──────────────────────────────────────────────────── -->
+    <div id="app">
+        <!-- TOP BAR -->
+        <div id="topbar">
+            <div id="top-left">
+                <span id="username-display">player</span>
+                <div id="status-dot"></div>
+            </div>
+            <div id="top-right">
+                <div id="balance-wrap">
+                    <img id="diamond-icon" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
+                    <span id="balance">1000</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="main">
+            <!-- PVP PAGE -->
+            <div id="pvp-page" class="tab-page active">
+                <div id="arena-wrap">
+                    <canvas id="game-canvas"></canvas>
+                    <!-- Win panels -->
+                    <div id="last-game-panel" class="win-panel left">
+                        <span class="panel-label">Last Game</span>
+                        <div class="panel-content">
+                            <img class="panel-pfp" id="last-game-pfp" src="" alt="" />
+                            <span class="panel-amount" id="last-game-amount">+0</span>
+                        </div>
+                    </div>
+                    <div id="best-win-panel" class="win-panel right">
+                        <span class="panel-label">Best Win</span>
+                        <div class="panel-content">
+                            <img class="panel-pfp" id="best-win-pfp" src="" alt="" />
+                            <span class="panel-amount big" id="best-win-amount">+0</span>
+                        </div>
+                    </div>
+                    <img id="frog-gif" src="https://i.postimg.cc/zXsD7XmZ/ezgif-28d6f42abc273563.gif" alt="sleeping frog" />
+                    <div id="timer-wrap">
+                        <div id="countdown-timer">10.00</div>
+                        <div id="timer-progress-wrap"><div id="timer-progress"></div></div>
+                    </div>
+                    <div id="waiting-text"><span>waiting for players</span><div class="sub">place a bet to join</div></div>
+                    <div id="win-panel">
+                        <div id="win-gif-container"><img id="win-gif" src="" alt="" /></div>
+                        <div id="win-avatar-container"><img id="win-avatar" src="" alt="winner" /></div>
+                        <div id="win-details">
+                            <div id="win-name">Winner</div>
+                            <div id="win-multiplier">x2.5</div>
+                        </div>
+                        <button id="win-continue-btn">Continue</button>
+                    </div>
+                    <div id="bet-overlay-wrap">
+                        <div id="bet-overlay">
+                            <button class="bet-toggle" id="bet-toggle-btn"><span class="bet-toggle-text">bet</span></button>
+                            <div class="bet-row">
+                                <input type="text" id="bet-input" placeholder="10" inputmode="numeric" />
+                                <button id="all-in-btn">All In</button>
+                            </div>
+                            <button id="bet-btn">join</button>
+                            <div id="current-bet-display">your bet: <span id="current-bet-value">0</span></div>
+                        </div>
+                    </div>
+                    <div id="auto-bet-container" class="auto-bet-container">
+                        <button id="auto-bet-toggle" class="auto-bet-toggle">⏱</button>
+                        <div id="auto-bet-panel" class="auto-bet-panel">
+                            <div class="row"><label>Amount</label><input type="text" id="auto-bet-amount" placeholder="10" inputmode="numeric" /></div>
+                            <div class="row"><label>Auto</label><div class="switch-sm" id="auto-switch-wrap"><input type="checkbox" id="auto-bet-switch" /><span class="slider-sm"></span></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="player-list-container"></div>
+                <div id="stats-bar">
+                    <div class="stat-item"><span class="label">Players</span><span class="value" id="stats-players">0</span></div>
+                    <div class="stat-item"><img src="https://i.postimg.cc/Dz2dD6rz/ezgif-2d1a6da23d7bb12a.gif" class="icon" alt="" /><span class="value" id="stats-pot">0</span></div>
+                </div>
+            </div>
+
+            <!-- ICE PAGE -->
+            <div id="ice-page" class="tab-page">
+                <div id="ice-arena-wrap">
+                    <canvas id="ice-canvas"></canvas>
+
+                    <!-- ICE TOP PANEL -->
+                    <div id="ice-top-panel">
+                        <div class="panel-section">
+                            <span class="panel-label">Players</span>
+                            <span class="panel-value" id="ice-stats-players">0</span>
+                        </div>
+                        <div id="ice-timer-section">
+                            <span id="ice-countdown-timer">10.00</span>
+                            <div id="ice-timer-progress-wrap"><div id="ice-timer-progress"></div></div>
+                        </div>
+                        <div class="panel-section">
+                            <span class="panel-label">Pot</span>
+                            <span class="panel-value gold" id="ice-stats-pot">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Win panels for ice -->
+                    <div id="ice-last-game-panel" class="win-panel left">
+                        <span class="panel-label">Last Game</span>
+                        <div class="panel-content">
+                            <img class="panel-pfp" id="ice-last-game-pfp" src="" alt="" />
+                            <span class="panel-amount" id="ice-last-game-amount">+0</span>
+                        </div>
+                    </div>
+                    <div id="ice-best-win-panel" class="win-panel right">
+                        <span class="panel-label">Best Win</span>
+                        <div class="panel-content">
+                            <img class="panel-pfp" id="ice-best-win-pfp" src="" alt="" />
+                            <span class="panel-amount big" id="ice-best-win-amount">+0</span>
+                        </div>
+                    </div>
+
+                    <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
+
+                    <!-- ICE WIN PANEL -->
+                    <div id="ice-win-panel">
+                        <div id="ice-win-gif-container"><img id="ice-win-gif" src="" alt="" /></div>
+                        <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
+                        <div id="ice-win-name">Winner</div>
+                        <div id="ice-win-multiplier">x2.5</div>
+                        <button id="ice-win-continue-btn">Continue</button>
+                    </div>
+
+                    <div id="ice-bet-overlay-wrap">
+                        <div id="ice-bet-overlay">
+                            <button class="ice-bet-toggle" id="ice-bet-toggle-btn"><span class="ice-bet-toggle-text">bet</span></button>
+                            <div class="ice-bet-row">
+                                <input type="text" id="ice-bet-input" placeholder="10" inputmode="numeric" />
+                                <button id="ice-all-in-btn">All In</button>
+                            </div>
+                            <button id="ice-bet-btn">join</button>
+                            <div id="ice-current-bet-display">your bet: <span id="ice-current-bet-value">0</span></div>
+                        </div>
+                    </div>
+                    <div id="ice-auto-bet-container" class="ice-auto-bet-container">
+                        <button id="ice-auto-bet-toggle" class="ice-auto-bet-toggle">⏱</button>
+                        <div id="ice-auto-bet-panel" class="ice-auto-bet-panel">
+                            <div class="row"><label>Amount</label><input type="text" id="ice-auto-bet-amount" placeholder="10" inputmode="numeric" /></div>
+                            <div class="row"><label>Auto</label><div class="switch-sm" id="ice-auto-switch-wrap"><input type="checkbox" id="ice-auto-bet-switch" /><span class="slider-sm"></span></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFILE TAB -->
+            <div id="profile-page" class="tab-page">
+                <div class="profile-scroll">
+                    <!-- Header -->
+                    <div class="profile-header-section">
+                        <div class="pfp-wrap">
+                            <img class="prof-pfp" id="profile-pfp" src="" alt="avatar" />
+                            <div class="online-dot"></div>
+                        </div>
+                        <div class="prof-info">
+                            <div class="prof-name" id="profile-name">Player</div>
+                            <div class="prof-username" id="profile-username">@username</div>
+                            <div class="prof-status" id="profile-status">online</div>
+                            <div class="member-since" id="member-since">Member since today</div>
+                        </div>
+                    </div>
+
+                    <!-- Stats Grid -->
+                    <div class="profile-stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-num win" id="p-wins">0</div>
+                            <div class="stat-label">Wins</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-num loss" id="p-losses">0</div>
+                            <div class="stat-label">Losses</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-num rate" id="p-winrate">0%</div>
+                            <div class="stat-label">Winrate</div>
+                        </div>
+                    </div>
+
+                    <!-- Balance row -->
+                    <div class="profile-balance-row" id="profile-balance-row">
+                        <span class="bal-label">Balance</span>
+                        <span class="bal-amount" id="p-balance">1000</span>
+                    </div>
+
+                    <!-- Recent Games -->
+                    <div class="recent-games">
+                        <div class="rg-title">Recent Games</div>
+                        <div id="recent-games-list">
+                            <div class="rg-entry"><span>No recent games</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="profile-settings">
+                        <!-- Anonymous Identity button -->
+                        <div class="setting-row" id="anonymous-row">
+                            <div>
+                                <div class="set-label">Anonymous Identity</div>
+                                <span class="set-sub">Manage your anonymous profile</span>
+                            </div>
+                            <button id="identity-btn" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;">👤</button>
+                        </div>
+
+                        <!-- Hide PFP toggle -->
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Hide Profile Picture</div>
+                                <span class="set-sub">Show default avatar in game</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="hide-pfp-toggle" /><span class="slider"></span></label>
+                        </div>
+
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Session</div>
+                                <span class="set-sub">Active since today</span>
+                            </div>
+                            <span class="set-value">● Live</span>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Games played</div>
+                                <span class="set-sub">Total rounds</span>
+                            </div>
+                            <span class="set-value" id="total-games">0</span>
+                        </div>
+                        <div class="setting-row">
+                            <div>
+                                <div class="set-label">Sound effects</div>
+                                <span class="set-sub">Game audio feedback</span>
+                            </div>
+                            <label class="switch"><input type="checkbox" id="sound-toggle" /><span class="slider"></span></label>
+                        </div>
+                    </div>
+
+                    <!-- Promo -->
+                    <div class="promo-section">
+                        <input id="promo-input" placeholder="Enter promo code" maxlength="30" />
+                        <button id="promo-btn">Redeem</button>
+                    </div>
+                    <div class="promo-message" id="promo-message"></div>
+
+                    <button id="reload-pfp-btn">⟳ Reload Avatars</button>
+
+                    <div class="profile-footer">dllump · v1.0</div>
+                </div>
+            </div>
+
+            <!-- TOP PAGE -->
+            <div id="top-page" class="tab-page">
+                <div id="podium"></div>
+                <div id="top-list"></div>
+            </div>
+            <!-- DLBALLS: hidden from bottom tab list; opened from balance card -->
+            <div id="dlballs-page" class="hidden" aria-label="DLballs">
+                <div class="dlb-top">
+                    <button class="dlb-back" id="dlb-back">‹ Back</button>
+                    <div class="dlb-title">DLBALLS</div>
+                    <button class="dlb-buy" id="dlb-buy">Buy balls</button>
+                </div>
+                <div id="dlballs-stage">
+                    <canvas id="dlballs-canvas"></canvas>
+                    <div class="dlb-help">3D physics arena · balls can miss, stick or multiply</div><div class="dlb-pointer">▲</div>
+                    <div class="dlb-hud">
+                        <div class="dlb-hud-row">
+                            <div class="dlb-pill">Balls <b id="dlb-count">0</b></div>
+                            <div class="dlb-pill">Value <b id="dlb-value">0</b> 💎</div>
+                            <div class="dlb-pill">Balance <b id="dlb-balance">0</b> 💎</div>
+                        </div>
+                        <button id="dlballs-launch" disabled>Launch balls</button>
+                        <div class="dlb-status" id="dlb-status">Buy balls to load the launcher.</div>
+                    </div>
+                    <div class="dlb-reward" id="dlb-reward">
+                        <div class="big" id="dlb-reward-big">+0 💎</div>
+                        <div class="small" id="dlb-reward-small">Round complete</div>
+                    </div>
+                    <div class="dlb-modal" id="dlb-buy-modal">
+                        <div class="dlb-box">
+                            <h3>Load DLballs</h3>
+                            <p>Each ball is paid before launch. Random balls strongly favor smaller values.</p>
+                            <div class="dlb-mode-grid">
+                                <button class="dlb-mode active" data-dlb-mode="random"><strong>Random</strong><span>1–1,000 value · weighted low</span></button>
+                                <button class="dlb-mode" data-dlb-mode="fixed"><strong>Price ball</strong><span>Choose an exact value</span></button>
+                            </div>
+                            <div class="dlb-field" id="dlb-fixed-wrap" style="display:none">
+                                <label>Ball value</label>
+                                <select id="dlb-fixed-value">
+                                    <option value="1">1 💎</option><option value="5">5 💎</option><option value="10">10 💎</option>
+                                    <option value="25">25 💎</option><option value="50">50 💎</option><option value="100">100 💎</option>
+                                    <option value="250">250 💎</option><option value="500">500 💎</option><option value="1000">1000 💎</option>
+                                </select>
+                            </div>
+                            <div class="dlb-field">
+                                <label>Amount of balls</label>
+                                <input id="dlb-amount" type="number" min="1" max="50" value="5" inputmode="numeric">
+                            </div>
+                            <div class="dlb-field">
+                                <label>Cost per ball</label>
+                                <input id="dlb-stake" type="number" min="1" max="1000000" value="10" inputmode="numeric">
+                            </div>
+                            <button class="dlb-confirm" id="dlb-buy-confirm">Buy & load</button>
+                            <button class="dlb-cancel" id="dlb-buy-cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TABS -->
+        <div id="tabs">
+            <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
+            <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
+            <button class="tab-btn" data-tab="profile"><span class="tab-icon"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><circle cx="12" cy="8" r="5"/><path d="M4 20 L4 18 C4 14 7 12 12 12 C17 12 20 14 20 18 L20 20"/></svg></span>Profile</button>
+            <button class="tab-btn" data-tab="top"><span class="tab-icon" style="display:inline-block;transform:rotate(180deg);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15 L8 21 L12 19 L16 21 L12 15 Z"/><circle cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="3" fill="currentColor"/></svg></span>Top</button>
+        </div>
     </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Bot Spawn</h3>
-    <div class="bot-row">
-      <input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
-      <input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
-      <button onclick="spawnBots()">Spawn Bots</button>
-      <button class="danger" onclick="removeBots()">Remove All Bots</button>
+
+    <!-- ─── NOTIFICATION ────────────────────────────────────────── -->
+    <div id="notification-overlay"></div>
+
+    <!-- ─── PROMO MODAL ─────────────────────────────────────────── -->
+    <div id="promo-modal">
+        <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
+        <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
+        <div class="promo-sub" id="promo-sub">Your new balance is 1100</div>
+        <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
-  </div>
-  <div class="section">
-    <h3>Players</h3>
-    <button onclick="refreshPlayers()">Refresh Players</button>
-    <div id="players"></div>
-  </div>
-  <div class="section">
-    <h3>Actions</h3>
-    <button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button>
-    <button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button>
-    <button class="danger" onclick="wipeAll()">Wipe All Data</button>
-  </div>
-  <div class="section">
-    <h3>Promo Codes</h3>
-    <p>Generate a new code:</p>
-    <input id="promoAmount" placeholder="Amount" value="100"/>
-    <input id="promoCode" placeholder="Custom code (optional)"/>
-    <input id="promoMaxUses" placeholder="Max uses" value="1"/>
-    <button onclick="generatePromo()">Generate Promo</button>
-    <div id="promoCodes"></div>
-  </div>
-  <div class="section">
-    <h3>Individual Player</h3>
-    <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button>
-    <br/>
-    <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
-    <br/>
-    <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
-    <br/>
-    <input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button>
-  </div>
-</div>
-<script>
-const ADMIN_SECRET = '${ADMIN_SECRET}';
-async function fetchAdmin(path, method='GET', body=null) {
-  const headers = {'admin-secret': document.getElementById('secret').value};
-  if(body) headers['Content-Type'] = 'application/json';
-  const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
-  return res.json();
-}
-function auth(){
-  const secret = document.getElementById('secret').value;
-  if(secret === ADMIN_SECRET) {
-    document.getElementById('content').style.display = 'block';
-    refreshPlayers();
-    refreshPromoCodes();
-    fetchAutoBotStatus();
-  } else alert('Wrong secret');
-}
-async function fetchAutoBotStatus(){
-  const data = await fetchAdmin('/auto-bot-status');
-  document.getElementById('autoBotToggle').checked = data.enabled;
-  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-}
-async function toggleAutoBot(enabled){
-  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
-  if(data.ok) {
-    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-  } else alert('Error: '+data.error);
-}
-async function sendNotification(){
-  const msg = document.getElementById('notifInput').value.trim();
-  if(!msg) { alert('Please enter a message'); return; }
-  const data = await fetchAdmin('/send-notification', 'POST', {message: msg});
-  if(data.ok) {
-    alert('Notification sent!');
-    document.getElementById('notifInput').value = '';
-  } else alert('Error: '+data.error);
-}
-async function refreshPlayers(){
-  const data = await fetchAdmin('/players');
-  const players = data.players || [];
-  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
-  players.forEach(p => {
-    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
-    <td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`;
-  });
-  html += '</table>';
-  document.getElementById('players').innerHTML = html;
-}
-async function refreshPromoCodes(){
-  const data = await fetchAdmin('/promo-codes');
-  const codes = data.codes || [];
-  let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
-  codes.forEach(c => {
-    html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td>
-    <td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`;
-  });
-  html += '</table>';
-  document.getElementById('promoCodes').innerHTML = html;
-}
-async function spawnBots(){
-  const bet = parseInt(document.getElementById('botBet').value) || 100;
-  const count = parseInt(document.getElementById('botCount').value) || 1;
-  if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; }
-  const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count});
-  if(data.ok) alert('Spawned ' + data.spawned + ' bots!');
-  else alert('Error: ' + data.error);
-  refreshPlayers();
-}
-async function removeBots(){
-  if(!confirm('Remove all bots from the ice arena?')) return;
-  const data = await fetchAdmin('/remove-bots', 'POST');
-  if(data.ok) alert('Removed ' + data.removed + ' bots');
-  refreshPlayers();
-}
-async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
-async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
-async function wipeAll(){ if(confirm('Wipe ALL player data? This cannot be undone!')){ await fetchAdmin('/wipe', 'POST'); refreshPlayers(); } }
-async function addMoney(){
-  const id = document.getElementById('addUserId').value;
-  const amount = parseInt(document.getElementById('addAmount').value);
-  if(!id || !amount) return;
-  await fetchAdmin('/add-money', 'POST', {id, amount});
-  refreshPlayers();
-}
-async function setMoney(){
-  const id = document.getElementById('setUserId').value;
-  const amount = parseInt(document.getElementById('setAmount').value);
-  if(!id || isNaN(amount)) return;
-  await fetchAdmin('/set-money', 'POST', {id, amount});
-  refreshPlayers();
-}
-async function banPlayer(id){
-  const userId = id || document.getElementById('banUserId').value;
-  if(!userId) return;
-  await fetchAdmin('/ban', 'POST', {id: userId});
-  refreshPlayers();
-}
-async function resetPlayer(){
-  const id = document.getElementById('resetUserId').value;
-  if(!id) return;
-  if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return;
-  await fetchAdmin('/reset-player', 'POST', {id});
-  refreshPlayers();
-}
-async function generatePromo(){
-  const amount = parseInt(document.getElementById('promoAmount').value) || 100;
-  const code = document.getElementById('promoCode').value || null;
-  const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1;
-  const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses});
-  if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); }
-  else alert('Error: '+data.error);
-}
-async function deletePromo(code){
-  if(!confirm('Delete promo '+code+'?')) return;
-  await fetchAdmin('/delete-promo', 'POST', {code});
-  refreshPromoCodes();
-}
-</script>
-</body></html>`;
 
-function adminAuth(req, res, next) {
-  const secret = req.headers['admin-secret'] || req.query.secret;
-  if (secret !== ADMIN_SECRET) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
-  }
-  next();
-}
+    <!-- ─── CONFIRMATION MODAL ─────────────────────────────────── -->
+    <div id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-title" id="confirm-title">Change</div>
+            <div class="modal-desc" id="confirm-desc">This will update your anonymous identity.</div>
+            <div class="modal-fee" id="confirm-fee">-467 💎</div>
+            <div class="modal-actions">
+                <button class="btn-cancel" id="confirm-cancel">Cancel</button>
+                <button class="btn-confirm" id="confirm-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
 
-app.get('/admin', (req, res) => {
-  res.send(ADMIN_HTML);
-});
+    <!-- ─── 3D BANK CARD OVERLAY ──────────────────────────────── -->
+    <div id="card-overlay">
+        <button class="card-close-btn show" id="card-close-btn">✕</button>
+        <canvas id="particle-canvas"></canvas>
+        <div class="card-wrapper">
+            <div class="card-container" id="card-container">
+                <div class="card-3d" id="card-3d">
+                    <!-- Front -->
+                    <div class="card-face front">
+                        <img class="card-diamond-bg" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;">
+                            <div class="card-welcome" id="card-welcome"></div>
+                            <div class="card-brand">dllump</div>
+                        </div>
+                        <div class="card-balance">
+                            <div class="amount" id="card-balance-amount">1000</div>
+                            <div class="label">Balance</div>
+                        </div>
+                        <div class="card-bottom">
+                            <div class="card-holder">
+                                <span class="label">Card Holder</span>
+                                <span id="card-holder-name">Player</span>
+                            </div>
+                            <div class="card-expiry">
+                                <span class="label">Expiry</span>
+                                12/26
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Back -->
+                    <div class="card-face back">
+                        <div class="card-stripe"></div>
+                        <div class="card-cvv">
+                            <span class="label">CVV</span>
+                            123
+                        </div>
+                        <div class="card-back-text">dllump · premium card</div>
+                    </div>
+                </div>
+            </div>
 
-app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
-  const { enabled } = req.body;
-  if (typeof enabled !== 'boolean') {
-    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
-  }
-  autoBotEnabled = enabled;
-  res.json({ ok: true, enabled: autoBotEnabled });
-});
-app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
-  res.json({ enabled: autoBotEnabled });
-});
+            <!-- Transaction History -->
+            <div class="tx-history" id="tx-history">
+                <div class="tx-header">
+                    <span>Transaction</span>
+                    <span>Amount</span>
+                </div>
+                <div id="tx-list"></div>
+            </div>
 
-app.post('/admin/api/send-notification', adminAuth, (req, res) => {
-  const { message } = req.body;
-  if (!message || typeof message !== 'string' || message.trim().length === 0) {
-    return res.status(400).json({ ok: false, error: 'Missing message' });
-  }
-  io.emit('notification', { message: message.trim(), timestamp: Date.now() });
-  res.json({ ok: true });
-});
+            <!-- Card Stats -->
+            <div class="card-stats" id="card-stats">
+                <div class="cs-item">
+                    <span class="cs-label">Total Wagered</span>
+                    <span class="cs-value" id="cs-wagered">0</span>
+                </div>
+                <div class="cs-item">
+                    <span class="cs-label">Biggest Win</span>
+                    <span class="cs-value positive" id="cs-biggest">0</span>
+                </div>
+                <div class="cs-item">
+                    <span class="cs-label">Net Profit</span>
+                    <span class="cs-value neutral" id="cs-net">0</span>
+                </div>
+                <div class="cs-item">
+                    <span class="cs-label">Currency</span>
+                    <span class="cs-value" id="cs-currency">💎</span>
+                </div>
+            </div>
 
-app.get('/admin/api/players', adminAuth, async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    res.json({ players: users });
-  } catch (err) {
-    console.error('Admin players error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+            <button id="open-dlballs-btn" class="dlb-card-launch">
+                <span class="dlb-card-icon">●</span>
+                <span><b>DLballs</b><small>3D ball multiplier arena</small></span>
+                <span class="dlb-card-arrow">›</span>
+            </button>
 
-app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    for (const u of users) {
-      u.balance = 50;
-      await saveUser(u);
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Reset money error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+            <div class="payment-methods">
+                <span>Visa</span>
+                <span>Mastercard</span>
+                <span>dllump Pay</span>
+            </div>
+        </div>
+    </div>
 
-app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    for (const u of users) {
-      u.wins = 0;
-      u.losses = 0;
-      await saveUser(u);
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Reset top error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+    <!-- ─── IDENTITY CARD OVERLAY ──────────────────────────────── -->
+    <div id="identity-overlay">
+        <button class="card-close-btn show" id="identity-close-btn">✕</button>
+        <canvas id="identity-particle-canvas"></canvas>
+        <div class="card-wrapper">
+            <div class="card-container" id="identity-card-container">
+                <div class="card-3d" id="identity-card-3d">
+                    <div class="card-face front" style="background:#000000;padding:20px 24px;display:flex;flex-direction:column;justify-content:space-between;border-color:rgba(255,255,255,0.05);">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;padding:4px 0;">
+                            <div style="font-size:13px;font-weight:600;color:rgba(255,255,255,0.4);letter-spacing:1px;">Identity</div>
+                            <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.15);">dllump</div>
+                        </div>
+                        <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;position:relative;z-index:2;padding:8px 0;">
+                            <div class="identity-field">
+                                <span class="id-label">Name</span>
+                                <div class="id-value-wrap">
+                                    <span class="id-value" id="id-name" contenteditable="false">Anonymous</span>
+                                </div>
+                            </div>
+                            <div class="identity-field">
+                                <span class="id-label">Username</span>
+                                <div class="id-value-wrap">
+                                    <span class="id-value" id="id-username" contenteditable="false">@anon_user</span>
+                                </div>
+                            </div>
+                            <div class="identity-field">
+                                <span class="id-label">Phone</span>
+                                <div class="id-value-wrap">
+                                    <span class="id-value" id="id-phone" contenteditable="false">+0 000 000 000</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex;justify-content:center;position:relative;z-index:2;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;">
+                            <button id="identity-toggle-btn" style="padding:6px 20px;border-radius:8px;border:none;background:#4CAF50;color:#fff;font-weight:600;font-size:13px;cursor:pointer;transition:0.2s;width:auto;">Enable</button>
+                        </div>
+                    </div>
+                    <div class="card-face back" style="background:linear-gradient(145deg, #1a2a3a, #0d1a2a);">
+                        <div class="card-stripe"></div>
+                        <div style="position:absolute;bottom:40px;left:20px;right:20px;text-align:center;color:rgba(255,255,255,0.08);font-size:10px;letter-spacing:2px;">anonymous identity · dllump</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ─── TOGGLE ANIMATION OVERLAY ────────────────────────── -->
+        <div id="toggle-anim-overlay">
+            <div id="toggle-anim-box">
+                <div id="toggle-anim-label">Enabling Anonymous</div>
+                <div id="toggle-anim-switch">
+                    <div id="toggle-anim-slider">
+                        <div id="toggle-anim-knob"></div>
+                    </div>
+                </div>
+                <div id="toggle-anim-status">Switching…</div>
+            </div>
+        </div>
+    </div>
 
-app.post('/admin/api/wipe', adminAuth, async (req, res) => {
-  try {
-    const all = await getAllUsers();
-    for (const u of all) {
-      u.balance = 50;
-      u.wins = 0;
-      u.losses = 0;
-      u.banned = false;
-      u.winHistory = [];
-      await saveUser(u);
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Wipe error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+    <script>
+        // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
+        const SERVER_URL = 'https://dllump-production.up.railway.app';
+        const WIN_GIFS = [
+            'https://i.postimg.cc/9Frvpxhz/ezgif-3f0e907be807d1cc.gif',
+            'https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif',
+            'https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif',
+            'https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif',
+            'https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif',
+            'https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif',
+            'https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'
+        ];
+        const PRIZE_GIFS = {
+            first: 'https://i.postimg.cc/gJbCZf8c/ezgif-251770c86b1ec433.gif',
+            second: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
+            third: 'https://i.postimg.cc/9F1cjFTj/ezgif-21ab08378515e1ba.gif',
+        };
+        const DIAMOND_GIF = 'https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif';
+        const FLAME_GIF = 'https://i.postimg.cc/FHbt292h/fire-flame.gif';
 
-app.post('/admin/api/add-money', adminAuth, async (req, res) => {
-  try {
-    const { id, amount } = req.body;
-    if (!id || !amount || isNaN(amount)) return res.status(400).json({ ok: false, error: 'Invalid' });
-    const user = await getUser(id);
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-    user.balance += amount;
-    await saveUser(user);
-    res.json({ ok: true, balance: user.balance });
-  } catch (err) {
-    console.error('Add money error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand();
+            tg.enableClosingConfirmation(); }
 
-app.post('/admin/api/set-money', adminAuth, async (req, res) => {
-  try {
-    const { id, amount } = req.body;
-    if (!id || isNaN(amount) || amount < 0) return res.status(400).json({ ok: false, error: 'Invalid' });
-    const user = await getUser(id);
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-    user.balance = amount;
-    await saveUser(user);
-    res.json({ ok: true, balance: user.balance });
-  } catch (err) {
-    console.error('Set money error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        function haptic(style) {
+            try { if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred(style || 'light');
+                else if (navigator.vibrate) navigator.vibrate(style === 'heavy' ? 30 : 12); } catch (_) {}
+        }
 
-app.post('/admin/api/ban', adminAuth, async (req, res) => {
-  try {
-    const { id } = req.body;
-    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
-    const user = await getUser(id);
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-    user.banned = !user.banned;
-    await saveUser(user);
-    res.json({ ok: true, banned: user.banned });
-  } catch (err) {
-    console.error('Ban error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        let audioCtxForClicks = null;
 
-app.post('/admin/api/reset-player', adminAuth, async (req, res) => {
-  try {
-    const { id } = req.body;
-    if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
-    const success = await resetPlayer(id);
-    if (!success) return res.status(404).json({ ok: false, error: 'User not found' });
-    res.json({ ok: true, message: 'Player stats reset' });
-  } catch (err) {
-    console.error('Reset player error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        function playClickSound() {
+            if (!state.soundEnabled) return;
+            try {
+                if (!audioCtxForClicks) audioCtxForClicks = new(window.AudioContext || window.webkitAudioContext)();
+                const now = audioCtxForClicks.currentTime;
+                const bufferSize = audioCtxForClicks.sampleRate * 0.03;
+                const buffer = audioCtxForClicks.createBuffer(1, bufferSize, audioCtxForClicks.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+                }
+                const noise = audioCtxForClicks.createBufferSource();
+                noise.buffer = buffer;
+                const gainNoise = audioCtxForClicks.createGain();
+                gainNoise.gain.setValueAtTime(0.08, now);
+                gainNoise.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                noise.connect(gainNoise);
+                gainNoise.connect(audioCtxForClicks.destination);
+                noise.start(now);
+                noise.stop(now + 0.03);
+                const osc = audioCtxForClicks.createOscillator();
+                const gainOsc = audioCtxForClicks.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1800, now);
+                osc.frequency.exponentialRampToValueAtTime(1200, now + 0.02);
+                gainOsc.gain.setValueAtTime(0.12, now);
+                gainOsc.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.connect(gainOsc);
+                gainOsc.connect(audioCtxForClicks.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } catch (_) {}
+        }
 
-app.post('/admin/api/create-promo', adminAuth, async (req, res) => {
-  try {
-    const { amount, code, maxUses } = req.body;
-    if (!amount || isNaN(amount) || amount < 1) return res.status(400).json({ ok: false, error: 'Invalid amount' });
-    const promo = await createPromoCode(amount, code || null, maxUses || 1);
-    res.json({ ok: true, code: promo.code });
-  } catch (err) {
-    console.error('Create promo error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        // ─── STATE ──────────────────────────────────────────────────────
+        const state = {
+            balance: 0,
+            username: 'player',
+            userId: null,
+            pfp: '',
+            wins: 0,
+            losses: 0,
+            anonymous: false,
+            hidePfp: false,
+            anonymousName: '',
+            anonymousUsername: '',
+            anonymousPhone: '',
+            nameChanged: false,
+            usernameChanged: false,
+            phoneChanged: false,
+            gameState: 'idle',
+            players: [],
+            pot: 0,
+            arenaSize: 0,
+            cornerRadius: 0,
+            perimeterPoints: [],
+            opening: null,
+            countdownStartTime: 0,
+            currentTab: 'pvp',
+            defaultAvatar: 'https://i.pravatar.cc/150?img=0',
+            winHistory: [],
+            maxHistory: 8,
+            topPlayers: [],
+            colors: ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#e84393'],
+            topPlayerIds: new Map(),
+            winStreak: 0,
+            bestWin: { amount: 0, pfp: '', name: '' },
+            iceBestWin: { amount: 0, pfp: '', name: '' },
+            transactions: [],
+            maxTx: 15,
+            recentGames: [],
+            maxRecent: 5,
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            soundEnabled: false,
+        };
 
-app.post('/admin/api/delete-promo', adminAuth, async (req, res) => {
-  try {
-    const { code } = req.body;
-    if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
-    await deletePromoCode(code);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Delete promo error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        let SERVER_ARENA_SIZE = 400;
+        const VISUAL_RADIUS_SCALE = 0.75;
+        const ICE_FIELD_SCALE = 0.92;
 
-app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
-  try {
-    const codes = await getPromoCodes();
-    res.json({ codes });
-  } catch (err) {
-    console.error('Get promo codes error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        // ─── DOM refs ──────────────────────────────────────────────────
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const balanceEl = document.getElementById('balance');
+        const usernameDisplay = document.getElementById('username-display');
+        const statusDot = document.getElementById('status-dot');
+        const waitingText = document.getElementById('waiting-text');
+        const frogGif = document.getElementById('frog-gif');
+        const betOverlayWrap = document.getElementById('bet-overlay-wrap');
+        const betOverlay = document.getElementById('bet-overlay');
+        const betToggleBtn = document.getElementById('bet-toggle-btn');
+        const betInput = document.getElementById('bet-input');
+        const betBtn = document.getElementById('bet-btn');
+        const allInBtn = document.getElementById('all-in-btn');
+        const currentBetDisplay = document.getElementById('current-bet-value');
+        const countdownTimer = document.getElementById('countdown-timer');
+        const timerProgressWrap = document.getElementById('timer-progress-wrap');
+        const timerProgress = document.getElementById('timer-progress');
+        const statsPlayers = document.getElementById('stats-players');
+        const statsPot = document.getElementById('stats-pot');
+        const profilePfp = document.getElementById('profile-pfp');
+        const profileName = document.getElementById('profile-name');
+        const profileUsername = document.getElementById('profile-username');
+        const profileStatus = document.getElementById('profile-status');
+        const memberSince = document.getElementById('member-since');
+        const pWins = document.getElementById('p-wins');
+        const pLosses = document.getElementById('p-losses');
+        const pWinrate = document.getElementById('p-winrate');
+        const pBalance = document.getElementById('p-balance');
+        const totalGames = document.getElementById('total-games');
+        const recentGamesList = document.getElementById('recent-games-list');
+        const soundToggle = document.getElementById('sound-toggle');
+        const hidePfpToggle = document.getElementById('hide-pfp-toggle');
+        const topList = document.getElementById('top-list');
+        const podiumEl = document.getElementById('podium');
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabPages = { pvp: document.getElementById('pvp-page'), ice: document.getElementById('ice-page'), profile: document.getElementById(
+                'profile-page'), top: document.getElementById('top-page') };
+        const winPanel = document.getElementById('win-panel');
+        const winGif = document.getElementById('win-gif');
+        const winAvatar = document.getElementById('win-avatar');
+        const winName = document.getElementById('win-name');
+        const winMultiplier = document.getElementById('win-multiplier');
+        const winContinueBtn = document.getElementById('win-continue-btn');
+        const playerListContainer = document.getElementById('player-list-container');
+        const reloadPfpBtn = document.getElementById('reload-pfp-btn');
+        const promoInput = document.getElementById('promo-input');
+        const promoBtn = document.getElementById('promo-btn');
+        const promoMessage = document.getElementById('promo-message');
+        const promoModal = document.getElementById('promo-modal');
+        const promoGif = document.getElementById('promo-gif');
+        const promoMsg = document.getElementById('promo-msg');
+        const promoSub = document.getElementById('promo-sub');
+        const promoContinueBtn = document.getElementById('promo-continue-btn');
+        const iceCanvas = document.getElementById('ice-canvas');
+        const iceCtx = iceCanvas.getContext('2d');
+        const iceWaitingText = document.getElementById('ice-waiting-text');
+        const iceBetOverlayWrap = document.getElementById('ice-bet-overlay-wrap');
+        const iceBetOverlay = document.getElementById('ice-bet-overlay');
+        const iceBetToggleBtn = document.getElementById('ice-bet-toggle-btn');
+        const iceBetInput = document.getElementById('ice-bet-input');
+        const iceBetBtn = document.getElementById('ice-bet-btn');
+        const iceAllInBtn = document.getElementById('ice-all-in-btn');
+        const iceCurrentBetDisplay = document.getElementById('ice-current-bet-value');
+        const iceTopPanel = document.getElementById('ice-top-panel');
+        const iceCountdownTimer = document.getElementById('ice-countdown-timer');
+        const iceTimerProgressWrap = document.getElementById('ice-timer-progress-wrap');
+        const iceTimerProgress = document.getElementById('ice-timer-progress');
+        const iceStatsPlayers = document.getElementById('ice-stats-players');
+        const iceStatsPot = document.getElementById('ice-stats-pot');
+        const iceWinPanel = document.getElementById('ice-win-panel');
+        const iceWinGif = document.getElementById('ice-win-gif');
+        const iceWinAvatar = document.getElementById('ice-win-avatar');
+        const iceWinName = document.getElementById('ice-win-name');
+        const iceWinMultiplier = document.getElementById('ice-win-multiplier');
+        const iceWinContinueBtn = document.getElementById('ice-win-continue-btn');
+        const iceAutoToggle = document.getElementById('ice-auto-bet-toggle');
+        const iceAutoPanel = document.getElementById('ice-auto-bet-panel');
+        const iceAutoSwitch = document.getElementById('ice-auto-bet-switch');
+        const iceAutoAmount = document.getElementById('ice-auto-bet-amount');
+        const iceAutoSwitchWrap = document.getElementById('ice-auto-switch-wrap');
+        const autoToggle = document.getElementById('auto-bet-toggle');
+        const autoPanel = document.getElementById('auto-bet-panel');
+        const autoSwitch = document.getElementById('auto-bet-switch');
+        const autoAmount = document.getElementById('auto-bet-amount');
+        const autoSwitchWrap = document.getElementById('auto-switch-wrap');
+        const notifOverlay = document.getElementById('notification-overlay');
+        const lastGamePfp = document.getElementById('last-game-pfp');
+        const lastGameAmount = document.getElementById('last-game-amount');
+        const bestWinPfp = document.getElementById('best-win-pfp');
+        const bestWinAmount = document.getElementById('best-win-amount');
+        const iceLastGamePfp = document.getElementById('ice-last-game-pfp');
+        const iceLastGameAmount = document.getElementById('ice-last-game-amount');
+        const iceBestWinPfp = document.getElementById('ice-best-win-pfp');
+        const iceBestWinAmount = document.getElementById('ice-best-win-amount');
 
-app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
-  try {
-    const { bet, count } = req.body;
-    const betAmount = Math.max(10, parseInt(bet) || 100);
-    const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
-    let spawned = 0;
-    for (let i = 0; i < numBots; i++) {
-      const player = spawnBot(betAmount);
-      if (player) spawned++;
-    }
-    if (spawned > 0) repartitionIceArena();
-    broadcastIceState();
-    res.json({ ok: true, spawned });
-  } catch (err) {
-    console.error('Spawn bot error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        // ─── CARD & PARTICLES DOM REFS ───────────────────────────────
+        const cardOverlay = document.getElementById('card-overlay');
+        const cardCloseBtn = document.getElementById('card-close-btn');
+        const cardContainer = document.getElementById('card-container');
+        const card3d = document.getElementById('card-3d');
+        const cardBalanceAmount = document.getElementById('card-balance-amount');
+        const cardHolderName = document.getElementById('card-holder-name');
+        const cardWelcome = document.getElementById('card-welcome');
+        const profileBalanceRow = document.getElementById('profile-balance-row');
+        const particleCanvas = document.getElementById('particle-canvas');
+        const particleCtx = particleCanvas.getContext('2d');
+        const txList = document.getElementById('tx-list');
+        const csWagered = document.getElementById('cs-wagered');
+        const csBiggest = document.getElementById('cs-biggest');
+        const csNet = document.getElementById('cs-net');
 
-app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
-  try {
-    const removed = removeAllBots();
-    broadcastIceState();
-    res.json({ ok: true, removed });
-  } catch (err) {
-    console.error('Remove bots error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        let notifTimeout = null;
+        let particles = [];
+        let particleAnimId = null;
 
-app.post('/redeem', async (req, res) => {
-  try {
-    const { code, userId } = req.body;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
-  } catch (err) {
-    console.error('Redeem promo error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        // ─── Identity card DOM refs ──────────────────────────────────
+        const identityOverlay = document.getElementById('identity-overlay');
+        const identityCloseBtn = document.getElementById('identity-close-btn');
+        const identityCard3d = document.getElementById('identity-card-3d');
+        const identityCardContainer = document.getElementById('identity-card-container');
+        const idName = document.getElementById('id-name');
+        const idUsername = document.getElementById('id-username');
+        const idPhone = document.getElementById('id-phone');
+        const identityToggleBtn = document.getElementById('identity-toggle-btn');
+        const identityParticleCanvas = document.getElementById('identity-particle-canvas');
+        const identityParticleCtx = identityParticleCanvas.getContext('2d');
+        let identityParticles = [];
+        let identityParticleAnimId = null;
+        let identityDrag = false,
+            identityPrevX = 0,
+            identityPrevY = 0;
+        let identityRotX = 0,
+            identityRotY = 0,
+            identityTargetRotX = 0,
+            identityTargetRotY = 0;
+        let identityIdlePhase = 0;
 
-app.get('/redeem', async (req, res) => {
-  try {
-    const { code, userId } = req.query;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
-  } catch (err) {
-    console.error('Redeem promo (GET) error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        // ─── Confirm modal ──────────────────────────────────────────
+        const confirmModal = document.getElementById('confirm-modal');
+        const confirmTitle = document.getElementById('confirm-title');
+        const confirmDesc = document.getElementById('confirm-desc');
+        const confirmFee = document.getElementById('confirm-fee');
+        const confirmCancel = document.getElementById('confirm-cancel');
+        const confirmOk = document.getElementById('confirm-ok');
+        let pendingChange = null;
 
-// ─── NEW HTTP ENDPOINTS ──────────────────────────────────────────
-app.post('/api/change-anonymous', async (req, res) => {
-  try {
-    const { userId, field, value } = req.body;
-    if (!userId || !field || value === undefined) {
-      return res.status(400).json({ ok: false, error: 'Missing parameters' });
-    }
-    const validFields = ['name', 'username', 'phone'];
-    if (!validFields.includes(field)) {
-      return res.status(400).json({ ok: false, error: 'Invalid field' });
-    }
-    if (field === 'username' && !/^[a-zA-Z0-9_]{3,16}$/.test(value)) {
-      return res.status(400).json({ ok: false, error: 'Invalid username format' });
-    }
-    if (field === 'phone' && !/^\+?[0-9\s\-]{7,15}$/.test(value)) {
-      return res.status(400).json({ ok: false, error: 'Invalid phone format' });
-    }
-    if (field === 'name' && !/^[a-zA-Z\s]{1,30}$/.test(value)) {
-      return res.status(400).json({ ok: false, error: 'Invalid name format' });
-    }
+        // ─── Helpers ────────────────────────────────────────────────
+        function getAnonymousColor(id) {
+            let hash = 0;
+            const str = String(id);
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                hash = hash & hash;
+            }
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 70%, 50%)`;
+        }
 
-    const result = await changeAnonymousField(userId, field, value);
-    const pvpPlayer = getPlayer(userId);
-    if (pvpPlayer) {
-      const user = await getUser(userId);
-      if (user.anonymousEnabled) {
-        pvpPlayer.name = user.anonymousName;
-        pvpPlayer.pfp = null;
-      } else {
-        pvpPlayer.name = user.username;
-        pvpPlayer.pfp = user.pfp;
-      }
-      broadcastState();
-    }
-    const iceP = getIcePlayer(userId);
-    if (iceP) {
-      const user = await getUser(userId);
-      if (user.anonymousEnabled) {
-        iceP.name = user.anonymousName;
-        iceP.pfp = null;
-      } else {
-        iceP.name = user.username;
-        iceP.pfp = user.pfp;
-      }
-      broadcastIceState();
-    }
-    res.json({ ok: true, newBalance: result.newBalance, fee: result.fee });
-  } catch (err) {
-    console.error('Change anonymous field error:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
-  }
-});
+        function animateIdentityField(element, newText) {
+            const sel = window.getSelection();
+            let offset = 0;
+            if (sel.rangeCount > 0 && sel.anchorNode && element.contains(sel.anchorNode)) {
+                const range = sel.getRangeAt(0);
+                const preCaretRange = range.cloneRange();
+                preCaretRange.selectNodeContents(element);
+                preCaretRange.setEnd(range.startContainer, range.startOffset);
+                offset = preCaretRange.toString().length;
+            }
+            let html = '';
+            const chars = newText.split('');
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                const delay = i * 0.04;
+                const span = document.createElement('span');
+                span.className = 'char-anim';
+                span.style.animationDelay = delay + 's';
+                span.textContent = char === ' ' ? '\u00A0' : char;
+                html += span.outerHTML;
+            }
+            element.innerHTML = html;
+            if (offset <= newText.length) {
+                const range = document.createRange();
+                const charSpans = element.querySelectorAll('.char-anim');
+                let targetNode = element,
+                    targetOffset = 0;
+                let charCount = 0;
+                for (const span of charSpans) {
+                    const text = span.textContent;
+                    if (charCount + text.length >= offset) {
+                        targetNode = span.firstChild || span;
+                        targetOffset = offset - charCount;
+                        break;
+                    }
+                    charCount += text.length;
+                }
+                if (targetNode) {
+                    range.setStart(targetNode, targetOffset);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            }
+        }
 
-app.post('/api/toggle-hide-pfp', async (req, res) => {
-  try {
-    const { userId, hide } = req.body;
-    if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
-    const newHide = await toggleHidePfp(userId, hide);
-    const pvpPlayer = getPlayer(userId);
-    if (pvpPlayer) {
-      pvpPlayer.pfp = newHide ? null : (await getUser(userId)).pfp;
-      broadcastState();
-    }
-    const iceP = getIcePlayer(userId);
-    if (iceP) {
-      iceP.pfp = newHide ? null : (await getUser(userId)).pfp;
-      broadcastIceState();
-    }
-    res.json({ ok: true, hidePfp: newHide });
-  } catch (err) {
-    console.error('Toggle hide PFP error:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
-  }
-});
+        // ─── RECENT GAMES ──────────────────────────────────────────────
+        function addRecentGame(type, opponent, amount, result) {
+            const entry = { type, opponent: opponent || 'Unknown', amount: amount || 0, result: result || (amount >= 0 ? 'win' : 'loss'),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+            state.recentGames.unshift(entry);
+            if (state.recentGames.length > state.maxRecent) state.recentGames.pop();
+            renderRecentGames();
+        }
 
-app.get('/leaderboard', async (req, res) => {
-  try {
-    const tops = await topPlayers(20);
-    res.json({ top: tops });
-  } catch (err) {
-    console.error('Leaderboard error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
-});
+        function renderRecentGames() {
+            if (state.recentGames.length === 0) {
+                recentGamesList.innerHTML = `<div class="rg-entry"><span>No recent games</span></div>`;
+                return;
+            }
+            let html = '';
+            state.recentGames.forEach(g => {
+                const resultClass = g.result === 'win' ? 'win' : 'loss';
+                const sign = g.amount > 0 ? '+' : '';
+                html += `<div class="rg-entry">
+                            <span>${g.type.toUpperCase()} vs ${g.opponent}</span>
+                            <span>
+                                <span class="rg-result ${resultClass}">${g.result}</span>
+                                <span class="rg-amount" style="color:${g.result === 'win' ? 'var(--green)' : 'var(--red)'}">${sign}${g.amount}</span>
+                            </span>
+                        </div>`;
+            });
+            recentGamesList.innerHTML = html;
+        }
 
-app.get('/health', (req, res) => {
-  res.json({ ok: true, players: room.players.length, gameState: room.gameState });
-});
+        // ─── PARTICLES ──────────────────────────────────────────────────
+        function initParticles() {
+            particleCanvas.width = window.innerWidth;
+            particleCanvas.height = window.innerHeight;
+            const count = 50;
+            particles = [];
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: Math.random() * particleCanvas.width,
+                    y: Math.random() * particleCanvas.height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 2.5 + 1.5,
+                    alpha: Math.random() * 0.4 + 0.08,
+                });
+            }
+            particleCanvas.classList.add('show');
+            animateParticles();
+        }
 
-server.listen(PORT, () => {
-  console.log(`bump arena server listening on :${PORT}`);
-  if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set — real Telegram login cannot be verified.');
-  if (ADMIN_SECRET === 'change-me-in-production') console.warn('⚠ Change ADMIN_SECRET environment variable!');
-});
+        function animateParticles() {
+            if (!particleCanvas.classList.contains('show')) return;
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0) p.x = particleCanvas.width;
+                if (p.x > particleCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = particleCanvas.height;
+                if (p.y > particleCanvas.height) p.y = 0;
+                particleCtx.beginPath();
+                particleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                particleCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+                particleCtx.fill();
+                particleCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+                particleCtx.shadowBlur = 10;
+                particleCtx.fill();
+                particleCtx.shadowBlur = 0;
+            });
+            particleAnimId = requestAnimationFrame(animateParticles);
+        }
+
+        function stopParticles() {
+            if (particleAnimId) { cancelAnimationFrame(particleAnimId);
+                particleAnimId = null; }
+            particleCanvas.classList.remove('show');
+            particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+        }
+
+        // ─── Identity particles ──────────────────────────────────────
+        function initIdentityParticles() {
+            identityParticleCanvas.width = window.innerWidth;
+            identityParticleCanvas.height = window.innerHeight;
+            const count = 40;
+            identityParticles = [];
+            for (let i = 0; i < count; i++) {
+                identityParticles.push({
+                    x: Math.random() * identityParticleCanvas.width,
+                    y: Math.random() * identityParticleCanvas.height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    radius: Math.random() * 2 + 1,
+                    alpha: Math.random() * 0.3 + 0.05,
+                });
+            }
+            identityParticleCanvas.classList.add('show');
+            animateIdentityParticles();
+        }
+
+        function animateIdentityParticles() {
+            if (!identityParticleCanvas.classList.contains('show')) return;
+            identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
+            identityParticles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0) p.x = identityParticleCanvas.width;
+                if (p.x > identityParticleCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = identityParticleCanvas.height;
+                if (p.y > identityParticleCanvas.height) p.y = 0;
+                identityParticleCtx.beginPath();
+                identityParticleCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                identityParticleCtx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+                identityParticleCtx.fill();
+            });
+            identityParticleAnimId = requestAnimationFrame(animateIdentityParticles);
+        }
+
+        function stopIdentityParticles() {
+            if (identityParticleAnimId) { cancelAnimationFrame(identityParticleAnimId);
+                identityParticleAnimId = null; }
+            identityParticleCanvas.classList.remove('show');
+            identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
+        }
+
+        // ─── CARD 3D INTERACTION ──────────────────────────────────────
+        let cardDrag = false;
+        let cardPrevX = 0,
+            cardPrevY = 0;
+        let cardRotX = 0,
+            cardRotY = 0;
+        let cardTargetRotX = 0,
+            cardTargetRotY = 0;
+        let cardIdlePhase = 0;
+
+        function updateCardTransform() {
+            cardRotX += (cardTargetRotX - cardRotX) * 0.08;
+            cardRotY += (cardTargetRotY - cardRotY) * 0.08;
+            card3d.style.transform = `rotateX(${cardRotX}deg) rotateY(${cardRotY}deg)`;
+        }
+
+        function startCardIdleAnimation() {
+            cardIdlePhase += 0.006;
+            const idleX = Math.sin(cardIdlePhase) * 3;
+            const idleY = Math.cos(cardIdlePhase * 0.7) * 3.5;
+            if (!cardDrag) {
+                cardTargetRotX = 1.0 + idleX;
+                cardTargetRotY = 1.0 + idleY;
+            }
+            updateCardTransform();
+            requestAnimationFrame(startCardIdleAnimation);
+        }
+
+        function updateIdentityTransform() {
+            identityRotX += (identityTargetRotX - identityRotX) * 0.08;
+            identityRotY += (identityTargetRotY - identityRotY) * 0.08;
+            identityCard3d.style.transform = `rotateX(${identityRotX}deg) rotateY(${identityRotY}deg)`;
+        }
+
+        function startIdentityIdleAnimation() {
+            identityIdlePhase += 0.006;
+            if (!identityDrag) {
+                identityTargetRotX = 1.0 + Math.sin(identityIdlePhase) * 3;
+                identityTargetRotY = 1.0 + Math.cos(identityIdlePhase * 0.7) * 3.5;
+            }
+            updateIdentityTransform();
+            requestAnimationFrame(startIdentityIdleAnimation);
+        }
+
+        // ─── Card welcome animation ──────────────────────────────────
+        function animateCardWelcome(name) {
+            const text = `Welcome, ${name}`;
+            cardWelcome.innerHTML = '';
+            const chars = text.split('');
+            chars.forEach((char, index) => {
+                const span = document.createElement('span');
+                span.className = 'cw-char';
+                if (char === ' ') span.classList.add('space');
+                if (index > 8) span.classList.add('highlight');
+                span.textContent = char;
+                span.style.animationDelay = `${index * 0.06}s`;
+                cardWelcome.appendChild(span);
+            });
+        }
+
+        // ─── Card stats update ────────────────────────────────────
+        function updateCardStats() {
+            const txs = state.transactions;
+            let totalWagered = 0,
+                biggestWin = 0,
+                netProfit = 0;
+            txs.forEach(tx => {
+                if (tx.type === 'bet') totalWagered += Math.abs(tx.amount);
+                else if (tx.type === 'win') { netProfit += tx.amount; if (tx.amount > biggestWin) biggestWin = tx.amount; } else if (tx
+                    .type === 'loss') netProfit += tx.amount;
+            });
+            csWagered.textContent = totalWagered;
+            csBiggest.textContent = biggestWin;
+            csNet.textContent = netProfit >= 0 ? `+${netProfit}` : `${netProfit}`;
+            csNet.className = 'cs-value' + (netProfit > 0 ? ' positive' : netProfit < 0 ? ' negative' : ' neutral');
+        }
+
+        function openCard() {
+            cardOverlay.classList.add('show');
+            cardCloseBtn.classList.add('show');
+            cardRotX = 0;
+            cardRotY = 0;
+            cardTargetRotX = 0;
+            cardTargetRotY = 0;
+            const bal = parseInt(balanceEl.textContent) || 0;
+            cardBalanceAmount.textContent = bal;
+            const name = state.username || 'Player';
+            cardHolderName.textContent = name.toUpperCase();
+            animateCardWelcome(name);
+            cardIdlePhase = 0;
+            cardDrag = false;
+            renderTransactions();
+            updateCardStats();
+            initParticles();
+            requestAnimationFrame(startCardIdleAnimation);
+            haptic('medium');
+        }
+
+        function closeCard() {
+            cardOverlay.classList.remove('show');
+            cardCloseBtn.classList.remove('show');
+            cardDrag = false;
+            stopParticles();
+        }
+
+        // ─── Identity Card functions ──────────────────────────────────
+        function openIdentityCard() {
+            identityOverlay.classList.add('show');
+            identityCloseBtn.classList.add('show');
+            identityRotX = 0;
+            identityRotY = 0;
+            identityTargetRotX = 0;
+            identityTargetRotY = 0;
+            identityCard3d.style.transform = 'rotateX(0) rotateY(0)';
+            setIdentityField(idName, state.anonymousName || 'Anonymous');
+            setIdentityField(idUsername, state.anonymousUsername || '@anon');
+            setIdentityField(idPhone, state.anonymousPhone || '+0 000 000 000');
+            updateIdentityToggleButton();
+            initIdentityParticles();
+            identityIdlePhase = 0;
+            identityDrag = false;
+            requestAnimationFrame(startIdentityIdleAnimation);
+            haptic('medium');
+            // Make fields editable on click
+            document.querySelectorAll('.id-value').forEach(el => {
+                el.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (this.isContentEditable) return;
+                    this.contentEditable = true;
+                    this.classList.add('editing');
+                    this.focus();
+                    document.execCommand('selectAll', false, null);
+                });
+                el.addEventListener('blur', function(e) {
+                    if (!this.isContentEditable) return;
+                    this.contentEditable = false;
+                    this.classList.remove('editing');
+                    const field = this.id.replace('id-', '');
+                    const newValue = this.textContent.trim();
+                    const oldValue = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
+                    if (newValue === oldValue) return;
+                    const fee = getFeeForField(field);
+                    confirmTitle.textContent = `Change ${field.charAt(0).toUpperCase() + field.slice(1)}`;
+                    confirmDesc.textContent = `Update your anonymous ${field.toLowerCase()}.`;
+                    confirmFee.textContent = fee === 0 ? 'Free' : `-${fee} 💎`;
+                    pendingChange = { field, value: newValue, oldValue };
+                    confirmModal.classList.add('show');
+                    haptic('light');
+                });
+                el.addEventListener('input', function(e) {
+                    if (this._animating) return;
+                    this._animating = true;
+                    animateIdentityField(this, this.textContent);
+                    this._animating = false;
+                });
+                el.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') { e.preventDefault();
+                        this.blur(); }
+                    if (e.key === 'Escape') {
+                        const field = this.id.replace('id-', '');
+                        const orig = state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] || '';
+                        this.textContent = orig;
+                        this.blur();
+                    }
+                });
+            });
+        }
+
+        function setIdentityField(element, text) {
+            let html = '';
+            const chars = text.split('');
+            for (let i = 0; i < chars.length; i++) {
+                const char = chars[i];
+                const delay = i * 0.04;
+                const span = document.createElement('span');
+                span.className = 'char-anim';
+                span.style.animationDelay = delay + 's';
+                span.textContent = char === ' ' ? '\u00A0' : char;
+                html += span.outerHTML;
+            }
+            element.innerHTML = html;
+        }
+
+        function closeIdentityCard() {
+            identityOverlay.classList.remove('show');
+            identityCloseBtn.classList.remove('show');
+            identityDrag = false;
+            stopIdentityParticles();
+        }
+
+        function updateIdentityToggleButton() {
+            if (state.anonymous) {
+                identityToggleBtn.textContent = 'Disable';
+                identityToggleBtn.style.background = '#d45a5a';
+            } else {
+                identityToggleBtn.textContent = 'Enable';
+                identityToggleBtn.style.background = '#4CAF50';
+            }
+        }
+
+        function getFeeForField(field) {
+            if (field === 'name') return state.nameChanged ? 467 : 0;
+            if (field === 'username') return state.usernameChanged ? 700 : 32;
+            if (field === 'phone') return 1000;
+            return 0;
+        }
+
+        confirmCancel.addEventListener('click', () => {
+            confirmModal.classList.remove('show');
+            if (pendingChange) {
+                const el = document.getElementById('id-' + pendingChange.field);
+                el.textContent = pendingChange.oldValue;
+                pendingChange = null;
+                haptic('light');
+            }
+        });
+
+        confirmOk.addEventListener('click', async () => {
+            if (!pendingChange) return;
+            const { field, value } = pendingChange;
+            confirmModal.classList.remove('show');
+            try {
+                const res = await fetch(SERVER_URL + '/api/change-anonymous', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: state.userId, field, value })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    state.balance = data.newBalance;
+                    state[`${field}Changed`] = true;
+                    state[`anonymous${field.charAt(0).toUpperCase() + field.slice(1)}`] = value;
+                    updateBalance();
+                    updateProfile();
+                    const el = document.getElementById('id-' + field);
+                    setIdentityField(el, value);
+                    haptic('medium');
+                    showNotification(`${field.charAt(0).toUpperCase()+field.slice(1)} updated!`);
+                    addTransaction('bet', -data.fee, `Change ${field}`);
+                } else {
+                    showNotification(data.error || 'Update failed.');
+                    const el = document.getElementById('id-' + field);
+                    el.textContent = pendingChange.oldValue;
+                }
+            } catch (err) {
+                console.error('Change anonymous error:', err);
+                showNotification('Network error.');
+                const el = document.getElementById('id-' + field);
+                el.textContent = pendingChange.oldValue;
+            }
+            pendingChange = null;
+        });
+
+        // ─── Identity toggle button ─────────────────────────────────
+        identityToggleBtn.addEventListener('click', async function() {
+            const enabled = !state.anonymous; // we want to toggle to this state
+
+            // Show and animate the toggle overlay
+            const overlay = document.getElementById('toggle-anim-overlay');
+            const box = document.getElementById('toggle-anim-box');
+            const knob = document.getElementById('toggle-anim-knob');
+            const label = document.getElementById('toggle-anim-label');
+            const status = document.getElementById('toggle-anim-status');
+
+            // Set initial state
+            label.textContent = enabled ? 'Enabling Anonymous' : 'Disabling Anonymous';
+            status.textContent = 'Switching…';
+            knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
+            document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
+
+            // Show with pop-in
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                overlay.classList.add('show');
+                overlay.classList.remove('hide');
+                // After a tiny delay, animate knob
+                setTimeout(() => {
+                    knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
+                    document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
+                }, 100);
+            });
+
+            // Perform the actual toggle
+            try {
+                const res = await fetch(SERVER_URL + '/api/set-anonymous', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: state.userId, enabled })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    state.anonymous = enabled;
+                    document.getElementById('profile-status').textContent = enabled ? 'anonymous' : 'online';
+                    updateIdentityToggleButton();
+                    haptic('medium');
+                    status.textContent = '✓ Done!';
+                    showNotification(enabled ? 'Anonymous mode enabled.' : 'Anonymous mode disabled.');
+                } else {
+                    status.textContent = '❌ Failed';
+                    showNotification(data.error || 'Failed to toggle.');
+                }
+            } catch (err) {
+                console.error('Toggle anonymous error:', err);
+                status.textContent = '❌ Error';
+                showNotification('Network error.');
+            }
+
+            // Pop out after a short delay
+            setTimeout(() => {
+                overlay.classList.remove('show');
+                overlay.classList.add('hide');
+                // After fade-out, hide completely
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    overlay.classList.remove('hide');
+                }, 500);
+            }, 1200);
+        });
+
+        // ─── Hide PFP toggle ─────────────────────────────────────────
+        hidePfpToggle.addEventListener('change', async function() {
+            const hide = this.checked;
+            try {
+                const res = await fetch(SERVER_URL + '/api/toggle-hide-pfp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: state.userId, hide })
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    state.hidePfp = data.hidePfp;
+                    haptic('light');
+                } else {
+                    this.checked = !hide;
+                    showNotification(data.error || 'Failed to update.');
+                }
+            } catch (err) {
+                console.error('Hide PFP error:', err);
+                this.checked = !hide;
+                showNotification('Network error.');
+            }
+        });
+
+        // ─── Open identity from profile button ──────────────────────
+        document.getElementById('identity-btn').addEventListener('click', () => {
+            playClickSound();
+            openIdentityCard();
+        });
+
+        identityCloseBtn.addEventListener('click', () => {
+            playClickSound();
+            closeIdentityCard();
+        });
+
+        identityOverlay.addEventListener('click', (e) => {
+            if (e.target === identityOverlay) closeIdentityCard();
+        });
+
+        // ─── Card Touch/Mouse events ──────────────────────────────────
+        cardContainer.addEventListener('mousedown', (e) => {
+            cardDrag = true;
+            cardPrevX = e.clientX;
+            cardPrevY = e.clientY;
+            card3d.classList.add('dragging');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!cardDrag) return;
+            const deltaX = (e.clientX - cardPrevX) * 0.4;
+            const deltaY = (e.clientY - cardPrevY) * 0.4;
+            cardTargetRotY += deltaX;
+            cardTargetRotX -= deltaY;
+            cardTargetRotX = Math.max(-20, Math.min(20, cardTargetRotX));
+            cardTargetRotY = Math.max(-20, Math.min(20, cardTargetRotY));
+            cardPrevX = e.clientX;
+            cardPrevY = e.clientY;
+            updateCardTransform();
+        });
+        document.addEventListener('mouseup', () => {
+            if (cardDrag) {
+                cardDrag = false;
+                card3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!cardDrag) {
+                        cardTargetRotX = 1.0 + Math.sin(cardIdlePhase) * 3;
+                        cardTargetRotY = 1.0 + Math.cos(cardIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        });
+        cardContainer.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            cardDrag = true;
+            cardPrevX = touch.clientX;
+            cardPrevY = touch.clientY;
+            card3d.classList.add('dragging');
+        }, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (!cardDrag) return;
+            const touch = e.touches[0];
+            const deltaX = (touch.clientX - cardPrevX) * 0.4;
+            const deltaY = (touch.clientY - cardPrevY) * 0.4;
+            cardTargetRotY += deltaX;
+            cardTargetRotX -= deltaY;
+            cardTargetRotX = Math.max(-20, Math.min(20, cardTargetRotX));
+            cardTargetRotY = Math.max(-20, Math.min(20, cardTargetRotY));
+            cardPrevX = touch.clientX;
+            cardPrevY = touch.clientY;
+            updateCardTransform();
+        }, { passive: true });
+        document.addEventListener('touchend', () => {
+            if (cardDrag) {
+                cardDrag = false;
+                card3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!cardDrag) {
+                        cardTargetRotX = 1.0 + Math.sin(cardIdlePhase) * 3;
+                        cardTargetRotY = 1.0 + Math.cos(cardIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        }, { passive: true });
+
+        // ─── Identity card touch/mouse events ──────────────────────
+        identityCardContainer.addEventListener('mousedown', (e) => {
+            identityDrag = true;
+            identityPrevX = e.clientX;
+            identityPrevY = e.clientY;
+            identityCard3d.classList.add('dragging');
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!identityDrag) return;
+            const dx = (e.clientX - identityPrevX) * 0.4;
+            const dy = (e.clientY - identityPrevY) * 0.4;
+            identityTargetRotY += dx;
+            identityTargetRotX -= dy;
+            identityTargetRotX = Math.max(-20, Math.min(20, identityTargetRotX));
+            identityTargetRotY = Math.max(-20, Math.min(20, identityTargetRotY));
+            identityPrevX = e.clientX;
+            identityPrevY = e.clientY;
+            updateIdentityTransform();
+        });
+        document.addEventListener('mouseup', () => {
+            if (identityDrag) {
+                identityDrag = false;
+                identityCard3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!identityDrag) {
+                        identityTargetRotX = 1.0 + Math.sin(identityIdlePhase) * 3;
+                        identityTargetRotY = 1.0 + Math.cos(identityIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        });
+        identityCardContainer.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            identityDrag = true;
+            identityPrevX = touch.clientX;
+            identityPrevY = touch.clientY;
+            identityCard3d.classList.add('dragging');
+        }, { passive: true });
+        document.addEventListener('touchmove', (e) => {
+            if (!identityDrag) return;
+            const touch = e.touches[0];
+            const dx = (touch.clientX - identityPrevX) * 0.4;
+            const dy = (touch.clientY - identityPrevY) * 0.4;
+            identityTargetRotY += dx;
+            identityTargetRotX -= dy;
+            identityTargetRotX = Math.max(-20, Math.min(20, identityTargetRotX));
+            identityTargetRotY = Math.max(-20, Math.min(20, identityTargetRotY));
+            identityPrevX = touch.clientX;
+            identityPrevY = touch.clientY;
+            updateIdentityTransform();
+        }, { passive: true });
+        document.addEventListener('touchend', () => {
+            if (identityDrag) {
+                identityDrag = false;
+                identityCard3d.classList.remove('dragging');
+                setTimeout(() => {
+                    if (!identityDrag) {
+                        identityTargetRotX = 1.0 + Math.sin(identityIdlePhase) * 3;
+                        identityTargetRotY = 1.0 + Math.cos(identityIdlePhase * 0.7) * 3.5;
+                    }
+                }, 300);
+            }
+        }, { passive: true });
+
+        cardCloseBtn.addEventListener('click', () => {
+            playClickSound();
+            closeCard();
+        });
+        cardOverlay.addEventListener('click', (e) => {
+            if (e.target === cardOverlay) closeCard();
+        });
+
+        // ─── TRANSACTIONS ──────────────────────────────────────────────
+        function addTransaction(type, amount, label) {
+            const entry = {
+                type,
+                amount,
+                label: label || (type === 'win' ? 'Win' : type === 'loss' ? 'Loss' : 'Bet'),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            state.transactions.unshift(entry);
+            if (state.transactions.length > state.maxTx) state.transactions.pop();
+            renderTransactions();
+            updateCardStats();
+        }
+
+        function renderTransactions() {
+            if (!txList) return;
+            const txs = state.transactions;
+            if (txs.length === 0) {
+                txList.innerHTML = `<div class="tx-empty">No transactions yet</div>`;
+                return;
+            }
+            let html = '';
+            txs.forEach(tx => {
+                const sign = tx.amount > 0 ? '+' : '';
+                const cls = tx.type === 'win' ? 'win' : tx.type === 'loss' ? 'loss' : 'bet';
+                html += `<div class="tx-entry">
+                            <span class="tx-label">${tx.label}</span>
+                            <span>
+                                <span class="tx-amount ${cls}">${sign}${tx.amount}</span>
+                                <span class="tx-time">${tx.time}</span>
+                            </span>
+                        </div>`;
+            });
+            txList.innerHTML = html;
+        }
+
+        // ─── Open card from balance click ─────────────────────────────
+        function setupBalanceCardTriggers() {
+            const balanceWrap = document.getElementById('balance-wrap');
+            balanceWrap.addEventListener('click', () => {
+                playClickSound();
+                openCard();
+                haptic('light');
+            });
+            profileBalanceRow.addEventListener('click', () => {
+                playClickSound();
+                openCard();
+                haptic('light');
+            });
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // ICE STATE – with fixed zoom center & smooth interpolation
+        // ════════════════════════════════════════════════════════════════
+        const iceState = {
+            gameState: 'idle',
+            players: [],
+            pot: 0,
+            arenaSize: 0,
+            perimeterPoints: [],
+            cornerRadius: 0,
+            countdownStartTime: 0,
+            spinStartTime: 0,
+            spinDuration: 0,
+            spinFinalAngle: 0,
+            spinStartX: 200,
+            spinStartY: 200,
+            puck: { x: 200, y: 200 },
+            winnerId: null,
+            winHistory: [],
+            puckScale: 1,
+            puckPopStart: 0,
+            puckVisible: false,
+            pfpPop: new Map(),
+            slideStartTime: 0,
+            zoom: 1,
+            zoomTarget: 1,
+            zoomStartTime: 0,
+            zoomDuration: 2.0,
+            isZoomingIn: false,
+            isZoomingOut: false,
+            zoomLocked: false,
+            zoomOutTriggered: false,
+            idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 10 },
+            idlePuckInitialized: false,
+            puckPrevX: 200,
+            puckPrevY: 200,
+            puckUpdateTime: 0,
+            puckLastBounceTime: 0,
+            currentOwnerName: '',
+            currentOwnerPfp: '',
+            nameFadeIn: 0,
+            showOwnerName: false,
+            bestWin: { amount: 0, pfp: '', name: '' },
+            winnerPuckPop: false,
+            winnerPuckPopStart: 0,
+            winnerPuckPopDuration: 600,
+            glowPhase: 0,
+            puckVx: 0,
+            puckVy: 0,
+            // NEW: fixed zoom center (world coordinates)
+            zoomCenterX: 0,
+            zoomCenterY: 0,
+            zoomCenterFixed: false,
+        };
+
+        // ─── SHARED HELPERS ────────────────────────────────────────────
+        function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+        function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+        function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
+
+        function lightenColor(hex, amt) {
+            let r = parseInt(hex.slice(1, 2), 16) * 17 || parseInt(hex.slice(1, 3), 16);
+            let g = parseInt(hex.slice(2, 3), 16) * 17 || parseInt(hex.slice(3, 5), 16);
+            let b = parseInt(hex.slice(3, 4), 16) * 17 || parseInt(hex.slice(5, 7), 16);
+            r = Math.min(255, r + amt);
+            g = Math.min(255, g + amt);
+            b = Math.min(255, b + amt);
+            return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+        }
+
+        function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16),
+                g = parseInt(hex.slice(3, 5), 16),
+                b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
+        const PUCK_RENDER_RADIUS = 10;
+
+        // ─── PFP CACHE ──────────────────────────────────────────────────
+        const pfpCache = new Map();
+
+        function generateDefaultAvatar(initial, colorIndex) {
+            const size = 128;
+            const c = document.createElement('canvas');
+            c.width = size;
+            c.height = size;
+            const ctx2 = c.getContext('2d');
+            const colors = state.colors;
+            const col = colors[colorIndex % colors.length];
+            const grad = ctx2.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+            grad.addColorStop(0, lightenColor(col, 60));
+            grad.addColorStop(1, col);
+            ctx2.beginPath();
+            ctx2.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+            ctx2.fillStyle = grad;
+            ctx2.fill();
+            ctx2.beginPath();
+            ctx2.arc(size / 2, size / 2, size / 2 - 2, 0, Math.PI * 2);
+            ctx2.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx2.lineWidth = 2;
+            ctx2.stroke();
+            const letter = (initial || '?').charAt(0).toUpperCase();
+            ctx2.fillStyle = 'rgba(255,255,255,0.95)';
+            ctx2.font = `bold ${size*0.48}px system-ui, sans-serif`;
+            ctx2.textAlign = 'center';
+            ctx2.textBaseline = 'middle';
+            ctx2.shadowColor = 'rgba(0,0,0,0.15)';
+            ctx2.shadowBlur = 8;
+            ctx2.fillText(letter, size / 2, size / 2 + 3);
+            ctx2.shadowBlur = 0;
+            const img = new Image();
+            img.src = c.toDataURL('image/png');
+            return img;
+        }
+
+        function loadPlayerPFP(player) {
+            const src = player.pfp || state.defaultAvatar;
+            if (pfpCache.has(src)) { const cached = pfpCache.get(src); if (cached.loaded && cached.img) { player.pfpImg = cached
+                    .img; return; } }
+            const img = new Image();
+            let attempts = 0;
+            const maxAttempts = 3;
+            const doLoad = () => {
+                img.onload = () => { pfpCache.set(src, { img, loaded: true });
+                    player.pfpImg = img;
+                    updatePlayerList(); };
+                img.onerror = () => { attempts++; if (attempts < maxAttempts) { const sep = src.includes('?') ? '&' : '?';
+                        img.src = src + sep + 'retry=' + attempts + 't=' + Date.now(); } else { pfpCache.set(src, { img: null,
+                            loaded: false }); } };
+                img.src = src;
+            };
+            pfpCache.set(src, { img: null, loaded: false });
+            doLoad();
+        }
+        const icePfpCache = pfpCache;
+
+        function loadIcePlayerPFP(player) {
+            const src = player.pfp || state.defaultAvatar;
+            if (icePfpCache.has(src)) { const cached = icePfpCache.get(src); if (cached.loaded && cached.img) { player
+                    .pfpImg = cached.img; return; } }
+            const img = new Image();
+            let attempts = 0;
+            const maxAttempts = 3;
+            img.onload = () => { icePfpCache.set(src, { img, loaded: true });
+                player.pfpImg = img; };
+            img.onerror = () => { attempts++; if (attempts < maxAttempts) { const sep = src.includes('?') ? '&' : '?';
+                    img.src = src + sep + 'retry=' + attempts + 't=' + Date.now(); } else { icePfpCache.set(src, { img: null,
+                        loaded: false }); } };
+            icePfpCache.set(src, { img: null, loaded: false });
+            img.src = src;
+        }
+
+        // ─── CANVAS RESIZE ─────────────────────────────────────────────
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const size = Math.min(rect.width - 16, rect.height - 16, 440);
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            canvas.style.width = size + 'px';
+            canvas.style.height = size + 'px';
+            state.arenaSize = size;
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function resizeIceCanvas() {
+            const rect = iceCanvas.parentElement.getBoundingClientRect();
+            const size = Math.min(rect.width - 16, rect.height - 16, 440);
+            const dpr = window.devicePixelRatio || 1;
+            iceCanvas.width = size * dpr;
+            iceCanvas.height = size * dpr;
+            iceCanvas.style.width = size + 'px';
+            iceCanvas.style.height = size + 'px';
+            iceState.arenaSize = size;
+            iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
+        function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
+
+        // ─── SOCKET ─────────────────────────────────────────────────────
+        const socket = (typeof io !== 'undefined') ? io(SERVER_URL, { transports: ['websocket', 'polling'] }) : null;
+
+        function setOnline(isOnline) { statusDot.classList.toggle('offline', !isOnline); }
+
+        if (!socket) { console.error('Socket.IO failed to load');
+            setOnline(false); } else {
+            socket.on('connect', () => {
+                setOnline(true);
+                const initData = tg?.initData || '';
+                socket.emit('join', { initData }, (res) => {
+                    if (!res?.ok) { waitingText.innerHTML =
+                            `<span style="color:var(--red)">Could not connect</span><div class="sub">${res?.error||'try reopening'}</div>`;
+                        return; }
+                    state.userId = res.user.id;
+                    state.username = res.user.username;
+                    state.pfp = res.user.pfp;
+                    state.balance = res.user.balance;
+                    state.wins = res.user.wins;
+                    state.losses = res.user.losses;
+                    state.anonymous = !!res.user.anonymousEnabled;
+                    state.hidePfp = !!res.user.hidePfp;
+                    state.anonymousName = res.user.anonymousName || 'Anonymous';
+                    state.anonymousUsername = res.user.anonymousUsername || '@anon';
+                    state.anonymousPhone = res.user.anonymousPhone || '+0 000 000 000';
+                    state.nameChanged = !!res.user.nameChanged;
+                    state.usernameChanged = !!res.user.usernameChanged;
+                    state.phoneChanged = !!res.user.phoneChanged;
+                    SERVER_ARENA_SIZE = res.arena.size;
+                    state.perimeterPoints = res.arena.perimeter;
+                    state.cornerRadius = res.arena.cornerRadius;
+                    if (res.iceArena) { iceState.perimeterPoints = res.iceArena.perimeter;
+                        iceState.cornerRadius = res.iceArena.cornerRadius; }
+                    if (Array.isArray(res.recentWinners) && res.recentWinners.length) {
+                        state.winHistory = res.recentWinners.slice(0, state.maxHistory);
+                        const last = state.winHistory[0];
+                        if (last) updateLastGamePanel(last);
+                        let best = state.winHistory.reduce((max, e) => (e.amount || 0) > (max.amount || 0) ? e : max, { amount: 0 });
+                        if (best.amount > 0) {
+                            state.bestWin = best;
+                            updateBestWinPanel(best);
+                        }
+                    }
+                    if (Array.isArray(res.iceRecentWinners) && res.iceRecentWinners.length) {
+                        iceState.winHistory = res.iceRecentWinners.slice(0, 8);
+                        const last = iceState.winHistory[0];
+                        if (last) updateIceLastGamePanel(last);
+                        let best = iceState.winHistory.reduce((max, e) => (e.amount || 0) > (max.amount || 0) ? e : max, { amount: 0 });
+                        if (best.amount > 0) {
+                            iceState.bestWin = best;
+                            updateIceBestWinPanel(best);
+                        }
+                    }
+                    if (res.icePlayers && Array.isArray(res.icePlayers)) {
+                        iceState.players = res.icePlayers.map(p => ({
+                            id: p.id,
+                            name: p.name,
+                            pfp: p.pfp,
+                            pfpImg: generateDefaultAvatar(p.name ? p.name.charAt(0) : '?', 0),
+                            x1: p.x1,
+                            y1: p.y1,
+                            x2: p.x2,
+                            y2: p.y2,
+                            color: p.color,
+                            bet: p.bet,
+                        }));
+                        iceState.pot = res.icePot || 0;
+                        iceState.players.forEach(p => loadIcePlayerPFP(p));
+                        updateIceStatsBar();
+                        updateIceBetUI();
+                        updateIceWaitingText();
+                        updateIceBetOverlayVisibility();
+                        updateIceTopPanelVisibility();
+                    }
+                    usernameDisplay.textContent = '@' + state.username;
+                    profileName.textContent = state.username;
+                    profileUsername.textContent = '@' + state.username;
+                    profilePfp.src = state.pfp || state.defaultAvatar;
+                    memberSince.textContent = `Member since ${state.memberSince}`;
+                    document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
+                    hidePfpToggle.checked = state.hidePfp;
+                    updateIdentityToggleButton();
+                    updateBalance();
+                    updateProfile();
+                    refreshLeaderboard();
+                    if (state.transactions.length === 0) {
+                        addTransaction('win', 120, 'PvP Win');
+                        addTransaction('bet', -50, 'PvP Bet');
+                        addTransaction('loss', -30, 'Ice Loss');
+                        addTransaction('win', 200, 'Ice Win');
+                        addTransaction('bet', -75, 'PvP Bet');
+                    }
+                    if (state.recentGames.length === 0) {
+                        addRecentGame('pvp', 'Bot_007', 120, 'win');
+                        addRecentGame('ice', 'CryptoKing', -30, 'loss');
+                        addRecentGame('pvp', 'LuckyDuck', 50, 'win');
+                    }
+                    updateCardStats();
+                    if (window._topRefreshInterval) clearInterval(window._topRefreshInterval);
+                    window._topRefreshInterval = setInterval(refreshLeaderboard, 30000);
+                    animateWaitingText();
+                });
+            });
+            socket.on('disconnect', () => setOnline(false));
+            socket.on('connect_error', () => setOnline(false));
+            socket.on('state', (snapshot) => { applyServerState(snapshot); });
+            socket.on('roundEnd', (payload) => { handleRoundEnd(payload); });
+            socket.on('iceState', (snapshot) => { applyIceServerState(snapshot); });
+            socket.on('iceRoundEnd', (payload) => { handleIceRoundEnd(payload); });
+            socket.on('dlballsError', (data) => {
+                dlbSetStatus(data?.error || 'DLballs error');
+            });
+
+            socket.on('notification', (data) => {
+                if (!data || !data.message) return;
+                showNotification(data.message);
+            });
+        }
+
+        // ─── NOTIFICATION ──────────────────────────────────────────────
+        function showNotification(text) {
+            if (notifTimeout) {
+                clearTimeout(notifTimeout);
+                notifTimeout = null;
+                notifOverlay.classList.remove('show');
+            }
+            notifOverlay.textContent = text;
+            requestAnimationFrame(() => {
+                notifOverlay.classList.add('show');
+                notifTimeout = setTimeout(() => {
+                    notifOverlay.classList.remove('show');
+                    notifTimeout = null;
+                }, 3000);
+            });
+        }
+
+        // ─── WAITING TEXT ANIMATION ──────────────────────────────────
+        function animateWaitingText() {
+            const elements = [waitingText, iceWaitingText];
+            elements.forEach(el => {
+                if (!el) return;
+                let mainSpan = el.querySelector('span');
+                let subSpan = el.querySelector('.sub');
+                if (!mainSpan) {
+                    mainSpan = document.createElement('span');
+                    mainSpan.textContent = el.textContent.trim();
+                    el.innerHTML = '';
+                    el.appendChild(mainSpan);
+                }
+                const text = mainSpan.textContent;
+                mainSpan.innerHTML = '';
+                const letters = text.split('');
+                letters.forEach((char, idx) => {
+                    const span = document.createElement('span');
+                    span.className = 'waiting-letter';
+                    span.textContent = char === ' ' ? '\u00A0' : char;
+                    span.style.animationDelay = (idx * 0.08) + 's';
+                    setTimeout(() => {
+                        span.classList.add('light');
+                        setTimeout(() => {
+                            span.classList.remove('light');
+                        }, 800);
+                    }, idx * 80 + 200);
+                    mainSpan.appendChild(span);
+                });
+                if (!subSpan) {
+                    subSpan = document.createElement('div');
+                    subSpan.className = 'sub';
+                    subSpan.textContent = 'place a bet to join';
+                    el.appendChild(subSpan);
+                }
+                setInterval(() => {
+                    const spans = mainSpan.querySelectorAll('.waiting-letter');
+                    spans.forEach((s, i) => {
+                        s.style.animation = 'none';
+                        s.offsetHeight;
+                        s.style.animation = `letterBounce 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards`;
+                        s.style.animationDelay = (i * 0.08) + 's';
+                        s.classList.remove('light');
+                        setTimeout(() => {
+                            s.classList.add('light');
+                            setTimeout(() => {
+                                s.classList.remove('light');
+                            }, 800);
+                        }, i * 80 + 200);
+                    });
+                }, 5000);
+            });
+        }
+
+        // ─── applyServerState ──────────────────────────────────────────
+        function applyServerState(snapshot) {
+            const prevGameState = state.gameState;
+            state.gameState = snapshot.gameState;
+            state.pot = snapshot.pot;
+            state.countdownStartTime = snapshot.countdownStartTime;
+            state.opening = snapshot.opening;
+            const seen = new Set();
+            const isCountdown = (state.gameState === 'countdown' || state.gameState === 'prestart');
+            snapshot.players.forEach(sp => {
+                seen.add(sp.id);
+                let local = state.players.find(p => p.id === sp.id);
+                if (!local) {
+                    const colorIdx = state.players.length % state.colors.length;
+                    local = {
+                        id: sp.id,
+                        name: sp.name,
+                        pfp: sp.pfp,
+                        pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
+                        isPopping: true,
+                        popStartTime: performance.now(),
+                        popDuration: 550,
+                        isPulsing: false,
+                        pulseTime: 0,
+                        pulseStartTime: 0,
+                        homeX: sp.x,
+                        homeY: sp.y,
+                        spawnStartX: sp.x + (Math.random() - 0.5) * 80,
+                        spawnStartY: sp.y + (Math.random() - 0.5) * 80,
+                        spawnProgress: 0,
+                        isSpawning: true,
+                        spawnStartTime: performance.now(),
+                        spawnDuration: 2000,
+                        x: sp.x,
+                        y: sp.y
+                    };
+                    state.players.push(local);
+                    loadPlayerPFP(local);
+                } else {
+                    local.homeX = sp.x;
+                    local.homeY = sp.y;
+                    if (isCountdown) {
+                        if (!local.isSpawning) {
+                            local.spawnStartX = local.x;
+                            local.spawnStartY = local.y;
+                            local.spawnStartTime = performance.now();
+                            local.spawnDuration = 2000;
+                            local.isSpawning = true;
+                            local.spawnProgress = 0;
+                        }
+                    } else {
+                        if (!local.isSpawning) { local.x = sp.x;
+                            local.y = sp.y; }
+                    }
+                    if (sp.bet > local.bet) { local.isPulsing = true;
+                        local.pulseStartTime = performance.now();
+                        local.pulseTime = 0; }
+                }
+                local.name = sp.name;
+                local.bet = sp.bet;
+                local.color = sp.color;
+                local.displayRadius = sp.displayRadius;
+                local.alive = sp.alive;
+            });
+            state.players = state.players.filter(p => seen.has(p.id));
+            if (state.gameState === 'playing' || state.gameState === 'finished') {
+                state.players.forEach(p => { p.isSpawning = false;
+                    p.x = p.homeX;
+                    p.y = p.homeY; });
+            }
+            detectBumpsForHaptics();
+            if (prevGameState !== 'idle' && state.gameState === 'idle') { waitingText.style.display = 'block';
+                countdownTimer.style.display = 'none';
+                timerProgressWrap.classList.remove('visible'); }
+            if (state.gameState === 'countdown') { countdownTimer.style.display = 'block';
+                timerProgressWrap.classList.add('visible'); }
+            if (state.gameState === 'playing' || state.gameState === 'finished') {
+                countdownTimer.style.display = state.gameState === 'countdown' ? 'block' : countdownTimer.style.display;
+                if (state.gameState === 'playing') timerProgressWrap.classList.remove('visible');
+            }
+            updateStatsBar();
+            updateBetUI();
+            updateWaitingText();
+            updateBetOverlayVisibility();
+            updatePlayerList();
+            updateFrogVisibility();
+        }
+
+        function detectBumpsForHaptics() {
+            if (state.gameState !== 'playing') { touchingIds = new Set(); return; }
+            const me = getPlayer(state.userId);
+            if (!me || !me.alive) { touchingIds = new Set(); return; }
+            const nowTouching = new Set();
+            state.players.forEach(p => {
+                if (p.id === me.id || !p.alive) return;
+                const dx = p.x - me.x,
+                    dy = p.y - me.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = (me.displayRadius || 18) + (p.displayRadius || 18);
+                if (dist < minDist) nowTouching.add(p.id);
+            });
+            let isNewBump = false;
+            nowTouching.forEach(id => { if (!touchingIds.has(id)) isNewBump = true; });
+            if (isNewBump) haptic('medium');
+            touchingIds = nowTouching;
+        }
+        let touchingIds = new Set();
+
+        function getPlayer(id) { return state.players.find(p => p.id === id); }
+        function getAlive() { return state.players.filter(p => p.alive); }
+
+        function updateStatsBar() { statsPlayers.textContent = getAlive().length;
+            statsPot.textContent = state.pot; }
+
+        function updateWaitingText() {
+            const alive = getAlive();
+            if (alive.length === 0) { waitingText.style.display = 'block'; } else { waitingText.style.display = 'block'; }
+            updateFrogVisibility();
+        }
+
+        function updateFrogVisibility() {
+            const alive = getAlive();
+            const showFrog = alive.length < 2 && state.gameState === 'idle';
+            frogGif.classList.toggle('show', showFrog);
+            waitingText.style.display = showFrog ? 'block' : 'none';
+        }
+
+        function updateBetOverlayVisibility() {
+            const shouldHide = state.gameState === 'playing' || state.gameState === 'finished';
+            betOverlayWrap.classList.toggle('hidden', shouldHide);
+            playerListContainer.classList.toggle('shift-up', shouldHide);
+        }
+
+        function updatePlayerList() {
+            const alive = getAlive();
+            const totalBet = state.players.reduce((s, p) => s + p.bet, 0);
+            if (alive.length === 0) { playerListContainer.innerHTML = ''; return; }
+            let html = '';
+            alive.forEach(p => {
+                const chance = totalBet > 0 ? ((p.bet / totalBet) * 100).toFixed(1) : 0;
+                const isYou = p.id === state.userId;
+                const topInfo = state.topPlayerIds.get(p.id);
+                let crown = '';
+                if (topInfo) { if (topInfo.rank === 1) crown = '👑';
+                    else if (topInfo.rank === 2) crown = '👑'; }
+                let displayName = p.name;
+                let displayPfp = p.pfp;
+                if (isYou && state.anonymous) {
+                    displayName = state.anonymousName || 'Anonymous';
+                    displayPfp = null;
+                }
+                if (isYou && state.hidePfp) displayPfp = null;
+                html += `<div class="pl-entry ${isYou?'you':''}">
+                            <div class="pl-avatar"><img src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" /></div>
+                            <span class="pl-name">${crown} ${displayName}</span>
+                            <span class="pl-bet">${p.bet}</span>
+                            <span class="pl-chance">${chance}%</span>
+                        </div>`;
+            });
+            playerListContainer.innerHTML = html;
+        }
+
+        function easePopBounce(t) { if (t >= 1) return 1; const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 *
+                Math.pow(t - 1, 2); }
+
+        function getPopScale(player) {
+            if (!player.isPopping) return 1;
+            const elapsed = performance.now() - player.popStartTime;
+            const progress = Math.min(elapsed / player.popDuration, 1);
+            if (progress >= 1) { player.isPopping = false; return 1; }
+            return easePopBounce(progress);
+        }
+
+        function updatePlayerAnimations() {
+            const now = performance.now();
+            state.players.forEach(p => {
+                if (p.isPulsing) {
+                    const elapsed = (now - p.pulseStartTime) / 1000;
+                    if (elapsed > 0.6) { p.isPulsing = false;
+                        p.pulseTime = 0; } else p.pulseTime = elapsed;
+                }
+                if (p.isSpawning && p.homeX !== undefined) {
+                    const elapsed = now - p.spawnStartTime;
+                    const progress = Math.min(elapsed / p.spawnDuration, 1);
+                    const eased = easeOutCubic(progress);
+                    p.x = p.spawnStartX + (p.homeX - p.spawnStartX) * eased;
+                    p.y = p.spawnStartY + (p.homeY - p.spawnStartY) * eased;
+                    p.spawnProgress = eased;
+                    if (progress >= 1) { p.isSpawning = false;
+                        p.x = p.homeX;
+                        p.y = p.homeY; }
+                }
+            });
+        }
+
+        function updateBetUI() {
+            const existing = getPlayer(state.userId);
+            const inGame = !!existing;
+            const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state.gameState === 'prestart');
+            betBtn.textContent = canBet ? (inGame ? 'increase' : 'join') : (inGame ? 'in game' : 'waiting');
+            betBtn.disabled = !canBet;
+            betInput.disabled = !canBet;
+            allInBtn.disabled = !canBet;
+            currentBetDisplay.textContent = existing ? existing.bet : '0';
+            if (betInput.dataset.empty === 'true') { betInput.value = 10;
+                delete betInput.dataset.empty; }
+        }
+
+        // ─── WIN PANEL UPDATES ──────────────────────────────────────
+        function updateLastGamePanel(entry) {
+            lastGamePfp.src = entry.pfp || state.defaultAvatar;
+            lastGameAmount.textContent = `+${entry.amount || 0}`;
+        }
+
+        function updateBestWinPanel(best) {
+            bestWinPfp.src = best.pfp || state.defaultAvatar;
+            bestWinAmount.textContent = `+${best.amount || 0}`;
+        }
+
+        function updateIceLastGamePanel(entry) {
+            iceLastGamePfp.src = entry.pfp || state.defaultAvatar;
+            iceLastGameAmount.textContent = `+${entry.amount || 0}`;
+        }
+
+        function updateIceBestWinPanel(best) {
+            iceBestWinPfp.src = best.pfp || state.defaultAvatar;
+            iceBestWinAmount.textContent = `+${best.amount || 0}`;
+        }
+
+        function addWinToHistory(name, pfp, amount) {
+            const entry = { name, pfp, amount };
+            state.winHistory.unshift(entry);
+            if (state.winHistory.length > state.maxHistory) state.winHistory.pop();
+            updateLastGamePanel(entry);
+            if (amount > state.bestWin.amount) {
+                state.bestWin = { amount, pfp, name };
+                updateBestWinPanel(state.bestWin);
+            }
+            addTransaction('win', amount, `Win vs ${name}`);
+            addRecentGame('pvp', name, amount, 'win');
+        }
+
+        function addIceWinToHistory(name, pfp, amount) {
+            const entry = { name, pfp, amount };
+            iceState.winHistory.unshift(entry);
+            if (iceState.winHistory.length > 8) iceState.winHistory.pop();
+            updateIceLastGamePanel(entry);
+            if (amount > iceState.bestWin.amount) {
+                iceState.bestWin = { amount, pfp, name };
+                updateIceBestWinPanel(iceState.bestWin);
+            }
+            addTransaction('win', amount, `Ice Win vs ${name}`);
+            addRecentGame('ice', name, amount, 'win');
+        }
+
+        // ─── ROUND END HANDLERS ─────────────────────────────────────
+        function handleRoundEnd(payload) {
+            if (!payload) { hideWinPanelAndReset(); return; }
+            addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
+            refreshLeaderboard();
+            if (payload.winnerId === state.userId) {
+                state.balance += payload.winnings;
+                state.wins++;
+                state.winStreak++;
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0;
+                addTransaction('loss', -payload.winnings, `Loss vs ${payload.winnerName}`);
+                addRecentGame('pvp', payload.winnerName, -payload.winnings, 'loss');
+            }
+            updateBalance();
+            updateProfile();
+            const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+            winGif.src = randomGif;
+            winAvatar.src = payload.winnerPfp || state.defaultAvatar;
+            winName.textContent = payload.winnerName + ' wins!';
+            winMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
+            winPanel.classList.add('show');
+            haptic('heavy');
+            countdownTimer.style.display = 'none';
+            timerProgressWrap.classList.remove('visible');
+            waitingText.style.display = 'none';
+            if (window.winTimeout) clearTimeout(window.winTimeout);
+            window.winTimeout = setTimeout(hideWinPanelAndReset, 5000);
+        }
+
+        function hideWinPanelAndReset() {
+            winPanel.classList.remove('show');
+            stopVictorySound();
+            if (window.winTimeout) { clearTimeout(window.winTimeout);
+                window.winTimeout = null; }
+            waitingText.style.display = 'block';
+            countdownTimer.style.display = 'none';
+            timerProgressWrap.classList.remove('visible');
+            updateWaitingText();
+            updateBetUI();
+            updateStatsBar();
+            updateBetOverlayVisibility();
+            updateFrogVisibility();
+        }
+        winContinueBtn.addEventListener('click', () => {
+            playClickSound();
+            hideWinPanelAndReset();
+        });
+
+        // ─── ICE ROUND END ──────────────────────────────────────────
+        function handleIceRoundEnd(payload) {
+            if (!payload) { hideIceWinPanelAndReset(); return; }
+            iceState.winnerId = payload.winnerId;
+            addIceWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
+            refreshLeaderboard();
+            if (payload.winnerId === state.userId) {
+                state.balance += payload.winnings;
+                state.wins++;
+                state.winStreak++;
+                playVictorySound();
+            } else {
+                state.losses++;
+                state.winStreak = 0;
+                addTransaction('loss', -payload.winnings, `Ice Loss vs ${payload.winnerName}`);
+                addRecentGame('ice', payload.winnerName, -payload.winnings, 'loss');
+            }
+            updateBalance();
+            updateProfile();
+            const randomGif = WIN_GIFS[Math.floor(Math.random() * WIN_GIFS.length)];
+            iceWinGif.src = randomGif;
+            iceWinAvatar.src = payload.winnerPfp || state.defaultAvatar;
+            iceWinName.textContent = payload.winnerName + ' wins the rink!';
+            iceWinMultiplier.textContent = 'x' + payload.multiplier.toFixed(1);
+            iceWinPanel.classList.add('show');
+            haptic('heavy');
+            iceState.winnerPuckPop = true;
+            iceState.winnerPuckPopStart = performance.now();
+            if (window.iceWinTimeout) clearTimeout(window.iceWinTimeout);
+            window.iceWinTimeout = setTimeout(hideIceWinPanelAndReset, 5000);
+        }
+
+        function hideIceWinPanelAndReset() {
+            iceWinPanel.classList.remove('show');
+            if (window.iceWinTimeout) { clearTimeout(window.iceWinTimeout);
+                window.iceWinTimeout = null; }
+            iceState.winnerId = null;
+            iceState.winnerPuckPop = false;
+            updateIceWaitingText();
+            updateIceBetUI();
+            updateIceStatsBar();
+            updateIceBetOverlayVisibility();
+            updateIceTopPanelVisibility();
+        }
+        iceWinContinueBtn.addEventListener('click', () => {
+            playClickSound();
+            hideIceWinPanelAndReset();
+        });
+
+        // ─── getIcePlayerLocal ──────────────────────────────────────
+        function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
+
+        // ─── applyIceServerState ───────────────────────────────────────
+        function applyIceServerState(snapshot) {
+            const prevGameState = iceState.gameState;
+            if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
+                iceState.puckPrevX = snapshot.puck.x;
+                iceState.puckPrevY = snapshot.puck.y;
+                iceState.puck.x = snapshot.puck.x;
+                iceState.puck.y = snapshot.puck.y;
+                iceState.puckUpdateTime = Date.now();
+                if (snapshot.puck.vx !== undefined) {
+                    iceState.puckVx = snapshot.puck.vx;
+                    iceState.puckVy = snapshot.puck.vy;
+                }
+            }
+            iceState.gameState = snapshot.gameState;
+            iceState.pot = snapshot.pot;
+            iceState.countdownStartTime = snapshot.countdownStartTime;
+            iceState.spinStartTime = snapshot.spinStartTime;
+            iceState.spinDuration = snapshot.spinDuration;
+            iceState.spinFinalAngle = snapshot.spinFinalAngle;
+            iceState.spinStartX = snapshot.spinStartX || iceState.arenaSize / 2;
+            iceState.spinStartY = snapshot.spinStartY || iceState.arenaSize / 2;
+            if (snapshot.gameState !== 'sliding' || prevGameState === 'sliding') {
+                iceState.puckPrevX = iceState.puck.x;
+                iceState.puckPrevY = iceState.puck.y;
+                iceState.puck.x = snapshot.puck.x;
+                iceState.puck.y = snapshot.puck.y;
+                iceState.puckUpdateTime = Date.now();
+                if (snapshot.puck.vx !== undefined) {
+                    iceState.puckVx = snapshot.puck.vx;
+                    iceState.puckVy = snapshot.puck.vy;
+                }
+            }
+            if (snapshot.gameState !== 'idle' || snapshot.players.length > 0) {
+                iceState.idlePuckInitialized = false;
+            }
+            if (snapshot.gameState === 'spinning' && prevGameState !== 'spinning') {
+                iceState.puckVisible = true;
+                iceState.puckPopStart = performance.now();
+                iceState.puckScale = 0;
+                iceState.zoom = 1;
+                iceState.isZoomingIn = false;
+                iceState.isZoomingOut = false;
+                iceState.zoomLocked = false;
+                iceState.zoomOutTriggered = false;
+                iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
+            }
+            if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
+                iceState.slideStartTime = performance.now();
+                iceState.zoom = 1;
+                iceState.isZoomingIn = false;
+                iceState.isZoomingOut = false;
+                iceState.zoomLocked = false;
+                iceState.zoomOutTriggered = false;
+                iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
+            }
+            if (snapshot.gameState === 'finished' && prevGameState !== 'finished') {
+                if (iceState.zoom > 1.1 && !iceState.zoomOutTriggered) {
+                    iceState.zoomOutTriggered = true;
+                    iceState.isZoomingOut = true;
+                    iceState.isZoomingIn = false;
+                    iceState.zoomStartTime = performance.now();
+                    iceState.zoomTarget = 1;
+                }
+            }
+            if (snapshot.gameState === 'idle' && prevGameState !== 'idle') {
+                iceState.puckVisible = false;
+                iceState.puckScale = 1;
+                iceState.zoom = 1;
+                iceState.isZoomingIn = false;
+                iceState.isZoomingOut = false;
+                iceState.zoomLocked = false;
+                iceState.zoomOutTriggered = false;
+                iceState.pfpPop.clear();
+                iceState.showOwnerName = false;
+                iceState.currentOwnerName = '';
+                iceState.idlePuckInitialized = false;
+                iceState.winnerPuckPop = false;
+                iceState.zoomCenterFixed = false;
+                iceState.zoomCenterX = 0;
+                iceState.zoomCenterY = 0;
+            }
+            const seen = new Set();
+            snapshot.players.forEach(sp => {
+                seen.add(sp.id);
+                let local = iceState.players.find(p => p.id === sp.id);
+                if (!local) {
+                    const colorIdx = iceState.players.length % state.colors.length;
+                    local = {
+                        id: sp.id,
+                        name: sp.name,
+                        pfp: sp.pfp,
+                        pfpImg: generateDefaultAvatar(sp.name ? sp.name.charAt(0) : '?', colorIdx),
+                        x1: sp.x1,
+                        y1: sp.y1,
+                        x2: sp.x2,
+                        y2: sp.y2,
+                        color: sp.color,
+                        bet: sp.bet
+                    };
+                    iceState.players.push(local);
+                    loadIcePlayerPFP(local);
+                    iceState.pfpPop.set(sp.id, { startTime: performance.now(), duration: 400 });
+                } else {
+                    if (Math.abs(local.bet - sp.bet) > 5) {
+                        iceState.pfpPop.set(sp.id, { startTime: performance.now(), duration: 400 });
+                    }
+                    local.x1 = sp.x1;
+                    local.y1 = sp.y1;
+                    local.x2 = sp.x2;
+                    local.y2 = sp.y2;
+                    local.color = sp.color;
+                    local.bet = sp.bet;
+                }
+                local.name = sp.name;
+            });
+            iceState.players = iceState.players.filter(p => seen.has(p.id));
+            if (prevGameState !== 'idle' && iceState.gameState === 'idle') {
+                iceState.winnerId = null;
+                iceWaitingText.style.display = 'block';
+            }
+            updateIceStatsBar();
+            updateIceBetUI();
+            updateIceWaitingText();
+            updateIceBetOverlayVisibility();
+            updateIceTopPanelVisibility();
+        }
+
+        function updateIceBetOverlayVisibility() {
+            const shouldHide = iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState ===
+                'finished';
+            iceBetOverlayWrap.classList.toggle('hidden', shouldHide);
+        }
+
+        function updateIceStatsBar() {
+            iceStatsPlayers.textContent = iceState.players.length;
+            iceStatsPot.textContent = iceState.pot;
+        }
+
+        function updateIceWaitingText() {
+            if (iceState.players.length >= 1) {
+                iceWaitingText.style.display = 'none';
+            } else {
+                iceWaitingText.style.display = 'block';
+            }
+            if (iceState.gameState === 'spinning' || iceState.gameState === 'sliding' || iceState.gameState === 'finished') {
+                iceWaitingText.style.display = 'none';
+            }
+        }
+
+        function updateIceTopPanelVisibility() {
+            const show = (iceState.gameState === 'countdown' ||
+                iceState.gameState === 'spinning' ||
+                iceState.gameState === 'sliding' ||
+                iceState.gameState === 'finished');
+            iceTopPanel.classList.toggle('show', show);
+            const timerSection = document.getElementById('ice-timer-section');
+            if (iceState.gameState === 'countdown') {
+                timerSection.style.display = 'flex';
+                iceCountdownTimer.style.display = 'block';
+                iceTimerProgressWrap.style.display = 'block';
+            } else {
+                timerSection.style.display = 'none';
+                iceCountdownTimer.style.display = 'none';
+                iceTimerProgressWrap.style.display = 'none';
+            }
+        }
+
+        function updateIceBetUI() {
+            const existing = getIcePlayerLocal(state.userId);
+            const inGame = !!existing;
+            const canBet = (iceState.gameState === 'idle' || iceState.gameState === 'countdown');
+            iceBetBtn.textContent = canBet ? (inGame ? 'increase' : 'join') : (inGame ? 'in game' : 'waiting');
+            iceBetBtn.disabled = !canBet;
+            iceBetInput.disabled = !canBet;
+            iceAllInBtn.disabled = !canBet;
+            iceCurrentBetDisplay.textContent = existing ? existing.bet : '0';
+            if (iceBetInput.dataset.empty === 'true') { iceBetInput.value = 10;
+                delete iceBetInput.dataset.empty; }
+        }
+
+        // ─── PLACE BETS ──────────────────────────────────────────────
+        function placeIceBet(amount) {
+            if (!socket || !socket.connected) return;
+            let addAmount = parseInt(amount) || 10;
+            if (addAmount < 10) addAmount = 10;
+            if (addAmount > state.balance) addAmount = state.balance;
+            if (addAmount <= 0) { haptic('light'); return; }
+            socket.emit('icePlaceBet', { amount: addAmount }, (res) => {
+                if (!res?.ok) { haptic('light');
+                    console.warn('Ice bet rejected:', res?.error); return; }
+                state.balance = res.balance;
+                updateBalance();
+                updateProfile();
+                haptic('medium');
+                addTransaction('bet', -addAmount, 'Ice Bet');
+            });
+            iceBetInput.value = '';
+            updateIceBetUI();
+        }
+        iceBetBtn.addEventListener('click', () => {
+            playClickSound();
+            placeIceBet(iceBetInput.value);
+        });
+        iceAllInBtn.addEventListener('click', () => {
+            playClickSound();
+            iceBetInput.value = state.balance;
+            placeIceBet(state.balance);
+        });
+        iceBetInput.addEventListener('blur', () => {
+            let val = parseInt(iceBetInput.value);
+            if (isNaN(val) || val < 10) val = 10;
+            if (val > state.balance) val = state.balance;
+            iceBetInput.value = val;
+        });
+
+        let iceAutoBetInterval = null,
+            iceAutoBetEnabled = false;
+
+        function toggleIceAutoBet(enable) {
+            if (enable && !iceAutoBetEnabled) {
+                iceAutoBetEnabled = true;
+                iceAutoToggle.classList.add('active');
+                iceAutoToggle.textContent = '▶';
+                if (iceAutoBetInterval) clearInterval(iceAutoBetInterval);
+                iceAutoBetInterval = setInterval(() => {
+                    const canBet = (iceState.gameState === 'idle' || iceState.gameState === 'countdown');
+                    if (!canBet) return;
+                    const existing = getIcePlayerLocal(state.userId);
+                    if (existing) return;
+                    const amount = parseInt(iceAutoAmount.value) || 10;
+                    if (amount < 10 || amount > state.balance) return;
+                    placeIceBet(amount);
+                }, 2000);
+            } else if (!enable && iceAutoBetEnabled) {
+                iceAutoBetEnabled = false;
+                iceAutoToggle.classList.remove('active');
+                iceAutoToggle.textContent = '⏱';
+                if (iceAutoBetInterval) { clearInterval(iceAutoBetInterval);
+                    iceAutoBetInterval = null; }
+            }
+        }
+        iceAutoToggle.addEventListener('click', () => {
+            playClickSound();
+            iceAutoPanel.classList.toggle('open');
+        });
+        iceAutoSwitchWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClickSound();
+            const checked = !iceAutoSwitch.checked;
+            iceAutoSwitch.checked = checked;
+            toggleIceAutoBet(checked);
+            haptic('light');
+        });
+        iceAutoSwitch.addEventListener('change', () => {
+            playClickSound();
+            toggleIceAutoBet(iceAutoSwitch.checked);
+        });
+
+        let iceBetCollapsed = false;
+        iceBetToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            playClickSound();
+            iceBetCollapsed = !iceBetCollapsed;
+            iceBetOverlay.classList.toggle('collapsed', iceBetCollapsed);
+            haptic('light');
+        });
+
+        function refreshLeaderboard() {
+            if (!socket) return;
+            socket.emit('leaderboard', {}, (res) => {
+                if (!res?.ok) return;
+                state.topPlayers = res.top.map((u, i) => {
+                    const isAnon = u.anonymousEnabled || false;
+                    return {
+                        id: u.id,
+                        name: isAnon ? u.anonymousUsername || 'Anonymous' : u.username,
+                        pfp: isAnon ? '' : u.pfp,
+                        wins: u.wins,
+                        score: u.balance,
+                        rank: i + 1,
+                        anonymous: isAnon,
+                    };
+                });
+                state.topPlayerIds.clear();
+                state.topPlayers.forEach(p => { state.topPlayerIds.set(p.id, { rank: p.rank }); });
+                updateTopUI();
+            });
+        }
+
+        function updateTopUI() {
+            const players = state.topPlayers;
+            if (players.length === 0) { podiumEl.innerHTML = '';
+                topList.innerHTML = ''; return; }
+            const top3 = players.slice(0, 3);
+            const podiumOrder = [
+                { player: top3[2] || top3[0], cls: 'bronze', label: '🥉', base: 'bronze', colClass: 'p3' },
+                { player: top3[0] || top3[1], cls: 'gold', label: '🥇', base: 'gold', colClass: 'p1' },
+                { player: top3[1] || top3[2], cls: 'silver', label: '🥈', base: 'silver', colClass: 'p2' }
+            ];
+            let podiumHtml = '';
+            podiumOrder.forEach(info => {
+                const p = info.player;
+                if (!p) return;
+                const prize = getPrizeForRank(p.rank);
+                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
+                    prize.label) : '';
+                const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
+                    `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` :
+                    '';
+                const displayPfp = p.anonymous ? state.defaultAvatar : p.pfp;
+                podiumHtml += `<div class="podium-col ${info.colClass}">
+                            <div class="rank-badge ${info.cls}">${info.label}</div>
+                            <img class="podium-pfp ${info.cls}" src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" />
+                            <div class="podium-name">${p.name} ${flameHtml}</div>
+                            <div class="podium-prize">${prizeHtml}</div>
+                            <div class="podium-stats">${p.wins} wins · ${p.score}</div>
+                            <div class="podium-base ${info.base}"></div>
+                        </div>`;
+            });
+            podiumEl.innerHTML = podiumHtml;
+
+            const rest = players.slice(3);
+            if (rest.length === 0) { topList.innerHTML = ''; return; }
+            let listHtml = '';
+            rest.forEach(p => {
+                const rank = p.rank;
+                let rClass = 'rank';
+                if (rank === 4) rClass += ' gold';
+                else if (rank === 5) rClass += ' silver';
+                else if (rank === 6) rClass += ' bronze';
+                const prize = getPrizeForRank(rank);
+                let prizeHtml = prize ? (prize.gif ? `<img src="${prize.gif}" alt="${prize.label}" /> ${prize.label}` :
+                    prize.label) : '';
+                const flameHtml = (p.id === state.userId && state.winStreak >= 3) ?
+                    `<img src="${FLAME_GIF}" class="t-flame" style="width:20px;height:20px;object-fit:contain;margin-left:4px;" />` :
+                    '';
+                const displayPfp = p.anonymous ? state.defaultAvatar : p.pfp;
+                listHtml += `<div class="top-entry">
+                            <div class="${rClass}">#${rank}</div>
+                            <img class="t-pfp" src="${displayPfp || state.defaultAvatar}" onerror="this.src='${state.defaultAvatar}'" />
+                            <div class="t-name">${p.name} ${flameHtml}</div>
+                            <div class="t-wins">${p.wins} wins</div>
+                            <div class="t-score">${p.score}</div>
+                            <div class="t-prize">${prizeHtml}</div>
+                        </div>`;
+            });
+            topList.innerHTML = listHtml;
+        }
+
+        function getPrizeForRank(rank) {
+            if (rank === 1) return { label: 'Gift Box', gif: PRIZE_GIFS.first };
+            if (rank === 2 || rank === 3) return { label: 'Bear', gif: PRIZE_GIFS.second };
+            if (rank === 4 || rank === 5) return { label: '1500', gif: DIAMOND_GIF };
+            if (rank >= 6 && rank <= 10) return { label: '100', gif: DIAMOND_GIF };
+            return null;
+        }
+
+        let balanceAnimInterval = null;
+
+        function animateBalanceTo(target) {
+            const current = parseInt(balanceEl.textContent) || 0;
+            if (current === target) { balanceEl.textContent = target; return; }
+            const diff = target - current;
+            const steps = Math.min(Math.abs(diff), 40);
+            const stepSize = diff / steps;
+            let step = 0;
+            if (balanceAnimInterval) { clearInterval(balanceAnimInterval);
+                balanceAnimInterval = null; }
+            balanceAnimInterval = setInterval(() => {
+                step++;
+                const newVal = Math.round(current + stepSize * step);
+                if (step >= steps || Math.abs(newVal - target) < 1) {
+                    balanceEl.textContent = target;
+                    clearInterval(balanceAnimInterval);
+                    balanceAnimInterval = null;
+                } else balanceEl.textContent = newVal;
+            }, 25);
+        }
+
+        function updateBalance() {
+            const target = Math.floor(state.balance);
+            pBalance.textContent = target;
+            animateBalanceTo(target);
+            const dlbBal = document.getElementById('dlb-balance');
+            if (dlbBal) dlbBal.textContent = target.toLocaleString();
+        }
+
+        function updateProfile() {
+            pWins.textContent = state.wins;
+            pLosses.textContent = state.losses;
+            const total = state.wins + state.losses;
+            pWinrate.textContent = total > 0 ? Math.round((state.wins / total) * 100) + '%' : '0%';
+            totalGames.textContent = total;
+            profileName.textContent = state.username;
+            profileUsername.textContent = '@' + state.username;
+            if (!state.hidePfp) profilePfp.src = state.pfp || state.defaultAvatar;
+            else profilePfp.src = state.defaultAvatar;
+            document.getElementById('profile-status').textContent = state.anonymous ? 'anonymous' : 'online';
+            updateBalance();
+            renderRecentGames();
+        }
+
+        let audioCtx = null,
+            victorySoundPlaying = false;
+
+        function playVictorySound() {
+            if (!state.soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                if (victorySoundPlaying) return;
+                victorySoundPlaying = true;
+                const now = audioCtx.currentTime;
+                const notes = [523.25, 659.25, 783.99];
+                const startTimes = [0, 0.08, 0.16];
+                const durations = [0.3, 0.3, 0.5];
+                for (let i = 0; i < notes.length; i++) {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.frequency.value = notes[i];
+                    osc.type = 'sine';
+                    gain.gain.setValueAtTime(0.18, now + startTimes[i]);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + startTimes[i] + durations[i]);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + startTimes[i]);
+                    osc.stop(now + startTimes[i] + durations[i]);
+                }
+                setTimeout(() => { victorySoundPlaying = false; }, 800);
+            } catch (e) { victorySoundPlaying = false; }
+        }
+
+        function stopVictorySound() { victorySoundPlaying = false; }
+
+        betBtn.addEventListener('click', () => {
+            playClickSound();
+            if (!socket || !socket.connected) return;
+            let addAmount = parseInt(betInput.value) || 10;
+            if (addAmount < 10) addAmount = 10;
+            if (addAmount > state.balance) addAmount = state.balance;
+            if (addAmount <= 0) { haptic('light'); return; }
+            socket.emit('placeBet', { amount: addAmount }, (res) => {
+                if (!res?.ok) { haptic('light');
+                    console.warn('Bet rejected:', res?.error); return; }
+                state.balance = res.balance;
+                updateBalance();
+                updateProfile();
+                haptic('medium');
+                addTransaction('bet', -addAmount, 'PvP Bet');
+            });
+            betInput.value = 10;
+            updateBetUI();
+        });
+
+        let betCollapsed = false;
+        betToggleBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            playClickSound();
+            betCollapsed = !betCollapsed;
+            betOverlay.classList.toggle('collapsed', betCollapsed);
+            haptic('light');
+        });
+
+        let allInConfirming = false,
+            allInTimeout = null;
+        allInBtn.addEventListener('click', () => {
+            playClickSound();
+            if (allInConfirming) {
+                const fullAmount = state.balance;
+                if (fullAmount < 10) { haptic('light'); return; }
+                betInput.value = fullAmount;
+                betBtn.click();
+                allInConfirming = false;
+                allInBtn.textContent = 'All In';
+                if (allInTimeout) clearTimeout(allInTimeout);
+                haptic('medium');
+            } else {
+                allInConfirming = true;
+                allInBtn.textContent = 'Sure?';
+                if (allInTimeout) clearTimeout(allInTimeout);
+                allInTimeout = setTimeout(() => { allInConfirming = false;
+                    allInBtn.textContent = 'All In'; }, 2000);
+                haptic('light');
+            }
+        });
+
+        function setupInputWithClear(inputEl, defaultVal = 10) {
+            inputEl.addEventListener('input', () => { const raw = inputEl.value; if (raw === '') { inputEl.dataset.empty =
+                    'true'; return; } delete inputEl.dataset.empty; });
+            inputEl.addEventListener('blur', () => {
+                if (inputEl.dataset.empty === 'true' || inputEl.value === '') { inputEl.value = defaultVal;
+                    delete inputEl.dataset.empty; }
+                let val = parseInt(inputEl.value);
+                if (isNaN(val) || val < defaultVal) val = defaultVal;
+                if (val > state.balance) val = state.balance;
+                inputEl.value = val;
+                updateBetUI();
+            });
+        }
+        setupInputWithClear(betInput, 10);
+        setupInputWithClear(autoAmount, 10);
+        setupInputWithClear(iceAutoAmount, 10);
+
+        let autoBetInterval = null,
+            autoBetEnabled = false;
+
+        function toggleAutoBet(enable) {
+            if (enable && !autoBetEnabled) {
+                autoBetEnabled = true;
+                autoToggle.classList.add('active');
+                autoToggle.textContent = '▶';
+                if (autoBetInterval) clearInterval(autoBetInterval);
+                autoBetInterval = setInterval(() => {
+                    const canBet = (state.gameState === 'idle' || state.gameState === 'countdown' || state
+                        .gameState === 'prestart');
+                    if (!canBet) return;
+                    const existing = getPlayer(state.userId);
+                    if (existing) return;
+                    const amount = parseInt(autoAmount.value) || 10;
+                    if (amount < 10 || amount > state.balance) return;
+                    socket.emit('placeBet', { amount }, (res) => {
+                        if (res?.ok) { state.balance = res.balance;
+                            updateBalance();
+                            updateProfile();
+                            haptic('medium');
+                            addTransaction('bet', -amount, 'Auto Bet'); }
+                    });
+                }, 2000);
+            } else if (!enable && autoBetEnabled) {
+                autoBetEnabled = false;
+                autoToggle.classList.remove('active');
+                autoToggle.textContent = '⏱';
+                if (autoBetInterval) { clearInterval(autoBetInterval);
+                    autoBetInterval = null; }
+            }
+        }
+        autoToggle.addEventListener('click', () => {
+            playClickSound();
+            autoPanel.classList.toggle('open');
+        });
+        autoSwitchWrap.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playClickSound();
+            const checked = !autoSwitch.checked;
+            autoSwitch.checked = checked;
+            toggleAutoBet(checked);
+            haptic('light');
+        });
+        autoSwitch.addEventListener('change', () => {
+            playClickSound();
+            toggleAutoBet(autoSwitch.checked);
+        });
+
+        // ─── PROMO ────────────────────────────────────────────────────
+        promoBtn.addEventListener('click', async () => {
+            playClickSound();
+            const code = promoInput.value.trim().toUpperCase();
+            if (!code) { promoMessage.textContent = 'Please enter a code.';
+                promoMessage.style.color = '#d45a5a'; return; }
+            if (!state.userId) { promoMessage.textContent = 'You are not logged in.';
+                promoMessage.style.color = '#d45a5a'; return; }
+            const storageKey = 'dllump_promo_used_' + state.userId;
+            if (localStorage.getItem(storageKey) === 'true') {
+                promoMessage.textContent = 'You have already used a promo code.';
+                promoMessage.style.color = '#d45a5a'; return;
+            }
+            promoBtn.disabled = true;
+            promoBtn.textContent = '...';
+            promoMessage.textContent = '';
+            try {
+                const response = await fetch(SERVER_URL + '/redeem', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, userId: state.userId }) });
+                const data = await response.json();
+                if (data.ok) {
+                    localStorage.setItem(storageKey, 'true');
+                    state.balance = data.newBalance;
+                    updateBalance();
+                    updateProfile();
+                    promoGif.src = DIAMOND_GIF;
+                    promoMsg.textContent = `Successfully claimed ${data.amount} 💎`;
+                    promoSub.textContent = `Your new balance is ${data.newBalance}`;
+                    promoModal.classList.add('show');
+                    haptic('heavy');
+                    promoMessage.textContent = '✅ Code redeemed!';
+                    promoMessage.style.color = '#5ac88a';
+                    promoInput.value = '';
+                    addTransaction('win', data.amount, 'Promo Bonus');
+                } else { promoMessage.textContent = data.error || 'Invalid or expired code.';
+                    promoMessage.style.color = '#d45a5a'; }
+            } catch (e) { promoMessage.textContent = 'Network error, please try again.';
+                promoMessage.style.color = '#d45a5a'; } finally { promoBtn.disabled = false;
+                promoBtn.textContent = 'Redeem'; }
+        });
+        promoContinueBtn.addEventListener('click', () => {
+            playClickSound();
+            promoModal.classList.remove('show');
+        });
+
+        // ─── RELOAD PFP ──────────────────────────────────────────────
+        reloadPfpBtn.addEventListener('click', function() {
+            playClickSound();
+            const user = getPlayer(state.userId);
+            if (user) { pfpCache.delete(user.pfp);
+                loadPlayerPFP(user);
+                haptic('medium'); } else if (state.pfp) {
+                pfpCache.delete(state.pfp);
+                const img = new Image();
+                img.onload = () => { profilePfp.src = state.pfp;
+                    haptic('medium'); };
+                img.onerror = () => { profilePfp.src = state.defaultAvatar;
+                    haptic('light'); };
+                img.src = state.pfp;
+            }
+        });
+
+        // ─── SOUND TOGGLE ────────────────────────────────────────────
+        soundToggle.addEventListener('change', () => {
+            playClickSound();
+            state.soundEnabled = soundToggle.checked;
+        });
+        soundToggle.checked = state.soundEnabled;
+
+        // ─── TAB SWITCHING ────────────────────────────────────────────
+        function switchTab(tabId) {
+            if (state.currentTab === tabId) return;
+            const oldTab = state.currentTab;
+            state.currentTab = tabId;
+            const oldEl = tabPages[oldTab];
+            if (oldEl) { oldEl.classList.remove('active');
+                oldEl.classList.add('exit');
+                setTimeout(() => { oldEl.classList.remove('exit'); }, 350); }
+            const newEl = tabPages[tabId];
+            if (newEl) { newEl.classList.add('active');
+                newEl.classList.remove('exit'); if (tabId === 'profile') { updateProfile(); } if (tabId === 'top')
+                    refreshLeaderboard(); }
+            tabBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
+            haptic('light');
+        }
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                playClickSound();
+                switchTab(this.dataset.tab);
+            });
+        });
+
+
+        // ═══════════════════════════════════════════════════════════════
+        // DLBALLS — 3D PLINKO / MULTIPLIER ARENA
+        // ═══════════════════════════════════════════════════════════════
+        const dlbPage = document.getElementById('dlballs-page');
+        const dlbCanvas = document.getElementById('dlballs-canvas');
+        const dlbStage = document.getElementById('dlballs-stage');
+        const dlbBuy = document.getElementById('dlb-buy');
+        const dlbBack = document.getElementById('dlb-back');
+        const dlbLaunch = document.getElementById('dlballs-launch');
+        const dlbBuyModal = document.getElementById('dlb-buy-modal');
+        const dlbBuyConfirm = document.getElementById('dlb-buy-confirm');
+        const dlbBuyCancel = document.getElementById('dlb-buy-cancel');
+        const dlbAmount = document.getElementById('dlb-amount');
+        const dlbStake = document.getElementById('dlb-stake');
+        const dlbFixedValue = document.getElementById('dlb-fixed-value');
+        const dlbFixedWrap = document.getElementById('dlb-fixed-wrap');
+        const dlbCountEl = document.getElementById('dlb-count');
+        const dlbValueEl = document.getElementById('dlb-value');
+        const dlbBalanceEl = document.getElementById('dlb-balance');
+        const dlbStatusEl = document.getElementById('dlb-status');
+        const dlbReward = document.getElementById('dlb-reward');
+        const dlbRewardBig = document.getElementById('dlb-reward-big');
+        const dlbRewardSmall = document.getElementById('dlb-reward-small');
+
+        const DLB_COLORS = {
+            basic: 0x9aa0a6, shiny: 0xd9dde3, green: 0x35b86b, gold: 0xffcf55
+        };
+        const DLB_TIERS = [
+            {max: 10, key:'basic'}, {max: 100, key:'shiny'},
+            {max: 500, key:'green'}, {max: 1000, key:'gold'}
+        ];
+        let dlbMode = 'random', dlbBalls = [], dlbReady = false, dlbBusy = false;
+        let dlbThree = null, dlbScene = null, dlbCamera = null, dlbRenderer = null, dlbWorld = null, dlbGate = null;
+        let dlbLastTime = 0, dlbIntroSpin = 0, dlbNeedsResize = true;
+
+        function dlbTier(value) {
+            return DLB_TIERS.find(t => value <= t.max)?.key || 'gold';
+        }
+        function dlbSetStatus(text) { dlbStatusEl.textContent = text; }
+        function dlbUpdateHud() {
+            dlbCountEl.textContent = dlbBalls.length;
+            dlbValueEl.textContent = dlbBalls.reduce((s,b)=>s+(b.value||0),0).toLocaleString();
+            dlbBalanceEl.textContent = Math.floor(state.balance).toLocaleString();
+            dlbLaunch.disabled = !dlbBalls.length || dlbBusy;
+        }
+        function dlbOpen() {
+            closeCard();
+            dlbPage.classList.remove('hidden');
+            dlbPage.style.display = 'flex';
+            document.getElementById('tabs').style.display = 'none';
+            dlbInit3D();
+            dlbResize();
+            dlbSetStatus(dlbBalls.length ? 'Ready. Press Launch when you want to drop them.' : 'Buy balls to load the launcher.');
+        }
+        function dlbClose() {
+            dlbPage.classList.add('hidden');
+            dlbPage.style.display = 'none';
+            document.getElementById('tabs').style.display = '';
+            dlbBusy = false;
+            dlbUpdateHud();
+        }
+        function dlbOpenBuy() {
+            if (!socket || !socket.connected) return dlbSetStatus('Connection unavailable.');
+            dlbBuyModal.classList.add('show');
+        }
+        function dlbCloseBuy() { dlbBuyModal.classList.remove('show'); }
+        document.querySelectorAll('.dlb-mode').forEach(btn => {
+            btn.addEventListener('click', () => {
+                dlbMode = btn.dataset.dlbMode;
+                document.querySelectorAll('.dlb-mode').forEach(x => x.classList.toggle('active', x===btn));
+                dlbFixedWrap.style.display = dlbMode === 'fixed' ? '' : 'none';
+                if (dlbMode === 'fixed') dlbStake.value = dlbFixedValue.value;
+            });
+        });
+        dlbFixedValue.addEventListener('change', () => { if (dlbMode === 'fixed') dlbStake.value = dlbFixedValue.value; });
+        dlbBuy.addEventListener('click', dlbOpenBuy);
+        dlbBack.addEventListener('click', dlbClose);
+        dlbBuyCancel.addEventListener('click', dlbCloseBuy);
+        document.getElementById('open-dlballs-btn').addEventListener('click', () => { playClickSound(); dlbOpen(); });
+        dlbBuyConfirm.addEventListener('click', () => {
+            const amount = Math.max(1, Math.min(50, Math.floor(Number(dlbAmount.value)||0)));
+            const stake = Math.max(1, Math.floor(Number(dlbStake.value)||0));
+            const fixedValue = Math.max(1, Math.floor(Number(dlbFixedValue.value)||1));
+            if (!socket || !socket.connected) return dlbSetStatus('Connection unavailable.');
+            if (dlbBusy) return;
+            socket.emit('dlballsBuy', { mode: dlbMode, amount, stake, fixedValue }, (res) => {
+                if (!res?.ok) return dlbSetStatus(res?.error || 'Could not buy balls.');
+                state.balance = res.balance;
+                updateBalance();
+                dlbCloseBuy();
+                dlbApplyBought(res.balls || []);
+                dlbSetStatus(`Loaded ${res.balls.length} balls · paid ${res.cost} 💎`);
+                haptic('medium');
+            });
+        });
+        dlbLaunch.addEventListener('click', () => {
+            if (!dlbBalls.length || dlbBusy || !socket) return;
+            dlbBusy = true; dlbLaunch.disabled = true;
+            dlbSetStatus('Opening launcher…');
+            socket.emit('dlballsLaunch', {}, (res) => {
+                if (!res?.ok) {
+                    dlbBusy = false; dlbUpdateHud();
+                    return dlbSetStatus(res?.error || 'Could not launch.');
+                }
+                state.balance = res.balance;
+                updateBalance();
+                dlbRunResults(res);
+            });
+        });
+
+        function dlbMakeBallMesh(value, index) {
+            const tier = dlbTier(value), color = DLB_COLORS[tier];
+            const geo = new THREE.SphereGeometry(0.20 + Math.min(.10, Math.log10(Math.max(1,value))*.018), 32, 20);
+            const mat = new THREE.MeshStandardMaterial({ color, metalness:.88, roughness:tier==='gold'?.16:.28 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            mesh.userData = {value, tier, phase:Math.random()*Math.PI*2, index};
+            return mesh;
+        }
+
+        function dlbInit3D() {
+            if (dlbRenderer) return;
+            if (!window.THREE) return;
+            dlbScene = new THREE.Scene();
+            dlbCamera = new THREE.PerspectiveCamera(38, 1, .1, 100);
+            dlbCamera.position.set(0, 2.5, 19);
+            dlbCamera.lookAt(0, -1.2, 0);
+            dlbRenderer = new THREE.WebGLRenderer({canvas:dlbCanvas, antialias:true, alpha:true});
+            dlbRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            dlbRenderer.shadowMap.enabled = true;
+            dlbRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            dlbRenderer.outputColorSpace = THREE.SRGBColorSpace;
+            const hemi = new THREE.HemisphereLight(0xbcc9dc,0x08090b,1.45); dlbScene.add(hemi);
+            const key = new THREE.DirectionalLight(0xffffff,2.4); key.position.set(-5,9,8); key.castShadow=true; dlbScene.add(key);
+            const rim = new THREE.PointLight(0xd4b65b,18,20); rim.position.set(5,2,5); dlbScene.add(rim);
+
+            const boardMat = new THREE.MeshStandardMaterial({color:0x15181e,metalness:.62,roughness:.3});
+            const pegMat = new THREE.MeshStandardMaterial({color:0xb8bdc5,metalness:.95,roughness:.22});
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(10.8,.35,.8),boardMat);
+            frame.position.set(0,7,0); dlbScene.add(frame);
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(.35,15,.8),boardMat); leftWall.position.set(-5.2,0,0); dlbScene.add(leftWall);
+            const rightWall = leftWall.clone(); rightWall.position.x=5.2; dlbScene.add(rightWall);
+
+            for(let row=0;row<9;row++){
+                const count=9, y=5.8-row*1.15, offset=(row%2)*.55;
+                for(let col=0;col<count;col++){
+                    const peg=new THREE.Mesh(new THREE.CylinderGeometry(.17,.17,.34,20),pegMat);
+                    peg.rotation.z=Math.PI/2; peg.position.set(-4.45+col*1.12+offset,y,.25);
+                    peg.castShadow=true; dlbScene.add(peg);
+                }
+            }
+
+            // Sliding triangular deflector under the peg field.
+            const triShape = new THREE.Shape();
+            triShape.moveTo(-4.6,0); triShape.lineTo(0,.9); triShape.lineTo(4.6,0); triShape.closePath();
+            const triGeo = new THREE.ExtrudeGeometry(triShape,{depth:.55,bevelEnabled:true,bevelThickness:.06,bevelSize:.05,bevelSegments:2});
+            const tri = new THREE.Mesh(triGeo,new THREE.MeshStandardMaterial({color:0x4a4e56,metalness:.9,roughness:.25}));
+            tri.position.set(-4.6,-5.3,-.1); tri.rotation.x=Math.PI/2; tri.userData.deflector=true; dlbScene.add(tri);
+
+            // First three multiplier cups.
+            [-3.2,0,3.2].forEach((x,i)=>{
+                const m=i===1?'3x':'1.5x';
+                const tor=new THREE.Mesh(new THREE.TorusGeometry(1.12,.09,18,48),new THREE.MeshStandardMaterial({
+                    color:i===1?0xb04a4a:0x6c7078,metalness:.9,roughness:.22,emissive:i===1?0x4a1010:0
+                }));
+                tor.position.set(x,-6.6,0); dlbScene.add(tor);
+                const label=dlbMakeLabel(m,i===1?'#ff5050':'#c6c9ce'); label.position.set(x,-7.45,.3); dlbScene.add(label);
+            });
+            // Deeper two-hole multiplier stage.
+            [-1.65,1.65].forEach((x,i)=>{
+                const tor=new THREE.Mesh(new THREE.TorusGeometry(.92,.10,18,48),new THREE.MeshStandardMaterial({
+                    color:i===0?0xb04a4a:0x777b83,metalness:.92,roughness:.2,emissive:i===0?0x4a1010:0
+                }));
+                tor.position.set(x,-9.0,0); dlbScene.add(tor);
+                const label=dlbMakeLabel(i===0?'6x':'3x',i===0?'#ff5050':'#d0d3d8'); label.position.set(x,-9.72,.3); dlbScene.add(label);
+            });
+            const floor=new THREE.Mesh(new THREE.BoxGeometry(10.5,.3,2),new THREE.MeshStandardMaterial({color:0x0d0f13,metalness:.65,roughness:.32}));
+            floor.position.set(0,-10.7,0); dlbScene.add(floor);
+            dlbWorld = new THREE.Group(); dlbScene.add(dlbWorld);
+            dlbGate = new THREE.Mesh(
+                new THREE.TorusGeometry(2.72,.11,18,72),
+                new THREE.MeshStandardMaterial({color:0x737984,metalness:.96,roughness:.18,emissive:0x111319})
+            );
+            dlbGate.position.set(0,3.0,.25); dlbGate.rotation.x=Math.PI/2; dlbScene.add(dlbGate);
+            dlbLastTime=performance.now();
+            requestAnimationFrame(dlbRender3D);
+        }
+
+        function dlbMakeLabel(text,color) {
+            const c=document.createElement('canvas'); c.width=256;c.height=64;
+            const x=c.getContext('2d'); x.clearRect(0,0,256,64); x.font='bold 34px Arial'; x.textAlign='center'; x.fillStyle=color; x.fillText(text,128,42);
+            const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
+            return new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+        }
+
+        function dlbResize() {
+            if (!dlbRenderer || !dlbStage) return;
+            const w=dlbStage.clientWidth, h=dlbStage.clientHeight;
+            dlbRenderer.setSize(w,h,false); dlbCamera.aspect=w/Math.max(1,h); dlbCamera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', () => { if(!dlbPage.classList.contains('hidden')) dlbResize(); });
+
+        function dlbApplyBought(balls) {
+            dlbBalls = balls.map((b,i)=>({...b, mesh:null, state:'ring', t:Math.random()*Math.PI*2, lane:0}));
+            dlbReady=true; dlbBusy=false;
+            dlbUpdateHud(); dlbSetStatus('Balls are loaded. Watch the 3D value carousel, then launch.');
+            dlbBuildCarousel();
+        }
+        function dlbBuildCarousel() {
+            if(!dlbWorld) return;
+            dlbWorld.clear();
+            const n=dlbBalls.length;
+            dlbBalls.forEach((b,i)=>{
+                const mesh=dlbMakeBallMesh(b.value,i);
+                mesh.position.set(Math.cos((i/n)*Math.PI*2)*2.5, Math.sin((i/n)*Math.PI*2)*.95+3.0, 1.0+Math.sin((i/n)*Math.PI*2)*1.2);
+                mesh.scale.setScalar(.92);
+                dlbWorld.add(mesh); b.mesh=mesh;
+                const label=dlbMakeLabel(String(b.value)+' 💎', b.tier==='gold'?'#ffd95e':b.tier==='green'?'#5bdf8d':'#e4e7eb');
+                label.scale.set(.9,.24,1); label.position.set(mesh.position.x,mesh.position.y-.62,mesh.position.z); label.userData.follow=mesh; dlbWorld.add(label);
+            });
+        }
+
+        function dlbClearWorld() { if(dlbWorld) dlbWorld.clear(); }
+        function dlbRunResults(data) {
+            dlbBusy = true; dlbSetStatus('Launch! The launcher is opening…');
+            if (!dlbWorld) dlbInit3D();
+            if (dlbGate) {
+                dlbGate.userData.openStart = performance.now();
+                dlbGate.userData.opening = true;
+            }
+
+            const results = (data.results || []).map((r,i) => {
+                const ball = dlbBalls[i];
+                const mesh = ball?.mesh || dlbMakeBallMesh(r.value,i);
+                const targetX = r.multiplier === 6 ? -1.65 :
+                    r.multiplier === 3 ? (r.depth ? 1.65 : 0) :
+                    r.multiplier === 1.5 ? (i % 2 ? 3.2 : -3.2) :
+                    (i % 2 ? 5.55 : -5.55);
+                return {
+                    ...r, mesh, x:(i-(data.results.length-1)/2)*.20, y:5.0, z:.65,
+                    vx:(Math.random()-.5)*.9, vy:0, spinX:Math.random()*4, spinY:Math.random()*4,
+                    targetX, targetLocked:false, stuck:false, stuckUntil:0, pegCooldown:0,
+                    phase:Math.random()*Math.PI*2
+                };
+            });
+
+            dlbWorld.clear();
+            results.forEach(r => dlbWorld.add(r.mesh));
+            const labels = [];
+
+            // The physical peg coordinates mirror the visible board.
+            const pegs=[];
+            for(let row=0;row<9;row++){
+                const count=9, y=5.8-row*1.15, offset=(row%2)*.55;
+                for(let col=0;col<count;col++) pegs.push({x:-4.45+col*1.12+offset,y,r:.20});
+            }
+
+            let last=performance.now(), start=last;
+            const maxDuration=6200;
+            const tick=now=>{
+                const dt=Math.min(.026,(now-last)/1000); last=now;
+                const elapsed=(now-start)/1000;
+                let active=0;
+
+                results.forEach((r,i)=>{
+                    if(r.stuck) return;
+                    active++;
+                    r.pegCooldown=Math.max(0,r.pegCooldown-dt);
+
+                    // Gravity + drag.
+                    r.vy -= 10.8*dt;
+                    r.vx *= Math.pow(.996,dt*60);
+                    r.vy *= Math.pow(.999,dt*60);
+                    r.x += r.vx*dt;
+                    r.y += r.vy*dt;
+
+                    // Softly bias toward the server-authoritative landing lane only near the exits.
+                    if(r.y < -4.9) {
+                        r.targetLocked=true;
+                        const strength=r.y < -5.7 ? 7.0 : 2.2;
+                        r.vx += (r.targetX-r.x)*strength*dt;
+                    }
+
+                    // Side-wall collisions.
+                    if(r.x < -4.78){r.x=-4.78;r.vx=Math.abs(r.vx)*.72;}
+                    if(r.x > 4.78){r.x=4.78;r.vx=-Math.abs(r.vx)*.72;}
+
+                    // Peg collisions.
+                    if(r.pegCooldown<=0 && r.y> -4.5) {
+                        for(const p of pegs){
+                            const dx=r.x-p.x, dy=r.y-p.y, d=Math.hypot(dx,dy), min=.31;
+                            if(d>0.001 && d<min){
+                                const nx=dx/d, ny=dy/d, overlap=min-d;
+                                r.x += nx*overlap; r.y += ny*overlap;
+                                const vn=r.vx*nx+r.vy*ny;
+                                if(vn<0){
+                                    r.vx -= 1.72*vn*nx; r.vy -= 1.72*vn*ny;
+                                    r.vx += (Math.random()-.5)*.65;
+                                }
+                                r.pegCooldown=.035;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Sliding triangular deflector: sweeps right-to-left then back, pushing balls outward.
+                    if(r.y < -4.65 && r.y > -5.55){
+                        const phase=(elapsed%1.55)/1.55;
+                        const sweep=phase<.5 ? -4.4+phase*2*8.8 : 4.4-(phase-.5)*2*8.8;
+                        const triY=-5.3 + Math.max(0,1-Math.abs(r.x-sweep)/1.1)*.62;
+                        if(Math.abs(r.y-triY)<.28){
+                            r.vy=Math.min(r.vy,-2.4);
+                            r.vx += (r.x<sweep?-1:1)*(1.1+Math.random()*1.2);
+                        }
+                    }
+
+                    // Capture/stick at the chosen physical opening.
+                    const openingY = r.depth ? -8.15 : -6.6;
+                    if(r.y <= openingY){
+                        if(r.outcome==='lose'){
+                            r.x = r.targetX; r.y = -6.25; r.vx = 0; r.vy = 0; r.stuck = true;
+                        } else {
+                            r.x += (r.targetX-r.x)*.45;
+                            if(Math.abs(r.x-r.targetX)<.12) {
+                                r.x=r.targetX; r.y=openingY; r.vx=0; r.vy=0;
+                                r.stuck=true; r.stuckUntil=now+520;
+                            }
+                        }
+                    }
+
+                    r.mesh.position.set(r.x,r.y,r.z + Math.sin(elapsed*8+r.phase)*.05);
+                    r.mesh.rotation.x += dt*(4+r.spinX);
+                    r.mesh.rotation.y += dt*(5+r.spinY);
+                    r.mesh.rotation.z += dt*2;
+                });
+                if(active && elapsed<maxDuration) requestAnimationFrame(tick);
+                else dlbFinishResults(data);
+            };
+            requestAnimationFrame(tick);
+        }
+        function dlbFinishResults(data) {
+            dlbBalls=[]; dlbBusy=false; dlbReady=false; dlbClearWorld();
+            if (dlbGate) { dlbGate.rotation.x=Math.PI/2; dlbGate.scale.setScalar(1); }
+            dlbUpdateHud();
+            state.balance=data.balance; updateBalance();
+            const payout=data.payout||0;
+            dlbRewardBig.textContent=(payout>=0?'+':'')+payout.toLocaleString()+' 💎';
+            dlbRewardSmall.textContent=`${data.wonBalls||0} winning balls · ${data.lostBalls||0} lost`;
+            dlbReward.classList.add('show');
+            setTimeout(()=>dlbReward.classList.remove('show'),2800);
+            dlbSetStatus(`Round complete · paid ${payout.toLocaleString()} 💎`);
+            addTransaction(payout>0?'win':'bet',payout,'DLballs');
+            haptic(payout>0?'heavy':'light');
+        }
+        function dlbRender3D(now) {
+            if(!dlbRenderer) return;
+            const dt=Math.min(.05,(now-dlbLastTime)/1000); dlbLastTime=now;
+            if(dlbGate?.userData.opening){
+                const gp=Math.min(1,(now-dlbGate.userData.openStart)/420);
+                dlbGate.rotation.x=Math.PI/2 + gp*Math.PI*.58;
+                dlbGate.scale.setScalar(1-gp*.08);
+                if(gp>=1) dlbGate.userData.opening=false;
+            } else if(dlbGate && !dlbBusy) {
+                dlbGate.rotation.x += dt*.18;
+            }
+            if(dlbWorld && !dlbBusy && dlbBalls.length) {
+                dlbIntroSpin += dt*.8;
+                dlbWorld.children.forEach((o)=>{
+                    if(o.userData.follow) {
+                        const m=o.userData.follow;
+                        o.position.x=m.position.x; o.position.y=m.position.y-.62; o.position.z=m.position.z+.05;
+                        o.lookAt(dlbCamera.position);
+                    }
+                });
+                dlbBalls.forEach((b,i)=>{
+                    if(!b.mesh) return;
+                    const a=dlbIntroSpin+(i/dlbBalls.length)*Math.PI*2;
+                    b.mesh.position.x=Math.cos(a)*2.55;
+                    b.mesh.position.y=3.1+Math.sin(a)*1.05;
+                    b.mesh.position.z=1.0+Math.sin(a)*1.1;
+                    b.mesh.rotation.x+=dt*.9; b.mesh.rotation.y+=dt*1.4;
+                    b.mesh.scale.setScalar(.82+.18*(.5+.5*Math.sin(a*2)));
+                });
+            }
+            dlbRenderer.render(dlbScene,dlbCamera);
+            requestAnimationFrame(dlbRender3D);
+        }
+
+        // ─── RENDER PVP ──────────────────────────────────────────────
+        function render() {
+            const w = state.arenaSize;
+            const half = w / 2;
+            const s = scaleFactor();
+            ctx.clearRect(0, 0, w, w);
+
+            // Glass background with center glow (liquid glass effect)
+            const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
+            grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
+            grad.addColorStop(0.7, 'rgba(16, 18, 26, 0.80)');
+            grad.addColorStop(1, 'rgba(6, 8, 12, 0.92)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, w);
+
+            // Center glow (liquid glass effect)
+            const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.save();
+            ctx.fillStyle = glowGrad;
+            ctx.fillRect(0, 0, w, w);
+            ctx.restore();
+
+            // Rounded rect for arena background
+            const cornerRadius = w * 0.20;
+            const rectX = 0, rectY = 0, rectW = w, rectH = w;
+
+            function roundRect(ctx, x, y, w, h, r) {
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + w - r, y);
+                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+                ctx.lineTo(x + w, y + h - r);
+                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                ctx.lineTo(x + r, y + h);
+                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+            }
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = 'rgba(20, 22, 30, 0.70)';
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.fill();
+            ctx.restore();
+
+            ctx.save();
+            ctx.fillStyle = 'rgba(40, 44, 54, 0.20)';
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.fill();
+            ctx.restore();
+
+            // Outline
+            ctx.save();
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
+            ctx.shadowBlur = 16;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 2.5;
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+            ctx.lineWidth = 6;
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.stroke();
+            ctx.restore();
+
+            // Perimeter path
+            const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length > 0) {
+                const opening = state.opening;
+                const isFlashing = opening && opening.state === 'flashing';
+                const isOpen = opening && opening.state === 'open';
+                const total = pts.length;
+                ctx.save();
+                const hasGap = opening !== null && (isFlashing || isOpen);
+                if (hasGap && total > 0) {
+                    const start = opening.startIdx,
+                        end = opening.endIdx;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                    ctx.lineWidth = 1.5;
+                    for (let i = 0; i < total; i++) {
+                        const j = (i + 1) % total;
+                        let inGap = false;
+                        if (start < end) {
+                            if (i >= start && i < end) inGap = true;
+                            if (j >= start && j < end) inGap = true;
+                        } else {
+                            if (i >= start || i < end) inGap = true;
+                            if (j >= start || j < end) inGap = true;
+                        }
+                        if (inGap) continue;
+                        ctx.beginPath();
+                        ctx.moveTo(pts[i].x, pts[i].y);
+                        ctx.lineTo(pts[j].x, pts[j].y);
+                        ctx.stroke();
+                    }
+                    if (isFlashing) {
+                        const isRed = (opening.flashCount % 2 === 0);
+                        ctx.save();
+                        const flashColor = isRed ? 'rgba(255, 40, 60, 0.55)' : 'rgba(255, 255, 255, 0.15)';
+                        let gapSegments = [];
+                        if (start < end) {
+                            for (let i = start; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        } else {
+                            for (let i = start; i < total; i++) gapSegments.push({ i, j: (i + 1) % total });
+                            for (let i = 0; i < end; i++) gapSegments.push({ i, j: (i + 1) % total });
+                        }
+                        ctx.strokeStyle = flashColor;
+                        ctx.lineWidth = isRed ? 4 : 2.5;
+                        ctx.shadowColor = isRed ? 'rgba(255, 0, 50, 0.25)' : 'rgba(255, 255, 255, 0.05)';
+                        ctx.shadowBlur = isRed ? 18 : 6;
+                        for (const seg of gapSegments) {
+                            ctx.beginPath();
+                            ctx.moveTo(pts[seg.i].x, pts[seg.i].y);
+                            ctx.lineTo(pts[seg.j].x, pts[seg.j].y);
+                            ctx.stroke();
+                        }
+                        ctx.restore();
+                    }
+                } else {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // Clip to rounded rect for players
+            ctx.save();
+            roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
+            ctx.clip();
+
+            state.players.forEach(p => {
+                if (!p.alive) return;
+                const px = p.x * s,
+                    py = p.y * s;
+                const popScale = getPopScale(p);
+                const radius = (p.displayRadius || 18) * s * VISUAL_RADIUS_SCALE;
+                const displayRadius = radius * popScale;
+                let pulseScale = 1;
+                if (p.isPulsing) {
+                    const t = p.pulseTime;
+                    if (t < 0.6) {
+                        const phase = t / 0.6;
+                        pulseScale = 1 + 0.12 * Math.sin(phase * Math.PI * 3) * (1 - phase);
+                    }
+                }
+                const finalRadius = displayRadius * pulseScale;
+                const drawRadius = Math.max(finalRadius - 1, 1);
+                const topInfo = state.topPlayerIds.get(p.id);
+                let borderColor = 'rgba(255,255,255,0.35)';
+                let borderWidth = 1.5;
+                let shadowColor = 'transparent',
+                    shadowBlur = 0;
+                if (topInfo) {
+                    if (topInfo.rank === 1) {
+                        borderColor = '#FFD700';
+                        borderWidth = 3.5;
+                        shadowColor = 'rgba(255,215,0,0.6)';
+                        shadowBlur = 18;
+                    } else if (topInfo.rank === 2) {
+                        borderColor = '#C0C0C0';
+                        borderWidth = 3.0;
+                        shadowColor = 'rgba(192,192,192,0.5)';
+                        shadowBlur = 14;
+                    }
+                }
+                const isMe = p.id === state.userId;
+                const isAnonymous = isMe && state.anonymous;
+                const hidePfp = isMe && state.hidePfp;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(px, py, drawRadius, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+                if (isAnonymous || hidePfp) {
+                    const color = getAnonymousColor(state.userId);
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
+                    ctx.fillStyle = '#fff';
+                    const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
+                    ctx.font = `bold ${drawRadius*0.6}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(letter, px, py + 1);
+                    ctx.shadowBlur = 0;
+                } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                    const size = drawRadius * 2;
+                    ctx.drawImage(p.pfpImg, px - drawRadius, py - drawRadius, size, size);
+                } else {
+                    ctx.fillStyle = p.color || '#555';
+                    ctx.fillRect(px - drawRadius, py - drawRadius, drawRadius * 2, drawRadius * 2);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${drawRadius*0.5}px system-ui, sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
+                }
+                ctx.restore();
+                ctx.save();
+                ctx.shadowBlur = shadowBlur;
+                ctx.shadowColor = shadowColor;
+                ctx.beginPath();
+                ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = borderWidth;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            });
+
+            ctx.restore(); // clip
+        }
+
+        // ─── RENDER ICE (FINAL) ──────────────────────────────────────
+        function renderIce() {
+            const w = iceState.arenaSize;
+            if (!w) return;
+            const half = w / 2;
+            const s = iceScaleFactor();
+
+            iceCtx.clearRect(0, 0, w, w);
+
+            const grad = iceCtx.createRadialGradient(half, half, 0, half, half, half);
+            grad.addColorStop(0, 'rgba(45, 55, 70, 0.35)');
+            grad.addColorStop(0.4, 'rgba(28, 35, 48, 0.45)');
+            grad.addColorStop(0.8, 'rgba(14, 18, 26, 0.55)');
+            grad.addColorStop(1, 'rgba(6, 10, 18, 0.60)');
+            iceCtx.fillStyle = grad;
+            iceCtx.fillRect(0, 0, w, w);
+
+            const glowGrad = iceCtx.createRadialGradient(half, half, 0, half, half, half * 0.5);
+            glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
+            glowGrad.addColorStop(0.6, 'rgba(255, 255, 255, 0.02)');
+            glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            iceCtx.save();
+            iceCtx.fillStyle = glowGrad;
+            iceCtx.fillRect(0, 0, w, w);
+            iceCtx.restore();
+
+            const pts = iceState.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
+            if (pts.length === 0) return;
+            const perimeterPath = new Path2D();
+            perimeterPath.moveTo(pts[0].x, pts[0].y);
+            for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
+            perimeterPath.closePath();
+
+            // ─── PULSE GLOW EFFECT (idle state) ─────────────────────
+            if (iceState.gameState === 'idle') {
+                iceState.glowPhase += 0.03;
+                const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
+                const alpha = 0.08 + 0.22 * pulse;
+                const blur = 15 + 30 * pulse;
+
+                iceCtx.save();
+                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha})`;
+                iceCtx.shadowBlur = blur;
+                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.4})`;
+                iceCtx.lineWidth = 4;
+                iceCtx.stroke(perimeterPath);
+                iceCtx.restore();
+
+                iceCtx.save();
+                iceCtx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.6})`;
+                iceCtx.shadowBlur = blur * 1.8;
+                iceCtx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.15})`;
+                iceCtx.lineWidth = 8;
+                iceCtx.stroke(perimeterPath);
+                iceCtx.restore();
+            }
+
+            // ─── ZOOM TRANSFORMATION (fixed center) ────────────────
+            let zoomActive = iceState.zoom > 1.01;
+            let zoomTx = 0, zoomTy = 0, zoomSc = 1;
+            if (zoomActive && iceState.zoomCenterFixed) {
+                // Use the stored world coordinates as fixed center
+                const centerScreenX = iceState.zoomCenterX * s;
+                const centerScreenY = iceState.zoomCenterY * s;
+                const cx = half, cy = half;
+                zoomTx = (cx - centerScreenX) * iceState.zoom + cx - cx * iceState.zoom;
+                zoomTy = (cy - centerScreenY) * iceState.zoom + cy - cy * iceState.zoom;
+                zoomSc = iceState.zoom;
+                iceCtx.save();
+                iceCtx.translate(zoomTx, zoomTy);
+                iceCtx.scale(zoomSc, zoomSc);
+            }
+
+            // Perimeter outline
+            iceCtx.save();
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+            iceCtx.lineWidth = 3;
+            iceCtx.shadowColor = 'rgba(255, 255, 255, 0.08)';
+            iceCtx.shadowBlur = 14;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.shadowBlur = 0;
+            iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            iceCtx.lineWidth = 6;
+            iceCtx.stroke(perimeterPath);
+            iceCtx.restore();
+
+            // Idle puck
+            if (iceState.gameState === 'idle') {
+                if (!iceState.idlePuckInitialized) {
+                    const margin = 20;
+                    const r = 10;
+                    iceState.idlePuck.x = w / 2;
+                    iceState.idlePuck.y = w / 2;
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 2.0 + Math.random() * 1.5;
+                    iceState.idlePuck.vx = Math.cos(angle) * speed;
+                    iceState.idlePuck.vy = Math.sin(angle) * speed;
+                    iceState.idlePuck.radius = r;
+                    iceState.idlePuckInitialized = true;
+                }
+                let x = iceState.idlePuck.x;
+                let y = iceState.idlePuck.y;
+                let vx = iceState.idlePuck.vx;
+                let vy = iceState.idlePuck.vy;
+                x += vx;
+                y += vy;
+                const radius = iceState.idlePuck.radius;
+                const margin = 15;
+                if (x - radius < margin) { x = margin + radius; vx = -vx; }
+                if (x + radius > w - margin) { x = w - margin - radius; vx = -vx; }
+                if (y - radius < margin) { y = margin + radius; vy = -vy; }
+                if (y + radius > w - margin) { y = w - margin - radius; vy = -vy; }
+                iceState.idlePuck.x = x;
+                iceState.idlePuck.y = y;
+                iceState.idlePuck.vx = vx;
+                iceState.idlePuck.vy = vy;
+
+                const cx = x;
+                const cy = y;
+                const puckRadius = 10 * s;
+                const r = puckRadius;
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.strokeStyle = '#ffffff';
+                iceCtx.lineWidth = 4;
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
+                iceCtx.stroke();
+                const crossSize = r * 0.7;
+                iceCtx.shadowBlur = 0;
+                iceCtx.globalAlpha = 0.5;
+                iceCtx.lineWidth = 2;
+                iceCtx.strokeStyle = '#ffffff';
+                iceCtx.beginPath();
+                iceCtx.moveTo(cx - crossSize, cy);
+                iceCtx.lineTo(cx + crossSize, cy);
+                iceCtx.moveTo(cx, cy - crossSize);
+                iceCtx.lineTo(cx, cy + crossSize);
+                iceCtx.stroke();
+                iceCtx.globalAlpha = 1;
+                iceCtx.restore();
+                if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
+            }
+
+            // ─── ZOOM LOGIC (trigger at 6.0s, speed < 0.3) ──────────
+            const now = performance.now();
+            const puck = iceState.puck;
+            if (iceState.gameState === 'sliding') {
+                const slideElapsed = (now - iceState.slideStartTime) / 1000;
+                const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
+                // Trigger when speed is very low and elapsed time > 6.0 (about 0.1-0.2s before stop)
+                if (slideElapsed > 7.0 && currentSpeed < 0.3 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
+                    .zoomLocked) {
+                    // Store the puck's world position at this moment (fixed center)
+                    iceState.zoomCenterX = puck.x;
+                    iceState.zoomCenterY = puck.y;
+                    iceState.zoomCenterFixed = true;
+                    iceState.isZoomingIn = true;
+                    iceState.zoomStartTime = now;
+                    iceState.zoomTarget = 1.5; // zoom factor
+                }
+            }
+            if (iceState.isZoomingOut) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = iceState.zoomTarget + (1 - iceState.zoomTarget) * (1 - eased);
+                if (progress >= 1) {
+                    iceState.isZoomingOut = false;
+                    iceState.zoom = 1;
+                    iceState.zoomLocked = false;
+                    iceState.zoomOutTriggered = false;
+                }
+            }
+            if (iceState.isZoomingIn) {
+                const elapsed = (now - iceState.zoomStartTime) / 1000;
+                const progress = Math.min(elapsed / iceState.zoomDuration, 1);
+                const eased = easeInOutCubic(progress);
+                iceState.zoom = 1 + (iceState.zoomTarget - 1) * eased;
+                if (progress >= 1) {
+                    iceState.isZoomingIn = false;
+                    iceState.zoomLocked = true;
+                    iceState.zoom = iceState.zoomTarget;
+                }
+            }
+
+            // ─── SMOOTH PUCK INTERPOLATION ──────────────────────────
+            let renderPuckX = puck.x;
+            let renderPuckY = puck.y;
+            if (iceState.puckUpdateTime > 0) {
+                const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
+                const t = Math.min(elapsed / (1/30), 1);
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * t;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * t;
+            }
+            const speed = Math.sqrt(
+                Math.pow(renderPuckX - iceState.puckPrevX, 2) +
+                Math.pow(renderPuckY - iceState.puckPrevY, 2)
+            );
+
+            // Draw fields
+            iceCtx.save();
+            iceCtx.clip(perimeterPath);
+            iceState.players.forEach((p, index) => {
+                const x1 = p.x1 * s;
+                const y1 = p.y1 * s;
+                const x2 = p.x2 * s;
+                const y2 = p.y2 * s;
+                const segW = x2 - x1;
+                const segH = y2 - y1;
+                const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
+
+                const color = isWinner ? lightenColor(p.color, 70) : p.color;
+
+                iceCtx.save();
+                iceCtx.fillStyle = color;
+                iceCtx.globalAlpha = isWinner ? 1 : 0.92;
+                iceCtx.fillRect(x1, y1, segW, segH);
+                iceCtx.globalAlpha = 1;
+
+                const avatarR = Math.min(segW, segH) * 0.32;
+                let pfpScale = 1;
+                const popData = iceState.pfpPop.get(p.id);
+                if (popData) {
+                    const elapsed = (now - popData.startTime) / 1000;
+                    const progress = Math.min(elapsed / (popData.duration / 1000), 1);
+                    if (progress < 1) {
+                        pfpScale = easeOutBack(progress);
+                        pfpScale = Math.min(1.2, Math.max(0, pfpScale));
+                    } else {
+                        iceState.pfpPop.delete(p.id);
+                    }
+                }
+                const drawR = avatarR * pfpScale;
+                const cx = (x1 + x2) / 2;
+                const cy = (y1 + y2) / 2;
+                iceCtx.save();
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, drawR, 0, Math.PI * 2);
+                iceCtx.closePath();
+                iceCtx.clip();
+
+                const isMe = p.id === state.userId;
+                const isAnonymous = isMe && state.anonymous;
+                const hidePfp = isMe && state.hidePfp;
+                if (isAnonymous || hidePfp) {
+                    const col = getAnonymousColor(state.userId);
+                    iceCtx.fillStyle = col;
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                    iceCtx.fillStyle = '#fff';
+                    const letter = (state.anonymousName || 'A').charAt(0).toUpperCase();
+                    iceCtx.font = `bold ${drawR*0.8}px system-ui, sans-serif`;
+                    iceCtx.textAlign = 'center';
+                    iceCtx.textBaseline = 'middle';
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                    iceCtx.shadowBlur = 4;
+                    iceCtx.fillText(letter, cx, cy);
+                    iceCtx.shadowBlur = 0;
+                } else if (p.pfpImg && p.pfpImg.complete && p.pfpImg.naturalWidth > 0) {
+                    iceCtx.drawImage(p.pfpImg, cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                } else {
+                    iceCtx.fillStyle = p.color || '#555';
+                    iceCtx.fillRect(cx - drawR, cy - drawR, drawR * 2, drawR * 2);
+                }
+                iceCtx.restore();
+                iceCtx.restore();
+            });
+            iceCtx.restore();
+
+            // Spinning arrow
+            if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
+                const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
+                const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
+                const extraSpins = 4;
+                const angle = iceState.spinFinalAngle - (1 - easeOutCubic(t)) * (extraSpins * Math.PI * 2);
+                const centerX = iceState.spinStartX * s;
+                const centerY = iceState.spinStartY * s;
+                const puckRadius = PUCK_RENDER_RADIUS * s;
+                const orbitRadius = puckRadius + 4;
+                const triSize = Math.min(w * 0.035, 10);
+                const tipOffset = triSize * 0.4;
+                iceCtx.save();
+                iceCtx.translate(centerX, centerY);
+                iceCtx.rotate(angle);
+                iceCtx.translate(orbitRadius, 0);
+                iceCtx.beginPath();
+                iceCtx.moveTo(tipOffset, 0);
+                iceCtx.lineTo(-tipOffset * 0.3, -triSize * 0.5);
+                iceCtx.lineTo(-tipOffset * 0.3, triSize * 0.5);
+                iceCtx.closePath();
+                iceCtx.fillStyle = '#e8f4ff';
+                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.fill();
+                iceCtx.shadowBlur = 0;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.4)';
+                iceCtx.lineWidth = 1;
+                iceCtx.stroke();
+                iceCtx.restore();
+            }
+
+            // ─── PUCK DRAWING (no collider outline) ────────────────────
+            if (iceState.puckVisible) {
+                let scale = 1;
+                if (iceState.puckPopStart) {
+                    const elapsedPop = (performance.now() - iceState.puckPopStart) / 1000;
+                    const duration = 0.4;
+                    const progress = Math.min(elapsedPop / duration, 1);
+                    if (progress < 1) {
+                        scale = easeOutBack(progress);
+                        scale = Math.min(1.2, Math.max(0, scale));
+                    } else {
+                        scale = 1;
+                        iceState.puckPopStart = 0;
+                    }
+                }
+                let winnerScale = 1;
+                if (iceState.winnerPuckPop) {
+                    const elapsed = (performance.now() - iceState.winnerPuckPopStart) / 1000;
+                    const duration = iceState.winnerPuckPopDuration / 1000;
+                    const progress = Math.min(elapsed / duration, 1);
+                    if (progress < 1) {
+                        const bounceProgress = progress * 3;
+                        if (bounceProgress < 1) {
+                            winnerScale = 1 + 0.6 * easeOutBack(bounceProgress);
+                        } else if (bounceProgress < 2) {
+                            winnerScale = 1 + 0.3 * Math.sin((bounceProgress - 1) * Math.PI);
+                        } else {
+                            winnerScale = 1;
+                        }
+                    } else {
+                        winnerScale = 1;
+                        iceState.winnerPuckPop = false;
+                    }
+                }
+                const totalScale = scale * winnerScale;
+
+                let px, py;
+                if (iceState.gameState === 'spinning') {
+                    px = iceState.spinStartX * s;
+                    py = iceState.spinStartY * s;
+                } else {
+                    px = renderPuckX * s;
+                    py = renderPuckY * s;
+                }
+                const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
+                const r = puckRadius;
+
+                // No grey collider ring
+
+                // ---- Shadow ----
+                iceCtx.save();
+                iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
+                iceCtx.shadowBlur = 12;
+                iceCtx.shadowOffsetX = 3;
+                iceCtx.shadowOffsetY = 4;
+                iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
+                iceCtx.beginPath();
+                iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.restore();
+
+                // ---- White outline (thick) ----
+                iceCtx.save();
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
+                iceCtx.lineWidth = 4;
+                iceCtx.shadowBlur = 0;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r, 0, Math.PI * 2);
+                iceCtx.stroke();
+                iceCtx.restore();
+
+                // ---- Cross (thinner) ----
+                const crossSize = r * 0.7;
+                iceCtx.save();
+                iceCtx.globalAlpha = 0.5;
+                iceCtx.lineWidth = 1.5;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+                iceCtx.beginPath();
+                iceCtx.moveTo(px - crossSize, py);
+                iceCtx.lineTo(px + crossSize, py);
+                iceCtx.moveTo(px, py - crossSize);
+                iceCtx.lineTo(px, py + crossSize);
+                iceCtx.stroke();
+                iceCtx.restore();
+
+                // Owner name (if slow) – unchanged
+                const speedThreshold = 2.0;
+                const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
+                let ownerName = '';
+                if (iceState.players.length > 0 && iceState.gameState === 'sliding') {
+                    const pxLocal = renderPuckX;
+                    const pyLocal = renderPuckY;
+                    for (const p of iceState.players) {
+                        if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
+                            ownerName = p.name || 'Player';
+                            break;
+                        }
+                    }
+                }
+                if (isSlow && ownerName) {
+                    iceState.currentOwnerName = ownerName;
+                    iceState.showOwnerName = true;
+                    iceState.nameFadeIn = Math.min(1, iceState.nameFadeIn + 0.03);
+                } else if (!isSlow || !ownerName) {
+                    iceState.nameFadeIn = Math.max(0, iceState.nameFadeIn - 0.02);
+                    if (iceState.nameFadeIn <= 0) {
+                        iceState.showOwnerName = false;
+                    }
+                }
+                if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
+                    const alpha = iceState.nameFadeIn * 0.55;
+                    const fontSize = Math.max(9, Math.min(14, r * 0.9));
+                    iceCtx.save();
+                    iceCtx.globalAlpha = alpha;
+                    iceCtx.textAlign = 'center';
+                    iceCtx.textBaseline = 'top';
+                    iceCtx.font = `bold ${fontSize}px system-ui, sans-serif`;
+                    iceCtx.fillStyle = 'rgba(255,255,255,0.85)';
+                    iceCtx.shadowColor = 'rgba(0,0,0,0.9)';
+                    iceCtx.shadowBlur = 6;
+                    let displayName = iceState.currentOwnerName;
+                    if (displayName.length > 10) displayName = displayName.slice(0, 9) + '…';
+                    const textY = py + r + 4;
+                    iceCtx.fillText(displayName, px, textY);
+                    iceCtx.restore();
+                }
+            }
+
+            if (zoomActive) iceCtx.restore();
+        }
+
+        // ─── RENDER LOOP ─────────────────────────────────────────────
+        function renderLoop() {
+            updatePlayerAnimations();
+            const now = Date.now();
+
+            if (state.gameState === 'countdown' && state.countdownStartTime) {
+                const elapsed = (now - state.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                countdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                const progress = Math.min(1, elapsed / 10.0) * 100;
+                timerProgress.style.width = progress + '%';
+                timerProgressWrap.classList.add('visible');
+            } else if (state.gameState === 'prestart') {
+                countdownTimer.textContent = 'GO!';
+                timerProgress.style.width = '100%';
+                timerProgressWrap.classList.add('visible');
+            } else if (state.gameState === 'idle') {
+                timerProgressWrap.classList.remove('visible');
+            }
+
+            if (iceState.gameState === 'countdown' && iceState.countdownStartTime) {
+                const elapsed = (now - iceState.countdownStartTime) / 1000;
+                const remaining = Math.max(0, 10.0 - elapsed);
+                const secs = Math.floor(remaining);
+                const ms = Math.floor((remaining - secs) * 100);
+                iceCountdownTimer.textContent = secs + '.' + String(ms).padStart(2, '0');
+                iceTimerProgress.style.width = (Math.min(1, elapsed / 10.0) * 100) + '%';
+            }
+
+            updateIceTopPanelVisibility();
+
+            render();
+            renderIce();
+            requestAnimationFrame(renderLoop);
+        }
+
+        // ─── INIT ─────────────────────────────────────────────────────
+        function init() {
+            if (tg?.initDataUnsafe?.user) {
+                const u = tg.initDataUnsafe.user;
+                state.username = u.username || u.first_name || 'player';
+                state.pfp = u.photo_url || '';
+            } else {
+                state.username = 'player';
+            }
+            usernameDisplay.textContent = '@' + state.username;
+            profilePfp.src = state.pfp || state.defaultAvatar;
+            profileName.textContent = state.username;
+            profileUsername.textContent = '@' + state.username;
+            memberSince.textContent = `Member since ${state.memberSince}`;
+            resizeCanvas();
+            resizeIceCanvas();
+            window.addEventListener('resize', () => { resizeCanvas();
+                resizeIceCanvas(); });
+            Object.keys(tabPages).forEach(key => tabPages[key].classList.toggle('active', key === 'pvp'));
+            document.getElementById('tabs').style.pointerEvents = 'auto';
+            tabBtns.forEach(b => b.style.pointerEvents = 'auto');
+            setupBalanceCardTriggers();
+            renderRecentGames();
+            renderTransactions();
+            updateCardStats();
+            requestAnimationFrame(renderLoop);
+            setOnline(false);
+        }
+        init();
+        window.__state = state;
+    </script>
+
+    <!-- ─── LOADING SCREEN CONTROLLER ──────────────────────────── -->
+    <script>
+        (function() {
+            'use strict';
+            const GIFS = [
+                'https://i.postimg.cc/fbc4dJhH/ezgif-4c0407329eb1bee2.gif',
+                'https://i.postimg.cc/7Z5LvW39/ezgif-4113ebc5948a7fca.gif',
+                'https://i.postimg.cc/tJRXBSCb/ezgif-4de2b661e14101c5.gif',
+                'https://i.postimg.cc/J7dVw4Pf/ezgif-26d00414e9a7afa6.gif'
+            ];
+            const loadingScreen = document.getElementById('loading-screen');
+            const grid = document.getElementById('loading-grid');
+            const mergedSquare = document.getElementById('merged-square');
+            const pulseRing = document.getElementById('pulse-ring');
+            const loadingText = document.getElementById('loading-text');
+            const selectedGif = GIFS[Math.floor(Math.random() * GIFS.length)];
+            let squares = [];
+            let squareSize = 0,
+                gapSize = 0,
+                gridSize = 0;
+
+            function measureGrid() {
+                const rect = grid.getBoundingClientRect();
+                gridSize = rect.width;
+                const computedStyle = getComputedStyle(grid);
+                gapSize = parseFloat(computedStyle.gap) || 8;
+                squareSize = (gridSize - gapSize * 2) / 3;
+            }
+
+            function buildGrid() {
+                grid.innerHTML = '';
+                squares = [];
+                for (let i = 0; i < 9; i++) {
+                    const sq = document.createElement('div');
+                    sq.className = 'load-square';
+                    const img = document.createElement('img');
+                    img.className = 'gif-bg';
+                    img.src = selectedGif;
+                    img.alt = '';
+                    img.loading = 'lazy';
+                    sq.appendChild(img);
+                    grid.appendChild(sq);
+                    squares.push(sq);
+                }
+            }
+
+            function runPop() {
+                return new Promise((resolve) => {
+                    let done = 0;
+                    squares.forEach((sq, i) => {
+                        const delay = 60 + i * 50;
+                        setTimeout(() => {
+                            sq.classList.add('pop');
+                            done++;
+                            if (done === squares.length) {
+                                setTimeout(resolve, 350);
+                            }
+                        }, delay);
+                    });
+                    setTimeout(resolve, 1400);
+                });
+            }
+
+            function runSlide() {
+                return new Promise((resolve) => {
+                    measureGrid();
+                    const gridRect = grid.getBoundingClientRect();
+                    const cx = gridRect.left + gridRect.width / 2;
+                    const cy = gridRect.top + gridRect.height / 2;
+                    squares.forEach((sq) => {
+                        const r = sq.getBoundingClientRect();
+                        const dx = cx - (r.left + r.width / 2);
+                        const dy = cy - (r.top + r.height / 2);
+                        sq.dataset.tx = dx;
+                        sq.dataset.ty = dy;
+                    });
+                    squares.forEach((sq, i) => {
+                        const dx = parseFloat(sq.dataset.tx);
+                        const dy = parseFloat(sq.dataset.ty);
+                        const delay = i * 30;
+                        setTimeout(() => {
+                            sq.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(1.02)';
+                            sq.style.borderRadius = '20px';
+                            sq.style.boxShadow = '0 8px 40px rgba(0,0,0,0.8), 0 0 60px rgba(255,255,255,0.05)';
+                            sq.style.zIndex = '5';
+                            sq.classList.add('slide');
+                        }, delay);
+                    });
+                    setTimeout(resolve, squares.length * 30 + 950);
+                });
+            }
+
+            function runMerge() {
+                return new Promise((resolve) => {
+                    measureGrid();
+                    const gridRect = grid.getBoundingClientRect();
+                    const cx = gridRect.left + gridRect.width / 2;
+                    const cy = gridRect.top + gridRect.height / 2;
+                    const mergedSize = squareSize * 1.8;
+                    mergedSquare.style.width = mergedSize + 'px';
+                    mergedSquare.style.height = mergedSize + 'px';
+                    mergedSquare.style.left = (cx - mergedSize / 2 - gridRect.left) + 'px';
+                    mergedSquare.style.top = (cy - mergedSize / 2 - gridRect.top) + 'px';
+                    const mergedImg = document.createElement('img');
+                    mergedImg.className = 'gif-bg';
+                    mergedImg.src = selectedGif;
+                    mergedImg.alt = '';
+                    mergedSquare.innerHTML = '';
+                    mergedSquare.appendChild(mergedImg);
+                    squares.forEach((sq, i) => {
+                        setTimeout(() => {
+                            sq.style.transition = 'transform 0.5s ease, opacity 0.4s ease, border-radius 0.4s ease';
+                            sq.style.transform = 'scale(0.3)';
+                            sq.style.opacity = '0';
+                            sq.style.borderRadius = '30px';
+                            sq.style.zIndex = '0';
+                        }, i * 20);
+                    });
+                    setTimeout(() => {
+                        mergedSquare.classList.add('show');
+                        setTimeout(() => {
+                            pulseRing.classList.add('pulse');
+                        }, 300);
+                        loadingText.style.opacity = '0.4';
+                        resolve();
+                    }, 500);
+                });
+            }
+
+            function runFadeOut() {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        loadingScreen.classList.add('hidden');
+                        setTimeout(resolve, 950);
+                    }, 2200);
+                });
+            }
+
+            async function start() {
+                buildGrid();
+                measureGrid();
+                await runPop();
+                await runSlide();
+                await runMerge();
+                await runFadeOut();
+                console.log('Loading complete.');
+            }
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                setTimeout(start, 200);
+            } else {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(start, 200);
+                });
+            }
+        })();
+    </script>
+
+</body>
+</html>
