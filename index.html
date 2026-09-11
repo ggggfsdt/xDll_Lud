@@ -6,6 +6,7 @@
     <title>dllump · bump arena</title>
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.min.js"></script>
     <style>
         /* ─── LOADING SCREEN ───────────────────────────────────────── */
         #loading-screen {
@@ -3130,6 +3131,116 @@
             margin-top: 10px;
         }
     </style>
+<style>
+
+        /* ─── DLBALLS GAME ─────────────────────────────────────────── */
+        #dlballs-page {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            background:
+                radial-gradient(circle at 50% 15%, rgba(75, 95, 125, .22), transparent 42%),
+                linear-gradient(180deg, #090b10 0%, #050608 100%);
+            color: #fff;
+        }
+        #dlballs-page.hidden { display: none; }
+        .dlb-top {
+            height: 48px; flex-shrink: 0; display:flex; align-items:center; justify-content:space-between;
+            padding: 0 12px; border-bottom:1px solid rgba(255,255,255,.08);
+            background:rgba(8,9,12,.82); backdrop-filter:blur(14px); z-index:5;
+        }
+        .dlb-back, .dlb-buy {
+            border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.06);
+            color:#fff; border-radius:11px; padding:8px 12px; font-weight:700; font-size:12px;
+            cursor:pointer; touch-action:manipulation;
+        }
+        .dlb-buy { background:linear-gradient(145deg,#262a32,#111319); }
+        .dlb-title { font-weight:800; letter-spacing:2px; font-size:13px; }
+        #dlballs-stage { flex:1; min-height:0; position:relative; overflow:hidden; }
+        #dlballs-canvas { width:100%; height:100%; display:block; touch-action:none; }
+        .dlb-hud {
+            position:absolute; left:12px; right:12px; bottom:10px; z-index:4; pointer-events:none;
+            display:flex; flex-direction:column; gap:8px;
+        }
+        .dlb-hud-row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+        .dlb-pill {
+            background:rgba(10,11,15,.80); border:1px solid rgba(255,255,255,.09);
+            border-radius:12px; padding:7px 10px; font-size:11px; backdrop-filter:blur(10px);
+            box-shadow:0 8px 25px rgba(0,0,0,.35);
+        }
+        .dlb-pill b { font-size:14px; }
+        #dlballs-launch {
+            pointer-events:auto; flex:1; border:0; border-radius:13px; padding:12px;
+            background:linear-gradient(145deg,#d7b85a,#8d6d20); color:#111; font-weight:900;
+            letter-spacing:.5px; cursor:pointer; box-shadow:0 8px 30px rgba(190,155,50,.20);
+        }
+        #dlballs-launch:disabled { opacity:.38; cursor:default; }
+        .dlb-status { text-align:center; color:rgba(255,255,255,.55); font-size:11px; min-height:14px; }
+        .dlb-modal {
+            position:absolute; inset:0; z-index:10; display:none; align-items:center; justify-content:center;
+            padding:18px; background:rgba(0,0,0,.68); backdrop-filter:blur(12px);
+        }
+        .dlb-modal.show { display:flex; }
+        .dlb-box {
+            width:min(360px,100%); border:1px solid rgba(255,255,255,.12); border-radius:20px;
+            background:linear-gradient(145deg,#17191e,#0c0d10); padding:18px;
+            box-shadow:0 25px 80px rgba(0,0,0,.75);
+        }
+        .dlb-box h3 { margin-bottom:5px; font-size:18px; }
+        .dlb-box p { color:rgba(255,255,255,.45); font-size:11px; margin-bottom:14px; }
+        .dlb-mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+        .dlb-mode {
+            padding:11px 8px; border-radius:12px; border:1px solid rgba(255,255,255,.08);
+            background:rgba(255,255,255,.04); color:#fff; text-align:left; cursor:pointer;
+        }
+        .dlb-mode.active { border-color:rgba(218,186,90,.75); background:rgba(200,168,78,.12); }
+        .dlb-mode strong { display:block; font-size:12px; }
+        .dlb-mode span { display:block; margin-top:3px; font-size:9px; color:rgba(255,255,255,.42); }
+        .dlb-field { margin:9px 0; }
+        .dlb-field label { display:block; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,.35); margin-bottom:5px; }
+        .dlb-field input, .dlb-field select {
+            width:100%; padding:11px 12px; border-radius:11px; border:1px solid rgba(255,255,255,.09);
+            background:#090a0d; color:#fff; outline:none;
+        }
+        .dlb-confirm { width:100%; margin-top:9px; padding:12px; border:0; border-radius:12px; background:#eee; color:#111; font-weight:900; cursor:pointer; }
+        .dlb-cancel { width:100%; margin-top:6px; padding:10px; border:0; background:transparent; color:rgba(255,255,255,.45); cursor:pointer; }
+        .dlb-reward {
+            position:absolute; left:50%; top:13%; transform:translate(-50%,-20px) scale(.8);
+            opacity:0; z-index:7; pointer-events:none; text-align:center; transition:.45s cubic-bezier(.2,1.4,.3,1);
+        }
+        .dlb-reward.show { opacity:1; transform:translate(-50%,0) scale(1); }
+        .dlb-reward .big { font-size:30px; font-weight:900; text-shadow:0 0 35px rgba(255,255,255,.28); }
+        .dlb-reward .small { font-size:11px; color:rgba(255,255,255,.48); }
+        .dlb-pointer { position:absolute; top:44%; left:50%; transform:translateX(-50%); z-index:3; color:#fff; font-size:18px; text-shadow:0 0 16px rgba(255,255,255,.7); pointer-events:none; animation:dlbPointerPulse 1s ease-in-out infinite; }
+        @keyframes dlbPointerPulse { 0%,100%{transform:translateX(-50%) translateY(0);opacity:.75}50%{transform:translateX(-50%) translateY(4px);opacity:1} }
+        .dlb-help { position:absolute; top:56px; left:50%; transform:translateX(-50%); z-index:3; font-size:9px; color:rgba(255,255,255,.22); pointer-events:none; }
+        @media (max-width:420px) {
+            .dlb-top { height:44px; }
+            .dlb-back,.dlb-buy { padding:7px 9px; font-size:11px; }
+            .dlb-title { font-size:12px; }
+        }
+
+
+        .dlb-card-launch {
+            width:100%; display:flex; align-items:center; gap:10px; padding:11px 13px; margin-top:8px;
+            border:1px solid rgba(200,168,78,.20); border-radius:13px;
+            background:linear-gradient(145deg,rgba(200,168,78,.13),rgba(255,255,255,.035));
+            color:#fff; cursor:pointer; text-align:left; transition:.2s;
+        }
+        .dlb-card-launch:active { transform:scale(.98); }
+        .dlb-card-launch .dlb-card-icon {
+            width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+            background:radial-gradient(circle at 32% 25%,#fff,#bfc3c8 28%,#70757c 65%,#292c31);
+            box-shadow:inset -3px -4px 8px rgba(0,0,0,.45),0 0 12px rgba(255,255,255,.10);
+            color:transparent; flex-shrink:0;
+        }
+        .dlb-card-launch b { display:block; font-size:12px; }
+        .dlb-card-launch small { display:block; margin-top:2px; font-size:9px; color:rgba(255,255,255,.38); }
+        .dlb-card-arrow { margin-left:auto; font-size:22px; color:rgba(255,255,255,.35); }
+
+</style>
 </head>
 <body>
 
@@ -3398,6 +3509,60 @@
                 <div id="podium"></div>
                 <div id="top-list"></div>
             </div>
+            <!-- DLBALLS: hidden from bottom tab list; opened from balance card -->
+            <div id="dlballs-page" class="hidden" aria-label="DLballs">
+                <div class="dlb-top">
+                    <button class="dlb-back" id="dlb-back">‹ Back</button>
+                    <div class="dlb-title">DLBALLS</div>
+                    <button class="dlb-buy" id="dlb-buy">Buy balls</button>
+                </div>
+                <div id="dlballs-stage">
+                    <canvas id="dlballs-canvas"></canvas>
+                    <div class="dlb-help">3D physics arena · balls can miss, stick or multiply</div><div class="dlb-pointer">▲</div>
+                    <div class="dlb-hud">
+                        <div class="dlb-hud-row">
+                            <div class="dlb-pill">Balls <b id="dlb-count">0</b></div>
+                            <div class="dlb-pill">Value <b id="dlb-value">0</b> 💎</div>
+                            <div class="dlb-pill">Balance <b id="dlb-balance">0</b> 💎</div>
+                        </div>
+                        <button id="dlballs-launch" disabled>Launch balls</button>
+                        <div class="dlb-status" id="dlb-status">Buy balls to load the launcher.</div>
+                    </div>
+                    <div class="dlb-reward" id="dlb-reward">
+                        <div class="big" id="dlb-reward-big">+0 💎</div>
+                        <div class="small" id="dlb-reward-small">Round complete</div>
+                    </div>
+                    <div class="dlb-modal" id="dlb-buy-modal">
+                        <div class="dlb-box">
+                            <h3>Load DLballs</h3>
+                            <p>Each ball is paid before launch. Random balls strongly favor smaller values.</p>
+                            <div class="dlb-mode-grid">
+                                <button class="dlb-mode active" data-dlb-mode="random"><strong>Random</strong><span>1–1,000 value · weighted low</span></button>
+                                <button class="dlb-mode" data-dlb-mode="fixed"><strong>Price ball</strong><span>Choose an exact value</span></button>
+                            </div>
+                            <div class="dlb-field" id="dlb-fixed-wrap" style="display:none">
+                                <label>Ball value</label>
+                                <select id="dlb-fixed-value">
+                                    <option value="1">1 💎</option><option value="5">5 💎</option><option value="10">10 💎</option>
+                                    <option value="25">25 💎</option><option value="50">50 💎</option><option value="100">100 💎</option>
+                                    <option value="250">250 💎</option><option value="500">500 💎</option><option value="1000">1000 💎</option>
+                                </select>
+                            </div>
+                            <div class="dlb-field">
+                                <label>Amount of balls</label>
+                                <input id="dlb-amount" type="number" min="1" max="50" value="5" inputmode="numeric">
+                            </div>
+                            <div class="dlb-field">
+                                <label>Cost per ball</label>
+                                <input id="dlb-stake" type="number" min="1" max="1000000" value="10" inputmode="numeric">
+                            </div>
+                            <button class="dlb-confirm" id="dlb-buy-confirm">Buy & load</button>
+                            <button class="dlb-cancel" id="dlb-buy-cancel">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- TABS -->
@@ -3502,6 +3667,12 @@
                     <span class="cs-value" id="cs-currency">💎</span>
                 </div>
             </div>
+
+            <button id="open-dlballs-btn" class="dlb-card-launch">
+                <span class="dlb-card-icon">●</span>
+                <span><b>DLballs</b><small>3D ball multiplier arena</small></span>
+                <span class="dlb-card-arrow">›</span>
+            </button>
 
             <div class="payment-methods">
                 <span>Visa</span>
@@ -4838,6 +5009,10 @@
             socket.on('roundEnd', (payload) => { handleRoundEnd(payload); });
             socket.on('iceState', (snapshot) => { applyIceServerState(snapshot); });
             socket.on('iceRoundEnd', (payload) => { handleIceRoundEnd(payload); });
+            socket.on('dlballsError', (data) => {
+                dlbSetStatus(data?.error || 'DLballs error');
+            });
+
             socket.on('notification', (data) => {
                 if (!data || !data.message) return;
                 showNotification(data.message);
@@ -5659,6 +5834,8 @@
             const target = Math.floor(state.balance);
             pBalance.textContent = target;
             animateBalanceTo(target);
+            const dlbBal = document.getElementById('dlb-balance');
+            if (dlbBal) dlbBal.textContent = target.toLocaleString();
         }
 
         function updateProfile() {
@@ -5918,6 +6095,395 @@
                 switchTab(this.dataset.tab);
             });
         });
+
+
+        // ═══════════════════════════════════════════════════════════════
+        // DLBALLS — 3D PLINKO / MULTIPLIER ARENA
+        // ═══════════════════════════════════════════════════════════════
+        const dlbPage = document.getElementById('dlballs-page');
+        const dlbCanvas = document.getElementById('dlballs-canvas');
+        const dlbStage = document.getElementById('dlballs-stage');
+        const dlbBuy = document.getElementById('dlb-buy');
+        const dlbBack = document.getElementById('dlb-back');
+        const dlbLaunch = document.getElementById('dlballs-launch');
+        const dlbBuyModal = document.getElementById('dlb-buy-modal');
+        const dlbBuyConfirm = document.getElementById('dlb-buy-confirm');
+        const dlbBuyCancel = document.getElementById('dlb-buy-cancel');
+        const dlbAmount = document.getElementById('dlb-amount');
+        const dlbStake = document.getElementById('dlb-stake');
+        const dlbFixedValue = document.getElementById('dlb-fixed-value');
+        const dlbFixedWrap = document.getElementById('dlb-fixed-wrap');
+        const dlbCountEl = document.getElementById('dlb-count');
+        const dlbValueEl = document.getElementById('dlb-value');
+        const dlbBalanceEl = document.getElementById('dlb-balance');
+        const dlbStatusEl = document.getElementById('dlb-status');
+        const dlbReward = document.getElementById('dlb-reward');
+        const dlbRewardBig = document.getElementById('dlb-reward-big');
+        const dlbRewardSmall = document.getElementById('dlb-reward-small');
+
+        const DLB_COLORS = {
+            basic: 0x9aa0a6, shiny: 0xd9dde3, green: 0x35b86b, gold: 0xffcf55
+        };
+        const DLB_TIERS = [
+            {max: 10, key:'basic'}, {max: 100, key:'shiny'},
+            {max: 500, key:'green'}, {max: 1000, key:'gold'}
+        ];
+        let dlbMode = 'random', dlbBalls = [], dlbReady = false, dlbBusy = false;
+        let dlbThree = null, dlbScene = null, dlbCamera = null, dlbRenderer = null, dlbWorld = null, dlbGate = null;
+        let dlbLastTime = 0, dlbIntroSpin = 0, dlbNeedsResize = true;
+
+        function dlbTier(value) {
+            return DLB_TIERS.find(t => value <= t.max)?.key || 'gold';
+        }
+        function dlbSetStatus(text) { dlbStatusEl.textContent = text; }
+        function dlbUpdateHud() {
+            dlbCountEl.textContent = dlbBalls.length;
+            dlbValueEl.textContent = dlbBalls.reduce((s,b)=>s+(b.value||0),0).toLocaleString();
+            dlbBalanceEl.textContent = Math.floor(state.balance).toLocaleString();
+            dlbLaunch.disabled = !dlbBalls.length || dlbBusy;
+        }
+        function dlbOpen() {
+            closeCard();
+            dlbPage.classList.remove('hidden');
+            dlbPage.style.display = 'flex';
+            document.getElementById('tabs').style.display = 'none';
+            dlbInit3D();
+            dlbResize();
+            dlbSetStatus(dlbBalls.length ? 'Ready. Press Launch when you want to drop them.' : 'Buy balls to load the launcher.');
+        }
+        function dlbClose() {
+            dlbPage.classList.add('hidden');
+            dlbPage.style.display = 'none';
+            document.getElementById('tabs').style.display = '';
+            dlbBusy = false;
+            dlbUpdateHud();
+        }
+        function dlbOpenBuy() {
+            if (!socket || !socket.connected) return dlbSetStatus('Connection unavailable.');
+            dlbBuyModal.classList.add('show');
+        }
+        function dlbCloseBuy() { dlbBuyModal.classList.remove('show'); }
+        document.querySelectorAll('.dlb-mode').forEach(btn => {
+            btn.addEventListener('click', () => {
+                dlbMode = btn.dataset.dlbMode;
+                document.querySelectorAll('.dlb-mode').forEach(x => x.classList.toggle('active', x===btn));
+                dlbFixedWrap.style.display = dlbMode === 'fixed' ? '' : 'none';
+                if (dlbMode === 'fixed') dlbStake.value = dlbFixedValue.value;
+            });
+        });
+        dlbFixedValue.addEventListener('change', () => { if (dlbMode === 'fixed') dlbStake.value = dlbFixedValue.value; });
+        dlbBuy.addEventListener('click', dlbOpenBuy);
+        dlbBack.addEventListener('click', dlbClose);
+        dlbBuyCancel.addEventListener('click', dlbCloseBuy);
+        document.getElementById('open-dlballs-btn').addEventListener('click', () => { playClickSound(); dlbOpen(); });
+        dlbBuyConfirm.addEventListener('click', () => {
+            const amount = Math.max(1, Math.min(50, Math.floor(Number(dlbAmount.value)||0)));
+            const stake = Math.max(1, Math.floor(Number(dlbStake.value)||0));
+            const fixedValue = Math.max(1, Math.floor(Number(dlbFixedValue.value)||1));
+            if (!socket || !socket.connected) return dlbSetStatus('Connection unavailable.');
+            if (dlbBusy) return;
+            socket.emit('dlballsBuy', { mode: dlbMode, amount, stake, fixedValue }, (res) => {
+                if (!res?.ok) return dlbSetStatus(res?.error || 'Could not buy balls.');
+                state.balance = res.balance;
+                updateBalance();
+                dlbCloseBuy();
+                dlbApplyBought(res.balls || []);
+                dlbSetStatus(`Loaded ${res.balls.length} balls · paid ${res.cost} 💎`);
+                haptic('medium');
+            });
+        });
+        dlbLaunch.addEventListener('click', () => {
+            if (!dlbBalls.length || dlbBusy || !socket) return;
+            dlbBusy = true; dlbLaunch.disabled = true;
+            dlbSetStatus('Opening launcher…');
+            socket.emit('dlballsLaunch', {}, (res) => {
+                if (!res?.ok) {
+                    dlbBusy = false; dlbUpdateHud();
+                    return dlbSetStatus(res?.error || 'Could not launch.');
+                }
+                state.balance = res.balance;
+                updateBalance();
+                dlbRunResults(res);
+            });
+        });
+
+        function dlbMakeBallMesh(value, index) {
+            const tier = dlbTier(value), color = DLB_COLORS[tier];
+            const geo = new THREE.SphereGeometry(0.20 + Math.min(.10, Math.log10(Math.max(1,value))*.018), 32, 20);
+            const mat = new THREE.MeshStandardMaterial({ color, metalness:.88, roughness:tier==='gold'?.16:.28 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            mesh.userData = {value, tier, phase:Math.random()*Math.PI*2, index};
+            return mesh;
+        }
+
+        function dlbInit3D() {
+            if (dlbRenderer) return;
+            if (!window.THREE) return;
+            dlbScene = new THREE.Scene();
+            dlbCamera = new THREE.PerspectiveCamera(38, 1, .1, 100);
+            dlbCamera.position.set(0, 2.5, 19);
+            dlbCamera.lookAt(0, -1.2, 0);
+            dlbRenderer = new THREE.WebGLRenderer({canvas:dlbCanvas, antialias:true, alpha:true});
+            dlbRenderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            dlbRenderer.shadowMap.enabled = true;
+            dlbRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            dlbRenderer.outputColorSpace = THREE.SRGBColorSpace;
+            const hemi = new THREE.HemisphereLight(0xbcc9dc,0x08090b,1.45); dlbScene.add(hemi);
+            const key = new THREE.DirectionalLight(0xffffff,2.4); key.position.set(-5,9,8); key.castShadow=true; dlbScene.add(key);
+            const rim = new THREE.PointLight(0xd4b65b,18,20); rim.position.set(5,2,5); dlbScene.add(rim);
+
+            const boardMat = new THREE.MeshStandardMaterial({color:0x15181e,metalness:.62,roughness:.3});
+            const pegMat = new THREE.MeshStandardMaterial({color:0xb8bdc5,metalness:.95,roughness:.22});
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(10.8,.35,.8),boardMat);
+            frame.position.set(0,7,0); dlbScene.add(frame);
+            const leftWall = new THREE.Mesh(new THREE.BoxGeometry(.35,15,.8),boardMat); leftWall.position.set(-5.2,0,0); dlbScene.add(leftWall);
+            const rightWall = leftWall.clone(); rightWall.position.x=5.2; dlbScene.add(rightWall);
+
+            for(let row=0;row<9;row++){
+                const count=9, y=5.8-row*1.15, offset=(row%2)*.55;
+                for(let col=0;col<count;col++){
+                    const peg=new THREE.Mesh(new THREE.CylinderGeometry(.17,.17,.34,20),pegMat);
+                    peg.rotation.z=Math.PI/2; peg.position.set(-4.45+col*1.12+offset,y,.25);
+                    peg.castShadow=true; dlbScene.add(peg);
+                }
+            }
+
+            // Sliding triangular deflector under the peg field.
+            const triShape = new THREE.Shape();
+            triShape.moveTo(-4.6,0); triShape.lineTo(0,.9); triShape.lineTo(4.6,0); triShape.closePath();
+            const triGeo = new THREE.ExtrudeGeometry(triShape,{depth:.55,bevelEnabled:true,bevelThickness:.06,bevelSize:.05,bevelSegments:2});
+            const tri = new THREE.Mesh(triGeo,new THREE.MeshStandardMaterial({color:0x4a4e56,metalness:.9,roughness:.25}));
+            tri.position.set(-4.6,-5.3,-.1); tri.rotation.x=Math.PI/2; tri.userData.deflector=true; dlbScene.add(tri);
+
+            // First three multiplier cups.
+            [-3.2,0,3.2].forEach((x,i)=>{
+                const m=i===1?'3x':'1.5x';
+                const tor=new THREE.Mesh(new THREE.TorusGeometry(1.12,.09,18,48),new THREE.MeshStandardMaterial({
+                    color:i===1?0xb04a4a:0x6c7078,metalness:.9,roughness:.22,emissive:i===1?0x4a1010:0
+                }));
+                tor.position.set(x,-6.6,0); dlbScene.add(tor);
+                const label=dlbMakeLabel(m,i===1?'#ff5050':'#c6c9ce'); label.position.set(x,-7.45,.3); dlbScene.add(label);
+            });
+            // Deeper two-hole multiplier stage.
+            [-1.65,1.65].forEach((x,i)=>{
+                const tor=new THREE.Mesh(new THREE.TorusGeometry(.92,.10,18,48),new THREE.MeshStandardMaterial({
+                    color:i===0?0xb04a4a:0x777b83,metalness:.92,roughness:.2,emissive:i===0?0x4a1010:0
+                }));
+                tor.position.set(x,-9.0,0); dlbScene.add(tor);
+                const label=dlbMakeLabel(i===0?'6x':'3x',i===0?'#ff5050':'#d0d3d8'); label.position.set(x,-9.72,.3); dlbScene.add(label);
+            });
+            const floor=new THREE.Mesh(new THREE.BoxGeometry(10.5,.3,2),new THREE.MeshStandardMaterial({color:0x0d0f13,metalness:.65,roughness:.32}));
+            floor.position.set(0,-10.7,0); dlbScene.add(floor);
+            dlbWorld = new THREE.Group(); dlbScene.add(dlbWorld);
+            dlbGate = new THREE.Mesh(
+                new THREE.TorusGeometry(2.72,.11,18,72),
+                new THREE.MeshStandardMaterial({color:0x737984,metalness:.96,roughness:.18,emissive:0x111319})
+            );
+            dlbGate.position.set(0,3.0,.25); dlbGate.rotation.x=Math.PI/2; dlbScene.add(dlbGate);
+            dlbLastTime=performance.now();
+            requestAnimationFrame(dlbRender3D);
+        }
+
+        function dlbMakeLabel(text,color) {
+            const c=document.createElement('canvas'); c.width=256;c.height=64;
+            const x=c.getContext('2d'); x.clearRect(0,0,256,64); x.font='bold 34px Arial'; x.textAlign='center'; x.fillStyle=color; x.fillText(text,128,42);
+            const tex=new THREE.CanvasTexture(c); tex.colorSpace=THREE.SRGBColorSpace;
+            return new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));
+        }
+
+        function dlbResize() {
+            if (!dlbRenderer || !dlbStage) return;
+            const w=dlbStage.clientWidth, h=dlbStage.clientHeight;
+            dlbRenderer.setSize(w,h,false); dlbCamera.aspect=w/Math.max(1,h); dlbCamera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', () => { if(!dlbPage.classList.contains('hidden')) dlbResize(); });
+
+        function dlbApplyBought(balls) {
+            dlbBalls = balls.map((b,i)=>({...b, mesh:null, state:'ring', t:Math.random()*Math.PI*2, lane:0}));
+            dlbReady=true; dlbBusy=false;
+            dlbUpdateHud(); dlbSetStatus('Balls are loaded. Watch the 3D value carousel, then launch.');
+            dlbBuildCarousel();
+        }
+        function dlbBuildCarousel() {
+            if(!dlbWorld) return;
+            dlbWorld.clear();
+            const n=dlbBalls.length;
+            dlbBalls.forEach((b,i)=>{
+                const mesh=dlbMakeBallMesh(b.value,i);
+                mesh.position.set(Math.cos((i/n)*Math.PI*2)*2.5, Math.sin((i/n)*Math.PI*2)*.95+3.0, 1.0+Math.sin((i/n)*Math.PI*2)*1.2);
+                mesh.scale.setScalar(.92);
+                dlbWorld.add(mesh); b.mesh=mesh;
+                const label=dlbMakeLabel(String(b.value)+' 💎', b.tier==='gold'?'#ffd95e':b.tier==='green'?'#5bdf8d':'#e4e7eb');
+                label.scale.set(.9,.24,1); label.position.set(mesh.position.x,mesh.position.y-.62,mesh.position.z); label.userData.follow=mesh; dlbWorld.add(label);
+            });
+        }
+
+        function dlbClearWorld() { if(dlbWorld) dlbWorld.clear(); }
+        function dlbRunResults(data) {
+            dlbBusy = true; dlbSetStatus('Launch! The launcher is opening…');
+            if (!dlbWorld) dlbInit3D();
+            if (dlbGate) {
+                dlbGate.userData.openStart = performance.now();
+                dlbGate.userData.opening = true;
+            }
+
+            const results = (data.results || []).map((r,i) => {
+                const ball = dlbBalls[i];
+                const mesh = ball?.mesh || dlbMakeBallMesh(r.value,i);
+                const targetX = r.multiplier === 6 ? -1.65 :
+                    r.multiplier === 3 ? (r.depth ? 1.65 : 0) :
+                    r.multiplier === 1.5 ? (i % 2 ? 3.2 : -3.2) :
+                    (i % 2 ? 5.55 : -5.55);
+                return {
+                    ...r, mesh, x:(i-(data.results.length-1)/2)*.20, y:5.0, z:.65,
+                    vx:(Math.random()-.5)*.9, vy:0, spinX:Math.random()*4, spinY:Math.random()*4,
+                    targetX, targetLocked:false, stuck:false, stuckUntil:0, pegCooldown:0,
+                    phase:Math.random()*Math.PI*2
+                };
+            });
+
+            dlbWorld.clear();
+            results.forEach(r => dlbWorld.add(r.mesh));
+            const labels = [];
+
+            // The physical peg coordinates mirror the visible board.
+            const pegs=[];
+            for(let row=0;row<9;row++){
+                const count=9, y=5.8-row*1.15, offset=(row%2)*.55;
+                for(let col=0;col<count;col++) pegs.push({x:-4.45+col*1.12+offset,y,r:.20});
+            }
+
+            let last=performance.now(), start=last;
+            const maxDuration=6200;
+            const tick=now=>{
+                const dt=Math.min(.026,(now-last)/1000); last=now;
+                const elapsed=(now-start)/1000;
+                let active=0;
+
+                results.forEach((r,i)=>{
+                    if(r.stuck) return;
+                    active++;
+                    r.pegCooldown=Math.max(0,r.pegCooldown-dt);
+
+                    // Gravity + drag.
+                    r.vy -= 10.8*dt;
+                    r.vx *= Math.pow(.996,dt*60);
+                    r.vy *= Math.pow(.999,dt*60);
+                    r.x += r.vx*dt;
+                    r.y += r.vy*dt;
+
+                    // Softly bias toward the server-authoritative landing lane only near the exits.
+                    if(r.y < -4.9) {
+                        r.targetLocked=true;
+                        const strength=r.y < -5.7 ? 7.0 : 2.2;
+                        r.vx += (r.targetX-r.x)*strength*dt;
+                    }
+
+                    // Side-wall collisions.
+                    if(r.x < -4.78){r.x=-4.78;r.vx=Math.abs(r.vx)*.72;}
+                    if(r.x > 4.78){r.x=4.78;r.vx=-Math.abs(r.vx)*.72;}
+
+                    // Peg collisions.
+                    if(r.pegCooldown<=0 && r.y> -4.5) {
+                        for(const p of pegs){
+                            const dx=r.x-p.x, dy=r.y-p.y, d=Math.hypot(dx,dy), min=.31;
+                            if(d>0.001 && d<min){
+                                const nx=dx/d, ny=dy/d, overlap=min-d;
+                                r.x += nx*overlap; r.y += ny*overlap;
+                                const vn=r.vx*nx+r.vy*ny;
+                                if(vn<0){
+                                    r.vx -= 1.72*vn*nx; r.vy -= 1.72*vn*ny;
+                                    r.vx += (Math.random()-.5)*.65;
+                                }
+                                r.pegCooldown=.035;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Sliding triangular deflector: sweeps right-to-left then back, pushing balls outward.
+                    if(r.y < -4.65 && r.y > -5.55){
+                        const phase=(elapsed%1.55)/1.55;
+                        const sweep=phase<.5 ? -4.4+phase*2*8.8 : 4.4-(phase-.5)*2*8.8;
+                        const triY=-5.3 + Math.max(0,1-Math.abs(r.x-sweep)/1.1)*.62;
+                        if(Math.abs(r.y-triY)<.28){
+                            r.vy=Math.min(r.vy,-2.4);
+                            r.vx += (r.x<sweep?-1:1)*(1.1+Math.random()*1.2);
+                        }
+                    }
+
+                    // Capture/stick at the chosen physical opening.
+                    const openingY = r.depth ? -8.15 : -6.6;
+                    if(r.y <= openingY){
+                        if(r.outcome==='lose'){
+                            r.x = r.targetX; r.y = -6.25; r.vx = 0; r.vy = 0; r.stuck = true;
+                        } else {
+                            r.x += (r.targetX-r.x)*.45;
+                            if(Math.abs(r.x-r.targetX)<.12) {
+                                r.x=r.targetX; r.y=openingY; r.vx=0; r.vy=0;
+                                r.stuck=true; r.stuckUntil=now+520;
+                            }
+                        }
+                    }
+
+                    r.mesh.position.set(r.x,r.y,r.z + Math.sin(elapsed*8+r.phase)*.05);
+                    r.mesh.rotation.x += dt*(4+r.spinX);
+                    r.mesh.rotation.y += dt*(5+r.spinY);
+                    r.mesh.rotation.z += dt*2;
+                });
+                if(active && elapsed<maxDuration) requestAnimationFrame(tick);
+                else dlbFinishResults(data);
+            };
+            requestAnimationFrame(tick);
+        }
+        function dlbFinishResults(data) {
+            dlbBalls=[]; dlbBusy=false; dlbReady=false; dlbClearWorld();
+            if (dlbGate) { dlbGate.rotation.x=Math.PI/2; dlbGate.scale.setScalar(1); }
+            dlbUpdateHud();
+            state.balance=data.balance; updateBalance();
+            const payout=data.payout||0;
+            dlbRewardBig.textContent=(payout>=0?'+':'')+payout.toLocaleString()+' 💎';
+            dlbRewardSmall.textContent=`${data.wonBalls||0} winning balls · ${data.lostBalls||0} lost`;
+            dlbReward.classList.add('show');
+            setTimeout(()=>dlbReward.classList.remove('show'),2800);
+            dlbSetStatus(`Round complete · paid ${payout.toLocaleString()} 💎`);
+            addTransaction(payout>0?'win':'bet',payout,'DLballs');
+            haptic(payout>0?'heavy':'light');
+        }
+        function dlbRender3D(now) {
+            if(!dlbRenderer) return;
+            const dt=Math.min(.05,(now-dlbLastTime)/1000); dlbLastTime=now;
+            if(dlbGate?.userData.opening){
+                const gp=Math.min(1,(now-dlbGate.userData.openStart)/420);
+                dlbGate.rotation.x=Math.PI/2 + gp*Math.PI*.58;
+                dlbGate.scale.setScalar(1-gp*.08);
+                if(gp>=1) dlbGate.userData.opening=false;
+            } else if(dlbGate && !dlbBusy) {
+                dlbGate.rotation.x += dt*.18;
+            }
+            if(dlbWorld && !dlbBusy && dlbBalls.length) {
+                dlbIntroSpin += dt*.8;
+                dlbWorld.children.forEach((o)=>{
+                    if(o.userData.follow) {
+                        const m=o.userData.follow;
+                        o.position.x=m.position.x; o.position.y=m.position.y-.62; o.position.z=m.position.z+.05;
+                        o.lookAt(dlbCamera.position);
+                    }
+                });
+                dlbBalls.forEach((b,i)=>{
+                    if(!b.mesh) return;
+                    const a=dlbIntroSpin+(i/dlbBalls.length)*Math.PI*2;
+                    b.mesh.position.x=Math.cos(a)*2.55;
+                    b.mesh.position.y=3.1+Math.sin(a)*1.05;
+                    b.mesh.position.z=1.0+Math.sin(a)*1.1;
+                    b.mesh.rotation.x+=dt*.9; b.mesh.rotation.y+=dt*1.4;
+                    b.mesh.scale.setScalar(.82+.18*(.5+.5*Math.sin(a*2)));
+                });
+            }
+            dlbRenderer.render(dlbScene,dlbCamera);
+            requestAnimationFrame(dlbRender3D);
+        }
 
         // ─── RENDER PVP ──────────────────────────────────────────────
         function render() {
