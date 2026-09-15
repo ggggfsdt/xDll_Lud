@@ -6198,11 +6198,7 @@
                 iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
                 iceCtx.stroke();
 
-                // inner matte fill
-                iceCtx.beginPath();
-                iceCtx.fillStyle = 'rgba(6,8,10,0.78)';
-                iceCtx.arc(cx, cy, Math.max(0.5, r - 4 * unit), 0, Math.PI * 2);
-                iceCtx.fill();
+               
 
                 // cross
                 const crossLen = r * 2.0;
