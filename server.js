@@ -144,13 +144,12 @@ function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
 // ═══════════════════════════════════════════════════════════════
-// ICE ARENA – BSP LAYOUT (no gaps, fields scaled uniformly)
+// ICE ARENA – BSP LAYOUT
 // ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
 
-// Uniform scale factor for fields – slightly bigger
 const ICE_FIELD_SCALE = 0.92;
 
 function createIceRoom(id) {
@@ -254,13 +253,11 @@ function repartitionIceArena() {
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
 
-  // Apply uniform scale to all fields, centered
   const half = ICE_SIZE / 2;
   const scale = ICE_FIELD_SCALE;
   players.forEach(p => {
     const assigned = map[p.id];
     if (assigned) {
-      // Scale around center
       const cx1 = assigned.x1 - half;
       const cy1 = assigned.y1 - half;
       const cx2 = assigned.x2 - half;
@@ -466,19 +463,32 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH & BOUNCY ICE PHYSICS ──────────────────────────────
+// ─── SMOOTH ICE PHYSICS ─────────────────────────────────────────
+// Tuned to smooth-puck-script feel:
+//   - 2s no-friction hold at launch
+//   - linear friction 0.990/frame after hold
+//   - extra rolling friction 0.985 when speed² < 0.8
+//   - wall restitution 0.78 (softer thuds)
+//   - tiny organic jitter on bounce
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
+
   const totalPts = ICE_PERIMETER.length;
   const subSteps = 300;
   const subDt = dt / subSteps;
   const puck = iceRoom.puck;
-  const puckRadius = 6; // small collision radius
+  const puckRadius = 6;
+
+  const FRICTION_BASE    = 0.990;
+  const ROLLING_FRICTION = 0.985;
+  const RESTITUTION      = 0.78;
+  const HOLD_MS          = 2000;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
+    // ---- wall collisions ----
     let iter = 0;
     const maxIter = 15;
     while (iter < maxIter) {
@@ -490,21 +500,23 @@ function updateIcePhysics(dt) {
         const dx = bx - ax, dy = by - ay;
         const lenSq = dx * dx + dy * dy;
         if (lenSq === 0) continue;
+
         let t = ((puck.x - ax) * dx + (puck.y - ay) * dy) / lenSq;
         t = Math.max(0, Math.min(1, t));
         const nearX = ax + t * dx, nearY = ay + t * dy;
         const distX = puck.x - nearX, distY = puck.y - nearY;
         const dist = Math.sqrt(distX * distX + distY * distY);
+
         if (dist < puckRadius && dist > 0.0001) {
           const nx = distX / dist, ny = distY / dist;
           const overlap = puckRadius - dist;
           puck.x += nx * overlap;
           puck.y += ny * overlap;
+
           const vn = puck.vx * nx + puck.vy * ny;
           if (vn < 0) {
-            const restitution = 0.92;
-            puck.vx -= (1 + restitution) * vn * nx;
-            puck.vy -= (1 + restitution) * vn * ny;
+            puck.vx -= (1 + RESTITUTION) * vn * nx;
+            puck.vy -= (1 + RESTITUTION) * vn * ny;
             puck.vx += (Math.random() - 0.5) * 0.02;
             puck.vy += (Math.random() - 0.5) * 0.02;
           }
@@ -516,20 +528,33 @@ function updateIcePhysics(dt) {
       iter++;
     }
 
-    const elapsed = (Date.now() - iceRoom.slideStartTime) / 1000;
-    let frictionPerSecond;
-    if (elapsed < 1.8) {
-      frictionPerSecond = 0.999;
+    // ---- friction & hold ----
+    const elapsed = Date.now() - iceRoom.slideStartTime;
+    if (elapsed < HOLD_MS) {
+      const decay = Math.pow(0.9999, subDt * 60);
+      puck.vx *= decay;
+      puck.vy *= decay;
     } else {
-      frictionPerSecond = 0.55;
+      const friction = FRICTION_BASE + (Math.random() - 0.5) * 0.0006;
+      const decay = Math.pow(friction, subDt * 60);
+      puck.vx *= decay;
+      puck.vy *= decay;
+
+      const speed2 = puck.vx * puck.vx + puck.vy * puck.vy;
+      if (speed2 < 0.8) {
+        const rollDecay = Math.pow(ROLLING_FRICTION, subDt * 60);
+        puck.vx *= rollDecay;
+        puck.vy *= rollDecay;
+      }
     }
-    const decay = Math.pow(frictionPerSecond, subDt);
-    puck.vx *= decay;
-    puck.vy *= decay;
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.08) endIceGame();
+  if (finalSpeed < 0.05) {
+    puck.vx = 0;
+    puck.vy = 0;
+    endIceGame();
+  }
 }
 
 function broadcastIceState() {
