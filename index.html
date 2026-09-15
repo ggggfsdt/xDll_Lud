@@ -753,7 +753,6 @@
     </div>
 
     <script>
-        // ─── FULL CLIENT SCRIPT ─────────────────────────────────────────
         const SERVER_URL = 'https://dllump-production.up.railway.app';
         const WIN_GIFS = [
             'https://i.postimg.cc/9Frvpxhz/ezgif-3f0e907be807d1cc.gif',
@@ -1386,7 +1385,7 @@
             winnerId: null, winHistory: [], puckScale: 1, puckPopStart: 0, puckVisible: false,
             pfpPop: new Map(), slideStartTime: 0, zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 2.0,
             isZoomingIn: false, isZoomingOut: false, zoomLocked: false, zoomOutTriggered: false,
-            idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 14 }, idlePuckInitialized: false,
+            idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 12 }, idlePuckInitialized: false,
             puckPrevX: 200, puckPrevY: 200, puckUpdateTime: 0, puckLastBounceTime: 0,
             currentOwnerName: '', currentOwnerPfp: '', nameFadeIn: 0, showOwnerName: false,
             bestWin: { amount: 0, pfp: '', name: '' },
@@ -1408,7 +1407,7 @@
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
-        const PUCK_RENDER_RADIUS = 14;
+        const PUCK_RENDER_RADIUS = 12;
 
         const pfpCache = new Map();
 
@@ -2342,11 +2341,11 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // Idle puck (bigger, no shadow, no matte fill interior)
+            // Idle puck
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
-                    const r = 14;
+                    const r = 12;
                     iceState.idlePuck.x = w / 2;
                     iceState.idlePuck.y = w / 2;
                     const angle = Math.random() * Math.PI * 2;
@@ -2374,24 +2373,79 @@
 
                 const cx = x;
                 const cy = y;
-                const r = 14 * s;
+                const r = 12 * s;
                 const unit = r / 20;
 
-                // outer white rim
+                // 1. soft outer halo
+                const halo = iceCtx.createRadialGradient(cx, cy, r * 0.75, cx, cy, r * 1.55);
+                halo.addColorStop(0, 'rgba(200, 220, 255, 0.16)');
+                halo.addColorStop(0.55, 'rgba(180, 205, 240, 0.06)');
+                halo.addColorStop(1, 'rgba(180, 205, 240, 0)');
+                iceCtx.fillStyle = halo;
                 iceCtx.beginPath();
-                iceCtx.lineWidth = 6 * unit;
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.96)';
+                iceCtx.arc(cx, cy, r * 1.55, 0, Math.PI * 2);
+                iceCtx.fill();
+
+                // 2. drop shadow
+                iceCtx.save();
+                iceCtx.filter = `blur(${r * 0.35}px)`;
+                iceCtx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                iceCtx.beginPath();
+                iceCtx.arc(cx + r * 0.14, cy + r * 0.16, r * 0.92, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.restore();
+
+                // 3. outer rim with vertical lighting
+                const rimGrad = iceCtx.createLinearGradient(cx, cy - r, cx, cy + r);
+                rimGrad.addColorStop(0,    'rgba(255, 255, 255, 1)');
+                rimGrad.addColorStop(0.45, 'rgba(238, 245, 252, 0.99)');
+                rimGrad.addColorStop(1,    'rgba(190, 205, 225, 0.97)');
+                iceCtx.beginPath();
+                iceCtx.lineWidth = 8 * unit;
+                iceCtx.strokeStyle = rimGrad;
                 iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
                 iceCtx.stroke();
 
-                // cross
+                // 4. inner depth shadow
+                const innerShadow = iceCtx.createRadialGradient(
+                    cx, cy, r * 0.45,
+                    cx, cy, r - 3 * unit
+                );
+                innerShadow.addColorStop(0,    'rgba(0, 0, 0, 0)');
+                innerShadow.addColorStop(0.72, 'rgba(0, 0, 0, 0)');
+                innerShadow.addColorStop(1,    'rgba(0, 0, 0, 0.30)');
+                iceCtx.fillStyle = innerShadow;
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, r - 3 * unit, 0, Math.PI * 2);
+                iceCtx.fill();
+
+                // 5. inner bevel highlight
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, r - 4.5 * unit, 0, Math.PI * 2);
+                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+                iceCtx.lineWidth = 1 * unit;
+                iceCtx.stroke();
+
+                // 6. cross
                 const crossLen = r * 2.0;
                 iceCtx.beginPath();
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.18)';
-                iceCtx.lineWidth = 1.2 * unit;
+                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
+                iceCtx.lineWidth = 2 * unit;
                 iceCtx.moveTo(cx - crossLen / 2, cy); iceCtx.lineTo(cx + crossLen / 2, cy);
                 iceCtx.moveTo(cx, cy - crossLen / 2); iceCtx.lineTo(cx, cy + crossLen / 2);
                 iceCtx.stroke();
+
+                // 7. top-left specular sparkle
+                const idleSpec = iceCtx.createRadialGradient(
+                    cx - r * 0.35, cy - r * 0.35, 0,
+                    cx - r * 0.35, cy - r * 0.35, r * 0.85
+                );
+                idleSpec.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+                idleSpec.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                iceCtx.fillStyle = idleSpec;
+                iceCtx.beginPath();
+                iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
+                iceCtx.fill();
 
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
@@ -2401,7 +2455,7 @@
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                if (slideElapsed > 3.2 && currentSpeed < 0.4 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                if (slideElapsed > 2.7 && currentSpeed < 0.4 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
                     iceState.zoomCenterX = puck.x;
                     iceState.zoomCenterY = puck.y;
                     iceState.zoomCenterFixed = true;
@@ -2442,10 +2496,46 @@
                 const segW = x2 - x1; const segH = y2 - y1;
                 const isWinner = (iceState.gameState === 'finished' && iceState.winnerId === p.id);
                 const color = isWinner ? lightenColor(p.color, 70) : p.color;
+
                 iceCtx.save();
-                iceCtx.fillStyle = color;
                 iceCtx.globalAlpha = isWinner ? 1 : 0.92;
+
+                // base diagonal gradient
+                const fieldGrad = iceCtx.createLinearGradient(x1, y1, x2, y2);
+                fieldGrad.addColorStop(0,    lightenColor(color, 35));
+                fieldGrad.addColorStop(0.5,  color);
+                fieldGrad.addColorStop(1,    lightenColor(color, 20));
+                iceCtx.fillStyle = fieldGrad;
                 iceCtx.fillRect(x1, y1, segW, segH);
+
+                // white light bleed on the LEFT edge
+                const edgeL = iceCtx.createLinearGradient(x1, y1, x1 + segW * 0.20, y1);
+                edgeL.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
+                edgeL.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                iceCtx.fillStyle = edgeL;
+                iceCtx.fillRect(x1, y1, segW * 0.20, segH);
+
+                // white light bleed on the TOP edge
+                const edgeT = iceCtx.createLinearGradient(x1, y1, x1, y1 + segH * 0.18);
+                edgeT.addColorStop(0, 'rgba(255, 255, 255, 0.09)');
+                edgeT.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                iceCtx.fillStyle = edgeT;
+                iceCtx.fillRect(x1, y1, segW, segH * 0.18);
+
+                // subtle darkening on the BOTTOM edge for depth
+                const edgeB = iceCtx.createLinearGradient(x1, y2 - segH * 0.15, x1, y2);
+                edgeB.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                edgeB.addColorStop(1, 'rgba(0, 0, 0, 0.14)');
+                iceCtx.fillStyle = edgeB;
+                iceCtx.fillRect(x1, y2 - segH * 0.15, segW, segH * 0.15);
+
+                // subtle darkening on the RIGHT edge
+                const edgeR = iceCtx.createLinearGradient(x2 - segW * 0.15, y1, x2, y1);
+                edgeR.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                edgeR.addColorStop(1, 'rgba(0, 0, 0, 0.10)');
+                iceCtx.fillStyle = edgeR;
+                iceCtx.fillRect(x2 - segW * 0.15, y1, segW * 0.15, segH);
+
                 iceCtx.globalAlpha = 1;
 
                 const avatarR = Math.min(segW, segH) * 0.32;
@@ -2492,7 +2582,7 @@
             });
             iceCtx.restore();
 
-            // ─── WALL-BOUNCE PULSES (fade in, then fade out) ───
+            // ─── WALL-BOUNCE PULSES ───
             const pulseNow = performance.now();
             iceState.wallPulses = iceState.wallPulses.filter(pulse => {
                 const elapsed = pulseNow - pulse.startTime;
@@ -2509,10 +2599,10 @@
 
                 const pxp = pulse.x * s;
                 const pyp = pulse.y * s;
-                const radius = (10 + t * 30) * s;
+                const radius = (20 + t * 60) * s;
 
                 const grad = iceCtx.createRadialGradient(pxp, pyp, 0, pxp, pyp, radius);
-                grad.addColorStop(0,    `rgba(255, 255, 255, ${alpha * 0.75 * pulse.intensity})`);
+                grad.addColorStop(0,    `rgba(255, 255, 255, ${alpha * 0.95 * pulse.intensity})`);
                 grad.addColorStop(0.35, `rgba(255, 255, 255, ${alpha * 0.35 * pulse.intensity})`);
                 grad.addColorStop(0.75, `rgba(255, 255, 255, ${alpha * 0.08 * pulse.intensity})`);
                 grad.addColorStop(1,    'rgba(255, 255, 255, 0)');
@@ -2557,7 +2647,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (bigger, no shadows, no inner matte fill) ──
+            // ─── PUCK DRAWING (realistic) ──
             if (iceState.puckVisible) {
                 const nowMs = performance.now();
 
@@ -2591,23 +2681,78 @@
                 const r = PUCK_RENDER_RADIUS * s * totalScale;
                 const unit = r / 20;
 
-                // outer white rim
+                // 1. soft outer halo
+                const halo = iceCtx.createRadialGradient(px, py, r * 0.75, px, py, r * 1.55);
+                halo.addColorStop(0, 'rgba(200, 220, 255, 0.16)');
+                halo.addColorStop(0.55, 'rgba(180, 205, 240, 0.06)');
+                halo.addColorStop(1, 'rgba(180, 205, 240, 0)');
+                iceCtx.fillStyle = halo;
                 iceCtx.beginPath();
-                iceCtx.lineWidth = 6 * unit;
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.96)';
+                iceCtx.arc(px, py, r * 1.55, 0, Math.PI * 2);
+                iceCtx.fill();
+
+                // 2. drop shadow
+                iceCtx.save();
+                iceCtx.filter = `blur(${r * 0.35}px)`;
+                iceCtx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                iceCtx.beginPath();
+                iceCtx.arc(px + r * 0.14, py + r * 0.16, r * 0.92, 0, Math.PI * 2);
+                iceCtx.fill();
+                iceCtx.restore();
+
+                // 3. outer rim with vertical lighting
+                const rimGrad = iceCtx.createLinearGradient(px, py - r, px, py + r);
+                rimGrad.addColorStop(0,    'rgba(255, 255, 255, 1)');
+                rimGrad.addColorStop(0.45, 'rgba(238, 245, 252, 0.99)');
+                rimGrad.addColorStop(1,    'rgba(190, 205, 225, 0.97)');
+                iceCtx.beginPath();
+                iceCtx.lineWidth = 8 * unit;
+                iceCtx.strokeStyle = rimGrad;
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
 
-                // cross across diameter
+                // 4. inner depth shadow
+                const innerShadow = iceCtx.createRadialGradient(
+                    px, py, r * 0.45,
+                    px, py, r - 3 * unit
+                );
+                innerShadow.addColorStop(0,    'rgba(0, 0, 0, 0)');
+                innerShadow.addColorStop(0.72, 'rgba(0, 0, 0, 0)');
+                innerShadow.addColorStop(1,    'rgba(0, 0, 0, 0.30)');
+                iceCtx.fillStyle = innerShadow;
                 iceCtx.beginPath();
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.18)';
-                iceCtx.lineWidth = 1.2 * unit;
+                iceCtx.arc(px, py, r - 3 * unit, 0, Math.PI * 2);
+                iceCtx.fill();
+
+                // 5. inner bevel highlight
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r - 4.5 * unit, 0, Math.PI * 2);
+                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+                iceCtx.lineWidth = 1 * unit;
+                iceCtx.stroke();
+
+                // 6. cross
                 const crossLen = r * 2.0;
+                iceCtx.beginPath();
+                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
+                iceCtx.lineWidth = 2 * unit;
                 iceCtx.moveTo(px - crossLen / 2, py);
                 iceCtx.lineTo(px + crossLen / 2, py);
                 iceCtx.moveTo(px, py - crossLen / 2);
                 iceCtx.lineTo(px, py + crossLen / 2);
                 iceCtx.stroke();
+
+                // 7. top-left specular sparkle
+                const spec = iceCtx.createRadialGradient(
+                    px - r * 0.35, py - r * 0.35, 0,
+                    px - r * 0.35, py - r * 0.35, r * 0.85
+                );
+                spec.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
+                spec.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                iceCtx.fillStyle = spec;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r, 0, Math.PI * 2);
+                iceCtx.fill();
 
                 // owner name
                 const speedThreshold = 2.0;
