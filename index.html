@@ -3165,7 +3165,6 @@
             <div id="pvp-page" class="tab-page active">
                 <div id="arena-wrap">
                     <canvas id="game-canvas"></canvas>
-                    <!-- Win panels -->
                     <div id="last-game-panel" class="win-panel left">
                         <span class="panel-label">Last Game</span>
                         <div class="panel-content">
@@ -3226,7 +3225,6 @@
                 <div id="ice-arena-wrap">
                     <canvas id="ice-canvas"></canvas>
 
-                    <!-- ICE TOP PANEL -->
                     <div id="ice-top-panel">
                         <div class="panel-section">
                             <span class="panel-label">Players</span>
@@ -3242,7 +3240,6 @@
                         </div>
                     </div>
 
-                    <!-- Win panels for ice -->
                     <div id="ice-last-game-panel" class="win-panel left">
                         <span class="panel-label">Last Game</span>
                         <div class="panel-content">
@@ -3260,7 +3257,6 @@
 
                     <div id="ice-waiting-text"><span>waiting for players</span><div class="sub">place a bet to claim the rink</div></div>
 
-                    <!-- ICE WIN PANEL -->
                     <div id="ice-win-panel">
                         <div id="ice-win-gif-container"><img id="ice-win-gif" src="" alt="" /></div>
                         <div id="ice-win-avatar-container"><img id="ice-win-avatar" src="" alt="winner" /></div>
@@ -3293,7 +3289,6 @@
             <!-- PROFILE TAB -->
             <div id="profile-page" class="tab-page">
                 <div class="profile-scroll">
-                    <!-- Header -->
                     <div class="profile-header-section">
                         <div class="pfp-wrap">
                             <img class="prof-pfp" id="profile-pfp" src="" alt="avatar" />
@@ -3307,7 +3302,6 @@
                         </div>
                     </div>
 
-                    <!-- Stats Grid -->
                     <div class="profile-stats-grid">
                         <div class="stat-box">
                             <div class="stat-num win" id="p-wins">0</div>
@@ -3323,13 +3317,11 @@
                         </div>
                     </div>
 
-                    <!-- Balance row -->
                     <div class="profile-balance-row" id="profile-balance-row">
                         <span class="bal-label">Balance</span>
                         <span class="bal-amount" id="p-balance">1000</span>
                     </div>
 
-                    <!-- Recent Games -->
                     <div class="recent-games">
                         <div class="rg-title">Recent Games</div>
                         <div id="recent-games-list">
@@ -3337,9 +3329,7 @@
                         </div>
                     </div>
 
-                    <!-- Settings -->
                     <div class="profile-settings">
-                        <!-- Anonymous Identity button -->
                         <div class="setting-row" id="anonymous-row">
                             <div>
                                 <div class="set-label">Anonymous Identity</div>
@@ -3348,7 +3338,6 @@
                             <button id="identity-btn" style="background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;">👤</button>
                         </div>
 
-                        <!-- Hide PFP toggle -->
                         <div class="setting-row">
                             <div>
                                 <div class="set-label">Hide Profile Picture</div>
@@ -3380,7 +3369,6 @@
                         </div>
                     </div>
 
-                    <!-- Promo -->
                     <div class="promo-section">
                         <input id="promo-input" placeholder="Enter promo code" maxlength="30" />
                         <button id="promo-btn">Redeem</button>
@@ -3400,7 +3388,6 @@
             </div>
         </div>
 
-        <!-- TABS -->
         <div id="tabs">
             <button class="tab-btn active" data-tab="pvp"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="20" y1="20" x2="4" y2="4"/><line x1="3" y1="3" x2="7" y2="7"/><line x1="17" y1="17" x2="21" y2="21"/><path d="M6 18 L9 15"/><path d="M18 6 L15 9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg></span>PvP</button>
             <button class="tab-btn" data-tab="ice"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/><line x1="19.1" y1="4.9" x2="4.9" y2="19.1"/></svg></span>Ice</button>
@@ -3409,10 +3396,8 @@
         </div>
     </div>
 
-    <!-- ─── NOTIFICATION ────────────────────────────────────────── -->
     <div id="notification-overlay"></div>
 
-    <!-- ─── PROMO MODAL ─────────────────────────────────────────── -->
     <div id="promo-modal">
         <img id="promo-gif" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="" class="promo-gif" />
         <div class="promo-msg" id="promo-msg">Successfully claimed 100</div>
@@ -3420,7 +3405,6 @@
         <button class="promo-btn" id="promo-continue-btn">Continue</button>
     </div>
 
-    <!-- ─── CONFIRMATION MODAL ─────────────────────────────────── -->
     <div id="confirm-modal">
         <div class="modal-box">
             <div class="modal-title" id="confirm-title">Change</div>
@@ -3433,14 +3417,12 @@
         </div>
     </div>
 
-    <!-- ─── 3D BANK CARD OVERLAY ──────────────────────────────── -->
     <div id="card-overlay">
         <button class="card-close-btn show" id="card-close-btn">✕</button>
         <canvas id="particle-canvas"></canvas>
         <div class="card-wrapper">
             <div class="card-container" id="card-container">
                 <div class="card-3d" id="card-3d">
-                    <!-- Front -->
                     <div class="card-face front">
                         <img class="card-diamond-bg" src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="diamond" />
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2;">
@@ -3462,7 +3444,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Back -->
                     <div class="card-face back">
                         <div class="card-stripe"></div>
                         <div class="card-cvv">
@@ -3474,7 +3455,6 @@
                 </div>
             </div>
 
-            <!-- Transaction History -->
             <div class="tx-history" id="tx-history">
                 <div class="tx-header">
                     <span>Transaction</span>
@@ -3483,7 +3463,6 @@
                 <div id="tx-list"></div>
             </div>
 
-            <!-- Card Stats -->
             <div class="card-stats" id="card-stats">
                 <div class="cs-item">
                     <span class="cs-label">Total Wagered</span>
@@ -3511,7 +3490,6 @@
         </div>
     </div>
 
-    <!-- ─── IDENTITY CARD OVERLAY ──────────────────────────────── -->
     <div id="identity-overlay">
         <button class="card-close-btn show" id="identity-close-btn">✕</button>
         <canvas id="identity-particle-canvas"></canvas>
@@ -3554,7 +3532,6 @@
                 </div>
             </div>
         </div>
-        <!-- ─── TOGGLE ANIMATION OVERLAY ────────────────────────── -->
         <div id="toggle-anim-overlay">
             <div id="toggle-anim-box">
                 <div id="toggle-anim-label">Enabling Anonymous</div>
@@ -3633,7 +3610,6 @@
             } catch (_) {}
         }
 
-        // ─── STATE ──────────────────────────────────────────────────────
         const state = {
             balance: 0,
             username: 'player',
@@ -3679,7 +3655,6 @@
         const VISUAL_RADIUS_SCALE = 0.75;
         const ICE_FIELD_SCALE = 0.92;
 
-        // ─── DOM refs ──────────────────────────────────────────────────
         const canvas = document.getElementById('game-canvas');
         const ctx = canvas.getContext('2d');
         const balanceEl = document.getElementById('balance');
@@ -3775,7 +3750,6 @@
         const iceBestWinPfp = document.getElementById('ice-best-win-pfp');
         const iceBestWinAmount = document.getElementById('ice-best-win-amount');
 
-        // ─── CARD & PARTICLES DOM REFS ───────────────────────────────
         const cardOverlay = document.getElementById('card-overlay');
         const cardCloseBtn = document.getElementById('card-close-btn');
         const cardContainer = document.getElementById('card-container');
@@ -3795,7 +3769,6 @@
         let particles = [];
         let particleAnimId = null;
 
-        // ─── Identity card DOM refs ──────────────────────────────────
         const identityOverlay = document.getElementById('identity-overlay');
         const identityCloseBtn = document.getElementById('identity-close-btn');
         const identityCard3d = document.getElementById('identity-card-3d');
@@ -3817,7 +3790,6 @@
             identityTargetRotY = 0;
         let identityIdlePhase = 0;
 
-        // ─── Confirm modal ──────────────────────────────────────────
         const confirmModal = document.getElementById('confirm-modal');
         const confirmTitle = document.getElementById('confirm-title');
         const confirmDesc = document.getElementById('confirm-desc');
@@ -3826,7 +3798,6 @@
         const confirmOk = document.getElementById('confirm-ok');
         let pendingChange = null;
 
-        // ─── Helpers ────────────────────────────────────────────────
         function getAnonymousColor(id) {
             let hash = 0;
             const str = String(id);
@@ -3884,7 +3855,6 @@
             }
         }
 
-        // ─── RECENT GAMES ──────────────────────────────────────────────
         function addRecentGame(type, opponent, amount, result) {
             const entry = { type, opponent: opponent || 'Unknown', amount: amount || 0, result: result || (amount >= 0 ? 'win' : 'loss'),
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
@@ -3913,7 +3883,6 @@
             recentGamesList.innerHTML = html;
         }
 
-        // ─── PARTICLES ──────────────────────────────────────────────────
         function initParticles() {
             particleCanvas.width = window.innerWidth;
             particleCanvas.height = window.innerHeight;
@@ -3962,7 +3931,6 @@
             particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
         }
 
-        // ─── Identity particles ──────────────────────────────────────
         function initIdentityParticles() {
             identityParticleCanvas.width = window.innerWidth;
             identityParticleCanvas.height = window.innerHeight;
@@ -4007,7 +3975,6 @@
             identityParticleCtx.clearRect(0, 0, identityParticleCanvas.width, identityParticleCanvas.height);
         }
 
-        // ─── CARD 3D INTERACTION ──────────────────────────────────────
         let cardDrag = false;
         let cardPrevX = 0,
             cardPrevY = 0;
@@ -4051,7 +4018,6 @@
             requestAnimationFrame(startIdentityIdleAnimation);
         }
 
-        // ─── Card welcome animation ──────────────────────────────────
         function animateCardWelcome(name) {
             const text = `Welcome, ${name}`;
             cardWelcome.innerHTML = '';
@@ -4067,7 +4033,6 @@
             });
         }
 
-        // ─── Card stats update ────────────────────────────────────
         function updateCardStats() {
             const txs = state.transactions;
             let totalWagered = 0,
@@ -4112,7 +4077,6 @@
             stopParticles();
         }
 
-        // ─── Identity Card functions ──────────────────────────────────
         function openIdentityCard() {
             identityOverlay.classList.add('show');
             identityCloseBtn.classList.add('show');
@@ -4130,7 +4094,6 @@
             identityDrag = false;
             requestAnimationFrame(startIdentityIdleAnimation);
             haptic('medium');
-            // Make fields editable on click
             document.querySelectorAll('.id-value').forEach(el => {
                 el.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -4260,36 +4223,30 @@
             pendingChange = null;
         });
 
-        // ─── Identity toggle button ─────────────────────────────────
         identityToggleBtn.addEventListener('click', async function() {
-            const enabled = !state.anonymous; // we want to toggle to this state
+            const enabled = !state.anonymous;
 
-            // Show and animate the toggle overlay
             const overlay = document.getElementById('toggle-anim-overlay');
             const box = document.getElementById('toggle-anim-box');
             const knob = document.getElementById('toggle-anim-knob');
             const label = document.getElementById('toggle-anim-label');
             const status = document.getElementById('toggle-anim-status');
 
-            // Set initial state
             label.textContent = enabled ? 'Enabling Anonymous' : 'Disabling Anonymous';
             status.textContent = 'Switching…';
             knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
             document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
 
-            // Show with pop-in
             overlay.style.display = 'flex';
             requestAnimationFrame(() => {
                 overlay.classList.add('show');
                 overlay.classList.remove('hide');
-                // After a tiny delay, animate knob
                 setTimeout(() => {
                     knob.style.transform = enabled ? 'translateX(28px)' : 'translateX(0)';
                     document.getElementById('toggle-anim-slider').style.background = enabled ? '#4CAF50' : '#d45a5a';
                 }, 100);
             });
 
-            // Perform the actual toggle
             try {
                 const res = await fetch(SERVER_URL + '/api/set-anonymous', {
                     method: 'POST',
@@ -4314,11 +4271,9 @@
                 showNotification('Network error.');
             }
 
-            // Pop out after a short delay
             setTimeout(() => {
                 overlay.classList.remove('show');
                 overlay.classList.add('hide');
-                // After fade-out, hide completely
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     overlay.classList.remove('hide');
@@ -4326,7 +4281,6 @@
             }, 1200);
         });
 
-        // ─── Hide PFP toggle ─────────────────────────────────────────
         hidePfpToggle.addEventListener('change', async function() {
             const hide = this.checked;
             try {
@@ -4350,7 +4304,6 @@
             }
         });
 
-        // ─── Open identity from profile button ──────────────────────
         document.getElementById('identity-btn').addEventListener('click', () => {
             playClickSound();
             openIdentityCard();
@@ -4365,7 +4318,6 @@
             if (e.target === identityOverlay) closeIdentityCard();
         });
 
-        // ─── Card Touch/Mouse events ──────────────────────────────────
         cardContainer.addEventListener('mousedown', (e) => {
             cardDrag = true;
             cardPrevX = e.clientX;
@@ -4429,7 +4381,6 @@
             }
         }, { passive: true });
 
-        // ─── Identity card touch/mouse events ──────────────────────
         identityCardContainer.addEventListener('mousedown', (e) => {
             identityDrag = true;
             identityPrevX = e.clientX;
@@ -4501,7 +4452,6 @@
             if (e.target === cardOverlay) closeCard();
         });
 
-        // ─── TRANSACTIONS ──────────────────────────────────────────────
         function addTransaction(type, amount, label) {
             const entry = {
                 type,
@@ -4537,7 +4487,6 @@
             txList.innerHTML = html;
         }
 
-        // ─── Open card from balance click ─────────────────────────────
         function setupBalanceCardTriggers() {
             const balanceWrap = document.getElementById('balance-wrap');
             balanceWrap.addEventListener('click', () => {
@@ -4552,9 +4501,6 @@
             });
         }
 
-        // ════════════════════════════════════════════════════════════════
-        // ICE STATE – with fixed zoom center & smooth interpolation
-        // ════════════════════════════════════════════════════════════════
         const iceState = {
             gameState: 'idle',
             players: [],
@@ -4601,13 +4547,11 @@
             glowPhase: 0,
             puckVx: 0,
             puckVy: 0,
-            // NEW: fixed zoom center (world coordinates)
             zoomCenterX: 0,
             zoomCenterY: 0,
             zoomCenterFixed: false,
         };
 
-        // ─── SHARED HELPERS ────────────────────────────────────────────
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
         function easeInOutCubic(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
         function easeOutBack(t) { const c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); }
@@ -4627,7 +4571,6 @@
                 b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
         const PUCK_RENDER_RADIUS = 10;
 
-        // ─── PFP CACHE ──────────────────────────────────────────────────
         const pfpCache = new Map();
 
         function generateDefaultAvatar(initial, colorIndex) {
@@ -4701,7 +4644,6 @@
             img.src = src;
         }
 
-        // ─── CANVAS RESIZE ─────────────────────────────────────────────
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
@@ -4729,7 +4671,6 @@
         function scaleFactor() { return state.arenaSize / SERVER_ARENA_SIZE; }
         function iceScaleFactor() { return iceState.arenaSize / SERVER_ARENA_SIZE; }
 
-        // ─── SOCKET ─────────────────────────────────────────────────────
         const socket = (typeof io !== 'undefined') ? io(SERVER_URL, { transports: ['websocket', 'polling'] }) : null;
 
         function setOnline(isOnline) { statusDot.classList.toggle('offline', !isOnline); }
@@ -4844,7 +4785,6 @@
             });
         }
 
-        // ─── NOTIFICATION ──────────────────────────────────────────────
         function showNotification(text) {
             if (notifTimeout) {
                 clearTimeout(notifTimeout);
@@ -4861,7 +4801,6 @@
             });
         }
 
-        // ─── WAITING TEXT ANIMATION ──────────────────────────────────
         function animateWaitingText() {
             const elements = [waitingText, iceWaitingText];
             elements.forEach(el => {
@@ -4915,7 +4854,6 @@
             });
         }
 
-        // ─── applyServerState ──────────────────────────────────────────
         function applyServerState(snapshot) {
             const prevGameState = state.gameState;
             state.gameState = snapshot.gameState;
@@ -5123,7 +5061,6 @@
                 delete betInput.dataset.empty; }
         }
 
-        // ─── WIN PANEL UPDATES ──────────────────────────────────────
         function updateLastGamePanel(entry) {
             lastGamePfp.src = entry.pfp || state.defaultAvatar;
             lastGameAmount.textContent = `+${entry.amount || 0}`;
@@ -5170,7 +5107,6 @@
             addRecentGame('ice', name, amount, 'win');
         }
 
-        // ─── ROUND END HANDLERS ─────────────────────────────────────
         function handleRoundEnd(payload) {
             if (!payload) { hideWinPanelAndReset(); return; }
             addWinToHistory(payload.winnerName, payload.winnerPfp, payload.winnings);
@@ -5221,7 +5157,6 @@
             hideWinPanelAndReset();
         });
 
-        // ─── ICE ROUND END ──────────────────────────────────────────
         function handleIceRoundEnd(payload) {
             if (!payload) { hideIceWinPanelAndReset(); return; }
             iceState.winnerId = payload.winnerId;
@@ -5270,10 +5205,8 @@
             hideIceWinPanelAndReset();
         });
 
-        // ─── getIcePlayerLocal ──────────────────────────────────────
         function getIcePlayerLocal(id) { return iceState.players.find(p => p.id === id); }
 
-        // ─── applyIceServerState ───────────────────────────────────────
         function applyIceServerState(snapshot) {
             const prevGameState = iceState.gameState;
             if (snapshot.gameState === 'sliding' && prevGameState !== 'sliding') {
@@ -5456,7 +5389,6 @@
                 delete iceBetInput.dataset.empty; }
         }
 
-        // ─── PLACE BETS ──────────────────────────────────────────────
         function placeIceBet(amount) {
             if (!socket || !socket.connected) return;
             let addAmount = parseInt(amount) || 10;
@@ -5826,7 +5758,6 @@
             toggleAutoBet(autoSwitch.checked);
         });
 
-        // ─── PROMO ────────────────────────────────────────────────────
         promoBtn.addEventListener('click', async () => {
             playClickSound();
             const code = promoInput.value.trim().toUpperCase();
@@ -5871,7 +5802,6 @@
             promoModal.classList.remove('show');
         });
 
-        // ─── RELOAD PFP ──────────────────────────────────────────────
         reloadPfpBtn.addEventListener('click', function() {
             playClickSound();
             const user = getPlayer(state.userId);
@@ -5888,14 +5818,12 @@
             }
         });
 
-        // ─── SOUND TOGGLE ────────────────────────────────────────────
         soundToggle.addEventListener('change', () => {
             playClickSound();
             state.soundEnabled = soundToggle.checked;
         });
         soundToggle.checked = state.soundEnabled;
 
-        // ─── TAB SWITCHING ────────────────────────────────────────────
         function switchTab(tabId) {
             if (state.currentTab === tabId) return;
             const oldTab = state.currentTab;
@@ -5926,7 +5854,6 @@
             const s = scaleFactor();
             ctx.clearRect(0, 0, w, w);
 
-            // Glass background with center glow (liquid glass effect)
             const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
             grad.addColorStop(0, 'rgba(40, 45, 55, 0.55)');
             grad.addColorStop(0.3, 'rgba(28, 32, 42, 0.65)');
@@ -5935,7 +5862,6 @@
             ctx.fillStyle = grad;
             ctx.fillRect(0, 0, w, w);
 
-            // Center glow (liquid glass effect)
             const glowGrad = ctx.createRadialGradient(half, half, 0, half, half, half * 0.6);
             glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.04)');
             glowGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
@@ -5945,7 +5871,6 @@
             ctx.fillRect(0, 0, w, w);
             ctx.restore();
 
-            // Rounded rect for arena background
             const cornerRadius = w * 0.20;
             const rectX = 0, rectY = 0, rectW = w, rectH = w;
 
@@ -5977,7 +5902,6 @@
             ctx.fill();
             ctx.restore();
 
-            // Outline
             ctx.save();
             ctx.shadowColor = 'rgba(255, 255, 255, 0.10)';
             ctx.shadowBlur = 16;
@@ -5992,7 +5916,6 @@
             ctx.stroke();
             ctx.restore();
 
-            // Perimeter path
             const pts = state.perimeterPoints.map(p => ({ x: p.x * s, y: p.y * s }));
             if (pts.length > 0) {
                 const opening = state.opening;
@@ -6057,7 +5980,6 @@
                 ctx.restore();
             }
 
-            // Clip to rounded rect for players
             ctx.save();
             roundRect(ctx, rectX, rectY, rectW, rectH, cornerRadius);
             ctx.clip();
@@ -6143,10 +6065,10 @@
                 ctx.restore();
             });
 
-            ctx.restore(); // clip
+            ctx.restore();
         }
 
-        // ─── RENDER ICE (FINAL) ──────────────────────────────────────
+        // ─── RENDER ICE (with smooth puck) ───────────────────────────
         function renderIce() {
             const w = iceState.arenaSize;
             if (!w) return;
@@ -6179,7 +6101,6 @@
             for (let i = 1; i < pts.length; i++) perimeterPath.lineTo(pts[i].x, pts[i].y);
             perimeterPath.closePath();
 
-            // ─── PULSE GLOW EFFECT (idle state) ─────────────────────
             if (iceState.gameState === 'idle') {
                 iceState.glowPhase += 0.03;
                 const pulse = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(iceState.glowPhase));
@@ -6203,11 +6124,9 @@
                 iceCtx.restore();
             }
 
-            // ─── ZOOM TRANSFORMATION (fixed center) ────────────────
             let zoomActive = iceState.zoom > 1.01;
             let zoomTx = 0, zoomTy = 0, zoomSc = 1;
             if (zoomActive && iceState.zoomCenterFixed) {
-                // Use the stored world coordinates as fixed center
                 const centerScreenX = iceState.zoomCenterX * s;
                 const centerScreenY = iceState.zoomCenterY * s;
                 const cx = half, cy = half;
@@ -6219,7 +6138,6 @@
                 iceCtx.scale(zoomSc, zoomSc);
             }
 
-            // Perimeter outline
             iceCtx.save();
             iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
             iceCtx.lineWidth = 3;
@@ -6265,48 +6183,65 @@
 
                 const cx = x;
                 const cy = y;
-                const puckRadius = 10 * s;
-                const r = puckRadius;
-                iceCtx.save();
-                iceCtx.shadowColor = 'rgba(255, 255, 255, 0.4)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.strokeStyle = '#ffffff';
-                iceCtx.lineWidth = 4;
+                const r = 10 * s;
+                const unit = r / 20;
+
+                // soft radial shadow
+                const sh = iceCtx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r * 1.8);
+                sh.addColorStop(0,   'rgba(0,0,0,0)');
+                sh.addColorStop(0.6, 'rgba(0,0,0,0.14)');
+                sh.addColorStop(1,   'rgba(0,0,0,0)');
+                iceCtx.fillStyle = sh;
+                iceCtx.beginPath(); iceCtx.arc(cx, cy, r * 1.8, 0, Math.PI * 2); iceCtx.fill();
+
+                // outer white rim
                 iceCtx.beginPath();
+                iceCtx.lineWidth = 6 * unit;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.96)';
                 iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
                 iceCtx.stroke();
-                const crossSize = r * 0.7;
-                iceCtx.shadowBlur = 0;
-                iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 2;
-                iceCtx.strokeStyle = '#ffffff';
+
+                // inner matte fill
                 iceCtx.beginPath();
-                iceCtx.moveTo(cx - crossSize, cy);
-                iceCtx.lineTo(cx + crossSize, cy);
-                iceCtx.moveTo(cx, cy - crossSize);
-                iceCtx.lineTo(cx, cy + crossSize);
+                iceCtx.fillStyle = 'rgba(6,8,10,0.78)';
+                iceCtx.arc(cx, cy, Math.max(0.5, r - 4 * unit), 0, Math.PI * 2);
+                iceCtx.fill();
+
+                // cross
+                const crossLen = r * 2.0;
+                iceCtx.beginPath();
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.18)';
+                iceCtx.lineWidth = 1.2 * unit;
+                iceCtx.moveTo(cx - crossLen / 2, cy); iceCtx.lineTo(cx + crossLen / 2, cy);
+                iceCtx.moveTo(cx, cy - crossLen / 2); iceCtx.lineTo(cx, cy + crossLen / 2);
                 iceCtx.stroke();
-                iceCtx.globalAlpha = 1;
-                iceCtx.restore();
+
+                // highlight
+                const sp = iceCtx.createRadialGradient(
+                    cx - r * 0.35, cy - r * 0.35, 1,
+                    cx - r * 0.35, cy - r * 0.35, r * 1.2
+                );
+                sp.addColorStop(0, 'rgba(255,255,255,0.08)');
+                sp.addColorStop(1, 'rgba(255,255,255,0)');
+                iceCtx.fillStyle = sp;
+                iceCtx.beginPath(); iceCtx.arc(cx, cy, r, 0, Math.PI * 2); iceCtx.fill();
+
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
-            // ─── ZOOM LOGIC (trigger at 6.0s, speed < 0.3) ──────────
             const now = performance.now();
             const puck = iceState.puck;
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                // Trigger when speed is very low and elapsed time > 6.0 (about 0.1-0.2s before stop)
                 if (slideElapsed > 6.0 && currentSpeed < 0.3 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState
                     .zoomLocked) {
-                    // Store the puck's world position at this moment (fixed center)
                     iceState.zoomCenterX = puck.x;
                     iceState.zoomCenterY = puck.y;
                     iceState.zoomCenterFixed = true;
                     iceState.isZoomingIn = true;
                     iceState.zoomStartTime = now;
-                    iceState.zoomTarget = 1.5; // zoom factor
+                    iceState.zoomTarget = 1.5;
                 }
             }
             if (iceState.isZoomingOut) {
@@ -6333,7 +6268,6 @@
                 }
             }
 
-            // ─── SMOOTH PUCK INTERPOLATION ──────────────────────────
             let renderPuckX = puck.x;
             let renderPuckY = puck.y;
             if (iceState.puckUpdateTime > 0) {
@@ -6347,7 +6281,6 @@
                 Math.pow(renderPuckY - iceState.puckPrevY, 2)
             );
 
-            // Draw fields
             iceCtx.save();
             iceCtx.clip(perimeterPath);
             iceState.players.forEach((p, index) => {
@@ -6416,7 +6349,6 @@
             });
             iceCtx.restore();
 
-            // Spinning arrow
             if (iceState.gameState === 'spinning' && iceState.spinStartTime) {
                 const elapsed = (Date.now() - iceState.spinStartTime) / 1000;
                 const t = Math.min(1, elapsed / (iceState.spinDuration || 1));
@@ -6448,40 +6380,26 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (no collider outline) ────────────────────
+            // ─── PUCK DRAWING (smooth puck style) ──────────────────────
             if (iceState.puckVisible) {
+                const nowMs = performance.now();
+
                 let scale = 1;
                 if (iceState.puckPopStart) {
-                    const elapsedPop = (performance.now() - iceState.puckPopStart) / 1000;
-                    const duration = 0.4;
-                    const progress = Math.min(elapsedPop / duration, 1);
-                    if (progress < 1) {
-                        scale = easeOutBack(progress);
-                        scale = Math.min(1.2, Math.max(0, scale));
-                    } else {
-                        scale = 1;
-                        iceState.puckPopStart = 0;
-                    }
+                    const progress = Math.min((nowMs - iceState.puckPopStart) / 400, 1);
+                    scale = Math.max(0, Math.min(1.2, easeOutBack(progress)));
+                    if (progress >= 1) iceState.puckPopStart = 0;
                 }
+
                 let winnerScale = 1;
                 if (iceState.winnerPuckPop) {
-                    const elapsed = (performance.now() - iceState.winnerPuckPopStart) / 1000;
-                    const duration = iceState.winnerPuckPopDuration / 1000;
-                    const progress = Math.min(elapsed / duration, 1);
-                    if (progress < 1) {
-                        const bounceProgress = progress * 3;
-                        if (bounceProgress < 1) {
-                            winnerScale = 1 + 0.6 * easeOutBack(bounceProgress);
-                        } else if (bounceProgress < 2) {
-                            winnerScale = 1 + 0.3 * Math.sin((bounceProgress - 1) * Math.PI);
-                        } else {
-                            winnerScale = 1;
-                        }
-                    } else {
-                        winnerScale = 1;
-                        iceState.winnerPuckPop = false;
-                    }
+                    const t = Math.min(1, (nowMs - iceState.winnerPuckPopStart) / iceState.winnerPuckPopDuration);
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    const POP_SCALE = 1.06;
+                    winnerScale = 1 + (POP_SCALE - 1) * Math.sin(ease * Math.PI * 2) * (1 - t);
+                    if (t >= 1) { winnerScale = 1; iceState.winnerPuckPop = false; }
                 }
+
                 const totalScale = scale * winnerScale;
 
                 let px, py;
@@ -6492,48 +6410,57 @@
                     px = renderPuckX * s;
                     py = renderPuckY * s;
                 }
-                const puckRadius = PUCK_RENDER_RADIUS * s * totalScale;
-                const r = puckRadius;
 
-                // No grey collider ring
+                const r = PUCK_RENDER_RADIUS * s * totalScale;
+                const unit = r / 20;
 
-                // ---- Shadow ----
-                iceCtx.save();
-                iceCtx.shadowColor = 'rgba(0,0,0,0.3)';
-                iceCtx.shadowBlur = 12;
-                iceCtx.shadowOffsetX = 3;
-                iceCtx.shadowOffsetY = 4;
-                iceCtx.fillStyle = 'rgba(0,0,0,0.15)';
+                // soft radial shadow
+                const shadowGrad = iceCtx.createRadialGradient(px, py, r * 0.2, px, py, r * 1.8);
+                shadowGrad.addColorStop(0,   'rgba(0,0,0,0)');
+                shadowGrad.addColorStop(0.6, 'rgba(0,0,0,0.14)');
+                shadowGrad.addColorStop(1,   'rgba(0,0,0,0)');
+                iceCtx.fillStyle = shadowGrad;
                 iceCtx.beginPath();
-                iceCtx.arc(px + 3, py + 4, r, 0, Math.PI * 2);
+                iceCtx.arc(px, py, r * 1.8, 0, Math.PI * 2);
                 iceCtx.fill();
-                iceCtx.restore();
 
-                // ---- White outline (thick) ----
-                iceCtx.save();
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.9)';
-                iceCtx.lineWidth = 4;
-                iceCtx.shadowBlur = 0;
+                // outer white rim
                 iceCtx.beginPath();
+                iceCtx.lineWidth = 6 * unit;
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.96)';
                 iceCtx.arc(px, py, r, 0, Math.PI * 2);
                 iceCtx.stroke();
-                iceCtx.restore();
 
-                // ---- Cross (thinner) ----
-                const crossSize = r * 0.7;
-                iceCtx.save();
-                iceCtx.globalAlpha = 0.5;
-                iceCtx.lineWidth = 1.5;
-                iceCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+                // inner matte fill
                 iceCtx.beginPath();
-                iceCtx.moveTo(px - crossSize, py);
-                iceCtx.lineTo(px + crossSize, py);
-                iceCtx.moveTo(px, py - crossSize);
-                iceCtx.lineTo(px, py + crossSize);
-                iceCtx.stroke();
-                iceCtx.restore();
+                iceCtx.fillStyle = 'rgba(6,8,10,0.78)';
+                iceCtx.arc(px, py, Math.max(0.5, r - 4 * unit), 0, Math.PI * 2);
+                iceCtx.fill();
 
-                // Owner name (if slow) – unchanged
+                // cross across diameter
+                iceCtx.beginPath();
+                iceCtx.strokeStyle = 'rgba(255,255,255,0.18)';
+                iceCtx.lineWidth = 1.2 * unit;
+                const crossLen = r * 2.0;
+                iceCtx.moveTo(px - crossLen / 2, py);
+                iceCtx.lineTo(px + crossLen / 2, py);
+                iceCtx.moveTo(px, py - crossLen / 2);
+                iceCtx.lineTo(px, py + crossLen / 2);
+                iceCtx.stroke();
+
+                // specular highlight
+                const spec = iceCtx.createRadialGradient(
+                    px - r * 0.35, py - r * 0.35, 1,
+                    px - r * 0.35, py - r * 0.35, r * 1.2
+                );
+                spec.addColorStop(0, 'rgba(255,255,255,0.08)');
+                spec.addColorStop(1, 'rgba(255,255,255,0)');
+                iceCtx.fillStyle = spec;
+                iceCtx.beginPath();
+                iceCtx.arc(px, py, r, 0, Math.PI * 2);
+                iceCtx.fill();
+
+                // owner name
                 const speedThreshold = 2.0;
                 const isSlow = speed < speedThreshold && iceState.gameState === 'sliding';
                 let ownerName = '';
@@ -6541,7 +6468,8 @@
                     const pxLocal = renderPuckX;
                     const pyLocal = renderPuckY;
                     for (const p of iceState.players) {
-                        if (pxLocal >= p.x1 && pxLocal <= p.x2 && pyLocal >= p.y1 && pyLocal <= p.y2) {
+                        if (pxLocal >= p.x1 && pxLocal <= p.x2 &&
+                            pyLocal >= p.y1 && pyLocal <= p.y2) {
                             ownerName = p.name || 'Player';
                             break;
                         }
@@ -6553,9 +6481,7 @@
                     iceState.nameFadeIn = Math.min(1, iceState.nameFadeIn + 0.03);
                 } else if (!isSlow || !ownerName) {
                     iceState.nameFadeIn = Math.max(0, iceState.nameFadeIn - 0.02);
-                    if (iceState.nameFadeIn <= 0) {
-                        iceState.showOwnerName = false;
-                    }
+                    if (iceState.nameFadeIn <= 0) iceState.showOwnerName = false;
                 }
                 if (iceState.showOwnerName && iceState.currentOwnerName && iceState.nameFadeIn > 0.1) {
                     const alpha = iceState.nameFadeIn * 0.55;
@@ -6570,8 +6496,7 @@
                     iceCtx.shadowBlur = 6;
                     let displayName = iceState.currentOwnerName;
                     if (displayName.length > 10) displayName = displayName.slice(0, 9) + '…';
-                    const textY = py + r + 4;
-                    iceCtx.fillText(displayName, px, textY);
+                    iceCtx.fillText(displayName, px, py + r + 4);
                     iceCtx.restore();
                 }
             }
@@ -6579,7 +6504,6 @@
             if (zoomActive) iceCtx.restore();
         }
 
-        // ─── RENDER LOOP ─────────────────────────────────────────────
         function renderLoop() {
             updatePlayerAnimations();
             const now = Date.now();
@@ -6617,7 +6541,6 @@
             requestAnimationFrame(renderLoop);
         }
 
-        // ─── INIT ─────────────────────────────────────────────────────
         function init() {
             if (tg?.initDataUnsafe?.user) {
                 const u = tg.initDataUnsafe.user;
@@ -6649,7 +6572,6 @@
         window.__state = state;
     </script>
 
-    <!-- ─── LOADING SCREEN CONTROLLER ──────────────────────────── -->
     <script>
         (function() {
             'use strict';
