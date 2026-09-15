@@ -111,7 +111,6 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
-// ─── ORIGINAL SPEED (8–28) ──────────────────────────────────────
 function speedForRadius(radius) {
   const minR = 18;
   const maxR = 52;
@@ -120,7 +119,6 @@ function speedForRadius(radius) {
   return Math.max(8.0, Math.min(28.0, speed));
 }
 
-// ─── Room ──────────────────────────────────────────────────────
 const COLORS = ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c', '#e84393'];
 const MAX_PLAYERS = 8;
 
@@ -143,9 +141,6 @@ const room = createRoom('main');
 function getAlive() { return room.players.filter(p => p.alive); }
 function getPlayer(id) { return room.players.find(p => p.id === id); }
 
-// ═══════════════════════════════════════════════════════════════
-// ICE ARENA – BSP LAYOUT
-// ═══════════════════════════════════════════════════════════════
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
@@ -240,7 +235,6 @@ function stopAutoBot() {
   }
 }
 
-// ─── BSP Partition with uniform scaling ──────────────────────
 function repartitionIceArena() {
   const players = iceRoom.players;
   if (players.length === 0) return;
@@ -325,7 +319,6 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   }
 }
 
-// ─── Player management ──────────────────────────────────────────
 function makeIcePlayer(id, bet, name, pfp) {
   const colorIdx = iceRoom.players.length % COLORS.length;
   const p = {
@@ -463,13 +456,7 @@ async function endIceGame() {
   }, 3000);
 }
 
-// ─── SMOOTH ICE PHYSICS ─────────────────────────────────────────
-// Tuned to smooth-puck-script feel:
-//   - 2s no-friction hold at launch
-//   - linear friction 0.990/frame after hold
-//   - extra rolling friction 0.985 when speed² < 0.8
-//   - wall restitution 0.78 (softer thuds)
-//   - tiny organic jitter on bounce
+// ─── ICE PHYSICS (smooth puck feel) ─────────────────────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
 
@@ -479,10 +466,11 @@ function updateIcePhysics(dt) {
   const puck = iceRoom.puck;
   const puckRadius = 6;
 
+  // ── Tunables ──
   const FRICTION_BASE    = 0.990;
   const ROLLING_FRICTION = 0.985;
   const RESTITUTION      = 0.78;
-  const HOLD_MS          = 2000;
+  const HOLD_MS          = 3200;   // ← was 2000, now holds full speed longer
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
@@ -575,7 +563,6 @@ function broadcastIceState() {
   });
 }
 
-// ─── Radius scaling for bump arena ──────────────────────────────
 function computeRadii() {
   const totalBet = room.players.reduce((s, p) => s + p.bet, 0);
   if (totalBet === 0) return;
@@ -717,7 +704,6 @@ function isInGap(idx) {
   return startIdx < endIdx ? (idx >= startIdx && idx <= endIdx) : (idx >= startIdx || idx <= endIdx);
 }
 
-// ─── PHYSICS with speed cap ────────────────────────────────────
 function updatePhysics(dt) {
   if (room.gameState !== 'playing') return;
   room.gameTime += dt;
@@ -879,7 +865,6 @@ function updatePhysics(dt) {
   });
 }
 
-// ─── Game Loop ────────────────────────────────────────────────
 const TICK_HZ = 30;
 let lastTick = Date.now();
 setInterval(() => {
@@ -928,7 +913,6 @@ function broadcastState() {
   });
 }
 
-// ─── Socket.io ────────────────────────────────────────────────
 io.on('connection', (socket) => {
   let userId = null;
   socket.on('join', async ({ initData }, ack) => {
@@ -1057,9 +1041,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────
-// ADMIN API
-// ─────────────────────────────────────────────────────────────
 const ADMIN_HTML = `<!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Admin Panel</title>
 <style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
@@ -1507,7 +1488,6 @@ app.get('/redeem', async (req, res) => {
   }
 });
 
-// ─── NEW HTTP ENDPOINTS ──────────────────────────────────────────
 app.post('/api/change-anonymous', async (req, res) => {
   try {
     const { userId, field, value } = req.body;
