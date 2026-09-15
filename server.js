@@ -4,21 +4,9 @@ const crypto = require('crypto');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const {
-  getUser,
-  saveUser,
-  addWinToHistory,
-  getAllUsers,
-  topPlayers,
-  allUsersCount,
-  createPromoCode,
-  redeemPromoCode,
-  getPromoCodes,
-  deletePromoCode,
-  resetPlayer,
-  setAnonymousData,
-  checkAnonymousUnique,
-  changeAnonymousField,
-  toggleHidePfp,
+  getUser, saveUser, addWinToHistory, getAllUsers, topPlayers, allUsersCount,
+  createPromoCode, redeemPromoCode, getPromoCodes, deletePromoCode, resetPlayer,
+  setAnonymousData, checkAnonymousUnique, changeAnonymousField, toggleHidePfp,
 } = require('./store');
 
 const PORT = process.env.PORT || 3000;
@@ -32,12 +20,8 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: '*' },
-  transports: ['websocket', 'polling'],
-});
+const io = new Server(server, { cors: { origin: '*' }, transports: ['websocket', 'polling'] });
 
-// ─── Telegram auth ─────────────────────────────────────────────
 function verifyInitData(initData) {
   if (!BOT_TOKEN) return null;
   try {
@@ -57,13 +41,9 @@ function verifyInitData(initData) {
     const userJson = params.get('user');
     if (!userJson) return null;
     return JSON.parse(userJson);
-  } catch (e) {
-    console.error('Auth error:', e);
-    return null;
-  }
+  } catch (e) { console.error('Auth error:', e); return null; }
 }
 
-// ─── Arena geometry ─────────────────────────────────────────────
 const ARENA_SIZE = 400;
 const CORNER_RADIUS = ARENA_SIZE * 0.35;
 
@@ -112,8 +92,7 @@ function generatePerimeter(size, cornerRadius, numPoints = 300) {
 const PERIMETER = generatePerimeter(ARENA_SIZE, CORNER_RADIUS, 300);
 
 function speedForRadius(radius) {
-  const minR = 18;
-  const maxR = 52;
+  const minR = 18, maxR = 52;
   const norm = Math.min(1, Math.max(0, (radius - minR) / (maxR - minR)));
   const speed = 28.0 - norm * 20.0;
   return Math.max(8.0, Math.min(28.0, speed));
@@ -123,18 +102,8 @@ const COLORS = ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f', '#9b59b6', '#e67e22'
 const MAX_PLAYERS = 8;
 
 function createRoom(id) {
-  return {
-    id,
-    gameState: 'idle',
-    players: [],
-    pot: 0,
-    opening: null,
-    openingTimer: 0,
-    gameTime: 0,
-    countdownStartTime: 0,
-    prestartTimer: 0,
-    recentWinners: [],
-  };
+  return { id, gameState: 'idle', players: [], pot: 0, opening: null, openingTimer: 0,
+    gameTime: 0, countdownStartTime: 0, prestartTimer: 0, recentWinners: [] };
 }
 const room = createRoom('main');
 
@@ -144,43 +113,28 @@ function getPlayer(id) { return room.players.find(p => p.id === id); }
 const ICE_SIZE = ARENA_SIZE;
 const ICE_CORNER_RADIUS = ARENA_SIZE * 0.045;
 const ICE_PERIMETER = generatePerimeter(ICE_SIZE, ICE_CORNER_RADIUS, 300);
-
 const ICE_FIELD_SCALE = 0.92;
 
 function createIceRoom(id) {
   return {
-    id,
-    gameState: 'idle',
-    players: [],
-    pot: 0,
-    countdownStartTime: 0,
-    spinStartTime: 0,
-    spinDuration: 0,
-    spinFinalAngle: 0,
-    spinStartX: ICE_SIZE / 2,
-    spinStartY: ICE_SIZE / 2,
+    id, gameState: 'idle', players: [], pot: 0, countdownStartTime: 0,
+    spinStartTime: 0, spinDuration: 0, spinFinalAngle: 0,
+    spinStartX: ICE_SIZE / 2, spinStartY: ICE_SIZE / 2,
     puck: { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 },
-    recentWinners: [],
-    slideStartTime: 0,
+    recentWinners: [], slideStartTime: 0, lastBounceTime: 0,
   };
 }
 const iceRoom = createIceRoom('ice');
 
 function getIcePlayer(id) { return iceRoom.players.find(p => p.id === id); }
 
-// ─── BOT MANAGEMENT ─────────────────────────────────────────────
 let botCounter = 0;
 const botIds = new Set();
 let autoBotEnabled = false;
 let autoBotInterval = null;
 
-function generateBotId() {
-  return `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function isBot(id) {
-  return id && typeof id === 'string' && id.startsWith('bot_');
-}
+function generateBotId() { return `bot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
+function isBot(id) { return id && typeof id === 'string' && id.startsWith('bot_'); }
 
 function spawnBot(betAmount) {
   const id = generateBotId();
@@ -188,28 +142,19 @@ function spawnBot(betAmount) {
   const name = `Bot_${String(botCounter).padStart(3, '0')}`;
   const pfp = `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70)}`;
   const player = makeIcePlayer(id, betAmount, name, pfp);
-  if (player) {
-    botIds.add(id);
-    console.log(`🤖 Spawned bot: ${name} (${id}) with bet ${betAmount}`);
-    return player;
-  }
+  if (player) { botIds.add(id); return player; }
   return null;
 }
 
 function removeAllBots() {
   const toRemove = [];
-  iceRoom.players.forEach(p => {
-    if (isBot(p.id)) toRemove.push(p.id);
-  });
+  iceRoom.players.forEach(p => { if (isBot(p.id)) toRemove.push(p.id); });
   toRemove.forEach(id => {
     const idx = iceRoom.players.findIndex(p => p.id === id);
     if (idx !== -1) iceRoom.players.splice(idx, 1);
     botIds.delete(id);
   });
-  if (toRemove.length > 0) {
-    console.log(`🧹 Removed ${toRemove.length} bots from ice arena`);
-    if (iceRoom.players.length > 0) repartitionIceArena();
-  }
+  if (toRemove.length > 0 && iceRoom.players.length > 0) repartitionIceArena();
   return toRemove.length;
 }
 
@@ -220,19 +165,13 @@ function startAutoBot() {
     if (iceRoom.gameState !== 'idle') return;
     if (iceRoom.players.length >= MAX_PLAYERS) return;
     const bet = Math.floor(Math.random() * 140) + 10;
-    const bot = spawnBot(bet);
-    if (bot) {
-      console.log(`🤖 Auto-spawned bot: ${bot.name} with bet ${bet}`);
-    }
+    spawnBot(bet);
   }, 4000);
 }
 startAutoBot();
 
 function stopAutoBot() {
-  if (autoBotInterval) {
-    clearInterval(autoBotInterval);
-    autoBotInterval = null;
-  }
+  if (autoBotInterval) { clearInterval(autoBotInterval); autoBotInterval = null; }
 }
 
 function repartitionIceArena() {
@@ -246,20 +185,15 @@ function repartitionIceArena() {
   partitionRect(shuffled, 0, 0, ICE_SIZE, ICE_SIZE, 0, shuffled.length);
   const map = {};
   shuffled.forEach(p => { map[p.id] = p; });
-
   const half = ICE_SIZE / 2;
   const scale = ICE_FIELD_SCALE;
   players.forEach(p => {
     const assigned = map[p.id];
     if (assigned) {
-      const cx1 = assigned.x1 - half;
-      const cy1 = assigned.y1 - half;
-      const cx2 = assigned.x2 - half;
-      const cy2 = assigned.y2 - half;
-      p.x1 = half + cx1 * scale;
-      p.y1 = half + cy1 * scale;
-      p.x2 = half + cx2 * scale;
-      p.y2 = half + cy2 * scale;
+      const cx1 = assigned.x1 - half, cy1 = assigned.y1 - half;
+      const cx2 = assigned.x2 - half, cy2 = assigned.y2 - half;
+      p.x1 = half + cx1 * scale; p.y1 = half + cy1 * scale;
+      p.x2 = half + cx2 * scale; p.y2 = half + cy2 * scale;
     }
   });
 }
@@ -289,18 +223,10 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
   }
   const cum = [];
   let sum = 0;
-  for (let i = startIdx; i < endIdx; i++) {
-    sum += Math.max(players[i].bet, 1);
-    cum.push(sum);
-  }
+  for (let i = startIdx; i < endIdx; i++) { sum += Math.max(players[i].bet, 1); cum.push(sum); }
   const r = Math.random() * sum;
   let splitIdx = startIdx;
-  for (let i = 0; i < cum.length; i++) {
-    if (r <= cum[i]) {
-      splitIdx = startIdx + i + 1;
-      break;
-    }
-  }
+  for (let i = 0; i < cum.length; i++) { if (r <= cum[i]) { splitIdx = startIdx + i + 1; break; } }
   if (splitIdx <= startIdx) splitIdx = startIdx + 1;
   if (splitIdx >= endIdx) splitIdx = endIdx - 1;
   const leftBet = players.slice(startIdx, splitIdx).reduce((s, p) => s + Math.max(p.bet, 1), 0);
@@ -321,11 +247,8 @@ function partitionRect(players, x, y, w, h, startIdx, endIdx) {
 
 function makeIcePlayer(id, bet, name, pfp) {
   const colorIdx = iceRoom.players.length % COLORS.length;
-  const p = {
-    id, bet, name: name || 'player', pfp: pfp || '',
-    color: COLORS[colorIdx],
-    x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE,
-  };
+  const p = { id, bet, name: name || 'player', pfp: pfp || '',
+    color: COLORS[colorIdx], x1: 0, y1: 0, x2: ICE_SIZE, y2: ICE_SIZE };
   iceRoom.players.push(p);
   repartitionIceArena();
   return p;
@@ -365,21 +288,18 @@ function launchIcePuck() {
   iceRoom.puck.vx = Math.cos(angle) * speed;
   iceRoom.puck.vy = Math.sin(angle) * speed;
   iceRoom.slideStartTime = Date.now();
+  iceRoom.lastBounceTime = 0;
 }
 
 function getIceWinner() {
   const px = Math.min(Math.max(iceRoom.puck.x, 0), ICE_SIZE);
   const py = Math.min(Math.max(iceRoom.puck.y, 0), ICE_SIZE);
   for (const p of iceRoom.players) {
-    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) {
-      return p;
-    }
+    if (px >= p.x1 && px <= p.x2 && py >= p.y1 && py <= p.y2) return p;
   }
-  let closest = null;
-  let minDist = Infinity;
+  let closest = null; let minDist = Infinity;
   for (const p of iceRoom.players) {
-    const cx = (p.x1 + p.x2) / 2;
-    const cy = (p.y1 + p.y2) / 2;
+    const cx = (p.x1 + p.x2) / 2, cy = (p.y1 + p.y2) / 2;
     const d = Math.hypot(px - cx, py - cy);
     if (d < minDist) { minDist = d; closest = p; }
   }
@@ -389,7 +309,6 @@ function getIceWinner() {
 async function endIceGame() {
   if (iceRoom.gameState === 'finished') return;
   iceRoom.gameState = 'finished';
-
   const winner = getIceWinner();
   let payload = null;
   if (winner) {
@@ -398,65 +317,39 @@ async function endIceGame() {
     const losersBets = totalPot - winnerBet;
     const commission = Math.floor(losersBets * 0.02);
     const winnings = totalPot - commission;
-    payload = {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      winnerPfp: winner.pfp,
-      winnings,
-      multiplier: +(winnings / winnerBet).toFixed(2),
-    };
-
-    iceRoom.recentWinners.unshift({
-      name: winner.name,
-      pfp: winner.pfp,
-      amount: winnings
-    });
+    payload = { winnerId: winner.id, winnerName: winner.name, winnerPfp: winner.pfp, winnings,
+      multiplier: +(winnings / winnerBet).toFixed(2) };
+    iceRoom.recentWinners.unshift({ name: winner.name, pfp: winner.pfp, amount: winnings });
     if (iceRoom.recentWinners.length > 8) iceRoom.recentWinners.length = 8;
-
     if (!isBot(winner.id)) {
       try {
         const winnerUser = await getUser(winner.id);
-        if (winnerUser) {
-          winnerUser.balance += winnings;
-          winnerUser.wins += 1;
-          await saveUser(winnerUser);
-        }
-      } catch (err) {
-        console.error('endIceGame: failed to credit winner balance:', err);
-      }
+        if (winnerUser) { winnerUser.balance += winnings; winnerUser.wins += 1; await saveUser(winnerUser); }
+      } catch (err) { console.error('endIceGame: credit winner:', err); }
     }
-
     for (const p of iceRoom.players) {
       if (p.id === winner.id) continue;
       if (!isBot(p.id)) {
-        try {
-          const u = await getUser(p.id);
-          if (u) { u.losses += 1; await saveUser(u); }
-        } catch (err) {
-          console.error('endIceGame: failed to update loser stats for', p.id, err);
-        }
+        try { const u = await getUser(p.id); if (u) { u.losses += 1; await saveUser(u); } }
+        catch (err) { console.error('endIceGame: loser stats:', p.id, err); }
       }
     }
-
-    try {
-      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-    } catch (err) {
-      console.error('endIceGame: failed to write win history:', err);
-    }
+    try { await addWinToHistory(winner.id, winner.name, winner.pfp, winnings); }
+    catch (err) { console.error('endIceGame: history:', err); }
   }
-
   io.emit('iceRoundEnd', payload);
   setTimeout(() => {
     iceRoom.players = [];
     iceRoom.pot = 0;
     iceRoom.puck = { x: ICE_SIZE / 2, y: ICE_SIZE / 2, vx: 0, vy: 0 };
     iceRoom.gameState = 'idle';
+    iceRoom.lastBounceTime = 0;
     botIds.clear();
     botCounter = 0;
   }, 3000);
 }
 
-// ─── ICE PHYSICS (smooth puck feel) ─────────────────────────────
+// ─── ICE PHYSICS — smooth puck + wall-bounce emitter ─────────────
 function updateIcePhysics(dt) {
   if (iceRoom.gameState !== 'sliding') return;
 
@@ -466,17 +359,15 @@ function updateIcePhysics(dt) {
   const puck = iceRoom.puck;
   const puckRadius = 6;
 
-  // ── Tunables ──
   const FRICTION_BASE    = 0.990;
   const ROLLING_FRICTION = 0.985;
   const RESTITUTION      = 0.78;
-  const HOLD_MS          = 3200;   // ← was 2000, now holds full speed longer
+  const HOLD_MS          = 3200;
 
   for (let step = 0; step < subSteps; step++) {
     puck.x += puck.vx * subDt * 60;
     puck.y += puck.vy * subDt * 60;
 
-    // ---- wall collisions ----
     let iter = 0;
     const maxIter = 15;
     while (iter < maxIter) {
@@ -507,6 +398,19 @@ function updateIcePhysics(dt) {
             puck.vy -= (1 + RESTITUTION) * vn * ny;
             puck.vx += (Math.random() - 0.5) * 0.02;
             puck.vy += (Math.random() - 0.5) * 0.02;
+
+            // ── emit wall-bounce pulse ──
+            const nowMs = Date.now();
+            if (nowMs - iceRoom.lastBounceTime > 80) {
+              iceRoom.lastBounceTime = nowMs;
+              const speedAtHit = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+              if (speedAtHit > 1.5) {
+                io.emit('icePuckBounce', {
+                  x: nearX, y: nearY,
+                  intensity: Math.min(1, speedAtHit / 20),
+                });
+              }
+            }
           }
           collided = true;
           break;
@@ -516,7 +420,6 @@ function updateIcePhysics(dt) {
       iter++;
     }
 
-    // ---- friction & hold ----
     const elapsed = Date.now() - iceRoom.slideStartTime;
     if (elapsed < HOLD_MS) {
       const decay = Math.pow(0.9999, subDt * 60);
@@ -527,7 +430,6 @@ function updateIcePhysics(dt) {
       const decay = Math.pow(friction, subDt * 60);
       puck.vx *= decay;
       puck.vy *= decay;
-
       const speed2 = puck.vx * puck.vx + puck.vy * puck.vy;
       if (speed2 < 0.8) {
         const rollDecay = Math.pow(ROLLING_FRICTION, subDt * 60);
@@ -538,11 +440,7 @@ function updateIcePhysics(dt) {
   }
 
   const finalSpeed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
-  if (finalSpeed < 0.05) {
-    puck.vx = 0;
-    puck.vy = 0;
-    endIceGame();
-  }
+  if (finalSpeed < 0.05) { puck.vx = 0; puck.vy = 0; endIceGame(); }
 }
 
 function broadcastIceState() {
@@ -588,14 +486,9 @@ function makePlayer(id, bet, name, pfp) {
     attempts++;
   }
   const colorIdx = room.players.length % COLORS.length;
-  const p = {
-    id, bet, name: name || 'player', pfp: pfp || '',
-    color: COLORS[colorIdx],
-    radius, displayRadius: radius, targetRadius: radius,
-    mass: radius * radius * 1.2,
-    x: x ?? half, y: y ?? half, vx: 0, vy: 0,
-    alive: true,
-  };
+  const p = { id, bet, name: name || 'player', pfp: pfp || '',
+    color: COLORS[colorIdx], radius, displayRadius: radius, targetRadius: radius,
+    mass: radius * radius * 1.2, x: x ?? half, y: y ?? half, vx: 0, vy: 0, alive: true };
   room.players.push(p);
   computeRadii();
   return p;
@@ -608,10 +501,7 @@ function startCountdown() {
   room.countdownStartTime = Date.now();
 }
 
-function startPrestart() {
-  room.gameState = 'prestart';
-  room.prestartTimer = 2.0;
-}
+function startPrestart() { room.gameState = 'prestart'; room.prestartTimer = 2.0; }
 
 function startGame() {
   room.gameState = 'playing';
@@ -638,56 +528,28 @@ async function endGame(winnerId) {
   room.gameState = 'finished';
   const winner = getPlayer(winnerId);
   let payload = null;
-
   if (winner) {
     const totalPot = room.pot;
     const winnerBet = winner.bet;
     const losersBets = totalPot - winnerBet;
     const commission = Math.floor(losersBets * 0.02);
     const winnings = totalPot - commission;
-    payload = {
-      winnerId: winner.id,
-      winnerName: winner.name,
-      winnerPfp: winner.pfp,
-      winnings,
-      multiplier: +(winnings / winnerBet).toFixed(2),
-    };
-
-    room.recentWinners.unshift({
-      name: winner.name,
-      pfp: winner.pfp,
-      amount: winnings
-    });
+    payload = { winnerId: winner.id, winnerName: winner.name, winnerPfp: winner.pfp, winnings,
+      multiplier: +(winnings / winnerBet).toFixed(2) };
+    room.recentWinners.unshift({ name: winner.name, pfp: winner.pfp, amount: winnings });
     if (room.recentWinners.length > 8) room.recentWinners.length = 8;
-
     try {
       const winnerUser = await getUser(winner.id);
-      if (winnerUser) {
-        winnerUser.balance += winnings;
-        winnerUser.wins += 1;
-        await saveUser(winnerUser);
-      }
-    } catch (err) {
-      console.error('endGame: failed to credit winner balance:', err);
-    }
-
+      if (winnerUser) { winnerUser.balance += winnings; winnerUser.wins += 1; await saveUser(winnerUser); }
+    } catch (err) { console.error('endGame: credit winner:', err); }
     for (const p of room.players) {
       if (p.id === winner.id) continue;
-      try {
-        const u = await getUser(p.id);
-        if (u) { u.losses += 1; await saveUser(u); }
-      } catch (err) {
-        console.error('endGame: failed to update loser stats for', p.id, err);
-      }
+      try { const u = await getUser(p.id); if (u) { u.losses += 1; await saveUser(u); } }
+      catch (err) { console.error('endGame: loser stats:', p.id, err); }
     }
-
-    try {
-      await addWinToHistory(winner.id, winner.name, winner.pfp, winnings);
-    } catch (err) {
-      console.error('endGame: failed to write win history:', err);
-    }
+    try { await addWinToHistory(winner.id, winner.name, winner.pfp, winnings); }
+    catch (err) { console.error('endGame: history:', err); }
   }
-
   io.to(room.id).emit('roundEnd', payload);
   setTimeout(() => {
     room.players = [];
@@ -827,23 +689,17 @@ function updatePhysics(dt) {
           const overlap = (minDist - dist) * 0.5;
           a.x -= nx * overlap; a.y -= ny * overlap;
           b.x += nx * overlap; b.y += ny * overlap;
-
           const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
           const dvn = dvx * nx + dvy * ny;
           if (dvn > 0) {
             const totalMass = a.mass + b.mass;
             const impulse = (1 + RESTITUTION_PLAYER) * dvn / (1 / a.mass + 1 / b.mass);
-            a.vx -= (impulse / a.mass) * nx;
-            a.vy -= (impulse / a.mass) * ny;
-            b.vx += (impulse / b.mass) * nx;
-            b.vy += (impulse / b.mass) * ny;
-
+            a.vx -= (impulse / a.mass) * nx; a.vy -= (impulse / a.mass) * ny;
+            b.vx += (impulse / b.mass) * nx; b.vy += (impulse / b.mass) * ny;
             const vt = dvx * (-ny) + dvy * nx;
             const frictionImpulse = FRICTION_PLAYER * vt / (1 / a.mass + 1 / b.mass);
-            a.vx -= (frictionImpulse / a.mass) * (-ny);
-            a.vy -= (frictionImpulse / a.mass) * nx;
-            b.vx += (frictionImpulse / b.mass) * (-ny);
-            b.vy += (frictionImpulse / b.mass) * nx;
+            a.vx -= (frictionImpulse / a.mass) * (-ny); a.vy -= (frictionImpulse / a.mass) * nx;
+            b.vx += (frictionImpulse / b.mass) * (-ny); b.vy += (frictionImpulse / b.mass) * nx;
           }
         }
       }
@@ -852,10 +708,7 @@ function updatePhysics(dt) {
     stillAlive.forEach(p => {
       const maxSp = speedForRadius(p.displayRadius || p.radius);
       const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (sp > maxSp) {
-        p.vx = (p.vx / sp) * maxSp;
-        p.vy = (p.vy / sp) * maxSp;
-      }
+      if (sp > maxSp) { p.vx = (p.vx / sp) * maxSp; p.vy = (p.vy / sp) * maxSp; }
     });
   }
 
@@ -895,9 +748,7 @@ setInterval(() => {
       if (iceRoom.players.length >= 2) startIceCountdown();
     }
     broadcastIceState();
-  } catch (err) {
-    console.error('Game loop error:', err);
-  }
+  } catch (err) { console.error('Game loop error:', err); }
 }, 1000 / TICK_HZ);
 
 function broadcastState() {
@@ -915,28 +766,22 @@ function broadcastState() {
 
 io.on('connection', (socket) => {
   let userId = null;
+
   socket.on('join', async ({ initData }, ack) => {
     try {
       let tgUser = verifyInitData(initData);
       if (!tgUser && ALLOW_DEV_LOGIN) {
         tgUser = { id: 'dev_' + socket.id.slice(0, 6), username: 'dev_player', photo_url: '' };
       }
-      if (!tgUser) {
-        ack?.({ ok: false, error: 'Could not verify Telegram login.' });
-        return;
-      }
+      if (!tgUser) { ack?.({ ok: false, error: 'Could not verify Telegram login.' }); return; }
       userId = String(tgUser.id);
       socket.data.userId = userId;
       socket.join(room.id);
-
       const user = await getUser(userId, {
         username: tgUser.username || tgUser.first_name || 'player',
         pfp: tgUser.photo_url || '',
       });
-      if (user.banned) {
-        ack?.({ ok: false, error: 'You have been banned.' });
-        return;
-      }
+      if (user.banned) { ack?.({ ok: false, error: 'You have been banned.' }); return; }
 
       const icePlayers = iceRoom.players.map(p => ({
         id: p.id, name: p.name, pfp: p.pfp, bet: p.bet, color: p.color,
@@ -945,9 +790,7 @@ io.on('connection', (socket) => {
 
       ack?.({
         ok: true,
-        user: {
-          ...user,
-          winHistory: user.winHistory || [],
+        user: { ...user, winHistory: user.winHistory || [],
           anonymousEnabled: user.anonymousEnabled || false,
           anonymousName: user.anonymousName || '',
           anonymousUsername: user.anonymousUsername || '',
@@ -955,20 +798,15 @@ io.on('connection', (socket) => {
           nameChanged: user.nameChanged || false,
           usernameChanged: user.usernameChanged || false,
           phoneChanged: user.phoneChanged || false,
-          hidePfp: user.hidePfp || false,
-        },
+          hidePfp: user.hidePfp || false },
         arena: { size: ARENA_SIZE, cornerRadius: CORNER_RADIUS, perimeter: PERIMETER },
         iceArena: { size: ICE_SIZE, cornerRadius: ICE_CORNER_RADIUS, perimeter: ICE_PERIMETER },
         recentWinners: room.recentWinners,
         iceRecentWinners: iceRoom.recentWinners,
-        icePlayers: icePlayers,
-        icePot: iceRoom.pot,
+        icePlayers, icePot: iceRoom.pot,
       });
       broadcastState();
-    } catch (err) {
-      console.error('Join error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
+    } catch (err) { console.error('Join error:', err); ack?.({ ok: false, error: 'Internal error' }); }
   });
 
   socket.on('placeBet', async ({ amount }, ack) => {
@@ -992,19 +830,12 @@ io.on('connection', (socket) => {
       room.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastState();
-    } catch (err) {
-      console.error('Bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
+    } catch (err) { console.error('Bet error:', err); ack?.({ ok: false, error: 'Internal error' }); }
   });
 
   socket.on('leaderboard', async (_, ack) => {
-    try {
-      ack?.({ ok: true, top: await topPlayers(20) });
-    } catch (err) {
-      console.error('Leaderboard error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
+    try { ack?.({ ok: true, top: await topPlayers(20) }); }
+    catch (err) { console.error('Leaderboard error:', err); ack?.({ ok: false, error: 'Internal error' }); }
   });
 
   socket.on('icePlaceBet', async ({ amount }, ack) => {
@@ -1028,33 +859,22 @@ io.on('connection', (socket) => {
       iceRoom.pot += amt;
       ack?.({ ok: true, balance: user.balance });
       broadcastIceState();
-    } catch (err) {
-      console.error('Ice bet error:', err);
-      ack?.({ ok: false, error: 'Internal error' });
-    }
+    } catch (err) { console.error('Ice bet error:', err); ack?.({ ok: false, error: 'Internal error' }); }
   });
 
   socket.on('disconnect', () => {
-    if (userId) {
-      console.log(`User ${userId} disconnected, keeping their ice arena bet.`);
-    }
+    if (userId) console.log(`User ${userId} disconnected.`);
   });
 });
 
-const ADMIN_HTML = `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Admin Panel</title>
+const ADMIN_HTML = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Admin Panel</title>
 <style>body{background:#0a0a12;color:#eee;font-family:sans-serif;padding:20px;max-width:1000px;margin:auto}
-table{width:100%;border-collapse:collapse;margin:10px 0}
-th,td{padding:8px;border:1px solid #333;text-align:left}
+table{width:100%;border-collapse:collapse;margin:10px 0}th,td{padding:8px;border:1px solid #333;text-align:left}
 button{padding:6px 12px;margin:2px;border:none;border-radius:6px;cursor:pointer;background:#4CAF50;color:#fff}
-button.danger{background:#e06060}
-button.warning{background:#f0a030}
+button.danger{background:#e06060}button.warning{background:#f0a030}
 input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:#fff}
-.auth{display:flex;gap:10px;margin-bottom:20px}
-.section{border:1px solid #333;padding:15px;margin-top:15px;border-radius:8px}
-.bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}
-.bot-row input{width:120px}
-.bot-row button{background:#5b8def}
+.auth{display:flex;gap:10px;margin-bottom:20px}.section{border:1px solid #333;padding:15px;margin-top:15px;border-radius:8px}
+.bot-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:8px 0}.bot-row input{width:120px}.bot-row button{background:#5b8def}
 .switch-wrap{display:flex;align-items:center;gap:12px;margin:6px 0}
 .switch-wrap .switch{position:relative;width:50px;height:26px;flex-shrink:0;cursor:pointer}
 .switch-wrap .switch input{opacity:0;width:0;height:0}
@@ -1064,520 +884,231 @@ input{padding:6px;border-radius:4px;border:1px solid #444;background:#222;color:
 .switch-wrap .switch input:checked+.slider::before{transform:translateX(24px)}
 .notification-row{display:flex;gap:10px;margin:8px 0;align-items:center}
 .notification-row input{flex:1;padding:8px 12px;border-radius:6px;border:1px solid #444;background:#222;color:#fff}
-.notification-row button{padding:6px 16px}
-</style></head>
-<body>
+.notification-row button{padding:6px 16px}</style></head><body>
 <h2>dllump Admin</h2>
 <div class="auth"><input id="secret" placeholder="Admin Secret" type="password"/><button onclick="auth()">Authenticate</button></div>
 <div id="content" style="display:none">
-  <div class="section">
-    <h3>📢 Send Notification</h3>
-    <div class="notification-row">
-      <input id="notifInput" placeholder="Type message or emoji..." />
-      <button onclick="sendNotification()">Send</button>
-    </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Auto Bot</h3>
-    <div class="switch-wrap">
-      <span style="color:#888;">Auto-spawn bots in ice arena</span>
-      <label class="switch">
-        <input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)" />
-        <span class="slider"></span>
-      </label>
-      <span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span>
-    </div>
-  </div>
-  <div class="section">
-    <h3>🤖 Bot Spawn</h3>
-    <div class="bot-row">
-      <input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
-      <input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
-      <button onclick="spawnBots()">Spawn Bots</button>
-      <button class="danger" onclick="removeBots()">Remove All Bots</button>
-    </div>
-  </div>
-  <div class="section">
-    <h3>Players</h3>
-    <button onclick="refreshPlayers()">Refresh Players</button>
-    <div id="players"></div>
-  </div>
-  <div class="section">
-    <h3>Actions</h3>
-    <button class="warning" onclick="resetTop()">Reset Top (wins/losses)</button>
-    <button class="warning" onclick="resetEconomy()">Reset Economy (balance to 50)</button>
-    <button class="danger" onclick="wipeAll()">Wipe All Data</button>
-  </div>
-  <div class="section">
-    <h3>Promo Codes</h3>
-    <p>Generate a new code:</p>
-    <input id="promoAmount" placeholder="Amount" value="100"/>
-    <input id="promoCode" placeholder="Custom code (optional)"/>
-    <input id="promoMaxUses" placeholder="Max uses" value="1"/>
-    <button onclick="generatePromo()">Generate Promo</button>
-    <div id="promoCodes"></div>
-  </div>
-  <div class="section">
-    <h3>Individual Player</h3>
-    <input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button>
-    <br/>
-    <input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button>
-    <br/>
-    <input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button>
-    <br/>
-    <input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player (remove from top)</button>
-  </div>
-</div>
+<div class="section"><h3>📢 Send Notification</h3><div class="notification-row"><input id="notifInput" placeholder="Type message..."/><button onclick="sendNotification()">Send</button></div></div>
+<div class="section"><h3>🤖 Auto Bot</h3><div class="switch-wrap"><span style="color:#888;">Auto-spawn bots</span>
+<label class="switch"><input type="checkbox" id="autoBotToggle" onchange="toggleAutoBot(this.checked)"/><span class="slider"></span></label>
+<span id="autoBotStatus" style="font-size:12px;color:#888;">disabled</span></div></div>
+<div class="section"><h3>🤖 Bot Spawn</h3><div class="bot-row">
+<input id="botBet" placeholder="Bet amount" value="100" type="number" min="10"/>
+<input id="botCount" placeholder="Count" value="1" type="number" min="1" max="8" style="width:80px"/>
+<button onclick="spawnBots()">Spawn Bots</button><button class="danger" onclick="removeBots()">Remove All Bots</button></div></div>
+<div class="section"><h3>Players</h3><button onclick="refreshPlayers()">Refresh Players</button><div id="players"></div></div>
+<div class="section"><h3>Actions</h3><button class="warning" onclick="resetTop()">Reset Top</button>
+<button class="warning" onclick="resetEconomy()">Reset Economy</button><button class="danger" onclick="wipeAll()">Wipe All Data</button></div>
+<div class="section"><h3>Promo Codes</h3><p>Generate new code:</p>
+<input id="promoAmount" placeholder="Amount" value="100"/><input id="promoCode" placeholder="Custom code"/>
+<input id="promoMaxUses" placeholder="Max uses" value="1"/><button onclick="generatePromo()">Generate Promo</button><div id="promoCodes"></div></div>
+<div class="section"><h3>Individual Player</h3>
+<input id="addUserId" placeholder="User ID"/><input id="addAmount" placeholder="Amount"/><button onclick="addMoney()">Add Money</button><br/>
+<input id="setUserId" placeholder="User ID"/><input id="setAmount" placeholder="New Balance"/><button onclick="setMoney()">Set Balance</button><br/>
+<input id="banUserId" placeholder="User ID"/><button class="danger" onclick="banPlayer()">Ban/Unban</button><br/>
+<input id="resetUserId" placeholder="User ID"/><button class="warning" onclick="resetPlayer()">Reset Player</button></div></div>
 <script>
-const ADMIN_SECRET = '${ADMIN_SECRET}';
-async function fetchAdmin(path, method='GET', body=null) {
-  const headers = {'admin-secret': document.getElementById('secret').value};
-  if(body) headers['Content-Type'] = 'application/json';
-  const res = await fetch('/admin/api'+path, {method, headers, body: body ? JSON.stringify(body) : null});
-  return res.json();
-}
-function auth(){
-  const secret = document.getElementById('secret').value;
-  if(secret === ADMIN_SECRET) {
-    document.getElementById('content').style.display = 'block';
-    refreshPlayers();
-    refreshPromoCodes();
-    fetchAutoBotStatus();
-  } else alert('Wrong secret');
-}
-async function fetchAutoBotStatus(){
-  const data = await fetchAdmin('/auto-bot-status');
-  document.getElementById('autoBotToggle').checked = data.enabled;
-  document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-}
-async function toggleAutoBot(enabled){
-  const data = await fetchAdmin('/toggle-auto-bot', 'POST', {enabled});
-  if(data.ok) {
-    document.getElementById('autoBotStatus').textContent = data.enabled ? 'enabled' : 'disabled';
-  } else alert('Error: '+data.error);
-}
-async function sendNotification(){
-  const msg = document.getElementById('notifInput').value.trim();
-  if(!msg) { alert('Please enter a message'); return; }
-  const data = await fetchAdmin('/send-notification', 'POST', {message: msg});
-  if(data.ok) {
-    alert('Notification sent!');
-    document.getElementById('notifInput').value = '';
-  } else alert('Error: '+data.error);
-}
-async function refreshPlayers(){
-  const data = await fetchAdmin('/players');
-  const players = data.players || [];
-  let html = '<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
-  players.forEach(p => {
-    html += \`<tr><td>\${p.id}</td><td>\${p.username}</td><td>\${p.balance}</td><td>\${p.wins}</td><td>\${p.losses}</td><td>\${p.banned ? '🚫' : ''}</td>
-    <td><button onclick="banPlayer('\${p.id}')">Toggle Ban</button></td></tr>\`;
-  });
-  html += '</table>';
-  document.getElementById('players').innerHTML = html;
-}
-async function refreshPromoCodes(){
-  const data = await fetchAdmin('/promo-codes');
-  const codes = data.codes || [];
-  let html = '<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
-  codes.forEach(c => {
-    html += \`<tr><td>\${c.code}</td><td>\${c.amount}</td><td>\${c.usedCount}</td><td>\${c.maxUses}</td>
-    <td><button onclick="deletePromo('\${c.code}')">Delete</button></td></tr>\`;
-  });
-  html += '</table>';
-  document.getElementById('promoCodes').innerHTML = html;
-}
-async function spawnBots(){
-  const bet = parseInt(document.getElementById('botBet').value) || 100;
-  const count = parseInt(document.getElementById('botCount').value) || 1;
-  if(bet < 10 || count < 1 || count > 8) { alert('Bet min 10, count 1-8'); return; }
-  const data = await fetchAdmin('/spawn-bot', 'POST', {bet, count});
-  if(data.ok) alert('Spawned ' + data.spawned + ' bots!');
-  else alert('Error: ' + data.error);
-  refreshPlayers();
-}
-async function removeBots(){
-  if(!confirm('Remove all bots from the ice arena?')) return;
-  const data = await fetchAdmin('/remove-bots', 'POST');
-  if(data.ok) alert('Removed ' + data.removed + ' bots');
-  refreshPlayers();
-}
-async function resetTop(){ if(confirm('Reset all wins/losses to 0?')){ await fetchAdmin('/reset-top', 'POST'); refreshPlayers(); } }
-async function resetEconomy(){ if(confirm('Reset all balances to 50?')){ await fetchAdmin('/reset-money', 'POST'); refreshPlayers(); } }
-async function wipeAll(){ if(confirm('Wipe ALL player data? This cannot be undone!')){ await fetchAdmin('/wipe', 'POST'); refreshPlayers(); } }
-async function addMoney(){
-  const id = document.getElementById('addUserId').value;
-  const amount = parseInt(document.getElementById('addAmount').value);
-  if(!id || !amount) return;
-  await fetchAdmin('/add-money', 'POST', {id, amount});
-  refreshPlayers();
-}
-async function setMoney(){
-  const id = document.getElementById('setUserId').value;
-  const amount = parseInt(document.getElementById('setAmount').value);
-  if(!id || isNaN(amount)) return;
-  await fetchAdmin('/set-money', 'POST', {id, amount});
-  refreshPlayers();
-}
-async function banPlayer(id){
-  const userId = id || document.getElementById('banUserId').value;
-  if(!userId) return;
-  await fetchAdmin('/ban', 'POST', {id: userId});
-  refreshPlayers();
-}
-async function resetPlayer(){
-  const id = document.getElementById('resetUserId').value;
-  if(!id) return;
-  if(!confirm('Reset all stats for user ' + id + '? This will set balance to 50, wins/losses to 0, and clear win history.')) return;
-  await fetchAdmin('/reset-player', 'POST', {id});
-  refreshPlayers();
-}
-async function generatePromo(){
-  const amount = parseInt(document.getElementById('promoAmount').value) || 100;
-  const code = document.getElementById('promoCode').value || null;
-  const maxUses = parseInt(document.getElementById('promoMaxUses').value) || 1;
-  const data = await fetchAdmin('/create-promo', 'POST', {amount, code, maxUses});
-  if(data.ok){ alert('Promo created: '+data.code); refreshPromoCodes(); }
-  else alert('Error: '+data.error);
-}
-async function deletePromo(code){
-  if(!confirm('Delete promo '+code+'?')) return;
-  await fetchAdmin('/delete-promo', 'POST', {code});
-  refreshPromoCodes();
-}
-</script>
-</body></html>`;
+const ADMIN_SECRET='${ADMIN_SECRET}';
+async function fetchAdmin(path,method='GET',body=null){const h={'admin-secret':document.getElementById('secret').value};
+if(body)h['Content-Type']='application/json';
+const r=await fetch('/admin/api'+path,{method,headers:h,body:body?JSON.stringify(body):null});return r.json();}
+function auth(){if(document.getElementById('secret').value===ADMIN_SECRET){document.getElementById('content').style.display='block';
+refreshPlayers();refreshPromoCodes();fetchAutoBotStatus();}else alert('Wrong secret');}
+async function fetchAutoBotStatus(){const d=await fetchAdmin('/auto-bot-status');document.getElementById('autoBotToggle').checked=d.enabled;
+document.getElementById('autoBotStatus').textContent=d.enabled?'enabled':'disabled';}
+async function toggleAutoBot(e){const d=await fetchAdmin('/toggle-auto-bot','POST',{enabled:e});
+if(d.ok)document.getElementById('autoBotStatus').textContent=d.enabled?'enabled':'disabled';else alert('Error: '+d.error);}
+async function sendNotification(){const m=document.getElementById('notifInput').value.trim();if(!m){alert('Enter a message');return;}
+const d=await fetchAdmin('/send-notification','POST',{message:m});if(d.ok){alert('Sent!');document.getElementById('notifInput').value='';}else alert('Error: '+d.error);}
+async function refreshPlayers(){const d=await fetchAdmin('/players');const p=d.players||[];
+let h='<table><tr><th>ID</th><th>Username</th><th>Balance</th><th>Wins</th><th>Losses</th><th>Banned</th><th>Actions</th></tr>';
+p.forEach(x=>{h+=\`<tr><td>\${x.id}</td><td>\${x.username}</td><td>\${x.balance}</td><td>\${x.wins}</td><td>\${x.losses}</td><td>\${x.banned?'🚫':''}</td><td><button onclick="banPlayer('\${x.id}')">Toggle Ban</button></td></tr>\`;});
+h+='</table>';document.getElementById('players').innerHTML=h;}
+async function refreshPromoCodes(){const d=await fetchAdmin('/promo-codes');const c=d.codes||[];
+let h='<table><tr><th>Code</th><th>Amount</th><th>Uses</th><th>Max</th><th>Actions</th></tr>';
+c.forEach(x=>{h+=\`<tr><td>\${x.code}</td><td>\${x.amount}</td><td>\${x.usedCount}</td><td>\${x.maxUses}</td><td><button onclick="deletePromo('\${x.code}')">Delete</button></td></tr>\`;});
+h+='</table>';document.getElementById('promoCodes').innerHTML=h;}
+async function spawnBots(){const b=parseInt(document.getElementById('botBet').value)||100;const c=parseInt(document.getElementById('botCount').value)||1;
+if(b<10||c<1||c>8){alert('Bet min 10, count 1-8');return;}
+const d=await fetchAdmin('/spawn-bot','POST',{bet:b,count:c});if(d.ok)alert('Spawned '+d.spawned+' bots!');else alert('Error: '+d.error);refreshPlayers();}
+async function removeBots(){if(!confirm('Remove all bots?'))return;const d=await fetchAdmin('/remove-bots','POST');
+if(d.ok)alert('Removed '+d.removed+' bots');refreshPlayers();}
+async function resetTop(){if(confirm('Reset wins/losses?')){await fetchAdmin('/reset-top','POST');refreshPlayers();}}
+async function resetEconomy(){if(confirm('Reset balances to 50?')){await fetchAdmin('/reset-money','POST');refreshPlayers();}}
+async function wipeAll(){if(confirm('Wipe ALL data?')){await fetchAdmin('/wipe','POST');refreshPlayers();}}
+async function addMoney(){const id=document.getElementById('addUserId').value;const a=parseInt(document.getElementById('addAmount').value);
+if(!id||!a)return;await fetchAdmin('/add-money','POST',{id,amount:a});refreshPlayers();}
+async function setMoney(){const id=document.getElementById('setUserId').value;const a=parseInt(document.getElementById('setAmount').value);
+if(!id||isNaN(a))return;await fetchAdmin('/set-money','POST',{id,amount:a});refreshPlayers();}
+async function banPlayer(id){const u=id||document.getElementById('banUserId').value;if(!u)return;
+await fetchAdmin('/ban','POST',{id:u});refreshPlayers();}
+async function resetPlayer(){const id=document.getElementById('resetUserId').value;if(!id)return;
+if(!confirm('Reset stats for '+id+'?'))return;await fetchAdmin('/reset-player','POST',{id});refreshPlayers();}
+async function generatePromo(){const a=parseInt(document.getElementById('promoAmount').value)||100;
+const c=document.getElementById('promoCode').value||null;const m=parseInt(document.getElementById('promoMaxUses').value)||1;
+const d=await fetchAdmin('/create-promo','POST',{amount:a,code:c,maxUses:m});
+if(d.ok){alert('Promo: '+d.code);refreshPromoCodes();}else alert('Error: '+d.error);}
+async function deletePromo(code){if(!confirm('Delete '+code+'?'))return;await fetchAdmin('/delete-promo','POST',{code});refreshPromoCodes();}
+</script></body></html>`;
 
 function adminAuth(req, res, next) {
   const secret = req.headers['admin-secret'] || req.query.secret;
-  if (secret !== ADMIN_SECRET) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
-  }
+  if (secret !== ADMIN_SECRET) return res.status(401).json({ ok: false, error: 'Unauthorized' });
   next();
 }
-
-app.get('/admin', (req, res) => {
-  res.send(ADMIN_HTML);
-});
+app.get('/admin', (req, res) => res.send(ADMIN_HTML));
 
 app.post('/admin/api/toggle-auto-bot', adminAuth, (req, res) => {
   const { enabled } = req.body;
-  if (typeof enabled !== 'boolean') {
-    return res.status(400).json({ ok: false, error: 'Invalid enabled value' });
-  }
+  if (typeof enabled !== 'boolean') return res.status(400).json({ ok: false, error: 'Invalid' });
   autoBotEnabled = enabled;
   res.json({ ok: true, enabled: autoBotEnabled });
 });
-app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => {
-  res.json({ enabled: autoBotEnabled });
-});
+app.get('/admin/api/auto-bot-status', adminAuth, (req, res) => res.json({ enabled: autoBotEnabled }));
 
 app.post('/admin/api/send-notification', adminAuth, (req, res) => {
   const { message } = req.body;
-  if (!message || typeof message !== 'string' || message.trim().length === 0) {
+  if (!message || typeof message !== 'string' || message.trim().length === 0)
     return res.status(400).json({ ok: false, error: 'Missing message' });
-  }
   io.emit('notification', { message: message.trim(), timestamp: Date.now() });
   res.json({ ok: true });
 });
 
 app.get('/admin/api/players', adminAuth, async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    res.json({ players: users });
-  } catch (err) {
-    console.error('Admin players error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { res.json({ players: await getAllUsers() }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/reset-money', adminAuth, async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    for (const u of users) {
-      u.balance = 50;
-      await saveUser(u);
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Reset money error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { const users = await getAllUsers(); for (const u of users) { u.balance = 50; await saveUser(u); } res.json({ ok: true }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/reset-top', adminAuth, async (req, res) => {
-  try {
-    const users = await getAllUsers();
-    for (const u of users) {
-      u.wins = 0;
-      u.losses = 0;
-      await saveUser(u);
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Reset top error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { const users = await getAllUsers(); for (const u of users) { u.wins = 0; u.losses = 0; await saveUser(u); } res.json({ ok: true }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/wipe', adminAuth, async (req, res) => {
-  try {
-    const all = await getAllUsers();
-    for (const u of all) {
-      u.balance = 50;
-      u.wins = 0;
-      u.losses = 0;
-      u.banned = false;
-      u.winHistory = [];
-      await saveUser(u);
-    }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Wipe error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { const all = await getAllUsers(); for (const u of all) { u.balance = 50; u.wins = 0; u.losses = 0; u.banned = false; u.winHistory = []; await saveUser(u); } res.json({ ok: true }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/add-money', adminAuth, async (req, res) => {
-  try {
-    const { id, amount } = req.body;
+  try { const { id, amount } = req.body;
     if (!id || !amount || isNaN(amount)) return res.status(400).json({ ok: false, error: 'Invalid' });
-    const user = await getUser(id);
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-    user.balance += amount;
-    await saveUser(user);
-    res.json({ ok: true, balance: user.balance });
-  } catch (err) {
-    console.error('Add money error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+    const user = await getUser(id); if (!user) return res.status(404).json({ ok: false, error: 'Not found' });
+    user.balance += amount; await saveUser(user); res.json({ ok: true, balance: user.balance });
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/set-money', adminAuth, async (req, res) => {
-  try {
-    const { id, amount } = req.body;
+  try { const { id, amount } = req.body;
     if (!id || isNaN(amount) || amount < 0) return res.status(400).json({ ok: false, error: 'Invalid' });
-    const user = await getUser(id);
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-    user.balance = amount;
-    await saveUser(user);
-    res.json({ ok: true, balance: user.balance });
-  } catch (err) {
-    console.error('Set money error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+    const user = await getUser(id); if (!user) return res.status(404).json({ ok: false, error: 'Not found' });
+    user.balance = amount; await saveUser(user); res.json({ ok: true, balance: user.balance });
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/ban', adminAuth, async (req, res) => {
-  try {
-    const { id } = req.body;
+  try { const { id } = req.body;
     if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
-    const user = await getUser(id);
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
-    user.banned = !user.banned;
-    await saveUser(user);
-    res.json({ ok: true, banned: user.banned });
-  } catch (err) {
-    console.error('Ban error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+    const user = await getUser(id); if (!user) return res.status(404).json({ ok: false, error: 'Not found' });
+    user.banned = !user.banned; await saveUser(user); res.json({ ok: true, banned: user.banned });
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/reset-player', adminAuth, async (req, res) => {
-  try {
-    const { id } = req.body;
+  try { const { id } = req.body;
     if (!id) return res.status(400).json({ ok: false, error: 'Missing id' });
-    const success = await resetPlayer(id);
-    if (!success) return res.status(404).json({ ok: false, error: 'User not found' });
+    const ok = await resetPlayer(id);
+    if (!ok) return res.status(404).json({ ok: false, error: 'Not found' });
     res.json({ ok: true, message: 'Player stats reset' });
-  } catch (err) {
-    console.error('Reset player error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/create-promo', adminAuth, async (req, res) => {
-  try {
-    const { amount, code, maxUses } = req.body;
-    if (!amount || isNaN(amount) || amount < 1) return res.status(400).json({ ok: false, error: 'Invalid amount' });
+  try { const { amount, code, maxUses } = req.body;
+    if (!amount || isNaN(amount) || amount < 1) return res.status(400).json({ ok: false, error: 'Invalid' });
     const promo = await createPromoCode(amount, code || null, maxUses || 1);
     res.json({ ok: true, code: promo.code });
-  } catch (err) {
-    console.error('Create promo error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/delete-promo', adminAuth, async (req, res) => {
-  try {
-    const { code } = req.body;
+  try { const { code } = req.body;
     if (!code) return res.status(400).json({ ok: false, error: 'Missing code' });
-    await deletePromoCode(code);
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Delete promo error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+    await deletePromoCode(code); res.json({ ok: true });
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.get('/admin/api/promo-codes', adminAuth, async (req, res) => {
-  try {
-    const codes = await getPromoCodes();
-    res.json({ codes });
-  } catch (err) {
-    console.error('Get promo codes error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { res.json({ codes: await getPromoCodes() }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/spawn-bot', adminAuth, async (req, res) => {
-  try {
-    const { bet, count } = req.body;
+  try { const { bet, count } = req.body;
     const betAmount = Math.max(10, parseInt(bet) || 100);
     const numBots = Math.min(8, Math.max(1, parseInt(count) || 1));
     let spawned = 0;
-    for (let i = 0; i < numBots; i++) {
-      const player = spawnBot(betAmount);
-      if (player) spawned++;
-    }
+    for (let i = 0; i < numBots; i++) { const p = spawnBot(betAmount); if (p) spawned++; }
     if (spawned > 0) repartitionIceArena();
-    broadcastIceState();
-    res.json({ ok: true, spawned });
-  } catch (err) {
-    console.error('Spawn bot error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+    broadcastIceState(); res.json({ ok: true, spawned });
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/admin/api/remove-bots', adminAuth, async (req, res) => {
-  try {
-    const removed = removeAllBots();
-    broadcastIceState();
-    res.json({ ok: true, removed });
-  } catch (err) {
-    console.error('Remove bots error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { const removed = removeAllBots(); broadcastIceState(); res.json({ ok: true, removed }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/redeem', async (req, res) => {
-  try {
-    const { code, userId } = req.body;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
-  } catch (err) {
-    console.error('Redeem promo error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { const { code, userId } = req.body;
+    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing' });
+    res.json(await redeemPromoCode(code, userId));
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.get('/redeem', async (req, res) => {
-  try {
-    const { code, userId } = req.query;
-    if (!code || !userId) {
-      return res.status(400).json({ ok: false, error: 'Missing code or userId' });
-    }
-    const result = await redeemPromoCode(code, userId);
-    res.json(result);
-  } catch (err) {
-    console.error('Redeem promo (GET) error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { const { code, userId } = req.query;
+    if (!code || !userId) return res.status(400).json({ ok: false, error: 'Missing' });
+    res.json(await redeemPromoCode(code, userId));
+  } catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
 app.post('/api/change-anonymous', async (req, res) => {
   try {
     const { userId, field, value } = req.body;
-    if (!userId || !field || value === undefined) {
-      return res.status(400).json({ ok: false, error: 'Missing parameters' });
-    }
+    if (!userId || !field || value === undefined) return res.status(400).json({ ok: false, error: 'Missing parameters' });
     const validFields = ['name', 'username', 'phone'];
-    if (!validFields.includes(field)) {
-      return res.status(400).json({ ok: false, error: 'Invalid field' });
-    }
-    if (field === 'username' && !/^[a-zA-Z0-9_]{3,16}$/.test(value)) {
-      return res.status(400).json({ ok: false, error: 'Invalid username format' });
-    }
-    if (field === 'phone' && !/^\+?[0-9\s\-]{7,15}$/.test(value)) {
-      return res.status(400).json({ ok: false, error: 'Invalid phone format' });
-    }
-    if (field === 'name' && !/^[a-zA-Z\s]{1,30}$/.test(value)) {
-      return res.status(400).json({ ok: false, error: 'Invalid name format' });
-    }
-
+    if (!validFields.includes(field)) return res.status(400).json({ ok: false, error: 'Invalid field' });
+    if (field === 'username' && !/^[a-zA-Z0-9_]{3,16}$/.test(value)) return res.status(400).json({ ok: false, error: 'Invalid username' });
+    if (field === 'phone' && !/^\+?[0-9\s\-]{7,15}$/.test(value)) return res.status(400).json({ ok: false, error: 'Invalid phone' });
+    if (field === 'name' && !/^[a-zA-Z\s]{1,30}$/.test(value)) return res.status(400).json({ ok: false, error: 'Invalid name' });
     const result = await changeAnonymousField(userId, field, value);
     const pvpPlayer = getPlayer(userId);
     if (pvpPlayer) {
       const user = await getUser(userId);
-      if (user.anonymousEnabled) {
-        pvpPlayer.name = user.anonymousName;
-        pvpPlayer.pfp = null;
-      } else {
-        pvpPlayer.name = user.username;
-        pvpPlayer.pfp = user.pfp;
-      }
+      if (user.anonymousEnabled) { pvpPlayer.name = user.anonymousName; pvpPlayer.pfp = null; }
+      else { pvpPlayer.name = user.username; pvpPlayer.pfp = user.pfp; }
       broadcastState();
     }
     const iceP = getIcePlayer(userId);
     if (iceP) {
       const user = await getUser(userId);
-      if (user.anonymousEnabled) {
-        iceP.name = user.anonymousName;
-        iceP.pfp = null;
-      } else {
-        iceP.name = user.username;
-        iceP.pfp = user.pfp;
-      }
+      if (user.anonymousEnabled) { iceP.name = user.anonymousName; iceP.pfp = null; }
+      else { iceP.name = user.username; iceP.pfp = user.pfp; }
       broadcastIceState();
     }
     res.json({ ok: true, newBalance: result.newBalance, fee: result.fee });
-  } catch (err) {
-    console.error('Change anonymous field error:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
-  }
+  } catch (err) { res.status(500).json({ ok: false, error: err.message || 'Internal error' }); }
 });
-
 app.post('/api/toggle-hide-pfp', async (req, res) => {
   try {
     const { userId, hide } = req.body;
     if (!userId) return res.status(400).json({ ok: false, error: 'Missing userId' });
     const newHide = await toggleHidePfp(userId, hide);
     const pvpPlayer = getPlayer(userId);
-    if (pvpPlayer) {
-      pvpPlayer.pfp = newHide ? null : (await getUser(userId)).pfp;
-      broadcastState();
-    }
+    if (pvpPlayer) { pvpPlayer.pfp = newHide ? null : (await getUser(userId)).pfp; broadcastState(); }
     const iceP = getIcePlayer(userId);
-    if (iceP) {
-      iceP.pfp = newHide ? null : (await getUser(userId)).pfp;
-      broadcastIceState();
-    }
+    if (iceP) { iceP.pfp = newHide ? null : (await getUser(userId)).pfp; broadcastIceState(); }
     res.json({ ok: true, hidePfp: newHide });
-  } catch (err) {
-    console.error('Toggle hide PFP error:', err);
-    res.status(500).json({ ok: false, error: err.message || 'Internal error' });
-  }
+  } catch (err) { res.status(500).json({ ok: false, error: err.message || 'Internal error' }); }
 });
-
 app.get('/leaderboard', async (req, res) => {
-  try {
-    const tops = await topPlayers(20);
-    res.json({ top: tops });
-  } catch (err) {
-    console.error('Leaderboard error:', err);
-    res.status(500).json({ ok: false, error: 'Internal error' });
-  }
+  try { res.json({ top: await topPlayers(20) }); }
+  catch (err) { res.status(500).json({ ok: false, error: 'Internal error' }); }
 });
-
-app.get('/health', (req, res) => {
-  res.json({ ok: true, players: room.players.length, gameState: room.gameState });
-});
+app.get('/health', (req, res) => res.json({ ok: true, players: room.players.length, gameState: room.gameState }));
 
 server.listen(PORT, () => {
   console.log(`bump arena server listening on :${PORT}`);
-  if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set — real Telegram login cannot be verified.');
-  if (ADMIN_SECRET === 'change-me-in-production') console.warn('⚠ Change ADMIN_SECRET environment variable!');
+  if (!BOT_TOKEN) console.warn('⚠ TELEGRAM_BOT_TOKEN not set.');
+  if (ADMIN_SECRET === 'change-me-in-production') console.warn('⚠ Change ADMIN_SECRET!');
 });
