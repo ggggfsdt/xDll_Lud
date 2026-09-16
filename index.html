@@ -1399,6 +1399,9 @@
             glowPhase: 0, puckVx: 0, puckVy: 0,
             zoomCenterX: 0, zoomCenterY: 0, zoomCenterFixed: false,
             wallPulses: [],
+            // Speed tracking for deceleration-based zoom trigger
+            lastPuckSpeed: 0,
+            lastPuckSpeedTime: 0,
         };
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
@@ -1416,16 +1419,18 @@
         const PUCK_RENDER_RADIUS = 16;
 
         /* ═══════════════════════════════════════════════════════════
-           LIQUID GLASS PUCK — matches the original standalone script
-           Original proportions: r=36, rim=12 (r/3), outer=18 (r/2)
-           Every measurement scaled by (r/36) so it works at any size.
-           Includes the full-size cross from the main index.
+           LIQUID GLASS PUCK — with beveled, thinner outer outline
+           - Outer halo: thinner now (0.35 instead of 0.5)
+           - Main rim: gradient stroke for a beveled / 3D glass look
+           - Inner darker edge: bevel depth
+           - Full-size cross included
+           - Additive corner highlights for glass sparkle
            ═══════════════════════════════════════════════════════════ */
         function drawLiquidGlassPuck(c, x, y, r, opts) {
             opts = opts || {};
             const scale = r / 36;
             const rim = (opts.rimRatio !== undefined ? opts.rimRatio : 0.333) * r;
-            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.5) * r;
+            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.35) * r;   // thinner
             const rimAlpha = opts.rimAlpha !== undefined ? opts.rimAlpha : 0.95;
             const outerAlpha = opts.outerAlpha !== undefined ? opts.outerAlpha : 0.10;
             const innerGlow = opts.innerGlow !== undefined ? opts.innerGlow : 0.14;
@@ -1433,45 +1438,50 @@
             const crossAlpha = opts.crossAlpha !== undefined ? opts.crossAlpha : 0.32;
             const crossWidth = opts.crossWidth !== undefined ? opts.crossWidth : 2.4;
 
-            /* 1. Outer halo — soft translucent ring */
+            /* 1. Outer halo — soft translucent ring (thinner now) */
             if (outer > 0) {
                 c.save();
                 c.beginPath();
                 c.lineWidth = outer;
                 c.strokeStyle = 'rgba(255,255,255,' + outerAlpha + ')';
                 c.lineCap = 'round';
-                c.arc(x, y, r + outer * 0.12, 0, Math.PI * 2);
+                c.arc(x, y, r + outer * 0.10, 0, Math.PI * 2);
                 c.stroke();
                 c.restore();
             }
 
-            /* 2. Main bright rim — THICK */
+            /* 2. Main rim — BEVELED with a directional gradient.
+                  Light source from top-left → bright; bottom-right → slightly dimmer. */
             c.save();
             c.beginPath();
             c.lineWidth = rim;
-            c.strokeStyle = 'rgba(255,255,255,' + rimAlpha + ')';
+            const rimGrad = c.createLinearGradient(x - r * 0.7, y - r * 0.7, x + r * 0.7, y + r * 0.7);
+            rimGrad.addColorStop(0,    'rgba(255,255,255,' + (rimAlpha * 1.00) + ')');
+            rimGrad.addColorStop(0.5,  'rgba(255,255,255,' + (rimAlpha * 0.68) + ')');
+            rimGrad.addColorStop(1,    'rgba(255,255,255,' + (rimAlpha * 0.88) + ')');
+            c.strokeStyle = rimGrad;
             c.lineCap = 'round';
             c.arc(x, y, r - rim / 2, 0, Math.PI * 2);
             c.stroke();
             c.restore();
 
-            /* 3. Inner darker edge */
+            /* 3. Inner darker edge — creates the bevel depth */
             c.save();
             c.beginPath();
-            c.lineWidth = Math.max(1, rim * 0.36);
-            c.strokeStyle = 'rgba(0,0,0,0.18)';
+            c.lineWidth = Math.max(1, rim * 0.32);
+            c.strokeStyle = 'rgba(0,0,0,0.26)';
             c.lineCap = 'round';
-            c.arc(x, y, r - rim * 0.9, 0, Math.PI * 2);
+            c.arc(x, y, r - rim * 0.94, 0, Math.PI * 2);
             c.stroke();
             c.restore();
 
-            /* 4. Thin inner bright band */
+            /* 4. Thin bright inner accent — the "bevel highlight" */
             c.save();
             c.beginPath();
-            c.lineWidth = Math.max(1, rim * 0.12);
-            c.strokeStyle = 'rgba(255,255,255,0.12)';
+            c.lineWidth = Math.max(1, rim * 0.10);
+            c.strokeStyle = 'rgba(255,255,255,0.20)';
             c.lineCap = 'round';
-            c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
+            c.arc(x, y, r - rim * 0.60, 0, Math.PI * 2);
             c.stroke();
             c.restore();
 
@@ -1491,16 +1501,16 @@
             /* 6. Inner soft glow */
             c.save();
             const g = c.createRadialGradient(x - r * 0.18, y - r * 0.18, 1, x, y, r * 1.2);
-            g.addColorStop(0, 'rgba(255,255,255,' + innerGlow + ')');
+            g.addColorStop(0,    'rgba(255,255,255,' + innerGlow + ')');
             g.addColorStop(0.35, 'rgba(255,255,255,' + (innerGlow * 0.45) + ')');
-            g.addColorStop(1, 'rgba(255,255,255,0)');
+            g.addColorStop(1,    'rgba(255,255,255,0)');
             c.fillStyle = g;
             c.beginPath();
             c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
             c.fill();
             c.restore();
 
-            /* 7. Corner highlights — additive blending for bright speculars */
+            /* 7. Corner highlights — additive speculars (glass light catch) */
             const cornerAngles = [-2.35, -0.8, 2.35, 0.8];
             c.save();
             c.globalCompositeOperation = 'lighter';
@@ -1517,10 +1527,10 @@
                 const gh = Math.max(2 * scale, rim * 0.26);
 
                 const grad = c.createLinearGradient(-gw / 2, 0, gw / 2, 0);
-                grad.addColorStop(0, 'rgba(255,255,255,0)');
+                grad.addColorStop(0,    'rgba(255,255,255,0)');
                 grad.addColorStop(0.35, 'rgba(255,255,255,0.98)');
                 grad.addColorStop(0.65, 'rgba(255,255,255,0.98)');
-                grad.addColorStop(1, 'rgba(255,255,255,0)');
+                grad.addColorStop(1,    'rgba(255,255,255,0)');
 
                 c.fillStyle = grad;
                 c.beginPath();
@@ -1537,7 +1547,7 @@
             c.globalCompositeOperation = 'source-over';
             c.restore();
 
-            /* 8. Very subtle refractive band */
+            /* 8. Very subtle refractive band along the inner edge */
             c.save();
             c.beginPath();
             c.lineWidth = Math.max(1, rim * 0.08);
@@ -1911,6 +1921,9 @@
                 iceState.puck.x = snapshot.puck.x; iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
                 if (snapshot.puck.vx !== undefined) { iceState.puckVx = snapshot.puck.vx; iceState.puckVy = snapshot.puck.vy; }
+                // Reset speed tracking for deceleration-based zoom trigger
+                iceState.lastPuckSpeed = Math.sqrt(snapshot.puck.vx * snapshot.puck.vx + snapshot.puck.vy * snapshot.puck.vy) || 0;
+                iceState.lastPuckSpeedTime = Date.now();
             }
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
@@ -1950,6 +1963,7 @@
                 iceState.idlePuckInitialized = false; iceState.winnerPuckPop = false;
                 iceState.zoomCenterFixed = false; iceState.zoomCenterX = 0; iceState.zoomCenterY = 0;
                 iceState.wallPulses = [];
+                iceState.lastPuckSpeed = 0; iceState.lastPuckSpeedTime = 0;
             }
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -2408,17 +2422,16 @@
                     ctx.shadowBlur = 0; ctx.restore();
                 }
 
-                // Liquid glass puck — exact match to the original script,
-                // with the full-size cross restored
+                // Liquid glass puck — beveled rim, thinner outer outline, cross
                 drawLiquidGlassPuck(ctx, px, py, finalRadius, {
-                    rimRatio: 0.333,
-                    outerRatio: 0.5,
-                    rimAlpha: 0.95,
-                    outerAlpha: 0.10,
-                    innerGlow: 0.14,
+                    rimRatio: 0.30,
+                    outerRatio: 0.32,
+                    rimAlpha: 0.90,
+                    outerAlpha: 0.08,
+                    innerGlow: 0.12,
                     cross: true,
-                    crossAlpha: 0.30,
-                    crossWidth: 2.2
+                    crossAlpha: 0.28,
+                    crossWidth: 2.0
                 });
             });
             ctx.restore();
@@ -2504,7 +2517,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // Idle puck — liquid glass with cross
+            // Idle puck — beveled liquid glass with cross
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
@@ -2539,11 +2552,11 @@
                 const r = 16 * s;
 
                 drawLiquidGlassPuck(iceCtx, cx, cy, r, {
-                    rimRatio: 0.333,
-                    outerRatio: 0.5,
-                    rimAlpha: 0.95,
-                    outerAlpha: 0.10,
-                    innerGlow: 0.14,
+                    rimRatio: 0.30,
+                    outerRatio: 0.32,
+                    rimAlpha: 0.92,
+                    outerAlpha: 0.08,
+                    innerGlow: 0.12,
                     cross: true,
                     crossAlpha: 0.30,
                     crossWidth: 2.2
@@ -2554,19 +2567,26 @@
 
             const now = performance.now();
             const puck = iceState.puck;
-            // Zoom-in trigger: only when the puck is nearly stopped
-            // (0.15s worth of settling) and enough slide time has passed.
+            // Zoom-in trigger based on deceleration:
+            // Estimate time-to-stop = currentSpeed / deceleration.
+            // Fire when that estimate drops to <= 0.1 s.
             if (iceState.gameState === 'sliding') {
-                const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                if (slideElapsed > 3.0 && currentSpeed < 0.10 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
-                    iceState.zoomCenterX = puck.x;
-                    iceState.zoomCenterY = puck.y;
-                    iceState.zoomCenterFixed = true;
-                    iceState.isZoomingIn = true;
-                    iceState.zoomStartTime = now;
-                    iceState.zoomTarget = 1.5;
+                const dtSec = (now - iceState.lastPuckSpeedTime) / 1000;
+                if (iceState.lastPuckSpeedTime > 0 && dtSec > 0.02 && dtSec < 1.0) {
+                    const decel = (iceState.lastPuckSpeed - currentSpeed) / dtSec; // px/s²
+                    const timeToStop = (decel > 0.01) ? currentSpeed / decel : 999;
+                    if (timeToStop <= 0.10 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                        iceState.zoomCenterX = puck.x;
+                        iceState.zoomCenterY = puck.y;
+                        iceState.zoomCenterFixed = true;
+                        iceState.isZoomingIn = true;
+                        iceState.zoomStartTime = now;
+                        iceState.zoomTarget = 1.5;
+                    }
                 }
+                iceState.lastPuckSpeed = currentSpeed;
+                iceState.lastPuckSpeedTime = now;
             }
             if (iceState.isZoomingOut) {
                 const elapsed = (now - iceState.zoomStartTime) / 1000;
@@ -2745,7 +2765,7 @@
                 iceCtx.restore();
             }
 
-            // ─── SLIDING PUCK — LIQUID GLASS WITH CROSS ──
+            // ─── SLIDING PUCK — BEVELED LIQUID GLASS WITH CROSS ──
             if (iceState.puckVisible) {
                 const nowMs = performance.now();
 
@@ -2778,13 +2798,12 @@
 
                 const r = PUCK_RENDER_RADIUS * s * totalScale;
 
-                // Liquid glass puck with cross
                 drawLiquidGlassPuck(iceCtx, px, py, r, {
-                    rimRatio: 0.333,
-                    outerRatio: 0.5,
-                    rimAlpha: 0.95,
-                    outerAlpha: 0.10,
-                    innerGlow: 0.14,
+                    rimRatio: 0.30,
+                    outerRatio: 0.32,
+                    rimAlpha: 0.92,
+                    outerAlpha: 0.08,
+                    innerGlow: 0.12,
                     cross: true,
                     crossAlpha: 0.30,
                     crossWidth: 2.2
