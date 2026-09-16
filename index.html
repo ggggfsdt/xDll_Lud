@@ -1409,6 +1409,120 @@
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
         const PUCK_RENDER_RADIUS = 12;
 
+        // ─── LIQUID GLASS PUCK (from the standalone liquid glass script) ───
+        // Draws a fully transparent glass-like puck with layered rim, inner
+        // refraction, inner soft glow, and bright additive corner highlights.
+        // All thicknesses scale with the puck's radius so it works at any size.
+        function drawLiquidGlassPuck(c, x, y, r, opts) {
+            opts = opts || {};
+            const rim   = (opts.rimRatio   !== undefined ? opts.rimRatio   : 0.34) * r;
+            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.50) * r;
+            const rimAlpha   = opts.rimAlpha   !== undefined ? opts.rimAlpha   : 0.95;
+            const outerAlpha = opts.outerAlpha !== undefined ? opts.outerAlpha : 0.10;
+            const innerGlow  = opts.innerGlow  !== undefined ? opts.innerGlow  : 0.14;
+
+            // 1. Outer halo — soft translucent ring around the puck
+            if (outer > 0) {
+                c.save();
+                c.beginPath();
+                c.lineWidth = outer;
+                c.strokeStyle = 'rgba(255,255,255,' + outerAlpha + ')';
+                c.lineCap = 'round';
+                c.arc(x, y, r + outer * 0.12, 0, Math.PI * 2);
+                c.stroke();
+                c.restore();
+            }
+
+            // 2. Main bright rim
+            c.save();
+            c.beginPath();
+            c.lineWidth = rim;
+            c.strokeStyle = 'rgba(255,255,255,' + rimAlpha + ')';
+            c.lineCap = 'round';
+            c.arc(x, y, r - rim / 2, 0, Math.PI * 2);
+            c.stroke();
+            c.restore();
+
+            // 3. Inner darker edge (gives the rim thickness)
+            c.save();
+            c.beginPath();
+            c.lineWidth = Math.max(1, rim * 0.36);
+            c.strokeStyle = 'rgba(0,0,0,0.18)';
+            c.lineCap = 'round';
+            c.arc(x, y, r - rim * 0.9, 0, Math.PI * 2);
+            c.stroke();
+            c.restore();
+
+            // 4. Thin inner bright band
+            c.save();
+            c.beginPath();
+            c.lineWidth = Math.max(1, rim * 0.12);
+            c.strokeStyle = 'rgba(255,255,255,0.12)';
+            c.lineCap = 'round';
+            c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
+            c.stroke();
+            c.restore();
+
+            // 5. Inner soft glow — subtle depth inside the puck
+            c.save();
+            const g = c.createRadialGradient(x - r * 0.18, y - r * 0.18, 1, x, y, r * 1.2);
+            g.addColorStop(0,    'rgba(255,255,255,' + innerGlow + ')');
+            g.addColorStop(0.35, 'rgba(255,255,255,' + (innerGlow * 0.45) + ')');
+            g.addColorStop(1,    'rgba(255,255,255,0)');
+            c.fillStyle = g;
+            c.beginPath();
+            c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
+            c.fill();
+            c.restore();
+
+            // 6. Corner highlights — additive speculars at 4 diagonal points
+            const cornerAngles = [-2.35, -0.8, 2.35, 0.8];
+            const sizeScale = r / 36;
+            c.save();
+            c.globalCompositeOperation = 'lighter';
+            for (let i = 0; i < cornerAngles.length; i++) {
+                const a = cornerAngles[i];
+                const px = x + Math.cos(a) * (r - rim / 2);
+                const py = y + Math.sin(a) * (r - rim / 2);
+
+                c.save();
+                c.translate(px, py);
+                c.rotate(a + Math.PI / 2);
+
+                const gw = Math.max(8 * sizeScale, rim * 1.1);
+                const gh = Math.max(2 * sizeScale, rim * 0.26);
+
+                const grad = c.createLinearGradient(-gw / 2, 0, gw / 2, 0);
+                grad.addColorStop(0,    'rgba(255,255,255,0)');
+                grad.addColorStop(0.35, 'rgba(255,255,255,0.98)');
+                grad.addColorStop(0.65, 'rgba(255,255,255,0.98)');
+                grad.addColorStop(1,    'rgba(255,255,255,0)');
+
+                c.fillStyle = grad;
+                c.beginPath();
+                c.ellipse(0, 0, gw / 2, gh / 2, 0, 0, Math.PI * 2);
+                c.fill();
+
+                c.beginPath();
+                c.fillStyle = 'rgba(255,255,255,0.7)';
+                c.ellipse(0, 0, Math.max(1.2 * sizeScale, gh * 0.35), Math.max(0.6 * sizeScale, gh * 0.18), 0, 0, Math.PI * 2);
+                c.fill();
+
+                c.restore();
+            }
+            c.globalCompositeOperation = 'source-over';
+            c.restore();
+
+            // 7. Very subtle refractive band along the inner edge
+            c.save();
+            c.beginPath();
+            c.lineWidth = Math.max(1, rim * 0.08);
+            c.strokeStyle = 'rgba(255,255,255,0.04)';
+            c.arc(x, y, r - rim * 0.2, -0.6, 0.6);
+            c.stroke();
+            c.restore();
+        }
+
         const pfpCache = new Map();
 
         function generateDefaultAvatar(initial, colorIndex) {
@@ -2253,10 +2367,17 @@
                     ctx.fillText((p.name || '?').charAt(0).toUpperCase(), px, py + 1);
                 }
                 ctx.restore();
-                ctx.save(); ctx.shadowBlur = shadowBlur; ctx.shadowColor = shadowColor;
-                ctx.beginPath(); ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
-                ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth; ctx.stroke();
-                ctx.shadowBlur = 0; ctx.restore();
+
+                // Top-player crown glow (kept on top of liquid glass)
+                if (shadowBlur > 0) {
+                    ctx.save(); ctx.shadowBlur = shadowBlur; ctx.shadowColor = shadowColor;
+                    ctx.beginPath(); ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = borderColor; ctx.lineWidth = borderWidth; ctx.stroke();
+                    ctx.shadowBlur = 0; ctx.restore();
+                }
+
+                // Liquid glass puck rim
+                drawLiquidGlassPuck(ctx, px, py, finalRadius, { rimRatio: 0.28, outerRatio: 0.28, rimAlpha: 0.95, outerAlpha: 0.10, innerGlow: 0.14 });
             });
             ctx.restore();
         }
@@ -2341,7 +2462,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // Idle puck
+            // Idle puck — liquid glass
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
@@ -2374,78 +2495,8 @@
                 const cx = x;
                 const cy = y;
                 const r = 12 * s;
-                const unit = r / 20;
 
-                // 1. soft outer halo
-                const halo = iceCtx.createRadialGradient(cx, cy, r * 0.75, cx, cy, r * 1.55);
-                halo.addColorStop(0, 'rgba(200, 220, 255, 0.16)');
-                halo.addColorStop(0.55, 'rgba(180, 205, 240, 0.06)');
-                halo.addColorStop(1, 'rgba(180, 205, 240, 0)');
-                iceCtx.fillStyle = halo;
-                iceCtx.beginPath();
-                iceCtx.arc(cx, cy, r * 1.55, 0, Math.PI * 2);
-                iceCtx.fill();
-
-                // 2. drop shadow
-                iceCtx.save();
-                iceCtx.filter = `blur(${r * 0.35}px)`;
-                iceCtx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-                iceCtx.beginPath();
-                iceCtx.arc(cx + r * 0.14, cy + r * 0.16, r * 0.92, 0, Math.PI * 2);
-                iceCtx.fill();
-                iceCtx.restore();
-
-                // 3. outer rim with vertical lighting
-                const rimGrad = iceCtx.createLinearGradient(cx, cy - r, cx, cy + r);
-                rimGrad.addColorStop(0,    'rgba(255, 255, 255, 1)');
-                rimGrad.addColorStop(0.45, 'rgba(238, 245, 252, 0.99)');
-                rimGrad.addColorStop(1,    'rgba(190, 205, 225, 0.97)');
-                iceCtx.beginPath();
-                iceCtx.lineWidth = 8 * unit;
-                iceCtx.strokeStyle = rimGrad;
-                iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
-                iceCtx.stroke();
-
-                // 4. inner depth shadow
-                const innerShadow = iceCtx.createRadialGradient(
-                    cx, cy, r * 0.45,
-                    cx, cy, r - 3 * unit
-                );
-                innerShadow.addColorStop(0,    'rgba(0, 0, 0, 0)');
-                innerShadow.addColorStop(0.72, 'rgba(0, 0, 0, 0)');
-                innerShadow.addColorStop(1,    'rgba(0, 0, 0, 0.30)');
-                iceCtx.fillStyle = innerShadow;
-                iceCtx.beginPath();
-                iceCtx.arc(cx, cy, r - 3 * unit, 0, Math.PI * 2);
-                iceCtx.fill();
-
-                // 5. inner bevel highlight
-                iceCtx.beginPath();
-                iceCtx.arc(cx, cy, r - 4.5 * unit, 0, Math.PI * 2);
-                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
-                iceCtx.lineWidth = 1 * unit;
-                iceCtx.stroke();
-
-                // 6. cross
-                const crossLen = r * 2.0;
-                iceCtx.beginPath();
-                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
-                iceCtx.lineWidth = 2 * unit;
-                iceCtx.moveTo(cx - crossLen / 2, cy); iceCtx.lineTo(cx + crossLen / 2, cy);
-                iceCtx.moveTo(cx, cy - crossLen / 2); iceCtx.lineTo(cx, cy + crossLen / 2);
-                iceCtx.stroke();
-
-                // 7. top-left specular sparkle
-                const idleSpec = iceCtx.createRadialGradient(
-                    cx - r * 0.35, cy - r * 0.35, 0,
-                    cx - r * 0.35, cy - r * 0.35, r * 0.85
-                );
-                idleSpec.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
-                idleSpec.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                iceCtx.fillStyle = idleSpec;
-                iceCtx.beginPath();
-                iceCtx.arc(cx, cy, r, 0, Math.PI * 2);
-                iceCtx.fill();
+                drawLiquidGlassPuck(iceCtx, cx, cy, r, { rimRatio: 0.34, outerRatio: 0.50, rimAlpha: 0.95, outerAlpha: 0.10, innerGlow: 0.14 });
 
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
@@ -2500,7 +2551,6 @@
                 iceCtx.save();
                 iceCtx.globalAlpha = isWinner ? 1 : 0.92;
 
-                // base diagonal gradient
                 const fieldGrad = iceCtx.createLinearGradient(x1, y1, x2, y2);
                 fieldGrad.addColorStop(0,    lightenColor(color, 35));
                 fieldGrad.addColorStop(0.5,  color);
@@ -2508,28 +2558,24 @@
                 iceCtx.fillStyle = fieldGrad;
                 iceCtx.fillRect(x1, y1, segW, segH);
 
-                // white light bleed on the LEFT edge
                 const edgeL = iceCtx.createLinearGradient(x1, y1, x1 + segW * 0.20, y1);
                 edgeL.addColorStop(0, 'rgba(255, 255, 255, 0.10)');
                 edgeL.addColorStop(1, 'rgba(255, 255, 255, 0)');
                 iceCtx.fillStyle = edgeL;
                 iceCtx.fillRect(x1, y1, segW * 0.20, segH);
 
-                // white light bleed on the TOP edge
                 const edgeT = iceCtx.createLinearGradient(x1, y1, x1, y1 + segH * 0.18);
                 edgeT.addColorStop(0, 'rgba(255, 255, 255, 0.09)');
                 edgeT.addColorStop(1, 'rgba(255, 255, 255, 0)');
                 iceCtx.fillStyle = edgeT;
                 iceCtx.fillRect(x1, y1, segW, segH * 0.18);
 
-                // subtle darkening on the BOTTOM edge for depth
                 const edgeB = iceCtx.createLinearGradient(x1, y2 - segH * 0.15, x1, y2);
                 edgeB.addColorStop(0, 'rgba(0, 0, 0, 0)');
                 edgeB.addColorStop(1, 'rgba(0, 0, 0, 0.14)');
                 iceCtx.fillStyle = edgeB;
                 iceCtx.fillRect(x1, y2 - segH * 0.15, segW, segH * 0.15);
 
-                // subtle darkening on the RIGHT edge
                 const edgeR = iceCtx.createLinearGradient(x2 - segW * 0.15, y1, x2, y1);
                 edgeR.addColorStop(0, 'rgba(0, 0, 0, 0)');
                 edgeR.addColorStop(1, 'rgba(0, 0, 0, 0.10)');
@@ -2647,7 +2693,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING (realistic) ──
+            // ─── PUCK DRAWING — LIQUID GLASS ──
             if (iceState.puckVisible) {
                 const nowMs = performance.now();
 
@@ -2679,80 +2725,9 @@
                 }
 
                 const r = PUCK_RENDER_RADIUS * s * totalScale;
-                const unit = r / 20;
 
-                // 1. soft outer halo
-                const halo = iceCtx.createRadialGradient(px, py, r * 0.75, px, py, r * 1.55);
-                halo.addColorStop(0, 'rgba(200, 220, 255, 0.16)');
-                halo.addColorStop(0.55, 'rgba(180, 205, 240, 0.06)');
-                halo.addColorStop(1, 'rgba(180, 205, 240, 0)');
-                iceCtx.fillStyle = halo;
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, r * 1.55, 0, Math.PI * 2);
-                iceCtx.fill();
-
-                // 2. drop shadow
-                iceCtx.save();
-                iceCtx.filter = `blur(${r * 0.35}px)`;
-                iceCtx.fillStyle = 'rgba(0, 0, 0, 0.45)';
-                iceCtx.beginPath();
-                iceCtx.arc(px + r * 0.14, py + r * 0.16, r * 0.92, 0, Math.PI * 2);
-                iceCtx.fill();
-                iceCtx.restore();
-
-                // 3. outer rim with vertical lighting
-                const rimGrad = iceCtx.createLinearGradient(px, py - r, px, py + r);
-                rimGrad.addColorStop(0,    'rgba(255, 255, 255, 1)');
-                rimGrad.addColorStop(0.45, 'rgba(238, 245, 252, 0.99)');
-                rimGrad.addColorStop(1,    'rgba(190, 205, 225, 0.97)');
-                iceCtx.beginPath();
-                iceCtx.lineWidth = 8 * unit;
-                iceCtx.strokeStyle = rimGrad;
-                iceCtx.arc(px, py, r, 0, Math.PI * 2);
-                iceCtx.stroke();
-
-                // 4. inner depth shadow
-                const innerShadow = iceCtx.createRadialGradient(
-                    px, py, r * 0.45,
-                    px, py, r - 3 * unit
-                );
-                innerShadow.addColorStop(0,    'rgba(0, 0, 0, 0)');
-                innerShadow.addColorStop(0.72, 'rgba(0, 0, 0, 0)');
-                innerShadow.addColorStop(1,    'rgba(0, 0, 0, 0.30)');
-                iceCtx.fillStyle = innerShadow;
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, r - 3 * unit, 0, Math.PI * 2);
-                iceCtx.fill();
-
-                // 5. inner bevel highlight
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, r - 4.5 * unit, 0, Math.PI * 2);
-                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
-                iceCtx.lineWidth = 1 * unit;
-                iceCtx.stroke();
-
-                // 6. cross
-                const crossLen = r * 2.0;
-                iceCtx.beginPath();
-                iceCtx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
-                iceCtx.lineWidth = 2 * unit;
-                iceCtx.moveTo(px - crossLen / 2, py);
-                iceCtx.lineTo(px + crossLen / 2, py);
-                iceCtx.moveTo(px, py - crossLen / 2);
-                iceCtx.lineTo(px, py + crossLen / 2);
-                iceCtx.stroke();
-
-                // 7. top-left specular sparkle
-                const spec = iceCtx.createRadialGradient(
-                    px - r * 0.35, py - r * 0.35, 0,
-                    px - r * 0.35, py - r * 0.35, r * 0.85
-                );
-                spec.addColorStop(0, 'rgba(255, 255, 255, 0.22)');
-                spec.addColorStop(1, 'rgba(255, 255, 255, 0)');
-                iceCtx.fillStyle = spec;
-                iceCtx.beginPath();
-                iceCtx.arc(px, py, r, 0, Math.PI * 2);
-                iceCtx.fill();
+                // Liquid glass puck (all rim/glow/highlights)
+                drawLiquidGlassPuck(iceCtx, px, py, r, { rimRatio: 0.34, outerRatio: 0.50, rimAlpha: 0.98, outerAlpha: 0.12, innerGlow: 0.16 });
 
                 // owner name
                 const speedThreshold = 2.0;
