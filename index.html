@@ -828,7 +828,7 @@
         const ICE_FIELD_SCALE = 0.92;
 
         const canvas = document.getElementById('game-canvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: true });
         const balanceEl = document.getElementById('balance');
         const usernameDisplay = document.getElementById('username-display');
         const statusDot = document.getElementById('status-dot');
@@ -881,7 +881,7 @@
         const promoSub = document.getElementById('promo-sub');
         const promoContinueBtn = document.getElementById('promo-continue-btn');
         const iceCanvas = document.getElementById('ice-canvas');
-        const iceCtx = iceCanvas.getContext('2d');
+        const iceCtx = iceCanvas.getContext('2d', { alpha: true });
         const iceWaitingText = document.getElementById('ice-waiting-text');
         const iceBetOverlayWrap = document.getElementById('ice-bet-overlay-wrap');
         const iceBetOverlay = document.getElementById('ice-bet-overlay');
@@ -1389,7 +1389,7 @@
             countdownStartTime: 0, spinStartTime: 0, spinDuration: 0, spinFinalAngle: 0,
             spinStartX: 200, spinStartY: 200, puck: { x: 200, y: 200 },
             winnerId: null, winHistory: [], puckScale: 1, puckPopStart: 0, puckVisible: false,
-            pfpPop: new Map(), slideStartTime: 0, zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 1.4,
+            pfpPop: new Map(), slideStartTime: 0, zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 1.2,
             isZoomingIn: false, isZoomingOut: false, zoomLocked: false, zoomOutTriggered: false,
             idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 14 }, idlePuckInitialized: false,
             puckPrevX: 200, puckPrevY: 200, puckUpdateTime: 0, puckLastBounceTime: 0,
@@ -1399,7 +1399,8 @@
             glowPhase: 0, puckVx: 0, puckVy: 0,
             zoomCenterX: 0, zoomCenterY: 0, zoomCenterFixed: false,
             wallPulses: [],
-            peakSpeed: 0,  // for reliable zoom trigger
+            // local speed tracking for reliable zoom trigger
+            prevRenderX: 0, prevRenderY: 0, lastFrameTime: 0, peakSpeed: 0, zoomFired: false,
         };
 
         function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
@@ -1414,28 +1415,23 @@
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
-        // Slightly smaller puck
         const PUCK_RENDER_RADIUS = 14;
 
         /* ═══════════════════════════════════════════════════════════
-           LIQUID GLASS PUCK — restored to the "really good" version.
-           Same solid white rim, inner darker edge, inner bright band,
-           full-size cross, inner soft glow, and additive corner highlights.
-           Only tweaks: thinner outer outline + slightly thicker main rim.
+           LIQUID GLASS PUCK — solid rim, thinner outer halo, thicker ring
            ═══════════════════════════════════════════════════════════ */
         function drawLiquidGlassPuck(c, x, y, r, opts) {
             opts = opts || {};
             const scale = r / 36;
             const rim = (opts.rimRatio !== undefined ? opts.rimRatio : 0.36) * r;
-            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.35) * r;
+            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.32) * r;
             const rimAlpha = opts.rimAlpha !== undefined ? opts.rimAlpha : 0.95;
-            const outerAlpha = opts.outerAlpha !== undefined ? opts.outerAlpha : 0.10;
+            const outerAlpha = opts.outerAlpha !== undefined ? opts.outerAlpha : 0.09;
             const innerGlow = opts.innerGlow !== undefined ? opts.innerGlow : 0.14;
             const drawCross = opts.cross !== undefined ? opts.cross : true;
             const crossAlpha = opts.crossAlpha !== undefined ? opts.crossAlpha : 0.32;
             const crossWidth = opts.crossWidth !== undefined ? opts.crossWidth : 2.4;
 
-            /* 1. Outer halo — soft translucent ring (thinner now) */
             if (outer > 0) {
                 c.save();
                 c.beginPath();
@@ -1447,7 +1443,6 @@
                 c.restore();
             }
 
-            /* 2. Main bright rim — SOLID white (like the good version) */
             c.save();
             c.beginPath();
             c.lineWidth = rim;
@@ -1457,7 +1452,6 @@
             c.stroke();
             c.restore();
 
-            /* 3. Inner darker edge */
             c.save();
             c.beginPath();
             c.lineWidth = Math.max(1, rim * 0.36);
@@ -1467,7 +1461,6 @@
             c.stroke();
             c.restore();
 
-            /* 4. Thin inner bright band */
             c.save();
             c.beginPath();
             c.lineWidth = Math.max(1, rim * 0.12);
@@ -1477,7 +1470,6 @@
             c.stroke();
             c.restore();
 
-            /* 5. Full-size cross */
             if (drawCross) {
                 const L = r * 1.9;
                 c.save();
@@ -1490,7 +1482,6 @@
                 c.restore();
             }
 
-            /* 6. Inner soft glow */
             c.save();
             const g = c.createRadialGradient(x - r * 0.18, y - r * 0.18, 1, x, y, r * 1.2);
             g.addColorStop(0, 'rgba(255,255,255,' + innerGlow + ')');
@@ -1502,7 +1493,6 @@
             c.fill();
             c.restore();
 
-            /* 7. Corner highlights — additive speculars */
             const cornerAngles = [-2.35, -0.8, 2.35, 0.8];
             c.save();
             c.globalCompositeOperation = 'lighter';
@@ -1539,7 +1529,6 @@
             c.globalCompositeOperation = 'source-over';
             c.restore();
 
-            /* 8. Very subtle refractive band */
             c.save();
             c.beginPath();
             c.lineWidth = Math.max(1, rim * 0.08);
@@ -1547,6 +1536,57 @@
             c.arc(x, y, r - rim * 0.2, -0.6, 0.6);
             c.stroke();
             c.restore();
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           PUCK SPRITE CACHE — pre-render puck to offscreen canvas,
+           then one drawImage per frame per puck. Massive perf win.
+           ═══════════════════════════════════════════════════════════ */
+        const PUCK_OPTS = {
+            rimRatio: 0.36,
+            outerRatio: 0.32,
+            rimAlpha: 0.95,
+            outerAlpha: 0.09,
+            innerGlow: 0.14,
+            cross: true,
+            crossAlpha: 0.30,
+            crossWidth: 2.2
+        };
+        const PUCK_SPRITE_DPR = 2;   // render sprite at 2x for crispness
+        const PUCK_CACHE_MAX = 60;
+        const PUCK_CACHE = new Map();
+
+        function getPuckSprite(radiusCss) {
+            const r = Math.max(1, Math.round(radiusCss));
+            const cached = PUCK_CACHE.get(r);
+            if (cached) return cached;
+
+            const pad = Math.ceil(r * 0.35) + 4;
+            const cssSize = (r + pad) * 2;
+            const pxSize = Math.ceil(cssSize * PUCK_SPRITE_DPR);
+            const c = document.createElement('canvas');
+            c.width = pxSize;
+            c.height = pxSize;
+            const g = c.getContext('2d');
+            g.scale(PUCK_SPRITE_DPR, PUCK_SPRITE_DPR);
+            drawLiquidGlassPuck(g, cssSize / 2, cssSize / 2, r, PUCK_OPTS);
+
+            const sprite = { canvas: c, cssSize, offset: cssSize / 2 };
+            PUCK_CACHE.set(r, sprite);
+
+            // LRU-ish eviction: drop oldest when exceeding cap
+            if (PUCK_CACHE.size > PUCK_CACHE_MAX) {
+                const firstKey = PUCK_CACHE.keys().next().value;
+                PUCK_CACHE.delete(firstKey);
+            }
+            return sprite;
+        }
+
+        function drawPuckSprite(targetCtx, px, py, radiusCss) {
+            const r = Math.max(1, Math.round(radiusCss));
+            const sprite = getPuckSprite(r);
+            if (!sprite) return;
+            targetCtx.drawImage(sprite.canvas, px - sprite.offset, py - sprite.offset, sprite.cssSize, sprite.cssSize);
         }
 
         const pfpCache = new Map();
@@ -1591,7 +1631,7 @@
         function resizeCanvas() {
             const rect = canvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
             canvas.width = size * dpr; canvas.height = size * dpr;
             canvas.style.width = size + 'px'; canvas.style.height = size + 'px';
             state.arenaSize = size; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1599,7 +1639,7 @@
         function resizeIceCanvas() {
             const rect = iceCanvas.parentElement.getBoundingClientRect();
             const size = Math.min(rect.width - 16, rect.height - 16, 440);
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
             iceCanvas.width = size * dpr; iceCanvas.height = size * dpr;
             iceCanvas.style.width = size + 'px'; iceCanvas.style.height = size + 'px';
             iceState.arenaSize = size; iceCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1913,9 +1953,6 @@
                 iceState.puck.x = snapshot.puck.x; iceState.puck.y = snapshot.puck.y;
                 iceState.puckUpdateTime = Date.now();
                 if (snapshot.puck.vx !== undefined) { iceState.puckVx = snapshot.puck.vx; iceState.puckVy = snapshot.puck.vy; }
-                // Reset peak speed tracking at slide start
-                const sp0 = snapshot.puck.vx || 0, sy0 = snapshot.puck.vy || 0;
-                iceState.peakSpeed = Math.sqrt(sp0 * sp0 + sy0 * sy0);
             }
             iceState.gameState = snapshot.gameState;
             iceState.pot = snapshot.pot;
@@ -1941,6 +1978,9 @@
                 iceState.slideStartTime = performance.now();
                 iceState.zoom = 1; iceState.isZoomingIn = false; iceState.isZoomingOut = false;
                 iceState.zoomLocked = false; iceState.zoomOutTriggered = false; iceState.winnerPuckPop = false; iceState.zoomCenterFixed = false;
+                // reset local speed tracking
+                iceState.prevRenderX = 0; iceState.prevRenderY = 0;
+                iceState.lastFrameTime = 0; iceState.peakSpeed = 0; iceState.zoomFired = false;
             }
             if (snapshot.gameState === 'finished' && prevGameState !== 'finished') {
                 if (iceState.zoom > 1.1 && !iceState.zoomOutTriggered) {
@@ -1955,7 +1995,8 @@
                 iceState.idlePuckInitialized = false; iceState.winnerPuckPop = false;
                 iceState.zoomCenterFixed = false; iceState.zoomCenterX = 0; iceState.zoomCenterY = 0;
                 iceState.wallPulses = [];
-                iceState.peakSpeed = 0;
+                iceState.prevRenderX = 0; iceState.prevRenderY = 0;
+                iceState.lastFrameTime = 0; iceState.peakSpeed = 0; iceState.zoomFired = false;
             }
             const seen = new Set();
             snapshot.players.forEach(sp => {
@@ -2414,17 +2455,8 @@
                     ctx.shadowBlur = 0; ctx.restore();
                 }
 
-                // Liquid glass puck — restored good version with tweaks
-                drawLiquidGlassPuck(ctx, px, py, finalRadius, {
-                    rimRatio: 0.36,
-                    outerRatio: 0.32,
-                    rimAlpha: 0.95,
-                    outerAlpha: 0.09,
-                    innerGlow: 0.14,
-                    cross: true,
-                    crossAlpha: 0.30,
-                    crossWidth: 2.2
-                });
+                // Puck — single drawImage from cached sprite (fast)
+                drawPuckSprite(ctx, px, py, finalRadius);
             });
             ctx.restore();
         }
@@ -2543,38 +2575,64 @@
                 const cy = y;
                 const r = 14 * s;
 
-                drawLiquidGlassPuck(iceCtx, cx, cy, r, {
-                    rimRatio: 0.36,
-                    outerRatio: 0.32,
-                    rimAlpha: 0.95,
-                    outerAlpha: 0.09,
-                    innerGlow: 0.14,
-                    cross: true,
-                    crossAlpha: 0.30,
-                    crossWidth: 2.2
-                });
+                drawPuckSprite(iceCtx, cx, cy, r);
 
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
             }
 
             const now = performance.now();
             const puck = iceState.puck;
-            // Zoom-in trigger: fire when current speed drops below 5% of peak.
+
+            let renderPuckX = puck.x;
+            let renderPuckY = puck.y;
+            if (iceState.puckUpdateTime > 0) {
+                const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
+                const t = Math.min(elapsed / (1/30), 1);
+                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * t;
+                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * t;
+            }
+
+            // ── ZOOM TRIGGER using frame-to-frame render-position speed ──
             if (iceState.gameState === 'sliding') {
-                const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                if (currentSpeed > iceState.peakSpeed) iceState.peakSpeed = currentSpeed;
-                const slideElapsed = (now - iceState.slideStartTime) / 1000;
-                if (iceState.peakSpeed > 0.01 && currentSpeed < iceState.peakSpeed * 0.05 && slideElapsed > 1.5) {
-                    if (!iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
-                        iceState.zoomCenterX = puck.x;
-                        iceState.zoomCenterY = puck.y;
-                        iceState.zoomCenterFixed = true;
-                        iceState.isZoomingIn = true;
-                        iceState.zoomStartTime = now;
-                        iceState.zoomTarget = 1.5;
+                const nowMs = now;
+                if (iceState.lastFrameTime > 0) {
+                    const dt = (nowMs - iceState.lastFrameTime) / 1000;
+                    if (dt > 0.005 && dt < 0.5) {
+                        const dx = renderPuckX - iceState.prevRenderX;
+                        const dy = renderPuckY - iceState.prevRenderY;
+                        const speedPxPerSec = Math.sqrt(dx * dx + dy * dy) / dt;
+                        if (speedPxPerSec > iceState.peakSpeed) iceState.peakSpeed = speedPxPerSec;
+                        const slideElapsed = (nowMs - iceState.slideStartTime) / 1000;
+                        // Fire when: slide has been going for at least 1.5s AND
+                        // current speed has dropped to <6% of the peak speed
+                        if (!iceState.zoomFired && slideElapsed > 1.5 && iceState.peakSpeed > 5) {
+                            if (speedPxPerSec < iceState.peakSpeed * 0.06) {
+                                iceState.zoomCenterX = puck.x;
+                                iceState.zoomCenterY = puck.y;
+                                iceState.zoomCenterFixed = true;
+                                iceState.isZoomingIn = true;
+                                iceState.zoomStartTime = nowMs;
+                                iceState.zoomTarget = 1.5;
+                                iceState.zoomFired = true;
+                            }
+                        }
+                        // Fallback: if still sliding after 4s and we haven't zoomed, do it now
+                        if (!iceState.zoomFired && slideElapsed > 4.0 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                            iceState.zoomCenterX = puck.x;
+                            iceState.zoomCenterY = puck.y;
+                            iceState.zoomCenterFixed = true;
+                            iceState.isZoomingIn = true;
+                            iceState.zoomStartTime = nowMs;
+                            iceState.zoomTarget = 1.5;
+                            iceState.zoomFired = true;
+                        }
                     }
                 }
+                iceState.prevRenderX = renderPuckX;
+                iceState.prevRenderY = renderPuckY;
+                iceState.lastFrameTime = nowMs;
             }
+
             if (iceState.isZoomingOut) {
                 const elapsed = (now - iceState.zoomStartTime) / 1000;
                 const progress = Math.min(elapsed / iceState.zoomDuration, 1);
@@ -2590,14 +2648,6 @@
                 if (progress >= 1) { iceState.isZoomingIn = false; iceState.zoomLocked = true; iceState.zoom = iceState.zoomTarget; }
             }
 
-            let renderPuckX = puck.x;
-            let renderPuckY = puck.y;
-            if (iceState.puckUpdateTime > 0) {
-                const elapsed = (Date.now() - iceState.puckUpdateTime) / 1000;
-                const t = Math.min(elapsed / (1/30), 1);
-                renderPuckX = iceState.puckPrevX + (puck.x - iceState.puckPrevX) * t;
-                renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * t;
-            }
             const speed = Math.sqrt(Math.pow(renderPuckX - iceState.puckPrevX, 2) + Math.pow(renderPuckY - iceState.puckPrevY, 2));
 
             iceCtx.save();
@@ -2785,16 +2835,7 @@
 
                 const r = PUCK_RENDER_RADIUS * s * totalScale;
 
-                drawLiquidGlassPuck(iceCtx, px, py, r, {
-                    rimRatio: 0.36,
-                    outerRatio: 0.32,
-                    rimAlpha: 0.95,
-                    outerAlpha: 0.09,
-                    innerGlow: 0.14,
-                    cross: true,
-                    crossAlpha: 0.30,
-                    crossWidth: 2.2
-                });
+                drawPuckSprite(iceCtx, px, py, r);
 
                 // owner name
                 const speedThreshold = 2.0;
