@@ -2584,7 +2584,7 @@
                 renderPuckY = iceState.puckPrevY + (puck.y - iceState.puckPrevY) * t;
             }
 
-            // ── ZOOM TRIGGER (fires late + slow animation) ──
+            // ── ZOOM TRIGGER (slightly sooner: 4% of peak, 2.2s min) ──
             if (iceState.gameState === 'sliding') {
                 const nowMs = now;
                 if (iceState.lastFrameTime > 0) {
@@ -2595,10 +2595,8 @@
                         const speedPxPerSec = Math.sqrt(dx * dx + dy * dy) / dt;
                         if (speedPxPerSec > iceState.peakSpeed) iceState.peakSpeed = speedPxPerSec;
                         const slideElapsed = (nowMs - iceState.slideStartTime) / 1000;
-                        // Fire only when: slide has been going 2.5s+
-                        // AND speed dropped to under 2.5% of the peak
-                        if (!iceState.zoomFired && slideElapsed > 2.5 && iceState.peakSpeed > 5) {
-                            if (speedPxPerSec < iceState.peakSpeed * 0.025) {
+                        if (!iceState.zoomFired && slideElapsed > 2.2 && iceState.peakSpeed > 5) {
+                            if (speedPxPerSec < iceState.peakSpeed * 0.04) {
                                 iceState.zoomCenterX = puck.x;
                                 iceState.zoomCenterY = puck.y;
                                 iceState.zoomCenterFixed = true;
@@ -2608,8 +2606,7 @@
                                 iceState.zoomFired = true;
                             }
                         }
-                        // Fallback: if still sliding after 5.5s, force the zoom
-                        if (!iceState.zoomFired && slideElapsed > 5.5 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                        if (!iceState.zoomFired && slideElapsed > 5.0 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
                             iceState.zoomCenterX = puck.x;
                             iceState.zoomCenterY = puck.y;
                             iceState.zoomCenterFixed = true;
