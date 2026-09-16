@@ -1389,9 +1389,9 @@
             countdownStartTime: 0, spinStartTime: 0, spinDuration: 0, spinFinalAngle: 0,
             spinStartX: 200, spinStartY: 200, puck: { x: 200, y: 200 },
             winnerId: null, winHistory: [], puckScale: 1, puckPopStart: 0, puckVisible: false,
-            pfpPop: new Map(), slideStartTime: 0, zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 0.15,
+            pfpPop: new Map(), slideStartTime: 0, zoom: 1, zoomTarget: 1, zoomStartTime: 0, zoomDuration: 1.4,
             isZoomingIn: false, isZoomingOut: false, zoomLocked: false, zoomOutTriggered: false,
-            idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 12 }, idlePuckInitialized: false,
+            idlePuck: { x: 0, y: 0, vx: 2.5, vy: 1.8, radius: 16 }, idlePuckInitialized: false,
             puckPrevX: 200, puckPrevY: 200, puckUpdateTime: 0, puckLastBounceTime: 0,
             currentOwnerName: '', currentOwnerPfp: '', nameFadeIn: 0, showOwnerName: false,
             bestWin: { amount: 0, pfp: '', name: '' },
@@ -1413,34 +1413,39 @@
             return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
         }
         function hexToRgba(hex, alpha) { if (!hex) return `rgba(255,255,255,${alpha})`; const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${alpha})`; }
-        // Bigger puck
         const PUCK_RENDER_RADIUS = 16;
 
-        // ─── LIQUID GLASS PUCK ───────────────────────────────────────
-        // Slightly transparent glass outline. No solid fill inside, no cross.
-        // Only the ring, an inner edge, a subtle inner band, and 4 small
-        // additive corner highlights to sell the "glass" material.
+        /* ═══════════════════════════════════════════════════════════
+           LIQUID GLASS PUCK — matches the original standalone script
+           Original proportions: r=36, rim=12 (r/3), outer=18 (r/2)
+           Every measurement scaled by (r/36) so it works at any size.
+           Includes the full-size cross from the main index.
+           ═══════════════════════════════════════════════════════════ */
         function drawLiquidGlassPuck(c, x, y, r, opts) {
             opts = opts || {};
-            const rim   = (opts.rimRatio   !== undefined ? opts.rimRatio   : 0.30) * r;
-            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.36) * r;
-            const rimAlpha   = opts.rimAlpha   !== undefined ? opts.rimAlpha   : 0.72;
-            const outerAlpha = opts.outerAlpha !== undefined ? opts.outerAlpha : 0.08;
-            const innerGlow  = opts.innerGlow  !== undefined ? opts.innerGlow  : 0.03;
+            const scale = r / 36;
+            const rim = (opts.rimRatio !== undefined ? opts.rimRatio : 0.333) * r;
+            const outer = (opts.outerRatio !== undefined ? opts.outerRatio : 0.5) * r;
+            const rimAlpha = opts.rimAlpha !== undefined ? opts.rimAlpha : 0.95;
+            const outerAlpha = opts.outerAlpha !== undefined ? opts.outerAlpha : 0.10;
+            const innerGlow = opts.innerGlow !== undefined ? opts.innerGlow : 0.14;
+            const drawCross = opts.cross !== undefined ? opts.cross : true;
+            const crossAlpha = opts.crossAlpha !== undefined ? opts.crossAlpha : 0.32;
+            const crossWidth = opts.crossWidth !== undefined ? opts.crossWidth : 2.4;
 
-            // 1. Outer halo — very faint glass-like reflection
+            /* 1. Outer halo — soft translucent ring */
             if (outer > 0) {
                 c.save();
                 c.beginPath();
                 c.lineWidth = outer;
                 c.strokeStyle = 'rgba(255,255,255,' + outerAlpha + ')';
                 c.lineCap = 'round';
-                c.arc(x, y, r + outer * 0.10, 0, Math.PI * 2);
+                c.arc(x, y, r + outer * 0.12, 0, Math.PI * 2);
                 c.stroke();
                 c.restore();
             }
 
-            // 2. Main bright rim (slightly transparent so it reads as glass)
+            /* 2. Main bright rim — THICK */
             c.save();
             c.beginPath();
             c.lineWidth = rim;
@@ -1450,43 +1455,53 @@
             c.stroke();
             c.restore();
 
-            // 3. Inner darker edge (gives glass thickness)
+            /* 3. Inner darker edge */
             c.save();
             c.beginPath();
-            c.lineWidth = Math.max(1, rim * 0.32);
-            c.strokeStyle = 'rgba(0,0,0,0.16)';
+            c.lineWidth = Math.max(1, rim * 0.36);
+            c.strokeStyle = 'rgba(0,0,0,0.18)';
             c.lineCap = 'round';
             c.arc(x, y, r - rim * 0.9, 0, Math.PI * 2);
             c.stroke();
             c.restore();
 
-            // 4. Thin inner bright band (subtle)
+            /* 4. Thin inner bright band */
             c.save();
             c.beginPath();
-            c.lineWidth = Math.max(1, rim * 0.10);
-            c.strokeStyle = 'rgba(255,255,255,0.10)';
+            c.lineWidth = Math.max(1, rim * 0.12);
+            c.strokeStyle = 'rgba(255,255,255,0.12)';
             c.lineCap = 'round';
             c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
             c.stroke();
             c.restore();
 
-            // 5. Very subtle inner glow — keeps the interior nearly transparent
-            if (innerGlow > 0) {
+            /* 5. Full-size cross spanning the puck */
+            if (drawCross) {
+                const L = r * 1.9;
                 c.save();
-                const g = c.createRadialGradient(x - r * 0.18, y - r * 0.18, 1, x, y, r * 1.1);
-                g.addColorStop(0,    'rgba(255,255,255,' + innerGlow + ')');
-                g.addColorStop(0.4,  'rgba(255,255,255,' + (innerGlow * 0.4) + ')');
-                g.addColorStop(1,    'rgba(255,255,255,0)');
-                c.fillStyle = g;
+                c.lineWidth = crossWidth * (r / 20);
+                c.strokeStyle = 'rgba(255,255,255,' + crossAlpha + ')';
                 c.beginPath();
-                c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
-                c.fill();
+                c.moveTo(x - L / 2, y); c.lineTo(x + L / 2, y);
+                c.moveTo(x, y - L / 2); c.lineTo(x, y + L / 2);
+                c.stroke();
                 c.restore();
             }
 
-            // 6. Four small specular highlights on the rim (glass light catch)
+            /* 6. Inner soft glow */
+            c.save();
+            const g = c.createRadialGradient(x - r * 0.18, y - r * 0.18, 1, x, y, r * 1.2);
+            g.addColorStop(0, 'rgba(255,255,255,' + innerGlow + ')');
+            g.addColorStop(0.35, 'rgba(255,255,255,' + (innerGlow * 0.45) + ')');
+            g.addColorStop(1, 'rgba(255,255,255,0)');
+            c.fillStyle = g;
+            c.beginPath();
+            c.arc(x, y, r - rim * 0.6, 0, Math.PI * 2);
+            c.fill();
+            c.restore();
+
+            /* 7. Corner highlights — additive blending for bright speculars */
             const cornerAngles = [-2.35, -0.8, 2.35, 0.8];
-            const sizeScale = r / 36;
             c.save();
             c.globalCompositeOperation = 'lighter';
             for (let i = 0; i < cornerAngles.length; i++) {
@@ -1498,14 +1513,14 @@
                 c.translate(px, py);
                 c.rotate(a + Math.PI / 2);
 
-                const gw = Math.max(6 * sizeScale, rim * 0.85);
-                const gh = Math.max(1.6 * sizeScale, rim * 0.20);
+                const gw = Math.max(8 * scale, rim * 1.1);
+                const gh = Math.max(2 * scale, rim * 0.26);
 
                 const grad = c.createLinearGradient(-gw / 2, 0, gw / 2, 0);
-                grad.addColorStop(0,    'rgba(255,255,255,0)');
-                grad.addColorStop(0.35, 'rgba(255,255,255,0.85)');
-                grad.addColorStop(0.65, 'rgba(255,255,255,0.85)');
-                grad.addColorStop(1,    'rgba(255,255,255,0)');
+                grad.addColorStop(0, 'rgba(255,255,255,0)');
+                grad.addColorStop(0.35, 'rgba(255,255,255,0.98)');
+                grad.addColorStop(0.65, 'rgba(255,255,255,0.98)');
+                grad.addColorStop(1, 'rgba(255,255,255,0)');
 
                 c.fillStyle = grad;
                 c.beginPath();
@@ -1513,8 +1528,8 @@
                 c.fill();
 
                 c.beginPath();
-                c.fillStyle = 'rgba(255,255,255,0.55)';
-                c.ellipse(0, 0, Math.max(1 * sizeScale, gh * 0.32), Math.max(0.5 * sizeScale, gh * 0.16), 0, 0, Math.PI * 2);
+                c.fillStyle = 'rgba(255,255,255,0.7)';
+                c.ellipse(0, 0, Math.max(1.2 * scale, gh * 0.35), Math.max(0.6 * scale, gh * 0.18), 0, 0, Math.PI * 2);
                 c.fill();
 
                 c.restore();
@@ -1522,11 +1537,11 @@
             c.globalCompositeOperation = 'source-over';
             c.restore();
 
-            // 7. Tiny refractive arc along the inner edge
+            /* 8. Very subtle refractive band */
             c.save();
             c.beginPath();
-            c.lineWidth = Math.max(1, rim * 0.07);
-            c.strokeStyle = 'rgba(255,255,255,0.035)';
+            c.lineWidth = Math.max(1, rim * 0.08);
+            c.strokeStyle = 'rgba(255,255,255,0.04)';
             c.arc(x, y, r - rim * 0.2, -0.6, 0.6);
             c.stroke();
             c.restore();
@@ -1663,7 +1678,6 @@
             socket.on('iceRoundEnd', (payload) => { handleIceRoundEnd(payload); });
             socket.on('icePuckBounce', (data) => {
                 if (!data) return;
-                // Respect user setting: bounce lights disabled by default
                 if (!state.bounceLightsEnabled) return;
                 iceState.wallPulses.push({
                     x: data.x, y: data.y,
@@ -2250,7 +2264,6 @@
         soundToggle.addEventListener('change', () => { playClickSound(); state.soundEnabled = soundToggle.checked; });
         soundToggle.checked = state.soundEnabled;
 
-        // Bounce Lights toggle — disabled by default
         bounceLightsToggle.addEventListener('change', () => {
             playClickSound();
             state.bounceLightsEnabled = bounceLightsToggle.checked;
@@ -2368,7 +2381,6 @@
                 const isMe = p.id === state.userId;
                 const isAnonymous = isMe && state.anonymous;
                 const hidePfp = isMe && state.hidePfp;
-                // Draw the PFP content inside the puck circle
                 ctx.save(); ctx.beginPath(); ctx.arc(px, py, drawRadius, 0, Math.PI * 2); ctx.closePath(); ctx.clip();
                 if (isAnonymous || hidePfp) {
                     const color = getAnonymousColor(state.userId); ctx.fillStyle = color;
@@ -2389,7 +2401,6 @@
                 }
                 ctx.restore();
 
-                // Top-player crown glow (kept behind the glass)
                 if (shadowBlur > 0) {
                     ctx.save(); ctx.shadowBlur = shadowBlur; ctx.shadowColor = shadowColor;
                     ctx.beginPath(); ctx.arc(px, py, finalRadius, 0, Math.PI * 2);
@@ -2397,13 +2408,17 @@
                     ctx.shadowBlur = 0; ctx.restore();
                 }
 
-                // Liquid glass outline (transparent, no cross)
+                // Liquid glass puck — exact match to the original script,
+                // with the full-size cross restored
                 drawLiquidGlassPuck(ctx, px, py, finalRadius, {
-                    rimRatio: 0.24,
-                    outerRatio: 0.20,
-                    rimAlpha: 0.72,
-                    outerAlpha: 0.07,
-                    innerGlow: 0.02
+                    rimRatio: 0.333,
+                    outerRatio: 0.5,
+                    rimAlpha: 0.95,
+                    outerAlpha: 0.10,
+                    innerGlow: 0.14,
+                    cross: true,
+                    crossAlpha: 0.30,
+                    crossWidth: 2.2
                 });
             });
             ctx.restore();
@@ -2489,7 +2504,7 @@
             iceCtx.stroke(perimeterPath);
             iceCtx.restore();
 
-            // Idle puck — liquid glass
+            // Idle puck — liquid glass with cross
             if (iceState.gameState === 'idle') {
                 if (!iceState.idlePuckInitialized) {
                     const margin = 20;
@@ -2524,11 +2539,14 @@
                 const r = 16 * s;
 
                 drawLiquidGlassPuck(iceCtx, cx, cy, r, {
-                    rimRatio: 0.28,
-                    outerRatio: 0.42,
-                    rimAlpha: 0.72,
-                    outerAlpha: 0.08,
-                    innerGlow: 0.02
+                    rimRatio: 0.333,
+                    outerRatio: 0.5,
+                    rimAlpha: 0.95,
+                    outerAlpha: 0.10,
+                    innerGlow: 0.14,
+                    cross: true,
+                    crossAlpha: 0.30,
+                    crossWidth: 2.2
                 });
 
                 if (iceState.players.length === 0) { if (zoomActive) iceCtx.restore(); return; }
@@ -2536,12 +2554,12 @@
 
             const now = performance.now();
             const puck = iceState.puck;
+            // Zoom-in trigger: only when the puck is nearly stopped
+            // (0.15s worth of settling) and enough slide time has passed.
             if (iceState.gameState === 'sliding') {
                 const slideElapsed = (now - iceState.slideStartTime) / 1000;
                 const currentSpeed = Math.sqrt(iceState.puckVx * iceState.puckVx + iceState.puckVy * iceState.puckVy);
-                // Trigger zoom very near the end of the slide so its 0.15s
-                // animation completes right as the puck stops
-                if (slideElapsed > 2.4 && currentSpeed < 0.5 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
+                if (slideElapsed > 3.0 && currentSpeed < 0.10 && !iceState.isZoomingIn && !iceState.isZoomingOut && !iceState.zoomLocked) {
                     iceState.zoomCenterX = puck.x;
                     iceState.zoomCenterY = puck.y;
                     iceState.zoomCenterFixed = true;
@@ -2663,7 +2681,6 @@
             });
             iceCtx.restore();
 
-            // ─── WALL-BOUNCE PULSES (only added when enabled) ───
             const pulseNow = performance.now();
             iceState.wallPulses = iceState.wallPulses.filter(pulse => {
                 const elapsed = pulseNow - pulse.startTime;
@@ -2728,7 +2745,7 @@
                 iceCtx.restore();
             }
 
-            // ─── PUCK DRAWING — LIQUID GLASS ──
+            // ─── SLIDING PUCK — LIQUID GLASS WITH CROSS ──
             if (iceState.puckVisible) {
                 const nowMs = performance.now();
 
@@ -2761,13 +2778,16 @@
 
                 const r = PUCK_RENDER_RADIUS * s * totalScale;
 
-                // Liquid glass puck — transparent, no cross
+                // Liquid glass puck with cross
                 drawLiquidGlassPuck(iceCtx, px, py, r, {
-                    rimRatio: 0.26,
-                    outerRatio: 0.46,
-                    rimAlpha: 0.78,
+                    rimRatio: 0.333,
+                    outerRatio: 0.5,
+                    rimAlpha: 0.95,
                     outerAlpha: 0.10,
-                    innerGlow: 0.03
+                    innerGlow: 0.14,
+                    cross: true,
+                    crossAlpha: 0.30,
+                    crossWidth: 2.2
                 });
 
                 // owner name
