@@ -27,7 +27,6 @@
   html[data-theme="silver"]{--bg-base:#d6d6d6;--surface:rgba(0,0,0,.05);--surface2:rgba(0,0,0,.09);--surface3:rgba(0,0,0,.14);--border:rgba(0,0,0,.12);--border2:rgba(0,0,0,.20);--text:#111;--text2:#444;--text3:#777}
   html[data-theme="silver"] body{color:var(--text)}
 
-  /* ═══ MOBILE BASE — dvh + no overscroll bounce ═══ */
   html,body{
     height:100%;height:100dvh;overflow:hidden;
     overscroll-behavior:none;
@@ -70,9 +69,6 @@
   html[data-theme="silver"] #app::after{background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.15), rgba(0,0,0,.35) 70%)}
   #app > *{position:relative;z-index:1}
 
-  /* ═══════════════════════════════════════════════════════
-     TOPBAR — username + online status pinned top-left
-     ═══════════════════════════════════════════════════════ */
   #topbar{
     display:flex;align-items:center;justify-content:space-between;
     padding:calc(8px + var(--safe-top)) 10px 10px;
@@ -112,7 +108,6 @@
   .tab-page.active{opacity:1;visibility:visible;transform:translateX(0);z-index:2}
   .tab-page.exit{opacity:0;transform:translateX(-30px);z-index:1;transition:transform .3s ease,opacity .3s ease,visibility 0s .3s}
 
-  /* ═══ ICE PAGE — phone-optimized layout ═══ */
   #ice-page{display:flex;flex-direction:column;overflow:hidden;touch-action:none;padding:0}
   #ice-page.active{display:flex}
   #ice-page:not(.active){display:block}
@@ -320,9 +315,6 @@
   #tabs{padding:0 10px calc(8px + var(--safe-bottom));flex-shrink:0;z-index:20;position:relative}
   .tab-inner{display:flex;position:relative;background:var(--surface2);border:.5px solid var(--border);padding:6px;border-radius:22px;box-shadow:0 10px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);touch-action:none;cursor:grab;backdrop-filter:blur(14px);overflow:hidden}
 
-  /* ═══════════════════════════════════════════════════════
-     TAB INDICATOR — grows smoothly while dragging
-     ═══════════════════════════════════════════════════════ */
   .tab-indicator{
     position:absolute;top:6px;bottom:6px;left:6px;border-radius:16px;pointer-events:none;
     background:rgba(255,255,255,.12);
@@ -338,7 +330,6 @@
     z-index:0;
     will-change:transform,top,bottom
   }
-  /* dragging: position follows finger instantly, size still animates */
   .tab-indicator.dragging{
     transition:
       top .32s var(--ease-spring),
@@ -347,7 +338,6 @@
       box-shadow .25s ease;
     background:rgba(255,255,255,.16)
   }
-  /* the "get a bit bigger" state */
   .tab-indicator.grow{
     top:1.5px;bottom:1.5px;
     background:rgba(255,255,255,.20);
@@ -443,8 +433,105 @@
   #notif.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
 
   /* ═══════════════════════════════════════════════════════
-     PHONE MEDIA QUERIES
+     QUICK-BET DRAG — balance pill hold → drag chip
      ═══════════════════════════════════════════════════════ */
+  #bp{
+    touch-action:none;
+    transition:transform .22s ease, box-shadow .25s ease;
+  }
+  #bp.charging{
+    transform:scale(1.06);
+    box-shadow:0 0 0 0 rgba(240,208,128,.45);
+    animation:bpChargePulse .85s ease-in-out infinite;
+  }
+  @keyframes bpChargePulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(240,208,128,.35)}
+    50%{box-shadow:0 0 0 7px rgba(240,208,128,0)}
+  }
+  #bp.charged{
+    transform:scale(1.15);
+    transition:transform .45s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;
+    box-shadow:0 0 26px rgba(240,208,128,.55), inset 0 0 0 1px rgba(240,208,128,.35);
+    animation:none;
+  }
+  @keyframes bpBounceOut{
+    0%{transform:scale(1.15)}
+    40%{transform:scale(.92)}
+    72%{transform:scale(1.06)}
+    100%{transform:scale(1)}
+  }
+  #bp.bounce-out{
+    animation:bpBounceOut .55s cubic-bezier(.34,1.56,.64,1) forwards;
+    transition:none;
+    box-shadow:none;
+  }
+
+  .bet-drag-chip{
+    position:fixed;
+    left:-9999px;
+    top:-9999px;
+    z-index:99998;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:5px 13px 5px 5px;
+    border-radius:99px;
+    background:linear-gradient(135deg,rgba(40,50,80,.95),rgba(18,24,40,.98));
+    border:1px solid rgba(180,210,255,.35);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    box-shadow:
+      0 14px 34px rgba(0,0,0,.65),
+      0 0 22px rgba(240,208,128,.42),
+      inset 0 1px 0 rgba(255,255,255,.18);
+    pointer-events:none;
+    opacity:0;
+    transform:translate(-50%,-50%) scale(0);
+    transition:
+      opacity .18s ease,
+      transform .3s cubic-bezier(.34,1.56,.64,1),
+      box-shadow .25s ease,
+      border-color .25s ease,
+      background .25s ease;
+    will-change:left,top,transform;
+  }
+  .bet-drag-chip.show{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
+  .bet-drag-chip img{
+    width:22px;height:22px;object-fit:contain;display:block;
+  }
+  .bet-drag-chip span{
+    font-size:14px;font-weight:800;color:#f0d080;
+    font-variant-numeric:tabular-nums;letter-spacing:.3px;
+  }
+  .bet-drag-chip.over-arena{
+    border-color:rgba(140,200,255,.85);
+    background:linear-gradient(135deg,rgba(60,90,150,.98),rgba(30,50,100,.99));
+    box-shadow:
+      0 14px 34px rgba(0,0,0,.65),
+      0 0 30px rgba(140,200,255,.85),
+      0 0 62px rgba(91,157,255,.4),
+      inset 0 1px 0 rgba(255,255,255,.25);
+    transform:translate(-50%,-50%) scale(1.08);
+  }
+  .bet-drag-chip.dropping{
+    transition:
+      left .42s cubic-bezier(.34,1.56,.64,1),
+      top .42s cubic-bezier(.34,1.56,.64,1),
+      transform .42s cubic-bezier(.34,1.56,.64,1),
+      opacity .28s ease;
+  }
+  .bet-drag-chip.drop-into{
+    transform:translate(-50%,-50%) scale(.15);
+    opacity:0;
+  }
+  .bet-drag-chip.bounce-back{
+    transform:translate(-50%,-50%) scale(.55);
+    opacity:0;
+  }
+
   @media (max-width:400px){
     #topbar{padding-left:8px;padding-right:8px}
     #un{max-width:88px;font-size:12px}
@@ -466,11 +553,9 @@
   @media (max-height:600px){
     #ice-win-gif-container{display:none}
   }
-  /* prevent iOS focus zoom on inputs */
   @media (pointer:coarse){
     input,select,textarea{font-size:16px !important}
   }
-  /* reduce motion */
   @media (prefers-reduced-motion:reduce){
     .card-aura,.card-shine,#di{animation:none !important}
     .tab-indicator{transition-duration:.15s !important}
@@ -494,7 +579,6 @@
 <div id="app">
   <div id="topbar">
     <div id="tl">
-      <!-- username + online dot moved to the far top-left corner -->
       <div id="user-info"><span id="un">@player</span><span id="sd"></span></div>
       <button id="menu-btn" aria-label="Open panel"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
     </div>
@@ -724,6 +808,12 @@
   <div class="panel-grabber"><div class="grab" id="grabber"></div></div>
 </aside>
 
+<!-- Quick-bet drag chip -->
+<div id="bet-drag-chip" class="bet-drag-chip">
+  <img src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="">
+  <span>10</span>
+</div>
+
 <div id="notif"></div>
 
 <script>
@@ -766,12 +856,11 @@
   let notifTimer=null;
   function showNotif(text){const n=$('#notif');if(!n)return;n.textContent=text;n.classList.add('show');clearTimeout(notifTimer);notifTimer=setTimeout(()=>n.classList.remove('show'),2200)}
 
-  /* ═══ RIPPLE — tabs excluded (no pulse while dragging the slider) ═══ */
   const RIPPLE_SEL='button, .quick-btn, .layout-tile, .round-tile, .swatch, .setting, .top-entry, .stat-card, .panel-user';
   document.addEventListener('pointerdown',e=>{
     const target=e.target.closest(RIPPLE_SEL);
     if(!target)return;
-    if(target.closest('.tab-inner'))return;   // ← kill ripple on the tab slider
+    if(target.closest('.tab-inner'))return;
     const cs=getComputedStyle(target);
     if(cs.position==='static')target.style.position='relative';
     if(cs.overflow!=='hidden')target.style.overflow='hidden';
@@ -970,9 +1059,7 @@
     rankList.innerHTML=html;
   }
 
-  /* ═══════════════════════════════════════════════════════
-     TABS — drag slider + smooth grow/shrink
-     ═══════════════════════════════════════════════════════ */
+  /* ═══ TABS ═══ */
   const tabPages={ice:$('#ice-page'),wallet:$('#wallet-page'),profile:$('#profile-page'),top:$('#top-page')};
   const tabOrder=['ice','wallet','profile','top'];
   const tabBtns=$$('.tab');
@@ -1001,7 +1088,7 @@
     const el=e.target.closest?e.target.closest('.tab'):null;
     tabDownTab=el?el.dataset.tab:null;
     indicator.classList.add('dragging');
-    indicator.classList.add('grow');      // ← smooth grow
+    indicator.classList.add('grow');
     e.preventDefault();
   });
   document.addEventListener('pointermove',e=>{
@@ -1019,7 +1106,7 @@
     if(!dragTab)return;
     dragTab=false;
     indicator.classList.remove('dragging');
-    indicator.classList.remove('grow');    // ← smooth shrink back
+    indicator.classList.remove('grow');
     const tw=tabWidth();const mx=(tabBtns.length-1)*tw;
     if(!tabMoved){
       for(let i=0;i<tabBtns.length;i++)tabBtns[i].classList.toggle('active',tabOrder[i]===current);
@@ -1209,7 +1296,16 @@
     if(snapshot.gameState!=='idle'||snapshot.players.length>0)iceState.idlePuckInitialized=false;
     if(snapshot.gameState==='spinning'&&prev!=='spinning'){iceState.puckVisible=true;iceState.puckPopStart=performance.now();iceState.puckScale=0;iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false}
     if(snapshot.gameState==='sliding'&&prev!=='sliding'){iceState.slideStartTime=performance.now();iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false}
-    if(snapshot.gameState==='finished'&&prev!=='finished'){if(iceState.zoom>1.1&&!iceState.zoomOutTriggered){iceState.zoomOutTriggered=true;iceState.isZoomingOut=true;iceState.isZoomingIn=false;iceState.zoomStartTime=performance.now();iceState.zoomTarget=1}}
+    if(snapshot.gameState==='finished'&&prev!=='finished'){
+      if(iceState.zoom>1.1&&!iceState.zoomOutTriggered){
+        iceState.zoomOutTriggered=true;
+        iceState.isZoomingOut=true;
+        iceState.isZoomingIn=false;
+        iceState.zoomStartTime=performance.now();
+        iceState.zoomTarget=1;
+        iceState.zoomDuration=1.4;
+      }
+    }
     if(snapshot.gameState==='idle'&&prev!=='idle'){iceState.puckVisible=false;iceState.puckScale=1;iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.pfpPop.clear();iceState.showOwnerName=false;iceState.currentOwnerName='';iceState.idlePuckInitialized=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.zoomCenterX=0;iceState.zoomCenterY=0;iceState.wallPulses=[];iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false}
     const seen=new Set();
     snapshot.players.forEach(sp=>{
@@ -1454,6 +1550,7 @@
       rpy=iceState.puckPrevY+(puck.y-iceState.puckPrevY)*t;
     }
 
+    /* ═══ ZOOM TRIGGER — earlier + camera tracking ═══ */
     if(iceState.gameState==='sliding'){
       if(iceState.lastFrameTime>0){
         const dt=(now-iceState.lastFrameTime)/1000;
@@ -1463,13 +1560,23 @@
           if(spd>iceState.peakSpeed)iceState.peakSpeed=spd;
           const elapsed=(now-iceState.slideStartTime)/1000;
           if(!iceState.zoomFired&&iceState.peakSpeed>5){
-            const verySlowThreshold=Math.max(1.5, iceState.peakSpeed*0.007);
-            const stillMoving=spd>0.08;
-            if(spd<verySlowThreshold && stillMoving && elapsed>1.8){
+            const zoomInThreshold=Math.max(2.5, iceState.peakSpeed*0.05);
+            const stillMoving=spd>0.15;
+            if(spd<zoomInThreshold && stillMoving && elapsed>1.2){
               iceState.zoomCenterX=puck.x;iceState.zoomCenterY=puck.y;
               iceState.zoomCenterFixed=true;iceState.isZoomingIn=true;
               iceState.zoomStartTime=now;iceState.zoomTarget=1.5;iceState.zoomFired=true;
+              iceState.zoomDuration=2.0;
             }
+          }
+          /* early zoom-out once the puck has settled post-zoom */
+          if(iceState.zoomLocked && !iceState.zoomOutTriggered && spd<0.35 && elapsed>2){
+            iceState.zoomOutTriggered=true;
+            iceState.isZoomingOut=true;
+            iceState.isZoomingIn=false;
+            iceState.zoomStartTime=now;
+            iceState.zoomTarget=1;
+            iceState.zoomDuration=1.4;
           }
         }
       }
@@ -1478,12 +1585,32 @@
     if(iceState.isZoomingOut){
       const elapsed=(now-iceState.zoomStartTime)/1000,p=Math.min(elapsed/iceState.zoomDuration,1),e=easeInOutCubic(p);
       iceState.zoom=iceState.zoomTarget+(1-iceState.zoomTarget)*(1-e);
-      if(p>=1){iceState.isZoomingOut=false;iceState.zoom=1;iceState.zoomLocked=false;iceState.zoomOutTriggered=false}
+      /* drift camera back toward arena centre */
+      const cX=SERVER_ARENA_SIZE/2, cY=SERVER_ARENA_SIZE/2;
+      iceState.zoomCenterX += (cX - iceState.zoomCenterX)*0.06;
+      iceState.zoomCenterY += (cY - iceState.zoomCenterY)*0.06;
+      if(p>=1){
+        iceState.isZoomingOut=false;
+        iceState.zoom=1;
+        iceState.zoomLocked=false;
+        iceState.zoomOutTriggered=false;
+        iceState.zoomCenterFixed=false;
+      }
     }
     if(iceState.isZoomingIn){
       const elapsed=(now-iceState.zoomStartTime)/1000,p=Math.min(elapsed/iceState.zoomDuration,1),e=easeInOutCubic(p);
       iceState.zoom=1+(iceState.zoomTarget-1)*e;
-      if(p>=1){iceState.isZoomingIn=false;iceState.zoomLocked=true;iceState.zoom=iceState.zoomTarget}
+      /* camera tracks the puck smoothly */
+      if(iceState.gameState==='sliding' && p<0.95){
+        const track=0.14;
+        iceState.zoomCenterX += (puck.x - iceState.zoomCenterX)*track;
+        iceState.zoomCenterY += (puck.y - iceState.zoomCenterY)*track;
+      }
+      if(p>=1){
+        iceState.isZoomingIn=false;
+        iceState.zoomLocked=true;
+        iceState.zoom=iceState.zoomTarget;
+      }
     }
     const speed=Math.sqrt(Math.pow(rpx-iceState.puckPrevX,2)+Math.pow(rpy-iceState.puckPrevY,2));
 
@@ -1593,7 +1720,6 @@
     if(zoomActive)iceCtx.restore();
   }
 
-  /* ═══ RENDER LOOP — paused when the ice tab isn't visible (battery) ═══ */
   function renderLoop(){
     requestAnimationFrame(renderLoop);
     if(state.currentTab!=='ice')return;
@@ -1759,6 +1885,134 @@
 
   $$('.layout-tile').forEach(t=>t.addEventListener('click',()=>{haptic('light');applyLayout(t.dataset.layoutTile)}));
   const ls=$('#layout-switch');if(ls)ls.addEventListener('change',()=>{haptic('light');applyLayout(ls.checked?'panel':'simple')});
+
+  /* ═══════════════════════════════════════════════════════
+     QUICK-BET DRAG
+     Hold the balance pill for 0.4s → it grows → a draggable
+     diamond+10 chip pops out. Drop it on the arena to bet 10.
+     ═══════════════════════════════════════════════════════ */
+  (function(){
+    const bp=document.getElementById('bp');
+    const chip=document.getElementById('bet-drag-chip');
+    const iceCanvasEl=document.getElementById('ice-canvas');
+    if(!bp||!chip||!iceCanvasEl)return;
+
+    const HOLD_MS=400;
+    const BET_AMOUNT=10;
+
+    let holding=false, dragging=false, bouncedOut=false;
+    let holdTimer=null, holdPointerId=null;
+    let startX=0, startY=0;
+    let bpRect=null;
+
+    function canBetNow(){
+      if(state.currentTab!=='ice')return false;
+      const g=iceState.gameState;
+      return (g==='idle'||g==='countdown');
+    }
+
+    function cleanup(){
+      holding=false; dragging=false; bouncedOut=false;
+      clearTimeout(holdTimer); holdTimer=null;
+      try{ if(holdPointerId!=null) bp.releasePointerCapture(holdPointerId); }catch(_){}
+      bp.classList.remove('charging','charged','bounce-out');
+      chip.classList.remove('show','over-arena','dropping','drop-into','bounce-back');
+      chip.style.left='-9999px';
+      chip.style.top='-9999px';
+      holdPointerId=null;
+    }
+
+    bp.addEventListener('pointerdown',e=>{
+      if(e.button!==undefined && e.button!==0)return;
+      if(!canBetNow())return;
+      if(holding||dragging)return;
+      holding=true;
+      holdPointerId=e.pointerId;
+      startX=e.clientX; startY=e.clientY;
+      bpRect=bp.getBoundingClientRect();
+      bp.classList.add('charging');
+      try{ bp.setPointerCapture(e.pointerId); }catch(_){}
+
+      clearTimeout(holdTimer);
+      holdTimer=setTimeout(()=>{
+        if(!holding)return;
+        holding=false;
+        dragging=true;
+        bouncedOut=false;
+        haptic('medium');
+        bp.classList.remove('charging');
+        bp.classList.add('charged');
+        chip.style.left=startX+'px';
+        chip.style.top=startY+'px';
+        chip.classList.add('show');
+      },HOLD_MS);
+    });
+
+    document.addEventListener('pointermove',e=>{
+      if(holding){
+        const dx=e.clientX-startX, dy=e.clientY-startY;
+        if(Math.sqrt(dx*dx+dy*dy)>10){
+          holding=false;
+          clearTimeout(holdTimer);
+          bp.classList.remove('charging');
+        }
+        return;
+      }
+      if(!dragging)return;
+
+      chip.style.left=e.clientX+'px';
+      chip.style.top=e.clientY+'px';
+
+      const r=iceCanvasEl.getBoundingClientRect();
+      const over=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+      chip.classList.toggle('over-arena',over);
+
+      if(!bouncedOut && bpRect){
+        const inside=e.clientX>=bpRect.left&&e.clientX<=bpRect.right&&
+                     e.clientY>=bpRect.top&&e.clientY<=bpRect.bottom;
+        if(!inside){
+          bouncedOut=true;
+          bp.classList.remove('charged');
+          bp.classList.add('bounce-out');
+          setTimeout(()=>bp.classList.remove('bounce-out'),620);
+        }
+      }
+    },{passive:true});
+
+    document.addEventListener('pointerup',e=>{
+      clearTimeout(holdTimer);
+      if(holding){
+        holding=false;
+        bp.classList.remove('charging');
+        return;
+      }
+      if(!dragging)return;
+      dragging=false;
+      chip.classList.remove('over-arena');
+
+      const r=iceCanvasEl.getBoundingClientRect();
+      const over=e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;
+
+      if(over){
+        placeIceBet(BET_AMOUNT);
+        haptic('heavy');
+        const cx=r.left+r.width/2, cy=r.top+r.height/2;
+        chip.classList.add('dropping','drop-into');
+        chip.style.left=cx+'px';
+        chip.style.top=cy+'px';
+        setTimeout(cleanup,460);
+      } else {
+        chip.classList.add('dropping','bounce-back');
+        if(bpRect){
+          chip.style.left=(bpRect.left+bpRect.width/2)+'px';
+          chip.style.top =(bpRect.top +bpRect.height/2)+'px';
+        }
+        setTimeout(cleanup,520);
+      }
+    });
+
+    document.addEventListener('pointercancel',cleanup);
+  })();
 
   function init(){
     if(tg?.initDataUnsafe?.user){const u=tg.initDataUnsafe.user;state.username=u.username||u.first_name||'player';state.pfp=u.photo_url||''}
