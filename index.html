@@ -19,6 +19,18 @@
     --safe-bottom:env(safe-area-inset-bottom,0px);
     --safe-top:env(safe-area-inset-top,0px);
   }
+  /* Telegram fullscreen pushes UI under the status bar / close button */
+  body.tg-fullscreen #topbar{
+    padding-top: calc(24px + var(--safe-top));
+  }
+  body.tg-fullscreen #wallet-page,
+  body.tg-fullscreen #profile-page,
+  body.tg-fullscreen #top-page{
+    padding-top: calc(10px + var(--safe-top));
+  }
+  @media (display-mode: fullscreen){
+    #topbar{ padding-top: calc(20px + var(--safe-top)); }
+  }
   html[data-theme="onyx"]{--bg-base:#000;--surface:rgba(255,255,255,.045);--surface2:rgba(255,255,255,.075);--surface3:rgba(255,255,255,.11);--border:rgba(255,255,255,.075);--border2:rgba(255,255,255,.13)}
   html[data-theme="dark"]{--bg-base:#0f0f0f;--surface:rgba(255,255,255,.05);--surface2:rgba(255,255,255,.085);--surface3:rgba(255,255,255,.12);--border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.15)}
   html[data-theme="charcoal"]{--bg-base:#181818;--surface:rgba(255,255,255,.06);--surface2:rgba(255,255,255,.095);--surface3:rgba(255,255,255,.13);--border:rgba(255,255,255,.10);--border2:rgba(255,255,255,.17)}
@@ -40,7 +52,6 @@
   .ripple-effect{position:absolute;border-radius:50%;pointer-events:none;z-index:9;border:5px solid rgba(255,255,255,.42);filter:blur(3px);transform:scale(0.2);opacity:0;animation:ripplePop .62s cubic-bezier(.34,1.56,.64,1) forwards;mix-blend-mode:screen}
   @keyframes ripplePop{0%{transform:scale(0.15);opacity:0}35%{transform:scale(1);opacity:.85}75%{transform:scale(1.22);opacity:.35}100%{transform:scale(1.35);opacity:0}}
 
-  /* LOADING */
   #loading-screen{position:fixed;inset:0;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#0e0e14 0%,#050507 100%);transition:opacity .9s cubic-bezier(.34,1.56,.64,1),visibility .9s ease;opacity:1;visibility:visible;pointer-events:all}
   #loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
   #grid-wrapper{position:relative;width:300px;height:300px;display:flex;align-items:center;justify-content:center;z-index:2}
@@ -71,7 +82,7 @@
 
   #topbar{
     display:flex;align-items:center;justify-content:space-between;
-    padding:calc(8px + var(--safe-top)) 10px 10px;
+    padding:calc(12px + var(--safe-top)) 10px 10px;
     flex-shrink:0;z-index:10;gap:8px
   }
   #tl{display:flex;align-items:center;gap:6px;min-width:0}
@@ -88,9 +99,6 @@
 
   #main{flex:1;position:relative;overflow:hidden}
 
-  /* ═══════════════════════════════════════════════════════
-     TAB PAGES
-     ═══════════════════════════════════════════════════════ */
   .tab-page{
     position:absolute;top:0;left:0;right:0;bottom:0;
     display:block;
@@ -144,7 +152,6 @@
   @keyframes letterBounce{0%{opacity:0;transform:translateY(30px) scale(.8)}40%{opacity:1;transform:translateY(-10px) scale(.85)}70%{transform:translateY(5px) scale(.98)}100%{opacity:1;transform:translateY(0) scale(1)}}
   .waiting-sub{font-size:13px;font-weight:400;opacity:.55;margin-top:2px;display:block}
 
-  /* ═══ BET OVERLAY ═══ */
   #ice-bet-overlay-wrap{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);z-index:5;width:88%;max-width:300px;transition:opacity .35s ease,transform .4s cubic-bezier(.34,1.56,.64,1);opacity:1}
   #ice-bet-overlay-wrap.hidden{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(20px)}
   #ice-bet-overlay{padding:9px 12px 10px;background:linear-gradient(135deg,rgba(40,50,80,.72),rgba(18,24,40,.82));backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid rgba(180,210,255,.22);border-radius:16px;display:flex;flex-direction:column;gap:6px;position:relative;box-shadow:0 12px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.20);overflow:hidden;transition:max-height .42s cubic-bezier(.34,1.56,.64,1),padding .35s cubic-bezier(.34,1.56,.64,1),gap .35s ease,border-radius .3s ease;max-height:220px}
@@ -194,7 +201,6 @@
   #ice-win-multiplier{font-size:30px;font-weight:800;color:#fff;text-align:center}
   #ice-win-continue-btn{padding:12px 0;border-radius:14px;border:1px solid rgba(140,180,255,.35);background:linear-gradient(135deg,#6da9ff 0%,#4a86e8 100%);color:#fff;font-weight:800;font-size:15px;cursor:pointer;width:100%;text-align:center;margin-top:6px;font-family:inherit;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(91,157,255,.4)}
 
-  /* ═══ WALLET / PROFILE / TOP ═══ */
   #wallet-page,#profile-page,#top-page{padding:6px 16px calc(90px + var(--safe-bottom));display:block;touch-action:pan-y}
   .page-head{margin:6px 0 18px}
   .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--text3);display:flex;margin-bottom:4px;min-height:14px}
@@ -808,7 +814,6 @@
   <div class="panel-grabber"><div class="grab" id="grabber"></div></div>
 </aside>
 
-<!-- Quick-bet drag chip -->
 <div id="bet-drag-chip" class="bet-drag-chip">
   <img src="https://i.postimg.cc/vHKQ9y9q/diamond-elegant.gif" alt="">
   <span>10</span>
@@ -847,7 +852,18 @@
   const WIN_GIFS=['https://i.postimg.cc/9Frvpxhz/ezgif-3f0e907be807d1cc.gif','https://i.postimg.cc/rmQPRSzF/ezgif-20d222277768f496.gif','https://i.postimg.cc/NfyzL2tt/ezgif-2378686847977dc7.gif','https://i.postimg.cc/Gt6zvzCK/ezgif-258589f1cd2da73d.gif','https://i.postimg.cc/Dwr5bqMn/ezgif-26d5d53255cd286f.gif','https://i.postimg.cc/qvTSYBPx/ezgif-2529049603c6d1a9.gif','https://i.postimg.cc/4dqF1Xbk/ezgif-286c5293f9b85b07.gif'];
 
   const tg=window.Telegram?.WebApp;
-  if(tg){tg.expand();tg.enableClosingConfirmation()}
+  if(tg){
+    tg.expand();
+    tg.enableClosingConfirmation();
+    function applyTgFullscreen(){
+      const isFs = !!tg.isFullscreen || (tg.viewportHeight && tg.viewportHeight >= window.innerHeight - 2);
+      document.body.classList.toggle('tg-fullscreen', isFs);
+    }
+    applyTgFullscreen();
+    try{ tg.onEvent('fullscreenChanged', applyTgFullscreen); }catch(_){}
+    try{ tg.onEvent('viewportChanged', applyTgFullscreen); }catch(_){}
+    window.addEventListener('resize', applyTgFullscreen);
+  }
 
   function haptic(style){try{if(tg?.HapticFeedback)tg.HapticFeedback.impactOccurred(style||'light');else if(navigator.vibrate)navigator.vibrate(style==='heavy'?30:12)}catch(_){}}
   const $=s=>document.querySelector(s);
@@ -1059,7 +1075,6 @@
     rankList.innerHTML=html;
   }
 
-  /* ═══ TABS ═══ */
   const tabPages={ice:$('#ice-page'),wallet:$('#wallet-page'),profile:$('#profile-page'),top:$('#top-page')};
   const tabOrder=['ice','wallet','profile','top'];
   const tabBtns=$$('.tab');
@@ -1303,7 +1318,7 @@
         iceState.isZoomingIn=false;
         iceState.zoomStartTime=performance.now();
         iceState.zoomTarget=1;
-        iceState.zoomDuration=1.4;
+        iceState.zoomDuration=1.1;
       }
     }
     if(snapshot.gameState==='idle'&&prev!=='idle'){iceState.puckVisible=false;iceState.puckScale=1;iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.pfpPop.clear();iceState.showOwnerName=false;iceState.currentOwnerName='';iceState.idlePuckInitialized=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.zoomCenterX=0;iceState.zoomCenterY=0;iceState.wallPulses=[];iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false}
@@ -1550,7 +1565,7 @@
       rpy=iceState.puckPrevY+(puck.y-iceState.puckPrevY)*t;
     }
 
-    /* ═══ ZOOM TRIGGER — earlier + camera tracking ═══ */
+    /* ═══ ZOOM TRIGGER — fires the moment the puck starts decelerating ═══ */
     if(iceState.gameState==='sliding'){
       if(iceState.lastFrameTime>0){
         const dt=(now-iceState.lastFrameTime)/1000;
@@ -1559,36 +1574,53 @@
           const spd=Math.sqrt(dx*dx+dy*dy)/dt;
           if(spd>iceState.peakSpeed)iceState.peakSpeed=spd;
           const elapsed=(now-iceState.slideStartTime)/1000;
-          if(!iceState.zoomFired&&iceState.peakSpeed>5){
-            const zoomInThreshold=Math.max(2.5, iceState.peakSpeed*0.05);
-            const stillMoving=spd>0.15;
-            if(spd<zoomInThreshold && stillMoving && elapsed>1.2){
-              iceState.zoomCenterX=puck.x;iceState.zoomCenterY=puck.y;
-              iceState.zoomCenterFixed=true;iceState.isZoomingIn=true;
-              iceState.zoomStartTime=now;iceState.zoomTarget=1.5;iceState.zoomFired=true;
-              iceState.zoomDuration=2.0;
+
+          /* ZOOM-IN: triggers the moment puck slows below 55% of peak */
+          if(!iceState.zoomFired && iceState.peakSpeed>3 && elapsed>0.35){
+            const decelerating = spd < iceState.peakSpeed*0.55;
+            const stillMoving  = spd > 0.35;
+            if(decelerating && stillMoving){
+              iceState.zoomCenterX = puck.x;
+              iceState.zoomCenterY = puck.y;
+              iceState.zoomCenterFixed = true;
+              iceState.isZoomingIn = true;
+              iceState.zoomStartTime = now;
+              iceState.zoomTarget = 1.35;
+              iceState.zoomFired = true;
+              iceState.zoomDuration = 1.2;
             }
           }
-          /* early zoom-out once the puck has settled post-zoom */
-          if(iceState.zoomLocked && !iceState.zoomOutTriggered && spd<0.35 && elapsed>2){
-            iceState.zoomOutTriggered=true;
-            iceState.isZoomingOut=true;
-            iceState.isZoomingIn=false;
-            iceState.zoomStartTime=now;
-            iceState.zoomTarget=1;
-            iceState.zoomDuration=1.4;
+          /* ZOOM-OUT: as soon as the puck really settles */
+          if(iceState.zoomFired && !iceState.zoomOutTriggered && spd<0.5 && elapsed>1.4){
+            iceState.zoomOutTriggered = true;
+            iceState.isZoomingOut = true;
+            iceState.isZoomingIn = false;
+            iceState.zoomStartTime = now;
+            iceState.zoomTarget = 1;
+            iceState.zoomDuration = 1.1;
           }
         }
       }
       iceState.prevRenderX=rpx;iceState.prevRenderY=rpy;iceState.lastFrameTime=now;
     }
+
+    /* Camera follows the puck for the whole sliding phase while zoom is active.
+       Runs OUTSIDE the zoom-in/out animations so tracking never "gaps". */
+    if(iceState.zoomCenterFixed
+       && iceState.gameState==='sliding'
+       && !iceState.isZoomingOut){
+      const track=0.20;
+      iceState.zoomCenterX += (puck.x - iceState.zoomCenterX)*track;
+      iceState.zoomCenterY += (puck.y - iceState.zoomCenterY)*track;
+    }
+
     if(iceState.isZoomingOut){
       const elapsed=(now-iceState.zoomStartTime)/1000,p=Math.min(elapsed/iceState.zoomDuration,1),e=easeInOutCubic(p);
       iceState.zoom=iceState.zoomTarget+(1-iceState.zoomTarget)*(1-e);
       /* drift camera back toward arena centre */
       const cX=SERVER_ARENA_SIZE/2, cY=SERVER_ARENA_SIZE/2;
-      iceState.zoomCenterX += (cX - iceState.zoomCenterX)*0.06;
-      iceState.zoomCenterY += (cY - iceState.zoomCenterY)*0.06;
+      iceState.zoomCenterX += (cX - iceState.zoomCenterX)*0.11;
+      iceState.zoomCenterY += (cY - iceState.zoomCenterY)*0.11;
       if(p>=1){
         iceState.isZoomingOut=false;
         iceState.zoom=1;
@@ -1600,12 +1632,6 @@
     if(iceState.isZoomingIn){
       const elapsed=(now-iceState.zoomStartTime)/1000,p=Math.min(elapsed/iceState.zoomDuration,1),e=easeInOutCubic(p);
       iceState.zoom=1+(iceState.zoomTarget-1)*e;
-      /* camera tracks the puck smoothly */
-      if(iceState.gameState==='sliding' && p<0.95){
-        const track=0.14;
-        iceState.zoomCenterX += (puck.x - iceState.zoomCenterX)*track;
-        iceState.zoomCenterY += (puck.y - iceState.zoomCenterY)*track;
-      }
       if(p>=1){
         iceState.isZoomingIn=false;
         iceState.zoomLocked=true;
@@ -1888,8 +1914,6 @@
 
   /* ═══════════════════════════════════════════════════════
      QUICK-BET DRAG
-     Hold the balance pill for 0.4s → it grows → a draggable
-     diamond+10 chip pops out. Drop it on the arena to bet 10.
      ═══════════════════════════════════════════════════════ */
   (function(){
     const bp=document.getElementById('bp');
