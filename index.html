@@ -1314,7 +1314,7 @@
     for(let i=1;i<innerPts.length;i++)innerPath.lineTo(innerPts[i].x,innerPts[i].y);
     innerPath.closePath();
 
-    let zoomActive=iceState.zoom>1.01;
+    let zoomActive=iceState.zoom>1.05;
     if(zoomActive&&iceState.zoomCenterFixed){
       const csx=iceState.zoomCenterX*s,csy=iceState.zoomCenterY*s;
       const tx=(half-csx)*iceState.zoom+half-half*iceState.zoom;
@@ -1372,7 +1372,7 @@
           const elapsed=(now-iceState.slideStartTime)/1000;
           if(!iceState.zoomFired&&iceState.peakSpeed>5){
             // Very low threshold (0.5%) — only fires when puck is nearly stopped
-            const verySlowThreshold=Math.max(1.5, iceState.peakSpeed*0.005);
+            const verySlowThreshold=Math.max(1.5, iceState.peakSpeed*0.007);
             const stillMoving=spd>0.08;
             if(spd<verySlowThreshold && stillMoving && elapsed>1.8){
               iceState.zoomCenterX=puck.x;iceState.zoomCenterY=puck.y;
