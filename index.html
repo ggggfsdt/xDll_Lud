@@ -20,15 +20,15 @@
     --safe-top:env(safe-area-inset-top,0px);
   }
   body.tg-fullscreen #topbar{
-    padding-top: calc(30px + var(--safe-top));
+    padding-top: calc(28px + var(--safe-top));
   }
   body.tg-fullscreen #wallet-page,
   body.tg-fullscreen #profile-page,
   body.tg-fullscreen #top-page{
-    padding-top: calc(10px + var(--safe-top));
+    padding-top: calc(24px + var(--safe-top));
   }
   @media (display-mode: fullscreen){
-    #topbar{ padding-top: calc(26px + var(--safe-top)); }
+    #topbar{ padding-top: calc(24px + var(--safe-top)); }
   }
   html[data-theme="onyx"]{--bg-base:#000;--surface:rgba(255,255,255,.045);--surface2:rgba(255,255,255,.075);--surface3:rgba(255,255,255,.11);--border:rgba(255,255,255,.075);--border2:rgba(255,255,255,.13)}
   html[data-theme="dark"]{--bg-base:#0f0f0f;--surface:rgba(255,255,255,.05);--surface2:rgba(255,255,255,.085);--surface3:rgba(255,255,255,.12);--border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.15)}
@@ -79,7 +79,6 @@
   html[data-theme="silver"] #app::after{background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.15), rgba(0,0,0,.35) 70%)}
   #app > *{position:relative;z-index:1}
 
-  /* topbar absolutely positioned so arena keeps full height, but user/balance sit a bit lower */
   #topbar{
     position:absolute;
     top:0;left:0;right:0;
@@ -124,14 +123,14 @@
   #ice-page.active{display:flex}
   #ice-page:not(.active){display:block}
 
+  /* arena wrap gets extra top padding to move it down below the floating topbar */
   #ice-arena-wrap{
     flex:1;position:relative;display:flex;align-items:center;justify-content:center;
-    padding:2px 8px 0;min-height:0;flex-shrink:0;touch-action:none
+    padding:calc(28px + var(--safe-top)) 8px 0;min-height:0;flex-shrink:0;touch-action:none
   }
   #ice-canvas{width:100%;aspect-ratio:1/1;max-width:100%;max-height:100%;border-radius:24px;background:transparent;touch-action:none;display:block;flex-shrink:0;border:none;contain:paint}
 
-  /* Ice panels pushed down so they don't collide with the absolutely-positioned topbar */
-  #ice-top-panel{position:absolute;top:calc(68px + var(--safe-top));left:50%;transform:translateX(-50%) translateY(-100%);width:92%;max-width:420px;background:linear-gradient(135deg,rgba(40,50,80,.72),rgba(18,24,40,.82));backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid rgba(180,210,255,.22);border-radius:18px;padding:7px 12px 9px;display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:10;box-shadow:0 12px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.20);transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;opacity:0;pointer-events:none}
+  #ice-top-panel{position:absolute;top:calc(76px + var(--safe-top));left:50%;transform:translateX(-50%) translateY(-100%);width:92%;max-width:420px;background:linear-gradient(135deg,rgba(40,50,80,.72),rgba(18,24,40,.82));backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid rgba(180,210,255,.22);border-radius:18px;padding:7px 12px 9px;display:flex;align-items:center;justify-content:space-between;gap:8px;z-index:10;box-shadow:0 12px 40px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.20);transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;opacity:0;pointer-events:none}
   #ice-top-panel.show{transform:translateX(-50%) translateY(0);opacity:1}
   #ice-top-panel .panel-section{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1}
   #ice-top-panel .panel-label{font-size:8px;text-transform:uppercase;letter-spacing:.7px;color:rgba(200,220,250,.6);font-weight:800}
@@ -142,7 +141,7 @@
   #ice-timer-progress-wrap{width:100%;height:2px;border-radius:2px;background:rgba(180,210,255,.15);overflow:hidden}
   #ice-timer-progress{height:100%;width:0%;border-radius:2px;background:linear-gradient(90deg,#b8d2ff,#fff);transition:width .1s linear}
 
-  #ice-last-game-panel,#ice-best-win-panel{position:absolute;top:calc(68px + var(--safe-top));padding:7px 12px 7px 7px;background:linear-gradient(135deg,rgba(40,50,80,.68),rgba(18,24,40,.78));backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(180,210,255,.18);border-radius:14px;display:flex;align-items:center;gap:7px;z-index:6;box-shadow:0 8px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.16);pointer-events:none;font-size:11px;color:rgba(200,220,250,.7);min-height:36px}
+  #ice-last-game-panel,#ice-best-win-panel{position:absolute;top:calc(76px + var(--safe-top));padding:7px 12px 7px 7px;background:linear-gradient(135deg,rgba(40,50,80,.68),rgba(18,24,40,.78));backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgba(180,210,255,.18);border-radius:14px;display:flex;align-items:center;gap:7px;z-index:6;box-shadow:0 8px 28px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.16);pointer-events:none;font-size:11px;color:rgba(200,220,250,.7);min-height:36px}
   #ice-last-game-panel{left:8px}
   #ice-best-win-panel{right:8px}
   .win-panel .panel-label{font-weight:700;letter-spacing:.4px;opacity:.7;margin-right:4px;white-space:nowrap;font-size:9px;text-transform:uppercase}
@@ -206,7 +205,8 @@
   #ice-win-multiplier{font-size:30px;font-weight:800;color:#fff;text-align:center}
   #ice-win-continue-btn{padding:12px 0;border-radius:14px;border:1px solid rgba(140,180,255,.35);background:linear-gradient(135deg,#6da9ff 0%,#4a86e8 100%);color:#fff;font-weight:800;font-size:15px;cursor:pointer;width:100%;text-align:center;margin-top:6px;font-family:inherit;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(91,157,255,.4)}
 
-  #wallet-page,#profile-page,#top-page{padding:6px 16px calc(90px + var(--safe-bottom));display:block;touch-action:pan-y}
+  /* content pages get a real top offset so they clear the absolute topbar */
+  #wallet-page,#profile-page,#top-page{padding:calc(46px + var(--safe-top)) 16px calc(90px + var(--safe-bottom));display:block;touch-action:pan-y}
   .page-head{margin:6px 0 18px}
   .eyebrow{font-size:10.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--text3);display:flex;margin-bottom:4px;min-height:14px}
   .page-title{font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;color:var(--text)}
@@ -541,27 +541,25 @@
     opacity:0;
   }
 
-  /* ═══ STORY RINGS ═══ */
+  /* ═══ STORY RINGS — simple, sharp, matte outline ═══ */
   .story-ring{
     position:fixed;
     left:0;top:0;
     border-radius:50%;
     pointer-events:none;
     z-index:99997;
-    border:7px solid rgba(255,255,255,.58);
-    filter:blur(5px);
-    transform:translate(-50%,-50%) scale(.15);
+    border:2.5px solid rgba(255,255,255,.55);
+    box-sizing:border-box;
+    transform:translate(-50%,-50%) scale(.35);
     opacity:0;
-    mix-blend-mode:screen;
-    animation:storyRingPop .62s cubic-bezier(.34,1.56,.64,1) forwards;
-    will-change:transform,opacity,border-width;
+    animation:storyRingPop .5s cubic-bezier(.34,1.56,.64,1) forwards;
+    will-change:transform,opacity;
   }
   @keyframes storyRingPop{
-    0%{transform:translate(-50%,-50%) scale(.15);opacity:0;border-width:13px}
-    30%{transform:translate(-50%,-50%) scale(1.12);opacity:.95;border-width:7px}
-    52%{transform:translate(-50%,-50%) scale(1);opacity:.85;border-width:6px}
-    76%{transform:translate(-50%,-50%) scale(1.05);opacity:.5;border-width:5px}
-    100%{transform:translate(-50%,-50%) scale(.32);opacity:0;border-width:2px}
+    0%   {transform:translate(-50%,-50%) scale(.35); opacity:0;}
+    40%  {transform:translate(-50%,-50%) scale(1.05); opacity:.85;}
+    60%  {transform:translate(-50%,-50%) scale(1); opacity:.7;}
+    100% {transform:translate(-50%,-50%) scale(.7); opacity:0;}
   }
 
   @media (max-width:400px){
@@ -746,7 +744,7 @@
           <label class="switch"><input type="checkbox" id="bg-image-toggle" checked><span class="slider"></span></label>
         </div>
         <div class="setting">
-          <div class="left"><div class="icon">◎</div><div><div class="label">Story Rings</div><div class="sub">Pulse ring on tap</div></div></div>
+          <div class="left"><div class="icon">◎</div><div><div class="label">Story Rings</div><div class="sub">Ring pulse on tap</div></div></div>
           <label class="switch"><input type="checkbox" id="story-rings-toggle"><span class="slider"></span></label>
         </div>
       </div>
@@ -1311,8 +1309,7 @@
     glowPhase:0,puckVx:0,puckVy:0,
     zoomCenterX:0,zoomCenterY:0,zoomCenterFixed:false,
     wallPulses:[],
-    prevRenderX:0,prevRenderY:0,lastFrameTime:0,peakSpeed:0,zoomFired:false,
-    spdHistory:[]
+    prevRenderX:0,prevRenderY:0,lastFrameTime:0,peakSpeed:0,zoomFired:false
   };
 
   function getAnonymousColor(id){let h=0;const s=String(id);for(let i=0;i<s.length;i++){h=s.charCodeAt(i)+((h<<5)-h);h&=h}return'hsl('+Math.abs(h%360)+',70%,50%)'}
@@ -1341,7 +1338,7 @@
     }
     if(snapshot.gameState!=='idle'||snapshot.players.length>0)iceState.idlePuckInitialized=false;
     if(snapshot.gameState==='spinning'&&prev!=='spinning'){iceState.puckVisible=true;iceState.puckPopStart=performance.now();iceState.puckScale=0;iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false}
-    if(snapshot.gameState==='sliding'&&prev!=='sliding'){iceState.slideStartTime=performance.now();iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false;iceState.spdHistory=[]}
+    if(snapshot.gameState==='sliding'&&prev!=='sliding'){iceState.slideStartTime=performance.now();iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false}
     if(snapshot.gameState==='finished'&&prev!=='finished'){
       if(iceState.zoom>1.1&&!iceState.zoomOutTriggered){
         iceState.zoomOutTriggered=true;
@@ -1352,7 +1349,7 @@
         iceState.zoomDuration=1.1;
       }
     }
-    if(snapshot.gameState==='idle'&&prev!=='idle'){iceState.puckVisible=false;iceState.puckScale=1;iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.pfpPop.clear();iceState.showOwnerName=false;iceState.currentOwnerName='';iceState.idlePuckInitialized=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.zoomCenterX=0;iceState.zoomCenterY=0;iceState.wallPulses=[];iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false;iceState.spdHistory=[]}
+    if(snapshot.gameState==='idle'&&prev!=='idle'){iceState.puckVisible=false;iceState.puckScale=1;iceState.zoom=1;iceState.isZoomingIn=false;iceState.isZoomingOut=false;iceState.zoomLocked=false;iceState.zoomOutTriggered=false;iceState.pfpPop.clear();iceState.showOwnerName=false;iceState.currentOwnerName='';iceState.idlePuckInitialized=false;iceState.winnerPuckPop=false;iceState.zoomCenterFixed=false;iceState.zoomCenterX=0;iceState.zoomCenterY=0;iceState.wallPulses=[];iceState.prevRenderX=0;iceState.prevRenderY=0;iceState.lastFrameTime=0;iceState.peakSpeed=0;iceState.zoomFired=false}
     const seen=new Set();
     snapshot.players.forEach(sp=>{
       seen.add(sp.id);
@@ -1596,7 +1593,7 @@
       rpy=iceState.puckPrevY+(puck.y-iceState.puckPrevY)*t;
     }
 
-    /* ZOOM TRIGGER — fires ~0.4s before the puck actually stops */
+    /* ZOOM TRIGGER — simpler, more reliable: fires once the puck has slowed way down */
     if(iceState.gameState==='sliding'){
       if(iceState.lastFrameTime>0){
         const dt=(now-iceState.lastFrameTime)/1000;
@@ -1606,22 +1603,8 @@
           if(spd>iceState.peakSpeed)iceState.peakSpeed=spd;
           const elapsed=(now-iceState.slideStartTime)/1000;
 
-          iceState.spdHistory.push({t:elapsed, s:spd});
-          if(iceState.spdHistory.length>12)iceState.spdHistory.shift();
-
-          let timeToStop = Infinity;
-          if(iceState.spdHistory.length>=4){
-            const newest = iceState.spdHistory[iceState.spdHistory.length-1];
-            const oldest = iceState.spdHistory[iceState.spdHistory.length-4];
-            const dtS = newest.t - oldest.t;
-            const dsS = newest.s - oldest.s;
-            if(dtS > 0.05 && dsS < 0){
-              const decel = -dsS / dtS;
-              if(decel > 2) timeToStop = spd / decel;
-            }
-          }
-
-          if(!iceState.zoomFired && timeToStop < 0.42 && spd > 0.5 && elapsed > 0.5){
+          /* Zoom in when puck has clearly slowed (below 30% of peak, and below 1.5 px/ms absolute) */
+          if(!iceState.zoomFired && elapsed > 0.6 && spd < 1.5 && spd < iceState.peakSpeed * 0.30){
             iceState.zoomCenterX = puck.x;
             iceState.zoomCenterY = puck.y;
             iceState.zoomCenterFixed = true;
@@ -1629,9 +1612,10 @@
             iceState.zoomStartTime = now;
             iceState.zoomTarget = 1.35;
             iceState.zoomFired = true;
-            iceState.zoomDuration = 0.36;
+            iceState.zoomDuration = 0.55;
           }
-          if(iceState.zoomFired && !iceState.zoomOutTriggered && (spd < 0.6 || timeToStop < 0.05)){
+          /* Zoom out once the puck essentially stopped */
+          if(iceState.zoomFired && !iceState.zoomOutTriggered && spd < 0.4){
             iceState.zoomOutTriggered = true;
             iceState.isZoomingOut = true;
             iceState.isZoomingIn = false;
@@ -1644,10 +1628,11 @@
       iceState.prevRenderX=rpx;iceState.prevRenderY=rpy;iceState.lastFrameTime=now;
     }
 
+    /* camera follows puck while zoom is on */
     if(iceState.zoomCenterFixed
        && iceState.gameState==='sliding'
        && !iceState.isZoomingOut){
-      const track=0.20;
+      const track=0.22;
       iceState.zoomCenterX += (puck.x - iceState.zoomCenterX)*track;
       iceState.zoomCenterY += (puck.y - iceState.zoomCenterY)*track;
     }
@@ -1810,7 +1795,7 @@
   soundToggle.addEventListener('change',()=>{state.soundEnabled=soundToggle.checked});
   bounceLightsToggle.addEventListener('change',()=>{state.bounceLightsEnabled=bounceLightsToggle.checked});
 
-  /* ═══ STORY RINGS ═══ */
+  /* STORY RINGS */
   const storyRingsToggle=document.getElementById('story-rings-toggle');
   function spawnStoryRing(x,y,size){
     const ring=document.createElement('span');
@@ -1820,7 +1805,7 @@
     ring.style.left=x+'px';
     ring.style.top=y+'px';
     document.body.appendChild(ring);
-    setTimeout(()=>{if(ring.parentNode)ring.parentNode.removeChild(ring);},700);
+    setTimeout(()=>{if(ring.parentNode)ring.parentNode.removeChild(ring);},600);
   }
   if(storyRingsToggle){
     try{
@@ -1836,7 +1821,7 @@
         const row=storyRingsToggle.closest('.setting');
         if(row){
           const rect=row.getBoundingClientRect();
-          spawnStoryRing(rect.left+rect.width-42, rect.top+rect.height/2, Math.max(rect.width,rect.height)*0.85);
+          spawnStoryRing(rect.left+rect.width-42, rect.top+rect.height/2, 56);
         }
       }
     });
@@ -1847,7 +1832,8 @@
     const target=e.target.closest(STORY_RING_SEL);
     if(!target)return;
     const rect=target.getBoundingClientRect();
-    const size=Math.max(rect.width,rect.height)*1.45;
+    const base=Math.min(rect.width,rect.height);
+    const size=Math.max(34, Math.min(70, base*0.95));
     spawnStoryRing(e.clientX,e.clientY,size);
   },{passive:true});
 
@@ -1990,7 +1976,7 @@
   $$('.layout-tile').forEach(t=>t.addEventListener('click',()=>{haptic('light');applyLayout(t.dataset.layoutTile)}));
   const ls=$('#layout-switch');if(ls)ls.addEventListener('change',()=>{haptic('light');applyLayout(ls.checked?'panel':'simple')});
 
-  /* ═══ QUICK-BET DRAG ═══ */
+  /* QUICK-BET DRAG */
   (function(){
     const bp=document.getElementById('bp');
     const chip=document.getElementById('bet-drag-chip');
