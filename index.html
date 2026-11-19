@@ -540,6 +540,56 @@
 .spark{position:absolute;width:6px;height:6px;border-radius:50%;background:#ffe27a;box-shadow:0 0 8px #ffd43b;pointer-events:none;z-index:5}
 .home-mode-card .mode-desc{min-height:30px}
 @media(prefers-reduced-motion:reduce){.mini-rotor,.mini-orbit,.mini-nft,.mode-art,.card-shine,.apple-icon,.orbit-core{animation:none!important}}
+
+/* ===== v3 ===== */
+.gate{width:56%}
+.gate img{object-fit:cover}
+.gate.left{left:0}.gate.right{right:0}
+/* revolver layout: barrel, then spin / claim right under it */
+#revolverScreen .game-title{font-size:19px;margin-bottom:0}
+#revolverScreen .game-sub{margin-bottom:2px}
+#revolverScreen .revolver-stage{width:min(70vw,300px,34dvh);margin:0 auto 6px}
+#revolverScreen .controls{margin-top:0;gap:9px}
+#revolverScreen .controls>#spinBarrelBtn,#revolverScreen .controls>#actionRow{order:1}
+#revolverScreen .controls>.result-text{order:2}
+#revolverScreen .controls>.stat-row{order:3}
+#revolverScreen .controls>.bet-panel{order:4}
+#revolverScreen .controls>.slider-box{order:5}
+#revolverScreen .controls>.chip-row{order:6}
+.controls:has(#actionRow[style*="flex"]) #spinBarrelBtn{display:none}
+#spinBarrelBtn{height:62px;font-size:17px;letter-spacing:1.2px;animation:spinReady 2.2s ease-in-out infinite}
+#spinBarrelBtn:disabled{animation:none}
+@keyframes spinReady{50%{filter:brightness(1.12)}}
+.result-text{font-size:14px;font-weight:900;letter-spacing:.4px;min-height:20px}
+.result-text.win{animation:resPop .45s var(--spring)}
+.result-text.lose{animation:resShake .45s}
+@keyframes resPop{0%{transform:scale(.7)}100%{transform:scale(1)}}
+@keyframes resShake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.revolver-body::after{content:'';position:absolute;inset:1%;border-radius:50%;border:1.5px dashed rgba(255,217,61,.28);animation:miniSpin 28s linear infinite;pointer-events:none}
+.rev-pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);font-size:22px;line-height:1;color:#ffd93d;text-shadow:0 0 12px rgba(255,210,50,.95),0 2px 6px #000;z-index:8;animation:ptr 1.4s ease-in-out infinite}
+@keyframes ptr{50%{transform:translateX(-50%) translateY(4px)}}
+.stat{backdrop-filter:blur(6px);transition:transform .2s var(--spring)}
+.stat:active{transform:scale(.96)}
+.bullet-slot.has-bullet img{filter:drop-shadow(0 0 9px rgba(255,205,70,.55)) drop-shadow(0 3px 6px rgba(0,0,0,.7))}
+.confetti{position:fixed;width:8px;height:12px;border-radius:2px;z-index:10050;pointer-events:none}
+.screen-flash{position:fixed;inset:0;z-index:10040;pointer-events:none}
+/* upgrade screen */
+.upgrade-wheel-container{position:relative;isolation:isolate}
+.upgrade-wheel-container::before{content:'';position:absolute;inset:-7%;border-radius:50%;z-index:-1;pointer-events:none;filter:blur(16px);
+  background:conic-gradient(from 0deg,transparent,rgba(255,217,61,.55),transparent 38%,rgba(255,170,30,.35),transparent 78%);animation:miniSpin 6s linear infinite}
+.upgrade-select{border-radius:20px;backdrop-filter:blur(8px);box-shadow:0 6px 0 rgba(0,0,0,.35),0 14px 22px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.1);transition:transform .15s var(--spring),box-shadow .2s,border-color .2s}
+.upgrade-select:not(:disabled):active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 2px 8px rgba(0,0,0,.3)}
+.upgrade-select:not(:disabled):not(.has-value) .nft-square{border-style:dashed;animation:selPulse 2s ease-in-out infinite}
+@keyframes selPulse{50%{border-color:rgba(255,217,61,.75);box-shadow:0 0 18px rgba(255,217,61,.25)}}
+.upgrade-select.has-value{animation:selPop .4s var(--spring)}
+@keyframes selPop{0%{transform:scale(.94)}100%{transform:scale(1)}}
+.upgrade-select:disabled{opacity:.55}
+.btn-upgrade{position:relative;overflow:hidden;height:60px;border-radius:18px;letter-spacing:1.2px}
+.btn-upgrade:not(:disabled){animation:upGlow 2s ease-in-out infinite}
+.btn-upgrade:not(:disabled)::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.55) 50%,transparent 62%);transform:translateX(-130%);animation:cardShine 3s infinite}
+@keyframes upGlow{50%{filter:brightness(1.1) drop-shadow(0 0 12px rgba(255,210,50,.5))}}
+.upgrade-hint{font-size:11px;font-weight:700;color:#cfcab0}
+.upgrade-balance{box-shadow:0 0 16px rgba(255,217,61,.18)}
 </style>
 </head>
 <body>
@@ -1275,8 +1325,9 @@ const revolverBody   = document.getElementById('revolverBody');
 const barrelRotor = document.getElementById('barrelRotor');
 const barrelImgEl = document.querySelector('.barrel-img');
 if (barrelImgEl) { barrelImgEl.src = BARREL_ASSET_URL; barrelImgEl.addEventListener('load',()=>barrelImgEl.classList.add('asset-loaded'),{once:true}); barrelImgEl.addEventListener('error',()=>{barrelImgEl.classList.add('asset-load-error'); barrelImgEl.alt='Provided barrel image could not be loaded';},{once:true}); }
-const USE_IMAGE_BARREL = false; /* set true to go back to the PNG barrel */
+const USE_IMAGE_BARREL = true; /* false = drawn vector barrel */
 if(!USE_IMAGE_BARREL && barrelImgEl){ const h=document.createElement('div'); h.innerHTML=barrelSVG(); barrelImgEl.replaceWith(h.firstChild); }
+else if(barrelImgEl) centerBarrelImage(barrelImgEl);
 const betAmountInput = document.getElementById('betAmount');
 const betNftPreview = document.getElementById('betNftPreview');
 const betNftName = document.getElementById('betNftName');
@@ -1418,6 +1469,39 @@ document.querySelectorAll('.chip').forEach(btn => {
 
 spinBarrelBtn.addEventListener('click', spinBarrel);
 
+function noiseBuf(c,sec,pow){const n=Math.floor(c.sampleRate*sec),b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,pow);return b;}
+function mechanicalTick(speed=300){
+  try{
+    const c=ac(),t=c.currentTime,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();
+    s.buffer=noiseBuf(c,.03,3);f.type='bandpass';f.frequency.value=1800+Math.min(2200,speed*2.5);f.Q.value=3;g.gain.value=.55;
+    s.connect(f);f.connect(g);g.connect(c.destination);s.start(t);
+    const o=c.createOscillator(),og=c.createGain();o.type='triangle';o.frequency.setValueAtTime(260,t);o.frequency.exponentialRampToValueAtTime(110,t+.03);
+    og.gain.setValueAtTime(.13,t);og.gain.exponentialRampToValueAtTime(.0001,t+.045);o.connect(og);og.connect(c.destination);o.start(t);o.stop(t+.05);
+  }catch(_){}
+}
+function mechanicalStopSound(){
+  try{
+    const c=ac(),t=c.currentTime,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();
+    s.buffer=noiseBuf(c,.09,2.5);f.type='bandpass';f.frequency.value=2600;f.Q.value=2;g.gain.value=.7;s.connect(f);f.connect(g);g.connect(c.destination);s.start(t);
+    [[95,.35,.16],[2300,.07,.1],[3400,.04,.07]].forEach(([fr,v,d])=>{const o=c.createOscillator(),og=c.createGain();o.type=fr<200?'sine':'triangle';o.frequency.setValueAtTime(fr,t);if(fr<200)o.frequency.exponentialRampToValueAtTime(48,t+d);og.gain.setValueAtTime(v,t);og.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(og);og.connect(c.destination);o.start(t);o.stop(t+d+.02);});
+  }catch(_){}
+}
+function barrelSpinSound(duration){
+  try{
+    const c=ac(),t=c.currentTime,N=48,v=[];
+    for(let i=0;i<N;i++) v.push(Math.abs(spinProgress((i+1)/N)-spinProgress(i/N))*N);
+    const pk=Math.max(...v),fc=new Float32Array(N),gc=new Float32Array(N),nc=new Float32Array(N);
+    v.forEach((x,i)=>{const k=x/pk;fc[i]=65+k*250;gc[i]=.0001+k*.045;nc[i]=350+k*1700;});
+    const o=c.createOscillator(),lp=c.createBiquadFilter(),g=c.createGain();
+    o.type='sawtooth';lp.type='lowpass';lp.Q.value=2;
+    o.frequency.setValueCurveAtTime(fc,t,duration);lp.frequency.setValueCurveAtTime(fc.map(x=>x*3+180),t,duration);g.gain.setValueCurveAtTime(gc,t,duration);
+    o.connect(lp);lp.connect(g);g.connect(c.destination);o.start(t);o.stop(t+duration+.05);
+    const s=c.createBufferSource(),bp=c.createBiquadFilter(),ng=c.createGain();
+    s.buffer=noiseBuf(c,duration,0);s.buffer.getChannelData(0).forEach((_,i,a)=>{a[i]=Math.random()*2-1;});
+    bp.type='bandpass';bp.Q.value=1.2;bp.frequency.setValueCurveAtTime(nc,t,duration);ng.gain.setValueCurveAtTime(gc.map(x=>x*.7),t,duration);
+    s.connect(bp);bp.connect(ng);ng.connect(c.destination);s.start(t);s.stop(t+duration);
+  }catch(_){}
+}
 function revolverClick(){
   try{
     const c=ac(),t=c.currentTime;
@@ -1495,9 +1579,10 @@ function spinBarrel(){
   ac();
 
   gamesPlayed++;
-  revolverClick(); haptic('rigid');
+  revolverResult.textContent='Calculating…'; setTimeout(()=>{ revolverClick(); haptic('rigid'); },470);
   const chosen = Math.floor(Math.random() * 6);
-  const fullSpins = 3 + Math.floor(Math.random() * 2);
+  const spinSecs = 1 + Math.random() * 2;
+  const fullSpins = 1 + Math.round(spinSecs / 1.1);
 
   /* bring chosen chamber to top (angle 0) */
   const targetMod  = ((-60 * chosen) % 360 + 360) % 360;
@@ -1505,7 +1590,7 @@ function spinBarrel(){
   const delta      = ((targetMod - currentMod) % 360 + 360) % 360;
   const targetRotation=barrelRotation + fullSpins * 360 + delta;
 
-  const dur = 7.2;
+  const dur = spinSecs;
   // The global button handler plays the soft click first; the mechanical spin starts just after it.
   setTimeout(()=>{
     barrelSpinSound(dur);
@@ -1514,7 +1599,7 @@ function spinBarrel(){
 
       if(hit){
         gunshot();
-        haptic('bang');
+        haptic('bang'); screenFlash('255,60,60');
         playBulletHit(chosen);
         revolverResult.textContent = 'BANG — BET LOST';
         revolverResult.className = 'result-text lose';
@@ -1537,7 +1622,7 @@ function spinBarrel(){
         saveDuckData(); renderProfile();
       } else {
         winChime();
-        haptic('success');
+        haptic('success'); confetti(document.querySelector('.revolver-stage'));
         canClaim = true;
         currentMultiplier = Math.max(currentMultiplier,bulletCount);
         revolverResult.textContent = `SURVIVED · ×${currentMultiplier}`;
@@ -1551,12 +1636,12 @@ function spinBarrel(){
       }
       updateHUD();
     });
-  },420);
+  },700);
 }
 
 claimBtn.addEventListener('click', () => {
   if(!canClaim) return;
-  claimSound(); haptic('success');
+  claimSound(); haptic('success'); confetti(claimBtn,34);
   const payout = Math.max(0, Math.round(roundStake * currentMultiplier * 100) / 100);
   let prize;
   if(betType === 'money'){
@@ -1856,14 +1941,14 @@ const upgradeGame = {
     if (fromIndex >= 0) ownedNfts.splice(fromIndex, 1);
     if (isWin) {
       try { winChime(); } catch(e) {}
-      haptic('success'); gamesWon++;
+      haptic('success'); confetti(document.getElementById('wheelContainer'),40); gamesWon++;
       addOwnedNft(to);
       wheelCenterNft.src = to.url; wheelCenterNft.onerror = () => { wheelCenterNft.onerror=null; wheelCenterNft.src=nftFallback(to,NFT_CATALOG.indexOf(to)); };
       wheelCenterNft.className = 'wheel-center-nft pop-in';
       upgradeHint.textContent = 'UPGRADE SUCCESSFUL — ' + to.name + ' added to your inventory';
     } else {
       try { loseTones(); } catch(e) {}
-      haptic('error'); wheelCenterNft.src = from.url; wheelCenterNft.onerror = () => { wheelCenterNft.onerror=null; wheelCenterNft.src=nftFallback(from,NFT_CATALOG.indexOf(from)); };
+      haptic('error'); screenFlash('255,60,60'); wheelCenterNft.src = from.url; wheelCenterNft.onerror = () => { wheelCenterNft.onerror=null; wheelCenterNft.src=nftFallback(from,NFT_CATALOG.indexOf(from)); };
       wheelCenterNft.className = 'wheel-center-nft pop-in';
       upgradeHint.textContent = 'Upgrade failed — ' + from.name + ' was lost';
     }
@@ -1890,7 +1975,7 @@ function barrelSVG(){
 }
 function initModeCards(){
   const rv=document.querySelector('[data-art=revolver]');
-  const rot=document.createElement('div'); rot.className='mini-rotor'; rot.innerHTML=barrelSVG();
+  const rot=document.createElement('div'); rot.className='mini-rotor'; rot.innerHTML=`<img src="${BARREL_ASSET_URL}" alt="" style="width:100%;height:100%;object-fit:contain;display:block">`;
   [0,2,4].forEach(i=>{ const r=(i*60-90)*Math.PI/180, b=document.createElement('img'); b.className='mini-bullet'; b.src=BULLET_ASSET_URL; b.style.left=(50+26*Math.cos(r))+'%'; b.style.top=(50+26*Math.sin(r))+'%'; rot.appendChild(b); });
   rv.appendChild(rot);
   const up=document.querySelector('[data-art=upgrade]');
@@ -1910,6 +1995,28 @@ function initModeCards(){
     });
   });
 }
+function confetti(host,n=28){
+  if(!host) return; const r=host.getBoundingClientRect(), cols=['#ffd93d','#fff3a8','#ffb300','#7CFFB2','#6ec1ff'];
+  for(let i=0;i<n;i++){ const p=document.createElement('i'); p.className='confetti'; p.style.left=(r.left+r.width/2)+'px'; p.style.top=(r.top+r.height/2)+'px'; p.style.background=cols[i%cols.length]; document.body.appendChild(p);
+    const a=Math.random()*6.28,d=70+Math.random()*170; p.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d+90}px) rotate(${Math.random()*720}deg)`,opacity:0}],{duration:900+Math.random()*600,easing:'cubic-bezier(.15,.7,.3,1)'}).onfinish=()=>p.remove(); }
+}
+function screenFlash(rgb){ const d=document.createElement('div'); d.className='screen-flash'; d.style.background=`radial-gradient(circle,rgba(${rgb},.55),rgba(${rgb},.12) 60%,transparent)`; document.body.appendChild(d); d.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-out'}).onfinish=()=>d.remove(); }
+/* centre the artwork of the barrel PNG on the rotation axis (uses alpha bounds) */
+function centerBarrelImage(img){
+  const p=new Image(); p.crossOrigin='anonymous';
+  p.onload=()=>{ try{
+    const N=200,c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d',{willReadFrequently:true});
+    const k=Math.min(N/p.naturalWidth,N/p.naturalHeight),dw=p.naturalWidth*k,dh=p.naturalHeight*k; x.drawImage(p,(N-dw)/2,(N-dh)/2,dw,dh);
+    const d=x.getImageData(0,0,N,N).data; let x0=N,y0=N,x1=0,y1=0;
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++) if(d[(j*N+i)*4+3]>40){ if(i<x0)x0=i; if(i>x1)x1=i; if(j<y0)y0=j; if(j>y1)y1=j; }
+    if(x1<=x0||y1<=y0) return;
+    const sc=Math.min(1.12,N/Math.max(x1-x0+1,y1-y0+1)),cx=(x0+x1+1)/2,cy=(y0+y1+1)/2;
+    img.style.transformOrigin=(cx/N*100)+'% '+(cy/N*100)+'%';
+    img.style.transform=`translate(${(.5-cx/N)*100}%,${(.5-cy/N)*100}%) scale(${sc})`;
+  }catch(_){} };
+  p.src=BARREL_ASSET_URL;
+}
+(function(){ const st=document.querySelector('.revolver-stage'); if(st){ const p=document.createElement('div'); p.className='rev-pointer'; p.textContent='▼'; st.appendChild(p); } })();
 initModeCards();
 playInitialGateIntro();
 randomizeBullets();
