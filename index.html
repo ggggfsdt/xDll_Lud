@@ -590,6 +590,11 @@
 @keyframes upGlow{50%{filter:brightness(1.1) drop-shadow(0 0 12px rgba(255,210,50,.5))}}
 .upgrade-hint{font-size:11px;font-weight:700;color:#cfcab0}
 .upgrade-balance{box-shadow:0 0 16px rgba(255,217,61,.18)}
+
+/* v4 */
+.gate img{object-fit:fill}
+.barrel-rotor .barrel-img,.barrel-rotor.spinning .barrel-img{filter:none!important;border-radius:0}
+.barrel-rotor{border-radius:0}
 </style>
 </head>
 <body>
@@ -1541,7 +1546,6 @@ function animateBarrelSpin(targetRotation,duration,onComplete){
     barrelAnimationFrame=0; barrelRotation=targetRotation;
     barrelRotor.style.transform=`rotate(${targetRotation}deg)`;
     barrelRotor.classList.remove('spinning'); stage.classList.remove('spinning-stage');
-    try{ barrelRotor.animate([{transform:`rotate(${targetRotation-2.4}deg)`},{transform:`rotate(${targetRotation}deg)`}],{duration:260,easing:'cubic-bezier(.3,1.8,.5,1)'}); }catch(_){}
     mechanicalStopSound(); haptic('rigid');
     if(onComplete) onComplete();
   };
@@ -1585,7 +1589,7 @@ function spinBarrel(){
   const fullSpins = 1 + Math.round(spinSecs / 1.1);
 
   /* bring chosen chamber to top (angle 0) */
-  const targetMod  = ((-60 * chosen) % 360 + 360) % 360;
+  const targetMod  = ((-CH_ANG[chosen]) % 360 + 360) % 360;
   const currentMod = ((barrelRotation % 360) + 360) % 360;
   const delta      = ((targetMod - currentMod) % 360 + 360) % 360;
   const targetRotation=barrelRotation + fullSpins * 360 + delta;
@@ -1594,7 +1598,7 @@ function spinBarrel(){
   // The global button handler plays the soft click first; the mechanical spin starts just after it.
   setTimeout(()=>{
     barrelSpinSound(dur);
-    animateBarrelSpin(targetRotation,dur,()=>{
+    animateBarrelSpin(targetRotation,dur*1000,()=>{
       const hit = bullets[chosen];
 
       if(hit){
@@ -2001,22 +2005,52 @@ function confetti(host,n=28){
     const a=Math.random()*6.28,d=70+Math.random()*170; p.animate([{transform:'translate(0,0) rotate(0)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d+90}px) rotate(${Math.random()*720}deg)`,opacity:0}],{duration:900+Math.random()*600,easing:'cubic-bezier(.15,.7,.3,1)'}).onfinish=()=>p.remove(); }
 }
 function screenFlash(rgb){ const d=document.createElement('div'); d.className='screen-flash'; d.style.background=`radial-gradient(circle,rgba(${rgb},.55),rgba(${rgb},.12) 60%,transparent)`; document.body.appendChild(d); d.animate([{opacity:1},{opacity:0}],{duration:420,easing:'ease-out'}).onfinish=()=>d.remove(); }
-/* centre the artwork of the barrel PNG on the rotation axis (uses alpha bounds) */
+let CH_ANG=[0,60,120,180,240,300];
+/* find the 6 chamber holes in the barrel PNG so bullets sit exactly inside them and the barrel spins around its true centre */
 function centerBarrelImage(img){
   const p=new Image(); p.crossOrigin='anonymous';
   p.onload=()=>{ try{
-    const N=200,c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d',{willReadFrequently:true});
+    const N=160,c=document.createElement('canvas'); c.width=c.height=N; const x=c.getContext('2d',{willReadFrequently:true});
     const k=Math.min(N/p.naturalWidth,N/p.naturalHeight),dw=p.naturalWidth*k,dh=p.naturalHeight*k; x.drawImage(p,(N-dw)/2,(N-dh)/2,dw,dh);
     const d=x.getImageData(0,0,N,N).data; let x0=N,y0=N,x1=0,y1=0;
-    for(let j=0;j<N;j++)for(let i=0;i<N;i++) if(d[(j*N+i)*4+3]>40){ if(i<x0)x0=i; if(i>x1)x1=i; if(j<y0)y0=j; if(j>y1)y1=j; }
-    if(x1<=x0||y1<=y0) return;
-    const sc=Math.min(1.12,N/Math.max(x1-x0+1,y1-y0+1)),cx=(x0+x1+1)/2,cy=(y0+y1+1)/2;
-    img.style.transformOrigin=(cx/N*100)+'% '+(cy/N*100)+'%';
-    img.style.transform=`translate(${(.5-cx/N)*100}%,${(.5-cy/N)*100}%) scale(${sc})`;
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++) if(d[(j*N+i)*4+3]>40){x0=Math.min(x0,i);x1=Math.max(x1,i);y0=Math.min(y0,j);y1=Math.max(y1,j);}
+    if(x1<=x0) return;
+    const bx=(x0+x1+1)/2,by=(y0+y1+1)/2,R=Math.max(x1-x0+1,y1-y0+1)/2,cand=new Uint8Array(N*N);
+    for(let j=0;j<N;j++)for(let i=0;i<N;i++){ const q=(j*N+i)*4; if(Math.hypot(i-bx,j-by)<.9*R && (d[q+3]<60 || d[q]*.3+d[q+1]*.59+d[q+2]*.11<38)) cand[j*N+i]=1; }
+    const seen=new Uint8Array(N*N),blobs=[];
+    for(let s0=0;s0<N*N;s0++){ if(!cand[s0]||seen[s0]) continue;
+      const st=[s0]; seen[s0]=1; let n=0,sx=0,sy=0;
+      while(st.length){ const v=st.pop(),vx=v%N,vy=(v/N)|0; n++; sx+=vx; sy+=vy;
+        for(const [ax,ay] of [[1,0],[-1,0],[0,1],[0,-1]]){ const nx=vx+ax,ny=vy+ay; if(nx<0||ny<0||nx>=N||ny>=N) continue; const u=ny*N+nx; if(cand[u]&&!seen[u]){seen[u]=1;st.push(u);} } }
+      const cx=sx/n,cy=sy/n,rr=Math.hypot(cx-bx,cy-by)/R,fr=n/(Math.PI*R*R);
+      if(rr>.25&&rr<.78&&fr>.012&&fr<.1) blobs.push({cx,cy,n});
+    }
+    if(blobs.length<6) return;
+    const six=blobs.sort((a,b)=>b.n-a.n).slice(0,6);
+    const rcx=six.reduce((a,b)=>a+b.cx,0)/6,rcy=six.reduce((a,b)=>a+b.cy,0)/6;
+    six.forEach(b=>{ b.ang=((Math.atan2(b.cx-rcx,-(b.cy-rcy))*180/Math.PI)%360+360)%360; });
+    six.sort((a,b)=>a.ang-b.ang);
+    let first=0,best=1e9; six.forEach((b,i)=>{ const dd=Math.min(b.ang,360-b.ang); if(dd<best){best=dd;first=i;} });
+    const ord=[...six.slice(first),...six.slice(0,first)];
+    const dia=2*Math.sqrt(six.reduce((a,b)=>a+b.n,0)/6/Math.PI)/N*100;
+    img.style.transform=`translate(${(.5-rcx/N)*100}%,${(.5-rcy/N)*100}%)`;
+    CH_ANG=ord.map(b=>b.ang);
+    ord.forEach((b,i)=>{ const sl=bulletSlots[i]; if(!sl) return; sl.style.left=((b.cx-rcx)/N*100+50)+'%'; sl.style.top=((b.cy-rcy)/N*100+50)+'%'; sl.style.width=sl.style.height=(dia*.94)+'%'; });
   }catch(_){} };
   p.src=BARREL_ASSET_URL;
 }
+function sizeRotor(){ const st=document.querySelector('.revolver-stage'); if(!st||!st.clientWidth) return; const w=st.clientWidth,sz=w*.82; barrelRotor.style.width=barrelRotor.style.height=sz+'px'; barrelRotor.style.left=barrelRotor.style.top=((w-sz)/2)+'px'; }
+function fitGates(){
+  const img=gateLeft.querySelector('img'); if(!img||!img.naturalWidth) return;
+  const W=appRoot.clientWidth,H=appRoot.clientHeight,want=H*img.naturalWidth/img.naturalHeight,minW=W*.5+2;
+  const w=Math.max(minW,Math.min(W*.62,want)), stretch=w/want;
+  gateLeft.style.width=gateRight.style.width=w+'px';
+  gateLeft.querySelectorAll('img').forEach(i=>{}); document.querySelectorAll('.gate img').forEach(i=>{ i.style.objectFit=stretch<=1.35?'fill':'cover'; });
+}
 (function(){ const st=document.querySelector('.revolver-stage'); if(st){ const p=document.createElement('div'); p.className='rev-pointer'; p.textContent='▼'; st.appendChild(p); } })();
+document.querySelectorAll('.gate img').forEach(i=>i.addEventListener('load',fitGates));
+sizeRotor(); fitGates();
+window.addEventListener('resize',()=>{ sizeRotor(); fitGates(); });
 initModeCards();
 playInitialGateIntro();
 randomizeBullets();
