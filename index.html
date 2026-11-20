@@ -595,6 +595,55 @@
 .gate img{object-fit:fill}
 .barrel-rotor .barrel-img,.barrel-rotor.spinning .barrel-img{filter:none!important;border-radius:0}
 .barrel-rotor{border-radius:0}
+
+/* v5: no circle UI around barrel */
+.revolver-body::after{display:none!important}
+.revolver-stage.spinning-stage::before{display:none!important}
+/* home: wide third card */
+.home-mode-card.wide{grid-column:1/-1;min-height:0;display:flex;align-items:center;gap:16px;text-align:left;padding:14px 16px}
+.home-mode-card.wide .wide-text{flex:1;min-width:0}
+.mini-mines{display:grid;grid-template-columns:repeat(3,30px);gap:5px;flex:0 0 auto;font-family:'Apple Color Emoji','Segoe UI Emoji',sans-serif}
+.mini-mines i{font-style:normal;width:30px;height:30px;display:grid;place-items:center;font-size:17px;border-radius:9px;background:linear-gradient(160deg,#1f4a56,#0b2229);box-shadow:0 3px 0 #06141a,0 0 10px rgba(100,220,255,.3);animation:minePulse 2.4s ease-in-out infinite}
+.mini-mines i:nth-child(3n+2){animation-delay:.3s}.mini-mines i:nth-child(3n){animation-delay:.6s}
+.mini-mines i:nth-child(3),.mini-mines i:nth-child(8){background:linear-gradient(160deg,#5a1717,#240808);box-shadow:0 3px 0 #120404,0 0 10px rgba(255,70,50,.45)}
+@keyframes minePulse{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+/* mines screen */
+#minesScreen{gap:8px;overflow-y:auto}
+.mines-head{display:flex;align-items:center;gap:8px}
+.mines-back{border:1px solid rgba(255,217,61,.3);background:rgba(255,255,255,.06);color:#ffd93d;font-weight:800;font-size:13px;padding:8px 12px;border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.4);cursor:pointer}
+.mines-back:active{transform:translateY(3px);box-shadow:none}
+.mines-title{flex:1;text-align:center;font-weight:900;letter-spacing:1px;font-size:15px;color:#fff;font-family:'Apple Color Emoji',-apple-system,sans-serif}
+.mines-mult{font-weight:900;font-size:19px;color:#ffd93d;min-width:70px;text-align:right;text-shadow:0 0 14px rgba(255,217,61,.5)}
+.mines-board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;width:min(100%,380px,46dvh);aspect-ratio:1/1;margin:2px auto}
+.mines-board.shake{animation:resShake .5s}
+.mn-tile{border:none;border-radius:14px;cursor:pointer;background:linear-gradient(160deg,#3d3a21,#1b1a0f);font-family:'Apple Color Emoji','Segoe UI Emoji',sans-serif;font-size:clamp(20px,6.5vw,32px);display:grid;place-items:center;
+  box-shadow:0 5px 0 #0b0a04,inset 0 1px 0 rgba(255,255,255,.16),0 8px 12px rgba(0,0,0,.4);transition:transform .1s,box-shadow .1s;-webkit-tap-highlight-color:transparent}
+.mn-tile:active{transform:translateY(4px);box-shadow:0 1px 0 #0b0a04,0 3px 6px rgba(0,0,0,.4)}
+.mines-board.idle .mn-tile{animation:tileIdle 2.6s ease-in-out infinite}
+.mines-board.idle .mn-tile:nth-child(odd){animation-delay:.5s}.mines-board.idle .mn-tile:nth-child(3n){animation-delay:1s}
+@keyframes tileIdle{50%{filter:brightness(1.25)}}
+.mn-tile.gem{background:linear-gradient(160deg,#216070,#0b2229);box-shadow:inset 0 0 18px rgba(120,230,255,.55),0 0 16px rgba(100,220,255,.4);transform:translateY(4px);animation:tileFlip .38s var(--spring)}
+.mn-tile.bomb{background:linear-gradient(160deg,#6a1a1a,#240808);box-shadow:inset 0 0 18px rgba(255,90,60,.65),0 0 18px rgba(255,60,40,.55);transform:translateY(4px);animation:tileBoom .5s}
+.mn-tile.dim{opacity:.5;filter:saturate(.7)}
+@keyframes tileFlip{0%{transform:perspective(300px) rotateY(90deg) scale(.8)}60%{transform:perspective(300px) rotateY(-12deg) scale(1.1)}100%{transform:perspective(300px) rotateY(0) translateY(4px)}}
+@keyframes tileBoom{0%{transform:scale(.6)}30%{transform:scale(1.35) rotate(-6deg)}60%{transform:scale(.95) rotate(5deg)}100%{transform:scale(1) translateY(4px)}}
+.mines-action{width:100%;height:60px;border:none;border-radius:18px;font-weight:900;font-size:16px;letter-spacing:1.1px;color:#241b02;cursor:pointer;background:linear-gradient(180deg,#ffe56a,#ffc21a);
+  box-shadow:0 5px 0 #9a6a00,0 9px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.6);transition:transform .12s,box-shadow .12s;font-family:'Apple Color Emoji',-apple-system,sans-serif}
+.mines-action:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 #9a6a00,0 3px 8px rgba(0,0,0,.4)}
+.mines-action:disabled{opacity:.55}
+.mines-action.cash{background:linear-gradient(180deg,#b6ff7a,#5fd23a);box-shadow:0 5px 0 #2f8a14,0 9px 18px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.6);animation:upGlow 1.6s ease-in-out infinite}
+.mines-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.mn-stat{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,217,61,.14);border-radius:14px;padding:8px 4px;text-align:center}
+.mn-stat b{display:block;font-size:15px;color:#ffd93d}.mn-stat span{font-size:9px;letter-spacing:.8px;color:#a9a58c;font-weight:800}
+.mines-panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,217,61,.12);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:8px;font-family:'Apple Color Emoji',-apple-system,sans-serif}
+.mn-label{font-size:10px;font-weight:900;letter-spacing:1px;color:#a9a58c}
+.mn-bet{display:flex;gap:8px}
+.mn-bet input{flex:1;min-width:0;text-align:center;font-weight:900;font-size:18px;color:#ffd93d;background:#0d0d08;border:1px solid rgba(255,217,61,.3);border-radius:12px;height:44px}
+.mn-bet button,.mn-chips button{border:1px solid rgba(255,217,61,.25);background:rgba(255,255,255,.06);color:#fff;font-weight:900;border-radius:12px;min-width:50px;height:44px;box-shadow:0 3px 0 rgba(0,0,0,.4);cursor:pointer}
+.mn-bet button:active:not(:disabled),.mn-chips button:active:not(:disabled){transform:translateY(3px);box-shadow:none}
+.mn-chips{display:flex;gap:8px}.mn-chips button{flex:1}
+.mn-chips button.on{background:linear-gradient(180deg,#ffe56a,#ffc21a);color:#241b02;border-color:transparent}
+.mn-bet button:disabled,.mn-chips button:disabled,.mn-bet input:disabled{opacity:.5}
 </style>
 </head>
 <body>
@@ -637,6 +686,11 @@
           <div class="mode-title">UPGRADE</div>
           <div class="mode-desc">Risk a collectible for a shot at something rarer.</div>
           <span class="mode-play">OPEN WHEEL&nbsp; ↗</span>
+        </button>
+        <button class="home-mode-card wide" type="button" data-mode="mines">
+          <span class="card-shine"></span>
+          <div class="mini-mines"><i>💎</i><i>💎</i><i>💣</i><i>💎</i><i>💎</i><i>💎</i><i>💎</i><i>💣</i><i>💎</i></div>
+          <div class="wide-text"><div class="mode-title">DIAMOND MINES</div><div class="mode-desc">Find diamonds, dodge bombs, cash out before it blows.</div><span class="mode-play">PLAY NOW&nbsp; ↗</span></div>
         </button>
       </div>
       <div class="home-section-head">YOUR DUCK CORNER <span>COLLECT · TRACK · PLAY</span></div>
@@ -748,6 +802,23 @@
     </div>
 
     <!-- MARKET: collectible floor listings -->
+    <div class="screen utility-screen" id="minesScreen">
+      <div class="mines-head"><button class="mines-back" type="button" data-open-tab="home">‹ Home</button><div class="mines-title">💎 DIAMOND MINES</div><div class="mines-mult" id="mnMult">×1.00</div></div>
+      <div class="mines-board idle" id="mnBoard"></div>
+      <button class="mines-action" type="button" id="mnAction">START ROUND</button>
+      <div class="result-text" id="mnResult">Choose a bet and mines, then start</div>
+      <div class="mines-stats">
+        <div class="mn-stat"><b id="mnNext">×1.00</b><span>NEXT</span></div>
+        <div class="mn-stat"><b id="mnProfit">0</b><span>PROFIT</span></div>
+        <div class="mn-stat"><b id="mnLeft">22</b><span>SAFE LEFT</span></div>
+      </div>
+      <div class="mines-panel">
+        <div class="mn-label">BET · 💎 TON</div>
+        <div class="mn-bet"><button type="button" id="mnHalf">½</button><input id="mnBet" type="number" inputmode="decimal" min="0.1" max="1000" step="0.1" value="1"><button type="button" id="mnDouble">×2</button></div>
+        <div class="mn-label">MINES</div>
+        <div class="mn-chips" id="mnChips"><button type="button" data-m="1">1</button><button type="button" data-m="3" class="on">3</button><button type="button" data-m="5">5</button><button type="button" data-m="8">8</button><button type="button" data-m="12">12</button></div>
+      </div>
+    </div>
     <div class="screen utility-screen market-screen" id="marketScreen">
       <div class="section-head">
         <div><div class="section-title">Gift Market</div><div class="section-sub">Telegram collectible floor listings</div></div>
@@ -1080,6 +1151,7 @@ const screens = {
   market: document.getElementById('marketScreen'),
   inventory: document.getElementById('inventoryScreen'),
   profile: document.getElementById('profileScreen'),
+  mines: document.getElementById('minesScreen'),
 };
 let currentTab = 'home';
 function navigateToTab(t){
@@ -1527,31 +1599,37 @@ function spinProgress(t){
 }
 function animateBarrelSpin(targetRotation,duration,onComplete){
   const stage=document.querySelector('.revolver-stage');
-  const start=barrelRotation, dist=targetRotation-start, t0=performance.now();
+  const start=barrelRotation, over=6+Math.random()*9, mainEnd=targetRotation+over, dist=mainEnd-start;
+  const HOLD=140, SETTLE=640, t0=performance.now();
   if(barrelAnimationFrame) cancelAnimationFrame(barrelAnimationFrame);
   barrelRotor.style.transition='none';
   barrelRotor.classList.add('spinning'); stage.classList.add('spinning-stage');
-  let lastSlot=Math.floor((start+30)/60), lastHap=0, prevA=start, prevT=t0;
-  const WIND=9;
+  let lastSlot=Math.floor((start+30)/60), lastHap=0, prevA=start, prevT=t0, settling=false;
   const frame=now=>{
-    const t=Math.min(1,(now-t0)/duration);
-    let a=start+dist*spinProgress(t);
-    if(t<.14) a-=WIND*Math.sin(Math.PI*t/.14); // tiny wind-up before it lets go
+    const el=now-t0; let a;
+    if(el<duration){
+      const t=el/duration; a=start+dist*spinProgress(t);
+      if(t<.12) a-=8*Math.sin(Math.PI*t/.12);
+    } else if(el<duration+HOLD+SETTLE){
+      if(!settling){ settling=true; haptic('soft'); }
+      const k=Math.max(0,(el-duration-HOLD)/SETTLE);
+      a=mainEnd+(targetRotation-mainEnd)*((1-Math.cos(Math.PI*k))/2); // glide back onto the hole
+    } else {
+      barrelAnimationFrame=0; barrelRotation=targetRotation;
+      barrelRotor.style.transform=`rotate(${targetRotation}deg)`;
+      barrelRotor.classList.remove('spinning'); stage.classList.remove('spinning-stage');
+      mechanicalStopSound(); haptic('rigid');
+      if(onComplete) onComplete();
+      return;
+    }
     barrelRotor.style.transform=`rotate(${a.toFixed(2)}deg)`;
-    const speed=Math.abs(a-prevA)*1000/Math.max(1,now-prevT);
-    prevA=a; prevT=now;
-    const slot=Math.floor((a+30)/60); // one ratchet click per chamber passing the top
-    if(slot!==lastSlot && t<1){ lastSlot=slot; mechanicalTick(speed); if(now-lastHap>40){ haptic('tick'); lastHap=now; } }
-    if(t<1){ barrelAnimationFrame=requestAnimationFrame(frame); return; }
-    barrelAnimationFrame=0; barrelRotation=targetRotation;
-    barrelRotor.style.transform=`rotate(${targetRotation}deg)`;
-    barrelRotor.classList.remove('spinning'); stage.classList.remove('spinning-stage');
-    mechanicalStopSound(); haptic('rigid');
-    if(onComplete) onComplete();
+    const speed=Math.abs(a-prevA)*1000/Math.max(1,now-prevT); prevA=a; prevT=now;
+    const slot=Math.floor((a+30)/60);
+    if(slot!==lastSlot){ lastSlot=slot; mechanicalTick(Math.max(speed,120)); if(now-lastHap>40){ haptic('tick'); lastHap=now; } }
+    barrelAnimationFrame=requestAnimationFrame(frame);
   };
   barrelAnimationFrame=requestAnimationFrame(frame);
 }
-
 function playBulletHit(chosen){
   const stage=document.querySelector('.revolver-stage');
   stage.classList.remove('hit');barrelRotor.classList.remove('hit');
@@ -1585,8 +1663,8 @@ function spinBarrel(){
   gamesPlayed++;
   revolverResult.textContent='Calculating…'; setTimeout(()=>{ revolverClick(); haptic('rigid'); },470);
   const chosen = Math.floor(Math.random() * 6);
-  const spinSecs = 1 + Math.random() * 2;
-  const fullSpins = 1 + Math.round(spinSecs / 1.1);
+  const spinSecs = 2 + Math.random() * 3;
+  const fullSpins = 1 + Math.round(spinSecs / 1.5);
 
   /* bring chosen chamber to top (angle 0) */
   const targetMod  = ((-CH_ANG[chosen]) % 360 + 360) % 360;
@@ -2048,6 +2126,62 @@ function fitGates(){
   gateLeft.querySelectorAll('img').forEach(i=>{}); document.querySelectorAll('.gate img').forEach(i=>{ i.style.objectFit=stretch<=1.35?'fill':'cover'; });
 }
 (function(){ const st=document.querySelector('.revolver-stage'); if(st){ const p=document.createElement('div'); p.className='rev-pointer'; p.textContent='▼'; st.appendChild(p); } })();
+const minesGame=(()=>{
+  const $=id=>document.getElementById(id);
+  const board=$('mnBoard'),act=$('mnAction'),res=$('mnResult'),multEl=$('mnMult'),nextEl=$('mnNext'),profEl=$('mnProfit'),leftEl=$('mnLeft'),betIn=$('mnBet');
+  let mineCount=3,bet=1,active=false,mineSet=new Set(),opened=0,over=false;
+  const tiles=[];
+  const mult=k=>{ let m=.97; for(let i=0;i<k;i++) m*=(25-i)/(25-mineCount-i); return m; };
+  const fx=m=>'×'+(m<10?m.toFixed(2):m<100?m.toFixed(1):Math.round(m));
+  function tone(fr,d=.12,type='sine',v=.12,slide=1){ try{ const c=ac(),t=c.currentTime,o=c.createOscillator(),g=c.createGain(); o.type=type; o.frequency.setValueAtTime(fr,t); o.frequency.exponentialRampToValueAtTime(fr*slide,t+d); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+d+.02); }catch(_){} }
+  const readBet=()=>Math.max(.1,Math.min(1000,Math.round((Number(betIn.value)||1)*100)/100));
+  for(let i=0;i<25;i++){ const b=document.createElement('button'); b.type='button'; b.className='mn-tile'; b.addEventListener('click',()=>pick(i)); board.appendChild(b); tiles.push(b); }
+  function refresh(){
+    const m=mult(opened); multEl.textContent=fx(m); nextEl.textContent=fx(mult(opened+1));
+    profEl.textContent=opened?('+'+fmt(bet*m-bet)):'0'; leftEl.textContent=25-mineCount-opened;
+    act.classList.toggle('cash',active&&opened>0);
+    act.textContent=!active?(over?'PLAY AGAIN':'START ROUND'):(opened?('CASH OUT  💎 '+fmt(bet*m)):'PICK A TILE');
+    act.disabled=active&&!opened;
+    betIn.disabled=active; document.querySelectorAll('#mnChips button,#mnHalf,#mnDouble').forEach(b=>b.disabled=active);
+  }
+  function reset(){ tiles.forEach(t=>{ t.className='mn-tile'; t.textContent=''; }); board.classList.remove('shake'); }
+  function start(){
+    bet=readBet(); betIn.value=bet;
+    if(bet>balance){ res.textContent='Not enough TON'; res.className='result-text lose'; haptic('error'); return; }
+    balance-=bet; updateBalance(); gamesPlayed++; try{saveDuckData();}catch(_){}
+    mineSet=new Set(); while(mineSet.size<mineCount) mineSet.add(Math.floor(Math.random()*25));
+    opened=0; active=true; over=false; reset(); board.classList.remove('idle');
+    res.className='result-text'; res.textContent='Tap tiles. Every diamond raises the multiplier.';
+    tone(300,.1,'square',.07,1.6); haptic('medium'); refresh();
+  }
+  function showAll(skip){ tiles.forEach((t,i)=>{ if(i===skip||t.classList.contains('gem')||t.classList.contains('bomb')) return; setTimeout(()=>{ t.textContent=mineSet.has(i)?'💣':'💎'; t.classList.add(mineSet.has(i)?'bomb':'gem','dim'); },(i%7)*35); }); }
+  function pick(i){
+    if(!active) return; const t=tiles[i]; if(t.classList.contains('gem')||t.classList.contains('bomb')) return;
+    if(mineSet.has(i)){
+      t.textContent='💣'; t.classList.add('bomb'); active=false; over=true;
+      try{ gunshot(); }catch(_){} haptic('bang'); screenFlash('255,60,60');
+      board.classList.remove('shake'); void board.offsetWidth; board.classList.add('shake');
+      showAll(i); res.className='result-text lose'; res.textContent='BOOM! You lost '+fmt(bet)+' TON'; refresh(); return;
+    }
+    opened++; t.textContent='💎'; t.classList.add('gem');
+    tone(480+opened*48,.16,'triangle',.13,1.25); setTimeout(()=>tone(720+opened*60,.12,'sine',.07),70); haptic('select');
+    res.className='result-text'; res.textContent=fx(mult(opened))+' · keep going or cash out';
+    refresh();
+    if(opened===25-mineCount) cash();
+  }
+  function cash(){
+    if(!active||!opened) return; const pay=Math.round(bet*mult(opened)*100)/100;
+    balance+=pay; updateBalance(); if(pay>bet) gamesWon++; try{saveDuckData();}catch(_){}
+    active=false; over=true; showAll(-1); try{ winChime(); }catch(_){} haptic('success'); confetti(board,44);
+    res.className='result-text win'; res.textContent='Cashed out '+fmt(pay)+' TON  ('+fx(mult(opened))+')'; refresh();
+  }
+  act.addEventListener('click',()=>{ if(!active) start(); else cash(); });
+  $('mnHalf').addEventListener('click',()=>{ betIn.value=Math.max(.1,Math.round(readBet()/2*100)/100); haptic('light'); });
+  $('mnDouble').addEventListener('click',()=>{ betIn.value=Math.min(1000,Math.round(readBet()*2*100)/100); haptic('light'); });
+  betIn.addEventListener('change',()=>{ betIn.value=readBet(); bet=readBet(); refresh(); });
+  $('mnChips').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||active) return; mineCount=+b.dataset.m; $('mnChips').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); haptic('select'); refresh(); });
+  refresh();
+})();
 document.querySelectorAll('.gate img').forEach(i=>i.addEventListener('load',fitGates));
 sizeRotor(); fitGates();
 window.addEventListener('resize',()=>{ sizeRotor(); fitGates(); });
